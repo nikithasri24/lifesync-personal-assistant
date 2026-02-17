@@ -1,6 +1,7 @@
 import React, { type ReactElement, useMemo, useState } from 'react';
-import { Target, CheckCircle2, Trash2, Edit3, TrendingUp, Users, RotateCcw } from 'lucide-react';
+import { Target, Users, Edit3 } from 'lucide-react';
 import type { LifeGoal } from '../../types/lifeGoals';
+import { GoalCard } from '../GoalCard';
 import { GoalMilestones } from '../GoalMilestones';
 import { GoalCheckins } from '../GoalCheckins';
 import {
@@ -8,17 +9,29 @@ import {
   usePartnerGoalProgressQuery,
   useUpdateGoalProgressMutation,
 } from '@/hooks/useLifeGoalsQuery';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useToast } from '@/hooks/useToast';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
-const EmptyState: React.FC<{ label: string; icon?: React.ReactNode }> = ({ label, icon }) => (
-  <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-400">
-      {icon ?? <Target className="h-6 w-6" />}
+const EmptyState: React.FC<{ label: string; icon?: React.ReactNode }> = ({ label, icon }) => {
+  const colors = useThemeColors();
+
+  return (
+    <div
+      className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-12 text-center"
+      style={{ borderColor: colors.border.medium, backgroundColor: colors.bg.white }}
+    >
+      <div
+        className="flex h-12 w-12 items-center justify-center rounded-full"
+        style={{ backgroundColor: colors.badge.bg, color: colors.badge.text }}
+      >
+        {icon ?? <Target className="h-6 w-6" />}
+      </div>
+      <p className="text-sm font-medium" style={{ color: colors.text.secondary }}>
+        {label}
+      </p>
     </div>
-    <p className="text-sm font-medium">{label}</p>
-  </div>
-);
+  );
+};
 
 interface GoalListProps {
   goals: LifeGoal[];
@@ -41,7 +54,7 @@ interface GoalListProps {
 }
 
 /**
- * List of goals with progress tracking, milestones, and streaks
+ * List of goals with progress tracking, milestones, and streaks using modern GoalCard
  */
 export function GoalList({
   goals,
@@ -61,9 +74,7 @@ export function GoalList({
   partnerId = null,
   partnerName = 'Partner',
 }: GoalListProps): ReactElement {
-  // Get theme for dark mode detection
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const colors = useThemeColors();
 
   // Get goal IDs for progress tracking queries
   const goalIds = useMemo(() => goals.map((g) => g.id), [goals]);
@@ -105,183 +116,113 @@ export function GoalList({
     return 'mine';
   };
 
-  // Get card and badge styles based on ownership and theme
-  const getCardStyle = (isPartner: boolean, isShared: boolean): React.CSSProperties => {
-    if (isPartner) {
-      return isDark
-        ? { borderColor: '#f59e0b', backgroundColor: '#451a03' } // amber-500, amber-950
-        : { borderColor: '#f59e0b', backgroundColor: '#fffbeb' }; // amber-500, amber-50
-    }
-    if (isShared) {
-      return isDark
-        ? { borderColor: '#6366f1', backgroundColor: '#1e1b4b' } // indigo-500, indigo-950
-        : { borderColor: '#6366f1', backgroundColor: '#eef2ff' }; // indigo-500, indigo-50
-    }
-    return {};
-  };
-
-  const getBadgeStyle = (isPartner: boolean, isShared: boolean): React.CSSProperties => {
-    if (isShared) {
-      return isDark
-        ? { backgroundColor: '#312e81', color: '#c7d2fe' } // indigo-900, indigo-200
-        : { backgroundColor: '#e0e7ff', color: '#4338ca' }; // indigo-100, indigo-700
-    }
-    if (isPartner) {
-      return isDark
-        ? { backgroundColor: '#78350f', color: '#fde68a' } // amber-900, amber-200
-        : { backgroundColor: '#fef3c7', color: '#b45309' }; // amber-100, amber-700
-    }
-    return isDark
-      ? { backgroundColor: '#334155', color: '#cbd5e1' } // slate-700, slate-300
-      : { backgroundColor: '#f1f5f9', color: '#475569' }; // slate-100, slate-600
-  };
-
   return (
     <ul className="space-y-3">
       {goals.map((goal) => {
         const isExpanded = expandedGoalId === goal.id;
         const ownership = isMerged ? getGoalOwnership(goal) : 'mine';
         const isPartnerGoal = ownership === 'partner';
-        const isSharedGoal = ownership === 'shared';
-
-        const cardStyle = getCardStyle(isPartnerGoal, isSharedGoal);
-        const badgeStyle = getBadgeStyle(isPartnerGoal, isSharedGoal);
 
         return (
-          <li
-            key={goal.id}
-            className="flex flex-col gap-2 rounded-lg border-2 p-4 shadow-sm border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
-            style={cardStyle}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{goal.title}</p>
-                  {/* Ownership badge */}
-                  {isMerged && (
-                    <span
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                      style={badgeStyle}
+          <li key={goal.id}>
+            <GoalCard
+              goal={goal}
+              onEdit={onEdit}
+              onComplete={onMarkComplete}
+              onUndoComplete={onUndoComplete}
+              onDelete={onDelete}
+              onExpand={onExpandGoal}
+              isExpanded={isExpanded}
+              isPartner={isPartnerGoal}
+            >
+              {/* Progress editing section */}
+              {!isPartnerGoal && (
+                <div className="mb-4">
+                  {editingProgress === goal.id ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={progressValue}
+                        onChange={(e) => onSetProgressValue(Number(e.target.value))}
+                        className="flex-1"
+                        aria-label="Shared progress slider"
+                      />
+                      <span className="text-sm font-medium w-12" style={{ color: colors.text.primary }}>
+                        {progressValue}%
+                      </span>
+                      <button
+                        onClick={() => onUpdateProgress(goal.id)}
+                        className="px-3 py-1 text-white text-xs rounded-full font-semibold transition-colors"
+                        style={{ background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)` }}
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={onCancelEditProgress}
+                        className="px-3 py-1 text-xs rounded-full font-medium transition-colors"
+                        style={{ backgroundColor: colors.bg.secondary, color: colors.text.secondary }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => onStartEditProgress(goal.id, goal.progress)}
+                      className="inline-flex items-center gap-1 text-xs font-medium transition-colors"
+                      style={{ color: colors.accent.end }}
                     >
-                      {isSharedGoal ? (
-                        <>
-                          <Users className="h-3 w-3" />
-                          Shared
-                        </>
-                      ) : isPartnerGoal ? (
-                        <>{partnerName}'s goal</>
-                      ) : (
-                        <>My goal</>
-                      )}
-                    </span>
+                      <Edit3 className="h-3 w-3" />
+                      {isMerged ? 'Update shared progress' : 'Update progress'}
+                    </button>
                   )}
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{goal.category} • {goal.priority}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Only show action buttons if user can edit (own goals or shared goals) */}
-                {!isPartnerGoal && (
-                  <>
-                    {goal.status === 'completed' ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onUndoComplete(goal.id);
-                        }}
-                        className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-600 transition hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
-                        aria-label="Reopen goal"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                        Reopen
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onMarkComplete(goal.id);
-                        }}
-                        className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
-                        aria-label="Mark goal as complete"
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                        Complete
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onEdit(goal);
-                      }}
-                      className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
-                      title="Edit goal"
-                      aria-label="Edit goal"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onDelete(goal.id);
-                      }}
-                      className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
-                      title="Delete goal"
-                      aria-label="Delete goal"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-            {goal.description && (
-              <p className="text-sm text-slate-600">{goal.description}</p>
-            )}
-
-            {/* Progress bar */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 dark:text-slate-400 font-medium">
-                  {isMerged ? 'Shared Progress' : 'Progress'}
-                </span>
-                <span className="text-slate-700 dark:text-slate-300 font-semibold">{goal.progress}%</span>
-              </div>
-              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                <div
-                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${goal.progress}%` }}
-                />
-              </div>
+              )}
 
               {/* Personal progress tracking in merged mode */}
               {isMerged && (
-                <div className="mt-3 space-y-2 border-t border-slate-100 dark:border-slate-700 pt-3">
+                <div className="mb-4 space-y-2 pb-4" style={{ borderBottom: `1px solid ${colors.border.light}` }}>
                   <div className="flex items-center gap-2 text-xs">
-                    <Users className="h-3 w-3 text-purple-500" />
-                    <span className="text-slate-600 dark:text-slate-400 font-medium">Personal Progress</span>
+                    <Users className="h-3 w-3" style={{ color: colors.accent.end }} />
+                    <span className="font-semibold" style={{ color: colors.text.secondary }}>
+                      Personal Progress
+                    </span>
                   </div>
                   {/* Your progress */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 dark:text-slate-400 w-16">You:</span>
-                    <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                    <span className="text-xs w-16" style={{ color: colors.text.tertiary }}>
+                      You:
+                    </span>
+                    <div className="flex-1 rounded-full h-1.5" style={{ backgroundColor: colors.bg.secondary }}>
                       <div
-                        className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300"
-                        style={{ width: `${personalProgressMap.get(goal.id) ?? 0}%` }}
+                        className="h-1.5 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${personalProgressMap.get(goal.id) ?? 0}%`,
+                          backgroundColor: '#10B981',
+                        }}
                       />
                     </div>
-                    <span className="text-xs text-slate-600 dark:text-slate-400 w-8 text-right">
+                    <span className="text-xs w-8 text-right" style={{ color: colors.text.secondary }}>
                       {personalProgressMap.get(goal.id) ?? 0}%
                     </span>
                   </div>
                   {/* Partner's progress */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 dark:text-slate-400 w-16 truncate">{partnerName}:</span>
-                    <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                    <span className="text-xs w-16 truncate" style={{ color: colors.text.tertiary }}>
+                      {partnerName}:
+                    </span>
+                    <div className="flex-1 rounded-full h-1.5" style={{ backgroundColor: colors.bg.secondary }}>
                       <div
-                        className="bg-purple-500 h-1.5 rounded-full transition-all duration-300"
-                        style={{ width: `${partnerProgressMap.get(goal.id) ?? 0}%` }}
+                        className="h-1.5 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${partnerProgressMap.get(goal.id) ?? 0}%`,
+                          backgroundColor: '#8B5CF6',
+                        }}
                       />
                     </div>
-                    <span className="text-xs text-slate-600 dark:text-slate-400 w-8 text-right">
+                    <span className="text-xs w-8 text-right" style={{ color: colors.text.secondary }}>
                       {partnerProgressMap.get(goal.id) ?? 0}%
                     </span>
                   </div>
@@ -298,7 +239,9 @@ export function GoalList({
                         className="flex-1"
                         aria-label="Personal progress slider"
                       />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 w-12">{personalProgressValue}%</span>
+                      <span className="text-sm font-medium w-12" style={{ color: colors.text.primary }}>
+                        {personalProgressValue}%
+                      </span>
                       <button
                         onClick={() => {
                           updateProgressMutation.mutate({
@@ -315,13 +258,15 @@ export function GoalList({
                           });
                         }}
                         disabled={updateProgressMutation.isPending}
-                        className="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700 disabled:opacity-50"
+                        className="px-3 py-1 text-white text-xs rounded-full font-semibold disabled:opacity-50"
+                        style={{ backgroundColor: '#10B981' }}
                       >
                         Save
                       </button>
                       <button
                         onClick={() => setEditingPersonalProgress(null)}
-                        className="px-3 py-1 bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 text-xs rounded hover:bg-slate-300 dark:hover:bg-slate-600"
+                        className="px-3 py-1 text-xs rounded-full font-medium"
+                        style={{ backgroundColor: colors.bg.secondary, color: colors.text.secondary }}
                       >
                         Cancel
                       </button>
@@ -333,7 +278,8 @@ export function GoalList({
                         setPersonalProgressValue(currentPersonal);
                         setEditingPersonalProgress(goal.id);
                       }}
-                      className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                      className="inline-flex items-center gap-1 text-xs font-medium"
+                      style={{ color: '#10B981' }}
                       aria-label="Update my progress"
                     >
                       <Edit3 className="h-3 w-3" />
@@ -343,69 +289,10 @@ export function GoalList({
                 </div>
               )}
 
-              {/* Progress editor (for shared goal progress) */}
-              {editingProgress === goal.id ? (
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={progressValue}
-                    onChange={(e) => onSetProgressValue(Number(e.target.value))}
-                    className="flex-1"
-                  />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300 w-12">{progressValue}%</span>
-                  <button
-                    onClick={() => {
-                      onUpdateProgress(goal.id);
-                    }}
-                    className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={onCancelEditProgress}
-                    className="px-3 py-1 bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 text-xs rounded hover:bg-slate-300 dark:hover:bg-slate-600"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => onStartEditProgress(goal.id, goal.progress)}
-                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-                >
-                  <Edit3 className="h-3 w-3" />
-                  {isMerged ? 'Update shared progress' : 'Update progress'}
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-              <span className="flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                Status: {goal.status}
-              </span>
-              {goal.targetDate && (
-                <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-              )}
-              <button
-                onClick={() => onExpandGoal(goal.id)}
-                className="ml-auto text-indigo-600 hover:text-indigo-700 font-medium"
-              >
-                {isExpanded ? '▼ Hide details' : '▶ Show details'}
-              </button>
-            </div>
-
-            {/* Milestones section */}
-            {isExpanded && (
-              <>
-                <GoalMilestones goal={goal} />
-                {/* Check-ins section */}
-                <GoalCheckins goal={goal} />
-              </>
-            )}
+              {/* Milestones and Check-ins */}
+              <GoalMilestones goal={goal} />
+              <GoalCheckins goal={goal} />
+            </GoalCard>
           </li>
         );
       })}

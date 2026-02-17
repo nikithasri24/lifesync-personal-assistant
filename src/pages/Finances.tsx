@@ -8,13 +8,23 @@ import { DollarSign } from 'lucide-react';
 import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { useFinanceState } from '@/finance/hooks/useFinanceState';
+import { useFinanceState, type FinanceTabView } from '@/finance/hooks/useFinanceState';
 
-// Lazy load the page components
+// Lazy load all page components
 const DashboardPage = React.lazy(() => import('../finance/pages/DashboardPage'));
 const AccountsPage = React.lazy(() => import('../finance/pages/AccountsPage'));
 const TransactionsPage = React.lazy(() => import('../finance/pages/TransactionsPageGrouped'));
 const BudgetsPage = React.lazy(() => import('../finance/pages/BudgetsPage'));
+const RecurringPage = React.lazy(() => import('../finance/pages/RecurringPage'));
+const NetWorthPage = React.lazy(() => import('../finance/pages/NetWorthPage'));
+const GoalsPage = React.lazy(() => import('../finance/pages/GoalsPage'));
+const LoansPage = React.lazy(() => import('../finance/pages/LoansPage'));
+const RetirementPage = React.lazy(() => import('../finance/pages/RetirementPage'));
+const ProjectionsPage = React.lazy(() => import('../finance/pages/ProjectionsPage'));
+const CalculatorsPage = React.lazy(() => import('../finance/pages/CalculatorsPage'));
+const CreditCardsPage = React.lazy(() => import('../finance/pages/CreditCardsPage'));
+const InsurancePage = React.lazy(() => import('../finance/pages/InsurancePage'));
+const SettingsPage = React.lazy(() => import('../finance/pages/SettingsPage'));
 
 const Finances: React.FC = () => {
   const colors = useThemeColors();
@@ -36,17 +46,30 @@ const Finances: React.FC = () => {
               </h1>
             </div>
 
-            {/* Tab Navigation */}
-            <SegmentedControl
-              segments={[
-                { value: 'dashboard', label: 'Dashboard' },
-                { value: 'accounts', label: 'Accounts' },
-                { value: 'transactions', label: 'Transactions' },
-                { value: 'budgets', label: 'Budgets' },
-              ]}
-              value={activeTab}
-              onChange={(value) => setActiveTab(value as 'dashboard' | 'accounts' | 'transactions' | 'budgets')}
-            />
+            {/* Tab Navigation - Scrollable */}
+            <div className="overflow-x-auto -mx-6 px-6 pb-2">
+              <SegmentedControl
+                scrollable
+                segments={[
+                  { value: 'dashboard', label: 'Dashboard' },
+                  { value: 'accounts', label: 'Accounts' },
+                  { value: 'transactions', label: 'Transactions' },
+                  { value: 'budgets', label: 'Budgets' },
+                  { value: 'recurring', label: 'Recurring' },
+                  { value: 'networth', label: 'Net Worth' },
+                  { value: 'goals', label: 'Goals' },
+                  { value: 'loans', label: 'Loans' },
+                  { value: 'retirement', label: 'Retirement' },
+                  { value: 'projections', label: 'Projections' },
+                  { value: 'calculators', label: 'Calculators' },
+                  { value: 'creditcards', label: 'Credit Cards' },
+                  { value: 'insurance', label: 'Insurance' },
+                  { value: 'settings', label: 'Settings' },
+                ]}
+                value={activeTab}
+                onChange={(value) => setActiveTab(value as FinanceTabView)}
+              />
+            </div>
           </div>
         </div>
 
@@ -63,6 +86,16 @@ const Finances: React.FC = () => {
             {activeTab === 'accounts' && <AccountsPage />}
             {activeTab === 'transactions' && <TransactionsPage />}
             {activeTab === 'budgets' && <BudgetsPage />}
+            {activeTab === 'recurring' && <RecurringPage />}
+            {activeTab === 'networth' && <NetWorthPage />}
+            {activeTab === 'goals' && <GoalsPage />}
+            {activeTab === 'loans' && <LoansPage />}
+            {activeTab === 'retirement' && <RetirementPage />}
+            {activeTab === 'projections' && <ProjectionsPage />}
+            {activeTab === 'calculators' && <CalculatorsPage />}
+            {activeTab === 'creditcards' && <CreditCardsPage />}
+            {activeTab === 'insurance' && <InsurancePage />}
+            {activeTab === 'settings' && <SettingsPage />}
           </React.Suspense>
         </div>
       </div>

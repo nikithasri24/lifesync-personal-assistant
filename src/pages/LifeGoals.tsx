@@ -27,7 +27,7 @@ import { supabase } from '../lib/supabase';
 import { LifeGoalsHeader } from '../goals/components/layout/LifeGoalsHeader';
 import { LifeGoalsLoadingState } from '../goals/components/layout/LifeGoalsLoadingState';
 import { StatsCards } from '../goals/components/layout/StatsCards';
-import { TabNavigation } from '../goals/components/layout/TabNavigation';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { GoalList } from '../goals/components/layout/GoalList';
 import { DreamList } from '../goals/components/layout/DreamList';
 import { GoalFormModal, type GoalDraft } from '../goals/components/layout/GoalFormModal';
@@ -443,12 +443,19 @@ const LifeGoals: React.FC = () => {
     <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
       {/* Merged mode indicator */}
       {isMerged && (
-        <div className="flex items-center gap-2 rounded-lg bg-purple-50 p-3 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300">
-          <Users className="h-5 w-5" />
-          <span className="text-sm font-medium">
+        <div
+          className="flex items-center gap-2 rounded-2xl p-4 mb-4"
+          style={{
+            background: 'linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(193, 139, 94, 0.15) 100%)',
+            borderWidth: '1px',
+            borderColor: '#E8DCC8',
+          }}
+        >
+          <Users className="h-5 w-5" style={{ color: '#C18B5E' }} />
+          <span className="text-sm font-semibold" style={{ color: '#5C4A3A' }}>
             Shared Goals with {partnerName}
           </span>
-          <span className="ml-auto text-xs opacity-75">
+          <span className="ml-auto text-xs font-medium" style={{ color: '#9B8B7A' }}>
             Both of you can see and edit these goals
           </span>
         </div>
@@ -466,9 +473,16 @@ const LifeGoals: React.FC = () => {
         }}
       />
 
-      <StatsCards goalStats={goalStats} dreamStats={dreamStats} />
+      <StatsCards goalStats={goalStats} dreamStats={dreamStats} activeTab={activeTab} />
 
-      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <SegmentedControl
+        segments={[
+          { value: 'goals', label: '🎯 Goals' },
+          { value: 'dreams', label: '✨ Dreams' },
+        ]}
+        value={activeTab}
+        onChange={(value) => setActiveTab(value as 'goals' | 'dreams')}
+      />
 
       <section className="space-y-4">
         {activeTab === 'goals' && (

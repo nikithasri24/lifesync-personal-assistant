@@ -926,10 +926,10 @@ const Calendar: React.FC = () => {
 
           {/* Month View */}
           {calendarState.view === 'month' && (
-            <MonthView
+            <MonthViewV2
               currentDate={calendarState.currentDate}
-              tasks={tasks}
-              events={calendarEvents}
+              tasks={filteredTasks}
+              events={filteredEvents}
               onDateClick={(date) => {
                 calendarState.setCurrentDate(date);
                 calendarState.setView('day');
@@ -943,10 +943,10 @@ const Calendar: React.FC = () => {
 
           {/* Day View */}
           {calendarState.view === 'day' && (
-            <DayView
+            <DayViewV2
               date={calendarState.currentDate}
-              tasks={tasks}
-              events={calendarEvents}
+              tasks={filteredTasks}
+              events={filteredEvents}
               scheduleBlocks={scheduleBlocks}
               currentTime={currentTime}
               onTaskClick={handleTaskClick}

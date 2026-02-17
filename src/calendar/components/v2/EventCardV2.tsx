@@ -72,9 +72,9 @@ export const EventCardV2: React.FC<EventCardV2Props> = ({
   const colors = getColorClasses();
 
   // Get title from item
-  const getTitle = () => {
-    if ('title' in item) return item.title;
-    if ('name' in item) return item.name;
+  const getTitle = (): string => {
+    if ('title' in item && typeof item.title === 'string') return item.title;
+    if ('name' in item && typeof item.name === 'string') return item.name;
     return 'Untitled';
   };
 
