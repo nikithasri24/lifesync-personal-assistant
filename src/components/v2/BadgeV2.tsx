@@ -6,11 +6,13 @@
 
 import React from 'react';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useTheme } from '../../contexts/ThemeContext';
 import type { LucideIcon } from 'lucide-react';
 
 export interface BadgeV2Props {
-  children: React.ReactNode;
-  variant?: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  children?: React.ReactNode;
+  text?: string;
+  variant?: 'default' | 'primary' | 'accent' | 'success' | 'warning' | 'danger' | 'info';
   size?: 'sm' | 'md' | 'lg';
   icon?: LucideIcon;
   onRemove?: () => void;
@@ -22,24 +24,36 @@ const variantStyles = {
     light: {
       bg: 'rgba(212, 165, 116, 0.15)',
       text: '#C18B5E',
-      border: '#D4A574',
+      border: 'transparent',
     },
     dark: {
       bg: 'rgba(212, 165, 116, 0.25)',
       text: '#E5B88A',
-      border: '#D4A574',
+      border: 'transparent',
     },
   },
   primary: {
     light: {
       bg: 'rgba(212, 165, 116, 0.2)',
       text: '#C18B5E',
-      border: '#D4A574',
+      border: 'transparent',
     },
     dark: {
       bg: 'rgba(212, 165, 116, 0.3)',
       text: '#E5B88A',
-      border: '#D4A574',
+      border: 'transparent',
+    },
+  },
+  accent: {
+    light: {
+      bg: 'rgba(212, 165, 116, 0.15)',
+      text: '#C18B5E',
+      border: 'transparent',
+    },
+    dark: {
+      bg: 'rgba(212, 165, 116, 0.25)',
+      text: '#E5B88A',
+      border: 'transparent',
     },
   },
   success: {
@@ -100,6 +114,7 @@ const sizeStyles = {
 
 export const BadgeV2: React.FC<BadgeV2Props> = ({
   children,
+  text,
   variant = 'default',
   size = 'md',
   icon: Icon,
@@ -107,8 +122,11 @@ export const BadgeV2: React.FC<BadgeV2Props> = ({
   className = '',
 }) => {
   const colors = useThemeColors();
-  const isDark = colors === require('../../styles/colors').darkColors;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const styles = variantStyles[variant][isDark ? 'dark' : 'light'];
+
+  const content = text || children;
 
   return (
     <span
@@ -117,7 +135,7 @@ export const BadgeV2: React.FC<BadgeV2Props> = ({
         ${sizeStyles[size]}
         rounded-full
         font-semibold
-        border
+        ${styles.border !== 'transparent' ? 'border' : ''}
         transition-all duration-200
         ${className}
       `}
@@ -128,7 +146,7 @@ export const BadgeV2: React.FC<BadgeV2Props> = ({
       }}
     >
       {Icon && <Icon className="w-3 h-3" />}
-      <span>{children}</span>
+      <span>{content}</span>
       {onRemove && (
         <button
           type="button"

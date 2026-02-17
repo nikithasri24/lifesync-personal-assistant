@@ -7,6 +7,7 @@ import React, { useState, useMemo } from 'react';
 import { Edit2, Check, X, Sun, Moon } from 'lucide-react';
 import { useWeeklyRoutines, useUpsertWeeklyRoutine } from '../../hooks/useSkincareQuery';
 import type { SkincareWeeklyRoutine } from '../types';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface WeeklyRoutineTableProps {
   className?: string;
@@ -43,6 +44,8 @@ function RoutineCell({
 }: RoutineCellProps) {
   const [isHovered, setIsHovered] = useState(false);
 
+  const colors = useThemeColors();
+
   if (isEditing) {
     return (
       <div className="flex items-center gap-2">
@@ -51,7 +54,13 @@ function RoutineCell({
           value={editValue}
           onChange={(e) => onEditValueChange(e.target.value)}
           onKeyDown={onKeyDown}
-          className="flex-1 px-2 py-1 text-sm border border-purple-400 dark:border-purple-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="flex-1 px-2 py-1 text-sm rounded focus:outline-none focus:ring-2"
+          style={{
+            borderWidth: '1px',
+            borderColor: colors.accent.end,
+            backgroundColor: colors.bg.white,
+            color: colors.text.primary,
+          }}
           placeholder={timeSlot === 'am' ? 'e.g., Cleanser + Vitamin C + SPF' : 'e.g., Oil Cleanser → Retinol → Moisturizer'}
           autoFocus
           disabled={isSaving}
@@ -59,16 +68,26 @@ function RoutineCell({
         <button
           onClick={onSave}
           disabled={isSaving}
-          className="p-1 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 rounded"
+          className="p-1 rounded transition-colors"
+          style={{
+            color: '#059669',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          }}
           title="Save"
+          aria-label="Save"
         >
           <Check className="w-4 h-4" />
         </button>
         <button
           onClick={onCancel}
           disabled={isSaving}
-          className="p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+          className="p-1 rounded transition-colors"
+          style={{
+            color: colors.text.tertiary,
+            backgroundColor: colors.bg.secondary,
+          }}
           title="Cancel"
+          aria-label="Cancel"
         >
           <X className="w-4 h-4" />
         </button>
@@ -84,9 +103,13 @@ function RoutineCell({
       onClick={onEdit}
     >
       {value ? (
-        <span className="text-sm text-gray-900 dark:text-gray-100">{value}</span>
+        <span className="text-sm" style={{ color: colors.text.primary }}>
+          {value}
+        </span>
       ) : (
-        <span className="text-sm text-gray-400 dark:text-gray-500 italic">Click to add routine</span>
+        <span className="text-sm italic" style={{ color: colors.text.tertiary }}>
+          Click to add routine
+        </span>
       )}
       {isHovered && (
         <button
@@ -94,8 +117,10 @@ function RoutineCell({
             e.stopPropagation();
             onEdit();
           }}
-          className="absolute right-0 top-0 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          className="absolute right-0 top-0 p-1 transition-colors"
+          style={{ color: colors.text.tertiary }}
           title="Edit"
+          aria-label="Edit routine"
         >
           <Edit2 className="w-3.5 h-3.5" />
         </button>
@@ -119,6 +144,7 @@ const DAYS = [
 ];
 
 const WeeklyRoutineTable: React.FC<WeeklyRoutineTableProps> = ({ className = '' }) => {
+  const colors = useThemeColors();
   const { data: weeklyRoutines = [], isLoading } = useWeeklyRoutines();
   const upsertMutation = useUpsertWeeklyRoutine();
 
@@ -176,44 +202,75 @@ const WeeklyRoutineTable: React.FC<WeeklyRoutineTableProps> = ({ className = '' 
 
   if (isLoading) {
     return (
-      <div className={`bg-white dark:bg-gray-800 rounded-xl p-8 ${className}`}>
+      <div
+        className={`rounded-2xl p-8 ${className}`}
+        style={{ backgroundColor: colors.bg.white }}
+      >
         <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-          <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-6 rounded w-1/3" style={{ backgroundColor: colors.bg.secondary }}></div>
+          <div className="h-64 rounded" style={{ backgroundColor: colors.bg.secondary }}></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
+    <div
+      className={`rounded-2xl overflow-hidden shadow-sm ${className}`}
+      style={{
+        backgroundColor: colors.bg.white,
+        borderWidth: '1px',
+        borderColor: colors.border.light,
+      }}
+    >
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Weekly Skincare Routine</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Click any cell to edit your routine</p>
+      <div
+        className="px-6 py-4"
+        style={{
+          background: `linear-gradient(135deg, ${colors.accent.start}10 0%, ${colors.accent.end}10 100%)`,
+          borderBottom: `1px solid ${colors.border.light}`,
+        }}
+      >
+        <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+          Weekly Skincare Routine
+        </h2>
+        <p className="text-sm mt-1" style={{ color: colors.text.tertiary }}>
+          Click any cell to edit your routine
+        </p>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-900">
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 w-24">Day</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <tr style={{ backgroundColor: colors.bg.secondary }}>
+              <th
+                className="px-4 py-3 text-left text-sm font-semibold w-24"
+                style={{ color: colors.text.secondary }}
+              >
+                Day
+              </th>
+              <th
+                className="px-4 py-3 text-left text-sm font-semibold"
+                style={{ color: colors.text.secondary }}
+              >
                 <div className="flex items-center gap-2">
-                  <Sun className="h-4 w-4 text-amber-500" />
+                  <Sun className="h-4 w-4" style={{ color: '#F59E0B' }} />
                   Morning (AM)
                 </div>
               </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <th
+                className="px-4 py-3 text-left text-sm font-semibold"
+                style={{ color: colors.text.secondary }}
+              >
                 <div className="flex items-center gap-2">
-                  <Moon className="h-4 w-4 text-indigo-500" />
+                  <Moon className="h-4 w-4" style={{ color: colors.accent.end }} />
                   Night (PM)
                 </div>
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody style={{ borderTop: `1px solid ${colors.border.light}` }}>
             {DAYS.map(({ value: dayValue, label, full }) => {
               const routine = routinesByDay.get(dayValue);
               const isToday = today === dayValue;
@@ -221,13 +278,25 @@ const WeeklyRoutineTable: React.FC<WeeklyRoutineTableProps> = ({ className = '' 
               return (
                 <tr
                   key={dayValue}
-                  className={isToday ? 'bg-purple-50 dark:bg-purple-900/20' : 'bg-white dark:bg-gray-800'}
+                  style={{
+                    backgroundColor: isToday
+                      ? `${colors.accent.start}15`
+                      : colors.bg.white,
+                    borderBottom: `1px solid ${colors.border.light}`,
+                  }}
                 >
                   {/* Day label */}
                   <td className="px-4 py-3">
-                    <div className={`font-medium ${isToday ? 'text-purple-700 dark:text-purple-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                    <div
+                      className="font-semibold"
+                      style={{ color: isToday ? colors.accent.end : colors.text.primary }}
+                    >
                       {label}
-                      {isToday && <span className="ml-2 text-xs text-purple-500">(Today)</span>}
+                      {isToday && (
+                        <span className="ml-2 text-xs" style={{ color: colors.accent.end }}>
+                          (Today)
+                        </span>
+                      )}
                     </div>
                   </td>
 
