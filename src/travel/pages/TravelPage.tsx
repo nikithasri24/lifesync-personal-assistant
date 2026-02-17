@@ -480,7 +480,7 @@ const TravelPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#CD9D6F] border-t-transparent mx-auto mb-4" />
           <p className="text-gray-600">Loading travel data...</p>
         </div>
       </div>
@@ -497,7 +497,7 @@ const TravelPage: React.FC = () => {
               onClick={() => setCategoryFilter('all')}
               className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
                 categoryFilter === 'all'
-                  ? 'bg-blue-100 text-blue-700'
+                  ? 'bg-[#F5EBE0] text-[#8B6F47]'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -507,7 +507,7 @@ const TravelPage: React.FC = () => {
               onClick={() => setCategoryFilter('mine')}
               className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
                 categoryFilter === 'mine'
-                  ? 'bg-blue-100 text-blue-700'
+                  ? 'bg-[#F5EBE0] text-[#8B6F47]'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -547,7 +547,7 @@ const TravelPage: React.FC = () => {
                 onClick={() => setLocationTypeFilter('all')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   locationTypeFilter === 'all'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-[#C18B5E] text-white'
                     : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -557,7 +557,7 @@ const TravelPage: React.FC = () => {
                 onClick={() => setLocationTypeFilter('countries')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   locationTypeFilter === 'countries'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-[#C18B5E] text-white'
                     : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -567,7 +567,7 @@ const TravelPage: React.FC = () => {
                 onClick={() => setLocationTypeFilter('states')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   locationTypeFilter === 'states'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-[#C18B5E] text-white'
                     : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -577,7 +577,7 @@ const TravelPage: React.FC = () => {
                 onClick={() => setLocationTypeFilter('parks')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   locationTypeFilter === 'parks'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-[#C18B5E] text-white'
                     : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -587,7 +587,7 @@ const TravelPage: React.FC = () => {
                 onClick={() => setLocationTypeFilter('islands')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   locationTypeFilter === 'islands'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-[#C18B5E] text-white'
                     : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -602,7 +602,7 @@ const TravelPage: React.FC = () => {
                   type="checkbox"
                   checked={statesCountAsCountries}
                   onChange={(e) => setStatesCountAsCountries(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  className="h-4 w-4 text-[#C18B5E] rounded focus:ring-[#CD9D6F]"
                 />
                 <span className="text-sm font-medium text-gray-700">
                   States count as country visits
@@ -637,7 +637,7 @@ const TravelPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">Your Trips</h2>
           <button
             onClick={handleCreateTrip}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-lg font-medium transition-colors"
           >
             <Plus className="h-5 w-5" />
             Add Trip
@@ -651,7 +651,7 @@ const TravelPage: React.FC = () => {
             <p className="text-gray-600 mb-4">Start planning your next adventure!</p>
             <button
               onClick={handleCreateTrip}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-lg font-medium transition-colors"
             >
               <Plus className="h-5 w-5" />
               Plan Your First Trip
@@ -669,7 +669,7 @@ const TravelPage: React.FC = () => {
               const getStatusColor = (status: string) => {
                 switch (status) {
                   case 'planning': return 'bg-gray-100 text-gray-800';
-                  case 'upcoming': return 'bg-blue-100 text-blue-800';
+                  case 'upcoming': return 'bg-[#F5EBE0] text-[#8B6F47]';
                   case 'in_progress': return 'bg-green-100 text-green-800';
                   case 'completed': return 'bg-purple-100 text-purple-800';
                   case 'cancelled': return 'bg-red-100 text-red-800';
@@ -679,7 +679,7 @@ const TravelPage: React.FC = () => {
 
               const getCategoryColor = (category: string) => {
                 switch (category) {
-                  case 'mine': return 'border-blue-300 bg-blue-50';
+                  case 'mine': return 'border-[#E8D9CE] bg-[#F9F3ED]';
                   case 'partner': return 'border-purple-300 bg-purple-50';
                   case 'both': return 'border-pink-300 bg-pink-50';
                   default: return 'border-gray-200 bg-white';
@@ -749,7 +749,7 @@ const TravelPage: React.FC = () => {
                     <div className="flex gap-2 pt-3 border-t border-gray-200">
                       <button
                         onClick={() => handleEditTrip(trip)}
-                        className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="flex-1 px-3 py-2 text-sm font-medium text-[#C18B5E] hover:bg-[#F9F3ED] rounded-lg transition-colors"
                       >
                         Edit
                       </button>
@@ -901,7 +901,7 @@ function AllLocationsListCard<T>({
   const getCategoryColor = (category: LocationVisitCategory) => {
     switch (category) {
       case 'mine':
-        return 'bg-blue-100 border-blue-300 text-blue-900';
+        return 'bg-[#F5EBE0] border-[#E8D9CE] text-[#8B6F47]';
       case 'partner':
         return 'bg-purple-100 border-purple-300 text-purple-900';
       case 'both':
@@ -914,7 +914,7 @@ function AllLocationsListCard<T>({
   const getCategoryBadge = (category: LocationVisitCategory) => {
     switch (category) {
       case 'mine':
-        return <span className="text-xs text-blue-600 font-medium">Me</span>;
+        return <span className="text-xs text-[#C18B5E] font-medium">Me</span>;
       case 'partner':
         return <span className="text-xs text-purple-600 font-medium">Partner</span>;
       case 'both':
@@ -938,7 +938,7 @@ function AllLocationsListCard<T>({
         placeholder={`Search ${title.toLowerCase()}...`}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full px-3 py-2 mb-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 mb-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
       />
 
       {/* List */}
@@ -984,7 +984,7 @@ function AllLocationsListCard<T>({
                       }
                     }
                   }}
-                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                  className="h-4 w-4 text-[#C18B5E] rounded focus:ring-[#CD9D6F] cursor-pointer"
                 />
 
                 {/* Name */}
@@ -1042,9 +1042,9 @@ function AllLocationsListCard<T>({
                   setContextMenu(null);
                 }
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 text-blue-700 font-medium flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-[#F9F3ED] text-[#8B6F47] font-medium flex items-center gap-2"
             >
-              <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+              <span className="w-3 h-3 rounded-full bg-[#CD9D6F]"></span>
               Me Only
             </button>
             <button

@@ -88,7 +88,7 @@ export function ScheduleBlockModal({
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <Calendar className="w-5 h-5 text-[#C18B5E] dark:text-[#E5B88A]" />
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {block ? 'Edit Schedule Block' : 'New Schedule Block'}
@@ -197,7 +197,7 @@ export function ScheduleBlockModal({
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+                className="px-4 py-2 text-xs font-semibold bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-lg"
               >
                 {block ? 'Save' : 'Create'}
               </button>

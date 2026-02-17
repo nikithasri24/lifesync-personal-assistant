@@ -56,7 +56,7 @@ const priorityConfig = {
 
 const energyIcons: Record<EnergyLevel, React.ReactNode> = {
   peak: <Zap className="w-3 h-3 text-yellow-500" />,
-  moderate: <Battery className="w-3 h-3 text-blue-500" />,
+  moderate: <Battery className="w-3 h-3 text-[#C18B5E]" />,
   low: <BatteryLow className="w-3 h-3 text-gray-400" />,
 };
 
@@ -259,8 +259,8 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
                 className={`
                   flex items-center justify-center font-normal transition-all rounded-full
                   ${!day.isCurrentMonth ? 'text-slate-400 dark:text-slate-600' : 'text-slate-900 dark:text-slate-100'}
-                  ${day.isToday ? 'bg-blue-500 text-white font-medium' : ''}
-                  ${day.isSelected && !day.isToday ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : ''}
+                  ${day.isToday ? 'bg-[#C18B5E] text-white font-medium' : ''}
+                  ${day.isSelected && !day.isToday ? 'bg-[#F5EBE0] dark:bg-[#8B6F47] text-[#C18B5E] dark:text-[#E5B88A]' : ''}
                   ${!day.isToday && !day.isSelected ? 'hover:bg-slate-100 dark:hover:bg-slate-700' : ''}
                 `}
               >
@@ -349,7 +349,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
                     </div>
                     <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                       slot.score >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                      slot.score >= 60 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                      slot.score >= 60 ? 'bg-[#F5EBE0] text-[#8B6F47] dark:bg-[#8B6F47]/30 dark:text-[#E5B88A]' :
                       'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                     }`}>
                       {slot.score}

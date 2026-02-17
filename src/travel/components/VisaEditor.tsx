@@ -251,7 +251,7 @@ export const VisaEditor: React.FC<VisaEditorProps> = ({
                 value={formData.countryName}
                 onChange={handleCountryChange}
                 disabled={!!visa} // Can't change country in edit mode
-                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F] disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               >
                 <option value="">Select a country</option>
@@ -275,7 +275,7 @@ export const VisaEditor: React.FC<VisaEditorProps> = ({
                 id="visaType"
                 value={formData.visaType}
                 onChange={(e) => setFormData({ ...formData, visaType: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
               >
                 {VISA_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -303,7 +303,7 @@ export const VisaEditor: React.FC<VisaEditorProps> = ({
                   type="date"
                   value={formData.issueDate}
                   onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
-                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
                 />
               </div>
 
@@ -319,7 +319,7 @@ export const VisaEditor: React.FC<VisaEditorProps> = ({
                   type="date"
                   value={formData.expiryDate}
                   onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
                   required
                 />
               </div>
@@ -345,7 +345,7 @@ export const VisaEditor: React.FC<VisaEditorProps> = ({
                     maxStayDays: e.target.value ? parseInt(e.target.value) : undefined,
                   })
                 }
-                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
                 placeholder="Optional (e.g., 90)"
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -360,7 +360,7 @@ export const VisaEditor: React.FC<VisaEditorProps> = ({
                   type="checkbox"
                   checked={formData.multipleEntry}
                   onChange={(e) => setFormData({ ...formData, multipleEntry: e.target.checked })}
-                  className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-gray-300 dark:border-gray-600 text-[#C18B5E] focus:ring-[#CD9D6F]"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   Multiple entry visa
@@ -380,7 +380,7 @@ export const VisaEditor: React.FC<VisaEditorProps> = ({
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
                 rows={3}
                 placeholder="Any additional notes about this visa..."
               />
@@ -416,7 +416,7 @@ export const VisaEditor: React.FC<VisaEditorProps> = ({
                   type="submit"
                   onClick={handleSubmit}
                   disabled={saving}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? 'Saving...' : visa ? 'Save Changes' : 'Add Visa'}
                 </button>

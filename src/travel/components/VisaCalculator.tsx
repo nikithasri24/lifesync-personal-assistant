@@ -515,7 +515,7 @@ const VisaCalculator: React.FC = () => {
         {!passport && allPassports.length === 0 ? (
           <button
             onClick={handleCreatePassport}
-            className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+            className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#CD9D6F] hover:text-[#C18B5E] transition-colors"
           >
             + Add Your Passport
           </button>
@@ -554,7 +554,7 @@ const VisaCalculator: React.FC = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditPassport(passport)}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        className="text-sm text-[#C18B5E] hover:text-[#8B6F47] font-medium"
                         aria-label={`Edit ${passport.countryName} passport`}
                       >
                         Edit
@@ -581,9 +581,9 @@ const VisaCalculator: React.FC = () => {
               <div className="text-2xl font-bold text-green-700">{passportSummary.visaFree}</div>
               <div className="text-sm text-green-600">Visa Free</div>
             </div>
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-blue-700">{passportSummary.visaOnArrival}</div>
-              <div className="text-sm text-blue-600">Visa on Arrival</div>
+            <div className="bg-[#F5EBE0] rounded-lg p-4">
+              <div className="text-2xl font-bold text-[#8B6F47]">{passportSummary.visaOnArrival}</div>
+              <div className="text-sm text-[#C18B5E]">Visa on Arrival</div>
             </div>
             <div className="bg-cyan-50 rounded-lg p-4">
               <div className="text-2xl font-bold text-cyan-700">{passportSummary.eta}</div>
@@ -598,15 +598,15 @@ const VisaCalculator: React.FC = () => {
 
         {/* Passport Ranking - Only show in non-merged mode */}
         {!mergedConnection && passportRanking && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mt-4 p-4 bg-[#F5EBE0] rounded-lg border border-[#E8D9CE]">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-blue-900">Passport Power Ranking</div>
-                <div className="text-xs text-blue-600 mt-1">
+                <div className="text-sm font-medium text-[#8B6F47]">Passport Power Ranking</div>
+                <div className="text-xs text-[#C18B5E] mt-1">
                   {passportRanking.mobility} Mobility • {passportRanking.visaFreeScore} visa-free destinations
                 </div>
               </div>
-              <div className="text-3xl font-bold text-blue-700">#{passportRanking.rank}</div>
+              <div className="text-3xl font-bold text-[#8B6F47]">#{passportRanking.rank}</div>
             </div>
           </div>
         )}
@@ -675,7 +675,7 @@ const VisaCalculator: React.FC = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEditVisa(visa)}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          className="text-[#C18B5E] hover:text-[#8B6F47] text-sm font-medium"
                           aria-label={`Edit visa for ${visa.countryName}`}
                         >
                           Edit
@@ -741,7 +741,7 @@ const VisaCalculator: React.FC = () => {
               placeholder="Search countries..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CD9D6F] focus:border-blue-500"
             />
           </div>
 

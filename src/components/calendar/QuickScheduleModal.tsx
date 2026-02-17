@@ -63,7 +63,7 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <Calendar className="w-5 h-5 text-[#C18B5E] dark:text-[#E5B88A]" />
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Schedule for {format(selectedDate, 'EEEE, MMM d')}
@@ -97,7 +97,7 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
           <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700">
             <button
               onClick={handleCreateNew}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#C18B5E] dark:text-[#E5B88A] bg-[#F5EBE0] dark:bg-[#8B6F47]/20 hover:bg-[#F5EBE0] dark:hover:bg-[#8B6F47]/30 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
               Create new task on this date
@@ -105,7 +105,7 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
             {onCreateBlock && (
               <button
                 onClick={handleCreateBlock}
-                className="mt-2 w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                className="mt-2 w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#C18B5E] dark:text-[#E5B88A] bg-[#F5EBE0] dark:bg-[#8B6F47]/20 hover:bg-[#F5EBE0] dark:hover:bg-[#8B6F47]/30 rounded-lg transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Create schedule block

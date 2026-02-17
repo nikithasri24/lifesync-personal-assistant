@@ -17,7 +17,7 @@ export const Select = React.forwardRef<HTMLSelectElement, Props>(
         <select
           id={selectId}
           ref={ref}
-          className={`h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 ${className}`}
+          className={`h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E5B88A] ${className}`}
           {...rest}
         >
           {options?.map((o) => (

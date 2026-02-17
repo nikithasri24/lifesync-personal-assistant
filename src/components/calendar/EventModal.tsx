@@ -164,7 +164,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               type="text"
               value={formData.title || ''}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
               placeholder="Event title"
               required
               autoFocus
@@ -178,7 +178,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               id="all-day"
               checked={formData.all_day || false}
               onChange={(e) => setFormData({ ...formData, all_day: e.target.checked })}
-              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              className="w-4 h-4 rounded border-slate-300 text-[#C18B5E] focus:ring-[#CD9D6F]"
             />
             <label htmlFor="all-day" className="text-sm font-medium text-slate-700 dark:text-slate-300">
               All-day event
@@ -197,7 +197,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                 type="date"
                 value={formData.start_date || ''}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
                 required
               />
             </div>
@@ -213,7 +213,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                   type="time"
                   value={formData.start_time || ''}
                   onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
                 />
               </div>
             )}
@@ -230,7 +230,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                 type="date"
                 value={formData.end_date || ''}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
                 required
               />
             </div>
@@ -246,7 +246,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                   type="time"
                   value={formData.end_time || ''}
                   onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
                 />
               </div>
             )}
@@ -262,7 +262,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               <select
                 value={formData.type || 'event'}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as CalendarEvent['type'] })}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
               >
                 {eventTypes.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -281,7 +281,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               <select
                 value={formData.reminder_minutes || 0}
                 onChange={(e) => setFormData({ ...formData, reminder_minutes: Number(e.target.value) })}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
               >
                 {reminderOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -302,7 +302,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               type="text"
               value={formData.location || ''}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
               placeholder="Add location"
             />
           </div>
@@ -317,7 +317,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={4}
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
               placeholder="Add a description..."
             />
           </div>
@@ -349,7 +349,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-2 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
                 {isSaving ? 'Saving...' : event ? 'Save Changes' : 'Create Event'}

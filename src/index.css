@@ -19,6 +19,9 @@ a {
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-display: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* Finance Feature - Terracotta Primary Color */
+  --primary: #D4A574;
   
   /* Light theme - Premium & Elegant */
   --bg-primary: #ffffff;

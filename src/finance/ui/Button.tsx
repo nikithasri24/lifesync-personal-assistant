@@ -14,12 +14,22 @@ export const Button = React.forwardRef<HTMLButtonElement, Props>(
       lg: 'h-10 px-6',
     } as const;
     const variants = {
-      default: 'bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-400',
-      outline: 'border border-slate-300 hover:bg-slate-50',
-      ghost: 'hover:bg-slate-100',
+      default: 'text-white focus:ring-[#E5B88A]',
+      outline: 'border border-[#D4C5B0] hover:bg-[#F5F0EA]',
+      ghost: 'hover:bg-[#F5F0EA]',
     } as const;
+
+    // Terracotta gradient for default variant
+    const defaultGradient = 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)';
+    const style = variant === 'default' ? { background: defaultGradient, ...rest.style } : rest.style;
+
     return (
-      <button ref={ref} className={`${base} ${sizes[size]} ${variants[variant]} ${className}`} {...rest} />
+      <button
+        ref={ref}
+        className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}
+        {...rest}
+        style={style}
+      />
     );
   }
 );
