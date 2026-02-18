@@ -7,46 +7,21 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import {
   useGoalsQuery,
-  useAccountsQuery,
-  useGoalProgressQuery,
   useUpsertGoalMutation,
   useDeleteGoalMutation,
   useFinanceMergedConnectionQuery,
 } from '@/hooks/useFinanceQuery';
-import type { Goal, GoalInput, Account } from '../types';
-import GoalCard from '../components/goals/GoalCard';
-import GoalEditor from '../components/goals/GoalEditor';
+import type { Goal } from '../types';
+import { GoalCardV2, GoalFormModalV2, type GoalFormData } from '@/finance/components/v2';
 import { useAuth } from '@/hooks/useAuth';
 import { OwnerFilter } from '../components/OwnerFilter';
 import useFinanceFilters from '../store/useFinanceFilters';
-
-// Wrapper component to load progress for each goal
-const GoalCardWithProgress: React.FC<{
-  goal: Goal;
-  accounts: Account[];
-  onEdit: (goal: Goal) => void;
-  currentUserId?: string;
-  partnerName?: string;
-}> = ({ goal, accounts, onEdit, currentUserId, partnerName }) => {
-  const { data: progressHistory = [] } = useGoalProgressQuery(goal.id);
-  const linkedAccount = goal.linkedAccountId
-    ? accounts.find(a => a.id === goal.linkedAccountId)
-    : undefined;
-
-  return (
-    <GoalCard
-      goal={goal}
-      progressHistory={progressHistory}
-      linkedAccount={linkedAccount}
-      onEdit={onEdit}
-      currentUserId={currentUserId}
-      partnerName={partnerName}
-    />
-  );
-};
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { logger } from '@/services/logger';
 
 const GoalsPage: React.FC = () => {
-  const [editorOpen, setEditorOpen] = React.useState(false);
+  const colors = useThemeColors();
+  const [showModal, setShowModal] = React.useState(false);
   const [editingGoal, setEditingGoal] = React.useState<Goal | undefined>(undefined);
 
   // Auth and merged connection
@@ -60,13 +35,10 @@ const GoalsPage: React.FC = () => {
   }, [mergedConnection, user]);
 
   // React Query hooks
-  const { data: goals = [], isLoading: goalsLoading } = useGoalsQuery();
-  const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
+  const { data: goals = [], isLoading } = useGoalsQuery();
   const upsertGoalMutation = useUpsertGoalMutation();
   const deleteGoalMutation = useDeleteGoalMutation();
   const filters = useFinanceFilters();
-
-  const loading = goalsLoading || accountsLoading;
 
   // Filter goals by owner (if in merged mode)
   const filteredGoals = React.useMemo(() => {
@@ -89,131 +61,160 @@ const GoalsPage: React.FC = () => {
 
   const handleCreateGoal = (): void => {
     setEditingGoal(undefined);
-    setEditorOpen(true);
+    setShowModal(true);
   };
 
   const handleEditGoal = (goal: Goal): void => {
     setEditingGoal(goal);
-    setEditorOpen(true);
+    setShowModal(true);
   };
 
-  const handleSaveGoal = async (goal: GoalInput): Promise<void> => {
-    await upsertGoalMutation.mutateAsync(goal);
-    setEditorOpen(false);
-    setEditingGoal(undefined);
+  const handleSaveGoal = async (formData: GoalFormData): Promise<void> => {
+    try {
+      await upsertGoalMutation.mutateAsync({
+        id: editingGoal?.id,
+        name: formData.name,
+        targetAmount: formData.targetAmount,
+        currentAmount: formData.currentAmount,
+        deadline: formData.deadline,
+        category: formData.category,
+        notes: formData.notes,
+        userId: editingGoal?.userId || user?.id,
+      });
+      setShowModal(false);
+      setEditingGoal(undefined);
 
-    // Reset filter to show the newly created/updated goal
-    // If it's a new goal (no editingGoal), reset to 'all' to ensure it's visible
-    if (!editingGoal && mergedConnection) {
-      // Determine the owner of the goal
-      const goalUserId = goal.userId || user?.id;
-      if (goalUserId === user?.id) {
-        // If it's the current user's goal, switch to 'mine' or 'all'
+      // Reset filter to show the newly created/updated goal
+      if (!editingGoal && mergedConnection) {
+        const goalUserId = user?.id;
         filters.setOwnerFilter(filters.ownerFilter === 'partner' ? 'mine' : filters.ownerFilter);
-      } else {
-        // If it's the partner's goal, switch to 'partner' or 'all'
-        filters.setOwnerFilter(filters.ownerFilter === 'mine' ? 'partner' : filters.ownerFilter);
       }
+    } catch (error) {
+      logger.error('GoalsPage', error instanceof Error ? error : new Error(String(error)), {
+        context: 'handleSaveGoal',
+        formData
+      });
+      throw error; // Let modal handle error display
     }
   };
 
-  const handleDeleteGoal = async (goalId: string): Promise<void> => {
-    await deleteGoalMutation.mutateAsync(goalId);
-    setEditorOpen(false);
+  const handleCloseModal = (): void => {
+    setShowModal(false);
     setEditingGoal(undefined);
   };
-
-  const handleCloseEditor = (): void => {
-    setEditorOpen(false);
-    setEditingGoal(undefined);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-white border-r-transparent"></div>
-          <p className="mt-2 text-sm text-primary">Loading goals...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <>
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-semibold text-primary">🎯 Financial Goals</h2>
-          <p className="mt-1 text-sm text-primary opacity-70">
-            Track your savings targets and debt payoff progress
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Owner Filter - only show in merged mode */}
-          {mergedConnection && (
-            <OwnerFilter
-              value={filters.ownerFilter}
-              onChange={filters.setOwnerFilter}
-              partnerName={partnerName}
-            />
-          )}
-          <button
-            onClick={handleCreateGoal}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create Goal</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Empty State */}
-      {goals.length === 0 && (
-        <div className="rounded-2xl bg-primary/30 backdrop-blur-sm shadow-sm ring-1 ring-primary/20 p-12 text-center mb-6">
-          <div className="mx-auto max-w-md">
-            <h3 className="text-lg font-semibold text-primary mb-2">No Goals Yet</h3>
-            <p className="text-sm text-primary opacity-70 mb-6">
-              Set up your first financial goal to start tracking your progress with smart recommendations
-              and automatic account syncing.
-            </p>
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">🎯</span>
+            Financial Goals
+          </h1>
+          <div className="flex items-center gap-3">
+            {/* Owner Filter - only show in merged mode */}
+            {mergedConnection && (
+              <OwnerFilter
+                value={filters.ownerFilter}
+                onChange={filters.setOwnerFilter}
+                partnerName={partnerName}
+              />
+            )}
             <button
               onClick={handleCreateGoal}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105"
+              className="px-4 py-3 rounded-xl font-semibold text-white transition-opacity flex items-center gap-2"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
+              aria-label="Create goal"
             >
-              <Plus className="h-5 w-5" />
-              <span>Create Your First Goal</span>
+              <Plus className="w-5 h-5" />
+              Create Goal
             </button>
           </div>
         </div>
-      )}
 
-      {/* Goal Cards */}
-      {goals.length > 0 && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
-          {sortedGoals.map((goal) => (
-            <GoalCardWithProgress
-              key={goal.id}
-              goal={goal}
-              accounts={accounts}
-              onEdit={handleEditGoal}
-              currentUserId={user?.id}
-              partnerName={partnerName}
-            />
-          ))}
-        </div>
-      )}
+        {/* Loading State */}
+        {isLoading && (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="p-5 rounded-xl border animate-pulse"
+                style={{
+                  backgroundColor: colors.bg.white,
+                  borderColor: colors.border.light,
+                }}
+              >
+                <div className="h-32 bg-gray-200 rounded" />
+              </div>
+            ))}
+          </div>
+        )}
 
-      {/* Goal Editor Modal */}
-      <GoalEditor
-        isOpen={editorOpen}
-        onClose={handleCloseEditor}
+        {/* Empty State */}
+        {!isLoading && filteredGoals.length === 0 && (
+          <div
+            className="p-8 rounded-xl border-2 border-dashed text-center"
+            style={{ borderColor: colors.border.medium }}
+          >
+            <div className="text-4xl mb-3">🎯</div>
+            <p className="font-medium mb-2" style={{ color: colors.text.primary }}>
+              No financial goals yet
+            </p>
+            <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
+              Set up your first goal to start tracking progress
+            </p>
+            <button
+              onClick={handleCreateGoal}
+              className="px-4 py-2 rounded-lg font-semibold text-white"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
+            >
+              Create First Goal
+            </button>
+          </div>
+        )}
+
+        {/* Goal Cards */}
+        {!isLoading && filteredGoals.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {sortedGoals.map((goal) => (
+              <GoalCardV2
+                key={goal.id}
+                goal={{
+                  id: goal.id,
+                  name: goal.name,
+                  targetAmount: goal.targetAmount,
+                  currentAmount: goal.currentAmount,
+                  deadline: goal.dueDateISO,
+                  category: goal.category,
+                }}
+                onClick={() => handleEditGoal(goal)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Goal Form Modal */}
+      <GoalFormModalV2
+        isOpen={showModal}
+        onClose={handleCloseModal}
         onSave={handleSaveGoal}
-        onDelete={handleDeleteGoal}
-        goal={editingGoal}
-        accounts={accounts}
+        initialData={editingGoal ? {
+          name: editingGoal.name,
+          targetAmount: editingGoal.targetAmount,
+          currentAmount: editingGoal.currentAmount,
+          deadline: editingGoal.dueDateISO,
+          category: editingGoal.category,
+          notes: editingGoal.notes,
+        } : undefined}
+        isPending={upsertGoalMutation.isPending}
       />
-    </>
+    </div>
   );
 };
 
