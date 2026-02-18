@@ -840,7 +840,7 @@ async function recalculateGoalProgress(goalId: string): Promise<void> {
 
   if (updateError) {
     // Log error but don't throw - this is a background calculation
-    console.error('Failed to update goal progress:', updateError);
+    logger.error('Goals', 'Failed to update goal progress', { error: updateError, goalId });
   }
 }
 

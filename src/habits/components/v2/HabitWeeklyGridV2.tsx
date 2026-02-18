@@ -10,25 +10,28 @@ export interface HabitWeeklyGridV2Props {
   habits: HabitData[];
   entries: HabitEntryData[];
   onToggleEntry: (habitId: string, date: string) => void;
+  selectedDate?: Date;
 }
 
-// Get the current week (Mon-Sun)
-const getWeekDays = (): Array<{ date: string; day: number; dayName: string; isToday: boolean }> => {
+// Get the week days for a given date (Mon-Sun)
+const getWeekDays = (selectedDate: Date = new Date()): Array<{ date: string; day: number; dayName: string; isToday: boolean }> => {
   const today = new Date();
-  const currentDay = today.getDay();
+  const todayKey = today.toISOString().split('T')[0];
+
+  const currentDay = selectedDate.getDay();
   const diff = currentDay === 0 ? -6 : 1 - currentDay; // Adjust to Monday
 
   const days = [];
   for (let i = 0; i < 7; i++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() + diff + i);
+    const date = new Date(selectedDate);
+    date.setDate(selectedDate.getDate() + diff + i);
     const dateKey = date.toISOString().split('T')[0];
 
     days.push({
       date: dateKey,
       day: date.getDate(),
       dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
-      isToday: dateKey === today.toISOString().split('T')[0],
+      isToday: dateKey === todayKey,
     });
   }
   return days;
@@ -38,8 +41,9 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
   habits,
   entries,
   onToggleEntry,
+  selectedDate = new Date(),
 }) => {
-  const weekDays = useMemo(() => getWeekDays(), []);
+  const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
 
   // Create a map of habit completions by date
   const completionsMap = useMemo(() => {

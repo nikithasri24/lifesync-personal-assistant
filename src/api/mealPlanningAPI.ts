@@ -367,7 +367,12 @@ export async function createMealPlan(
           .from('meal_plans')
           .insert({
             connection_id: mergedConnection.connectionId,
-            ...plan,
+            name: plan.name,
+            week_start_date: plan.week_start_date,
+            notes: plan.notes,
+            meal_columns: plan.meal_columns as any,
+            shopping_list_generated: plan.shopping_list_generated,
+            total_estimated_cost: plan.total_estimated_cost,
           })
           .select('*, planned_meals(*)')
           .single();
@@ -375,9 +380,13 @@ export async function createMealPlan(
         const data = handleSupabaseResponse(result, 'Meal Plan');
         const sharedPlan = data as MealPlanData;
 
+        if (!sharedPlan.id) {
+          throw new Error('Meal plan created but ID is missing');
+        }
+
         // Migrate existing personal meals to the shared plan
         await migratePersonalMealsToSharedPlan(
-          sharedPlan.id!,
+          sharedPlan.id,
           plan.week_start_date,
           user.id,
           mergedConnection.partnerId
@@ -409,7 +418,13 @@ export async function createMealPlan(
         .from('meal_plans')
         .insert({
           user_id: user.id,
-          ...plan,
+          name: plan.name,
+          week_start_date: plan.week_start_date,
+          notes: plan.notes,
+          meal_columns: plan.meal_columns as any,
+          shopping_list_generated: plan.shopping_list_generated,
+          total_estimated_cost: plan.total_estimated_cost,
+          connection_id: plan.connection_id,
         })
         .select('*, planned_meals(*)')
         .single();

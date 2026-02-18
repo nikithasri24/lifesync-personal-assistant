@@ -53,6 +53,7 @@ export interface ProfileConnection {
   receiverId: string;
   relationship: ConnectionRelationship;
   status: ConnectionStatus;
+  relationshipStartDate?: string; // ISO date string (for anniversaries in Together feature)
   userId?: string;
   connectedUserId?: string;
   requesterLabel?: string;  // Custom nickname from requester's perspective
@@ -133,6 +134,7 @@ export interface CreateConnectionInput {
 
 export interface UpdateConnectionInput {
   relationship?: ConnectionRelationship;
+  relationshipStartDate?: string;
   label?: string;
   notes?: string;
 }

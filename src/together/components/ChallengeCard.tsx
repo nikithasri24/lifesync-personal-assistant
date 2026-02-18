@@ -7,15 +7,22 @@ import React from 'react';
 import { Gift } from 'lucide-react';
 import type { AchievementReward } from '../types';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { OwnerBadge } from '@/components/common/OwnerBadge';
 
 interface ChallengeCardProps {
   challenge: AchievementReward;
   onClick: () => void;
+  showOwner?: boolean;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
 export const ChallengeCard: React.FC<ChallengeCardProps> = ({
   challenge,
   onClick,
+  showOwner = false,
+  currentUserId,
+  partnerName = 'Partner',
 }) => {
   const colors = useThemeColors();
 
@@ -69,9 +76,19 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
         <div className="flex items-center gap-3">
           <span className="text-3xl">💪</span>
           <div className="flex-1">
-            <h3 className="text-lg font-bold" style={{ color: colors.text.primary }}>
-              {challenge.title}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-bold" style={{ color: colors.text.primary }}>
+                {challenge.title}
+              </h3>
+              {showOwner && currentUserId && (
+                <OwnerBadge
+                  userId={challenge.creator_id}
+                  currentUserId={currentUserId}
+                  partnerName={partnerName}
+                  size="sm"
+                />
+              )}
+            </div>
             {challenge.description && (
               <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
                 {challenge.description}

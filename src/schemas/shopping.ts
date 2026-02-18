@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { logger } from '@/services/logger';
 
 // ==================== Common Schemas ====================
 
@@ -597,7 +598,7 @@ export function validateShoppingItemsArray<T>(
     if (result.success) {
       validItems.push(result.data as T);
     } else {
-      console.warn(`Invalid item at index ${i} in ${context}:`, {
+      logger.warn('ShoppingSchema', `Invalid item at index ${i} in ${context}`, {
         errors: result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
         item: data[i],
       });

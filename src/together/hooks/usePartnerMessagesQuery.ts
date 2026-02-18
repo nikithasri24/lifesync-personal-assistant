@@ -8,6 +8,11 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/services/logger';
 import { parseToLifeSyncError, getUserErrorMessage, AuthenticationError } from '@/lib/errors';
 import { useToast } from '@/hooks/useToast';
+import {
+  getPartnerMessages,
+  getPendingMessageReveals,
+  getPartnerMessage,
+} from '../api/messagesAPI';
 import type {
   PartnerMessage,
   CreatePartnerMessageRequest,
@@ -34,47 +39,12 @@ export const partnerMessageKeys = {
 
 /**
  * Get all partner messages with optional filters
+ * Uses API layer which automatically handles merged mode
  */
 export function usePartnerMessages(filters?: MessageFilters) {
   return useQuery({
     queryKey: partnerMessageKeys.list(filters),
-    queryFn: async (): Promise<PartnerMessage[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
-      logger.debug('Together', 'Fetching partner messages', { filters });
-
-      let query = supabase
-        .from('partner_messages')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      // Apply filters
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters?.is_sent) {
-        query = query.eq('sender_id', user.id);
-      }
-      if (filters?.is_received) {
-        query = query.eq('recipient_id', user.id);
-      }
-      if (filters?.trigger) {
-        query = query.eq('reveal_trigger', filters.trigger);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch partner messages', { error });
-        throw parseToLifeSyncError(error);
-      }
-
-      logger.debug('Together', 'Partner messages fetched', { count: data?.length || 0 });
-      return data || [];
-    },
+    queryFn: () => getPartnerMessages(filters),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -82,6 +52,7 @@ export function usePartnerMessages(filters?: MessageFilters) {
 
 /**
  * Get partner messages with infinite scroll/pagination
+ * Uses API layer which automatically handles merged mode
  */
 export function useInfinitePartnerMessages(filters?: MessageFilters) {
   const PAGE_SIZE = 20;
@@ -89,49 +60,26 @@ export function useInfinitePartnerMessages(filters?: MessageFilters) {
   return useInfiniteQuery({
     queryKey: partnerMessageKeys.infinite(filters),
     queryFn: async ({ pageParam = 0 }): Promise<PartnerMessage[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
       logger.debug('Together', 'Fetching partner messages (paginated)', {
         filters,
         offset: pageParam,
         limit: PAGE_SIZE,
       });
 
-      let query = supabase
-        .from('partner_messages')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .range(pageParam, pageParam + PAGE_SIZE - 1);
+      // Fetch all messages using API (includes merged mode support)
+      const allMessages = await getPartnerMessages(filters);
 
-      // Apply filters
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters?.is_sent) {
-        query = query.eq('sender_id', user.id);
-      }
-      if (filters?.is_received) {
-        query = query.eq('recipient_id', user.id);
-      }
-      if (filters?.trigger) {
-        query = query.eq('reveal_trigger', filters.trigger);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch partner messages (paginated)', { error });
-        throw parseToLifeSyncError(error);
-      }
+      // Client-side pagination
+      const start = pageParam;
+      const end = start + PAGE_SIZE;
+      const page = allMessages.slice(start, end);
 
       logger.debug('Together', 'Partner messages fetched (paginated)', {
-        count: data?.length || 0,
+        count: page.length,
         offset: pageParam,
       });
-      return data || [];
+
+      return page;
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
@@ -148,31 +96,12 @@ export function useInfinitePartnerMessages(filters?: MessageFilters) {
 
 /**
  * Get pending message reveals (messages awaiting trigger)
+ * Uses API layer which automatically handles merged mode
  */
 export function usePendingMessageReveals() {
   return useQuery({
     queryKey: partnerMessageKeys.pending(),
-    queryFn: async (): Promise<PartnerMessage[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
-      logger.debug('Together', 'Fetching pending message reveals');
-
-      const { data, error } = await supabase
-        .from('pending_message_reveals')
-        .select('*')
-        .eq('recipient_id', user.id);
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch pending reveals', { error });
-        throw parseToLifeSyncError(error);
-      }
-
-      logger.debug('Together', 'Pending reveals fetched', { count: data?.length || 0 });
-      return data || [];
-    },
+    queryFn: () => getPendingMessageReveals(),
     staleTime: 1 * 60 * 1000, // 1 minute (check frequently for reveals)
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -180,31 +109,12 @@ export function usePendingMessageReveals() {
 
 /**
  * Get single message by ID
+ * Uses API layer which automatically handles merged mode
  */
 export function usePartnerMessage(id: string) {
   return useQuery({
     queryKey: partnerMessageKeys.detail(id),
-    queryFn: async (): Promise<PartnerMessage | null> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
-      logger.debug('Together', 'Fetching partner message', { id });
-
-      const { data, error } = await supabase
-        .from('partner_messages')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch partner message', { error });
-        throw parseToLifeSyncError(error);
-      }
-
-      return data;
-    },
+    queryFn: () => getPartnerMessage(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 15 * 60 * 1000, // 15 minutes

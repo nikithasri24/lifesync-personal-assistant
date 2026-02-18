@@ -29,7 +29,7 @@ import {
   deleteProject,
 } from '@/api/projectsAPI';
 import { logger } from '@/services/logger';
-import { recordTaskCompletion } from '@/services/gamification';
+// import { recordTaskCompletion } from '@/services/gamification'; // Gamification removed
 import { dataEvents } from '@/lib/dataEvents';
 import { createNextRecurringTask } from '@/utils/taskRecurrence';
 import { getTasksToUnblock } from '@/utils/taskDependencies';
@@ -198,9 +198,10 @@ export function useUpdateTask(): UseMutationResult<
               ? 'low'
               : 'medium';
 
-        recordTaskCompletion(updatedTask.id, gamificationPriority).catch((err) => {
-          logger.error('Gamification', err instanceof Error ? err : new Error(String(err)));
-        });
+        // Gamification removed
+        // recordTaskCompletion(updatedTask.id, gamificationPriority).catch((err) => {
+        //   logger.error('Gamification', err instanceof Error ? err : new Error(String(err)));
+        // });
 
         // Check for tasks that are now unblocked and move them to todo
         const allTasks = queryClient.getQueryData<TaskData[]>(queryKeys.tasks.lists()) || [];

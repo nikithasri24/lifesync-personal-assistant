@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabase';
 import type { StoreData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
+import { logger } from '@/services/logger';
 
 // Merged connection cache for Shopping
 let cachedMergedConnection: MergedConnectionResult | null | undefined;
@@ -25,13 +26,13 @@ let cachedMergedConnection: MergedConnectionResult | null | undefined;
  */
 export async function getShoppingMergedConnection(): Promise<MergedConnectionResult | null> {
   if (cachedMergedConnection !== undefined) {
-    console.log('[getShoppingMergedConnection] Returning cached connection:', cachedMergedConnection);
+    logger.debug('StoresAPI', 'Returning cached merged connection', { cachedMergedConnection });
     return cachedMergedConnection;
   }
 
-  console.log('[getShoppingMergedConnection] Fetching merged connection...');
+  logger.debug('StoresAPI', 'Fetching merged connection');
   cachedMergedConnection = await getMergedConnectionId('shopping');
-  console.log('[getShoppingMergedConnection] Cached connection:', cachedMergedConnection);
+  logger.debug('StoresAPI', 'Cached connection', { cachedMergedConnection });
 
   return cachedMergedConnection;
 }
@@ -61,7 +62,7 @@ export async function getStores(): Promise<StoreData[]> {
       // We query for all accessible stores (own + partner's)
       // RLS policy will filter based on merged permissions
       if (mergedConnection) {
-        console.log('[getStores] Merged mode enabled, fetching for both users');
+        logger.debug('StoresAPI', 'Merged mode enabled, fetching for both users');
         // RLS handles the filtering, no need for explicit OR clause
       } else {
         // Personal mode: only get current user's stores
@@ -71,7 +72,10 @@ export async function getStores(): Promise<StoreData[]> {
       const { data, error } = await query;
       if (error) throw error;
 
-      console.log('[getStores] Fetched', data?.length ?? 0, 'stores', mergedConnection ? '(merged mode)' : '(personal mode)');
+      logger.debug('StoresAPI', 'Fetched stores', {
+        count: data?.length ?? 0,
+        mode: mergedConnection ? 'merged' : 'personal',
+      });
       return (data ?? []) as StoreData[];
     },
     { domain: 'StoresAPI', operation: 'getStores' }

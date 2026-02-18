@@ -3,8 +3,11 @@
  * Shows active challenges and completed rewards
  */
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAchievementRewards } from '../hooks';
+import { useMergedChallengesConnection } from '../hooks/useTogetherMergedMode';
+import { useCurrentUserId } from '@/hooks/useOwnerInfo';
+import { OwnerFilter, type OwnerFilterValue } from '@/components/common/OwnerFilter';
 import type { PartnerLink, AchievementReward } from '../types';
 import { ChallengeCard } from './ChallengeCard';
 import { CreateChallengeModal } from './modals/CreateChallengeModal';
@@ -19,13 +22,34 @@ interface ChallengesViewProps {
 export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) => {
   const colors = useThemeColors();
 
+  // Owner filter state (for merged mode)
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
+
+  // Merged mode support
+  const { data: mergedConnection } = useMergedChallengesConnection();
+  const { data: currentUserId } = useCurrentUserId();
+
   // Modal state management
   const modals = useModalState({
     create: false,
     viewingChallenge: null as AchievementReward | null,
   });
 
-  const { data: challenges = [], isLoading } = useAchievementRewards(partnerLink?.id);
+  const { data: allChallenges = [], isLoading } = useAchievementRewards(partnerLink?.id);
+
+  // Get partner name for display
+  const partnerName = mergedConnection?.partnerName ?? 'Partner';
+
+  // Filter challenges by creator if in merged mode
+  const challenges = useMemo(() => {
+    if (!mergedConnection || !currentUserId || ownerFilter === 'all') {
+      return allChallenges;
+    }
+    if (ownerFilter === 'mine') {
+      return allChallenges.filter(c => c.creator_id === currentUserId);
+    }
+    return allChallenges.filter(c => c.creator_id === mergedConnection.partnerId);
+  }, [allChallenges, ownerFilter, currentUserId, mergedConnection]);
 
   const hasPartner = partnerLink?.status === 'accepted';
 
@@ -58,15 +82,26 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
         <h2 className="text-xl font-bold" style={{ color: colors.text.primary }}>
           Create Challenge for Partner
         </h2>
-        <button
-          onClick={() => modals.open('create')}
-          className="px-4 py-2 rounded-lg font-semibold transition-colors text-white hover:opacity-90"
-          style={{
-            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-          }}
-        >
-          Create
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Owner filter (only show in merged mode) */}
+          {mergedConnection && (
+            <OwnerFilter
+              value={ownerFilter}
+              onChange={setOwnerFilter}
+              partnerName={partnerName}
+            />
+          )}
+          <button
+            onClick={() => modals.open('create')}
+            className="px-4 py-2 rounded-lg font-semibold transition-colors text-white hover:opacity-90"
+            style={{
+              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            }}
+            aria-label="Create challenge"
+          >
+            Create
+          </button>
+        </div>
       </div>
 
       <hr style={{ borderColor: colors.border.light }} />
@@ -122,6 +157,9 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
                     key={challenge.id}
                     challenge={challenge}
                     onClick={() => modals.set('viewingChallenge', challenge)}
+                    showOwner={!!mergedConnection}
+                    currentUserId={currentUserId ?? undefined}
+                    partnerName={partnerName}
                   />
                 ))}
               </div>
@@ -140,6 +178,9 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
                     key={challenge.id}
                     challenge={challenge}
                     onClick={() => modals.set('viewingChallenge', challenge)}
+                    showOwner={!!mergedConnection}
+                    currentUserId={currentUserId ?? undefined}
+                    partnerName={partnerName}
                   />
                 ))}
               </div>
@@ -158,6 +199,9 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
                     key={challenge.id}
                     challenge={challenge}
                     onClick={() => modals.set('viewingChallenge', challenge)}
+                    showOwner={!!mergedConnection}
+                    currentUserId={currentUserId ?? undefined}
+                    partnerName={partnerName}
                   />
                 ))}
               </div>

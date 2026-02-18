@@ -23,15 +23,31 @@ const isPlaceholder = (value?: string): boolean => {
 export const isSupabaseConfigured =
   !isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)
 
+// HMR-safe singleton: Reuse existing client during development hot reloads
+// to prevent multiple GoTrueClient instances
+declare global {
+  // eslint-disable-next-line no-var
+  var __supabaseClient: SupabaseClient<Database> | null | undefined
+}
+
 let supabaseClient: SupabaseClient<Database> | null = null
 
 if (isSupabaseConfigured && supabaseUrl && supabaseAnonKey) {
-  supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  })
+  // In development mode with HMR, reuse the existing client if available
+  if (globalThis.__supabaseClient) {
+    supabaseClient = globalThis.__supabaseClient
+    logger.debug('Supabase', 'Reusing existing client (HMR)')
+  } else {
+    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+    // Store in global for HMR reuse
+    globalThis.__supabaseClient = supabaseClient
+    logger.debug('Supabase', 'Created new client')
+  }
 } else {
   logger.warn('Supabase',
     '[LifeSync] Supabase environment variables are not configured. '

@@ -81,8 +81,10 @@ const Habits: React.FC = () => {
     editingHabitId: null as string | null,
     ownerFilter: 'all' as OwnerFilterValue,
     viewMode: 'today' as 'today' | 'weekly',
+    selectedDate: new Date() as Date,
   });
 
+  const selectedDateKey = modals.state.selectedDate.toISOString().split('T')[0];
   const todayKey = new Date().toISOString().split('T')[0];
   const weekBoundaries = getWeekBoundaries();
   const { toast, showToast, dismissToast } = useToast();
@@ -129,9 +131,9 @@ const Habits: React.FC = () => {
         ).length;
         hasReachedTarget = completionCount >= targetCount;
       } else {
-        // Daily habits
+        // Daily habits - use selected date
         completionCount = habitEntries.filter(
-          entry => entry.date === todayKey
+          entry => entry.date === selectedDateKey
         ).length;
         hasReachedTarget = completionCount >= targetCount;
       }
@@ -145,7 +147,7 @@ const Habits: React.FC = () => {
         totalCompletions: habit.current_progress ?? 0,
       };
     });
-  }, [filteredHabits, apiEntries, todayKey, weekBoundaries]);
+  }, [filteredHabits, apiEntries, selectedDateKey, weekBoundaries]);
 
   // Create/Update handler
   const handleSubmit = (data: HabitDraft): void => {
@@ -225,7 +227,7 @@ const Habits: React.FC = () => {
     }
   };
 
-  // Toggle completion (for today view)
+  // Toggle completion (for today view - respects selected date)
   const handleToggleComplete = (habitId: string): void => {
     const habit = apiHabits.find(h => h.id === habitId);
     if (!habit) return;
@@ -236,7 +238,7 @@ const Habits: React.FC = () => {
     if (habitWithStats.hasReachedTarget) {
       // Unmark complete
       deleteEntriesForDateMutation.mutate(
-        { habitId, date: todayKey },
+        { habitId, date: selectedDateKey },
         {
           onSuccess: () => {
             showToast('Marked incomplete', 'success');
@@ -248,7 +250,7 @@ const Habits: React.FC = () => {
       createEntryMutation.mutate(
         {
           habit_id: habitId,
-          date: todayKey,
+          date: selectedDateKey,
           value: 1,
         },
         {
@@ -353,6 +355,8 @@ const Habits: React.FC = () => {
           partnerName={partnerName}
           viewMode={modals.state.viewMode}
           onViewModeChange={(mode) => modals.set('viewMode', mode)}
+          selectedDate={modals.state.selectedDate}
+          onDateChange={(date) => modals.set('selectedDate', date)}
         />
 
         {/* Habits List or Weekly Grid */}
@@ -410,6 +414,7 @@ const Habits: React.FC = () => {
             habits={filteredHabits}
             entries={apiEntries}
             onToggleEntry={handleToggleWeeklyEntry}
+            selectedDate={modals.state.selectedDate}
           />
         )}
 

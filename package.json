@@ -63,6 +63,7 @@
     "framer-motion": "^12.23.26",
     "fuzzball": "^2.2.3",
     "groq-sdk": "^0.36.0",
+    "isomorphic-dompurify": "^2.36.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.542.0",
     "node-fetch": "^3.3.2",

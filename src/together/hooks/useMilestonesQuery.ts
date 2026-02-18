@@ -8,6 +8,11 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/services/logger';
 import { parseToLifeSyncError, getUserErrorMessage, AuthenticationError } from '@/lib/errors';
 import { useToast } from '@/hooks/useToast';
+import {
+  getMilestones,
+  getUpcomingMilestones,
+  getMilestone,
+} from '../api/milestonesAPI';
 import type {
   Milestone,
   CreateMilestoneRequest,
@@ -34,56 +39,12 @@ export const milestoneKeys = {
 
 /**
  * Get all milestones with optional filters
+ * Uses API layer which automatically handles merged mode
  */
 export function useMilestones(filters?: MilestoneFilters) {
   return useQuery({
     queryKey: milestoneKeys.list(filters),
-    queryFn: async (): Promise<Milestone[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
-      logger.debug('Together', 'Fetching milestones', { filters });
-
-      let query = supabase
-        .from('milestones')
-        .select('*')
-        .order('milestone_date', { ascending: true });
-
-      // Apply filters
-      if (filters?.type) {
-        query = query.eq('milestone_type', filters.type);
-      }
-      if (filters?.for_whom) {
-        query = query.eq('for_whom', filters.for_whom);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch milestones', { error });
-        throw parseToLifeSyncError(error);
-      }
-
-      // Client-side filtering for upcoming/past
-      let results = data || [];
-      if (filters?.upcoming_only) {
-        results = results.filter(m => {
-          const date = new Date(m.milestone_date);
-          return date >= new Date();
-        });
-      }
-      if (filters?.past_only) {
-        results = results.filter(m => {
-          const date = new Date(m.milestone_date);
-          return date < new Date();
-        });
-      }
-
-      logger.debug('Together', 'Milestones fetched', { count: results.length });
-      return results;
-    },
+    queryFn: () => getMilestones(filters),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -91,6 +52,7 @@ export function useMilestones(filters?: MilestoneFilters) {
 
 /**
  * Get milestones with infinite scroll/pagination
+ * Uses API layer which automatically handles merged mode
  */
 export function useInfiniteMilestones(filters?: MilestoneFilters) {
   const PAGE_SIZE = 20;
@@ -98,58 +60,26 @@ export function useInfiniteMilestones(filters?: MilestoneFilters) {
   return useInfiniteQuery({
     queryKey: milestoneKeys.infinite(filters),
     queryFn: async ({ pageParam = 0 }): Promise<Milestone[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
       logger.debug('Together', 'Fetching milestones (paginated)', {
         filters,
         offset: pageParam,
         limit: PAGE_SIZE,
       });
 
-      let query = supabase
-        .from('milestones')
-        .select('*')
-        .order('milestone_date', { ascending: true })
-        .range(pageParam, pageParam + PAGE_SIZE - 1);
+      // Fetch all milestones using API (includes merged mode support)
+      const allMilestones = await getMilestones(filters);
 
-      // Apply filters
-      if (filters?.type) {
-        query = query.eq('milestone_type', filters.type);
-      }
-      if (filters?.for_whom) {
-        query = query.eq('for_whom', filters.for_whom);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch milestones (paginated)', { error });
-        throw parseToLifeSyncError(error);
-      }
-
-      // Client-side filtering for upcoming/past
-      let results = data || [];
-      if (filters?.upcoming_only) {
-        results = results.filter(m => {
-          const date = new Date(m.milestone_date);
-          return date >= new Date();
-        });
-      }
-      if (filters?.past_only) {
-        results = results.filter(m => {
-          const date = new Date(m.milestone_date);
-          return date < new Date();
-        });
-      }
+      // Client-side pagination
+      const start = pageParam;
+      const end = start + PAGE_SIZE;
+      const page = allMilestones.slice(start, end);
 
       logger.debug('Together', 'Milestones fetched (paginated)', {
-        count: results.length,
+        count: page.length,
         offset: pageParam,
       });
-      return results;
+
+      return page;
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
@@ -167,31 +97,12 @@ export function useInfiniteMilestones(filters?: MilestoneFilters) {
 
 /**
  * Get upcoming milestones (using view for computed fields)
+ * Uses API layer which automatically handles merged mode
  */
 export function useUpcomingMilestones() {
   return useQuery({
     queryKey: milestoneKeys.upcoming(),
-    queryFn: async (): Promise<Milestone[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
-      logger.debug('Together', 'Fetching upcoming milestones');
-
-      const { data, error } = await supabase
-        .from('upcoming_milestones')
-        .select('*')
-        .limit(10);
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch upcoming milestones', { error });
-        throw parseToLifeSyncError(error);
-      }
-
-      logger.debug('Together', 'Upcoming milestones fetched', { count: data?.length || 0 });
-      return data || [];
-    },
+    queryFn: () => getUpcomingMilestones(),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 15 * 60 * 1000, // 15 minutes
   });
@@ -199,31 +110,12 @@ export function useUpcomingMilestones() {
 
 /**
  * Get single milestone by ID
+ * Uses API layer which automatically handles merged mode
  */
 export function useMilestone(id: string) {
   return useQuery({
     queryKey: milestoneKeys.detail(id),
-    queryFn: async (): Promise<Milestone | null> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
-      logger.debug('Together', 'Fetching milestone', { id });
-
-      const { data, error } = await supabase
-        .from('milestones')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch milestone', { error });
-        throw parseToLifeSyncError(error);
-      }
-
-      return data;
-    },
+    queryFn: () => getMilestone(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 15 * 60 * 1000, // 15 minutes

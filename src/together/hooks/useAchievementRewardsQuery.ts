@@ -8,6 +8,10 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/services/logger';
 import { parseToLifeSyncError, getUserErrorMessage, AuthenticationError } from '@/lib/errors';
 import { useToast } from '@/hooks/useToast';
+import {
+  getAchievementRewards,
+  getAchievementReward,
+} from '../api/challengesAPI';
 import type {
   AchievementReward,
   CreateAchievementRewardRequest,
@@ -32,37 +36,13 @@ export const achievementRewardKeys = {
 
 /**
  * Get all achievement rewards for a connection
+ * Uses API layer which automatically handles merged mode
+ * connectionId is now optional - API will fetch based on merged connection if available
  */
 export function useAchievementRewards(connectionId?: string) {
   return useQuery({
     queryKey: achievementRewardKeys.list(connectionId),
-    queryFn: async (): Promise<AchievementReward[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
-      logger.debug('Together', 'Fetching achievement rewards', { connectionId });
-
-      let query = supabase
-        .from('achievement_rewards')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (connectionId) {
-        query = query.eq('connection_id', connectionId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch achievement rewards', { error });
-        throw parseToLifeSyncError(error);
-      }
-
-      return data || [];
-    },
-    enabled: !!connectionId,
+    queryFn: () => getAchievementRewards(connectionId),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -70,31 +50,12 @@ export function useAchievementRewards(connectionId?: string) {
 
 /**
  * Get single achievement reward by ID
+ * Uses API layer which automatically handles merged mode
  */
 export function useAchievementReward(id: string) {
   return useQuery({
     queryKey: achievementRewardKeys.detail(id),
-    queryFn: async (): Promise<AchievementReward> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
-      logger.debug('Together', 'Fetching achievement reward', { id });
-
-      const { data, error } = await supabase
-        .from('achievement_rewards')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch achievement reward', { error, id });
-        throw parseToLifeSyncError(error);
-      }
-
-      return data;
-    },
+    queryFn: () => getAchievementReward(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 15 * 60 * 1000, // 15 minutes

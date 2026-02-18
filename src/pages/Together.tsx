@@ -5,18 +5,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { usePartnerLink } from '@/together/hooks';
+import { usePartnerLink, useTogetherRealtime } from '@/together/hooks';
 import { PartnerStatusCard } from '@/together/components/PartnerStatusCard';
 import { MilestonesView } from '@/together/components/MilestonesView';
 import { MessagesView } from '@/together/components/MessagesView';
 import { ChallengesView } from '@/together/components/ChallengesView';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
+import { useAuth } from '@/hooks/useAuth';
 
 type TabView = 'milestones' | 'messages' | 'challenges';
 
-const Together: React.FC = () => {
+const TogetherContent: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const colors = useThemeColors();
+  const { user } = useAuth();
 
   // Initialize active tab from URL or default to 'milestones'
   const initialTab = (searchParams.get('tab') as TabView) || 'milestones';
@@ -32,6 +35,9 @@ const Together: React.FC = () => {
 
   // Partner link data (reuses existing Shared connections)
   const { data: partnerLink, isLoading: linkLoading } = usePartnerLink();
+
+  // Set up real-time subscriptions for partner updates
+  useTogetherRealtime(user?.id, partnerLink?.partner_id);
 
   const tabs: { key: TabView; label: string }[] = [
     { key: 'milestones', label: 'Milestones' },
@@ -94,6 +100,14 @@ const Together: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const Together: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="Together">
+      <TogetherContent />
+    </FeatureErrorBoundary>
   );
 };
 

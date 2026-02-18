@@ -57,6 +57,30 @@
 - ✅ Follow established patterns in the codebase
 - ✅ Read existing code before making changes
 
+### 🔴 MANDATORY: Pre-Coding Checklist (Added 2026-02-17)
+
+**BEFORE writing ANY new feature or significant code change:**
+
+1. **READ** `.claude/PRE_CODING_CHECKLIST.md` - This is MANDATORY
+2. **COMPLETE** all checklist items before writing code
+3. **VERIFY** you've followed existing patterns by checking similar features
+
+**Why this matters:**
+- Prevents recurring issues (console.log violations, missing error boundaries, etc.)
+- Ensures consistency with established codebase patterns
+- Saves hours of refactoring by getting it right the first time
+
+**Quick checklist:**
+- [ ] Read CLAUDE.md standards
+- [ ] Find and study similar feature for patterns
+- [ ] Verify database schema field names
+- [ ] Check for required patterns (logger, error boundaries, API layer, etc.)
+- [ ] Plan before coding
+
+**If you skip this checklist, you WILL create technical debt that needs immediate fixing.**
+
+---
+
 ### Current Enhancement Focus (Updated 2026-02-16):
 
 > **NOTE:** Much of the original plan is already complete! See PHASE_STATUS_AUDIT_2026-02-16.md for details.

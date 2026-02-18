@@ -42,6 +42,7 @@ const menuItems: MenuItem[] = [
   { name: 'Visa Calculator', icon: Plane, path: '/travel/visa', section: 'Personal' },
   { name: 'Finances', icon: DollarSign, path: '/finances', section: 'Personal' },
   { name: 'Goals', icon: Trophy, path: '/goals', section: 'Personal' },
+  { name: 'Together', icon: Heart, path: '/together', section: 'Personal' },
   { name: 'Shared', icon: Users, path: '/shared', section: 'Personal' },
 ];
 

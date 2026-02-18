@@ -3,9 +3,12 @@
  * Shows upcoming and past milestones (birthdays, anniversaries, etc.)
  */
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { useMilestones, useUpcomingMilestones } from '../hooks';
+import { useMergedMilestonesConnection } from '../hooks/useTogetherMergedMode';
+import { useCurrentUserId } from '@/hooks/useOwnerInfo';
+import { OwnerFilter, type OwnerFilterValue } from '@/components/common/OwnerFilter';
 import type { PartnerLink } from '../types';
 import { MilestoneCard } from './MilestoneCard';
 import { AddMilestoneModal } from './modals/AddMilestoneModal';
@@ -26,13 +29,44 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
     editingMilestone: null as string | null,
   });
 
-  // Fetch milestones
+  // Owner filter state (for merged mode)
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
+
+  // Merged mode support
+  const { data: mergedConnection } = useMergedMilestonesConnection();
+  const { data: currentUserId } = useCurrentUserId();
+
+  // Fetch milestones (API automatically handles merged mode)
   const { data: upcomingMilestones = [], isLoading: upcomingLoading } =
     useUpcomingMilestones();
   const { data: allMilestones = [], isLoading: allLoading } = useMilestones();
 
+  // Get partner name for display
+  const partnerName = mergedConnection?.partnerName ?? 'Partner';
+
+  // Filter milestones by owner if in merged mode
+  const filteredUpcomingMilestones = useMemo(() => {
+    if (!mergedConnection || !currentUserId || ownerFilter === 'all') {
+      return upcomingMilestones;
+    }
+    if (ownerFilter === 'mine') {
+      return upcomingMilestones.filter(m => m.user_id === currentUserId);
+    }
+    return upcomingMilestones.filter(m => m.user_id === mergedConnection.partnerId);
+  }, [upcomingMilestones, ownerFilter, currentUserId, mergedConnection]);
+
+  const filteredAllMilestones = useMemo(() => {
+    if (!mergedConnection || !currentUserId || ownerFilter === 'all') {
+      return allMilestones;
+    }
+    if (ownerFilter === 'mine') {
+      return allMilestones.filter(m => m.user_id === currentUserId);
+    }
+    return allMilestones.filter(m => m.user_id === mergedConnection.partnerId);
+  }, [allMilestones, ownerFilter, currentUserId, mergedConnection]);
+
   // Split into upcoming and past
-  const pastMilestones = allMilestones.filter((m) => {
+  const pastMilestones = filteredAllMilestones.filter((m) => {
     const date = new Date(m.milestone_date);
     return date < new Date() && !m.recurring;
   });
@@ -47,17 +81,28 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
           <h2 className="text-xl font-bold" style={{ color: colors.text.primary }}>
             Upcoming
           </h2>
-          <button
-            onClick={() => modals.open('addMilestone')}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
-            style={{
-              color: '#D4A574',
-              backgroundColor: colors.bg.secondary,
-            }}
-          >
-            <Plus className="w-4 h-4" />
-            Add
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Owner filter (only show in merged mode) */}
+            {mergedConnection && (
+              <OwnerFilter
+                value={ownerFilter}
+                onChange={setOwnerFilter}
+                partnerName={partnerName}
+              />
+            )}
+            <button
+              onClick={() => modals.open('addMilestone')}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+              style={{
+                color: '#D4A574',
+                backgroundColor: colors.bg.secondary,
+              }}
+              aria-label="Add milestone"
+            >
+              <Plus className="w-4 h-4" />
+              Add
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -75,7 +120,7 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
               </div>
             ))}
           </div>
-        ) : upcomingMilestones.length === 0 ? (
+        ) : filteredUpcomingMilestones.length === 0 ? (
           <div
             className="p-8 rounded-xl border-2 border-dashed text-center"
             style={{ borderColor: colors.border.medium }}
@@ -93,17 +138,21 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
               style={{
                 background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
               }}
+              aria-label="Add your first milestone"
             >
               Add Your First Milestone
             </button>
           </div>
         ) : (
           <div className="space-y-3">
-            {upcomingMilestones.map((milestone) => (
+            {filteredUpcomingMilestones.map((milestone) => (
               <MilestoneCard
                 key={milestone.id}
                 milestone={milestone}
                 onEdit={() => modals.set('editingMilestone', milestone.id)}
+                showOwner={!!mergedConnection}
+                currentUserId={currentUserId ?? undefined}
+                partnerName={partnerName}
               />
             ))}
           </div>
@@ -123,6 +172,9 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
                 milestone={milestone}
                 isPast
                 onEdit={() => modals.set('editingMilestone', milestone.id)}
+                showOwner={!!mergedConnection}
+                currentUserId={currentUserId ?? undefined}
+                partnerName={partnerName}
               />
             ))}
           </div>
@@ -142,7 +194,7 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
       {modals.state.editingMilestone && (
         <EditMilestoneModal
           isOpen={!!modals.state.editingMilestone}
-          milestone={allMilestones.find(m => m.id === modals.state.editingMilestone)!}
+          milestone={filteredAllMilestones.find(m => m.id === modals.state.editingMilestone)!}
           onClose={() => modals.set('editingMilestone', null)}
         />
       )}

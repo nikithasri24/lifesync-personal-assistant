@@ -3,9 +3,13 @@
  * Shows partner messages inbox and memory box
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, Check, Star } from 'lucide-react';
 import { usePartnerMessages } from '../hooks';
+import { useMergedMessagesConnection } from '../hooks/useTogetherMergedMode';
+import { useCurrentUserId } from '@/hooks/useOwnerInfo';
+import { OwnerFilter, type OwnerFilterValue } from '@/components/common/OwnerFilter';
+import { OwnerBadge } from '@/components/common/OwnerBadge';
 import type { PartnerLink, PartnerMessage } from '../types';
 import { isPartnerMessage } from '../types/guards';
 import { ComposeMessageModal } from './modals/ComposeMessageModal';
@@ -24,6 +28,13 @@ const STORAGE_KEY_VIEWING = 'together_messages_viewing_id';
 export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
   const colors = useThemeColors();
 
+  // Owner filter state (for merged mode)
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
+
+  // Merged mode support
+  const { data: mergedConnection } = useMergedMessagesConnection();
+  const { data: currentUserId } = useCurrentUserId();
+
   // Modal state management
   const modals = useModalState({
     compose: (() => {
@@ -34,7 +45,21 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
     editingMessage: null as PartnerMessage | null,
   });
 
-  const { data: messages = [], isLoading } = usePartnerMessages();
+  const { data: allMessages = [], isLoading } = usePartnerMessages();
+
+  // Get partner name for display
+  const partnerName = mergedConnection?.partnerName ?? 'Partner';
+
+  // Filter messages by sender if in merged mode
+  const messages = useMemo(() => {
+    if (!mergedConnection || !currentUserId || ownerFilter === 'all') {
+      return allMessages;
+    }
+    if (ownerFilter === 'mine') {
+      return allMessages.filter(m => m.sender_id === currentUserId);
+    }
+    return allMessages.filter(m => m.sender_id === mergedConnection.partnerId);
+  }, [allMessages, ownerFilter, currentUserId, mergedConnection]);
 
   // Find the viewing message from the ID with type guard validation
   const viewingMessage = modals.state.viewingMessageId
@@ -144,13 +169,24 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
         <h2 className="text-xl font-bold" style={{ color: colors.text.primary }}>
           Compose New Message
         </h2>
-        <button
-          onClick={handleOpenCompose}
-          className="px-4 py-2 rounded-lg font-semibold transition-colors text-white hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #FF6B9D 0%, #D4A574 100%)' }}
-        >
-          Write
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Owner filter (only show in merged mode) */}
+          {mergedConnection && (
+            <OwnerFilter
+              value={ownerFilter}
+              onChange={setOwnerFilter}
+              partnerName={partnerName}
+            />
+          )}
+          <button
+            onClick={handleOpenCompose}
+            className="px-4 py-2 rounded-lg font-semibold transition-colors text-white hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #FF6B9D 0%, #D4A574 100%)' }}
+            aria-label="Write new message"
+          >
+            Write
+          </button>
+        </div>
       </div>
 
       <hr style={{ borderColor: colors.border.light }} />
@@ -212,9 +248,19 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                     onClick={() => handleViewMessage(message)}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
-                        💌 {message.title}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
+                          💌 {message.title}
+                        </h4>
+                        {mergedConnection && currentUserId && (
+                          <OwnerBadge
+                            userId={message.sender_id}
+                            currentUserId={currentUserId}
+                            partnerName={partnerName}
+                            size="sm"
+                          />
+                        )}
+                      </div>
                       {getStatusBadge(message)}
                     </div>
                     <p className="text-sm mb-2" style={{ color: colors.text.secondary }}>
@@ -247,9 +293,19 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                     onClick={() => handleViewMessage(message)}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
-                        ❤️ {message.title}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
+                          ❤️ {message.title}
+                        </h4>
+                        {mergedConnection && currentUserId && (
+                          <OwnerBadge
+                            userId={message.sender_id}
+                            currentUserId={currentUserId}
+                            partnerName={partnerName}
+                            size="sm"
+                          />
+                        )}
+                      </div>
                       {getStatusBadge(message)}
                     </div>
                     <p className="text-sm mb-2" style={{ color: colors.text.secondary }}>
@@ -259,6 +315,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                       <button
                         className="text-sm underline"
                         style={{ color: '#D4A574' }}
+                        aria-label="Read message again"
                       >
                         Read Again
                       </button>
@@ -287,9 +344,19 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                     }}
                     onClick={() => handleViewMessage(message)}
                   >
-                    <h4 className="font-bold text-lg mb-2" style={{ color: colors.text.primary }}>
-                      📝 {message.title}
-                    </h4>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
+                        📝 {message.title}
+                      </h4>
+                      {mergedConnection && currentUserId && (
+                        <OwnerBadge
+                          userId={message.sender_id}
+                          currentUserId={currentUserId}
+                          partnerName={partnerName}
+                          size="sm"
+                        />
+                      )}
+                    </div>
                     <p className="text-sm" style={{ color: colors.text.tertiary }}>
                       Draft - Not sent yet
                     </p>

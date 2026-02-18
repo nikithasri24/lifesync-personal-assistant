@@ -14,17 +14,24 @@ import {
   getAnniversaryText,
 } from '../utils/dateHelpers';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { OwnerBadge } from '@/components/common/OwnerBadge';
 
 interface MilestoneCardProps {
   milestone: Milestone;
   isPast?: boolean;
   onEdit: () => void;
+  showOwner?: boolean;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
 export const MilestoneCard: React.FC<MilestoneCardProps> = ({
   milestone,
   isPast = false,
   onEdit,
+  showOwner = false,
+  currentUserId,
+  partnerName = 'Partner',
 }) => {
   const colors = useThemeColors();
 
@@ -61,9 +68,19 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
         <div className="flex items-center gap-3">
           <span className="text-3xl">{icon}</span>
           <div>
-            <h3 className="text-lg font-bold" style={{ color: colors.text.primary }}>
-              {milestone.title}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-bold" style={{ color: colors.text.primary }}>
+                {milestone.title}
+              </h3>
+              {showOwner && currentUserId && (
+                <OwnerBadge
+                  userId={milestone.user_id}
+                  currentUserId={currentUserId}
+                  partnerName={partnerName}
+                  size="sm"
+                />
+              )}
+            </div>
             <p className="text-sm" style={{ color: colors.text.secondary }}>
               {dateText}
             </p>

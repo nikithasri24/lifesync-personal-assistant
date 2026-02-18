@@ -55,6 +55,7 @@ interface DbConnection {
   receiver_id: string;
   relationship: string;
   status: string;
+  relationship_start_date: string | null;
   requester_label: string | null;
   receiver_label: string | null;
   notes: string | null;
@@ -500,8 +501,9 @@ export async function updateConnection(
       const partialConn = conn as Pick<DbConnection, 'requester_id' | 'receiver_id'>;
       const isRequester = partialConn.requester_id === user.id;
 
-      const updateData: Partial<Pick<DbConnection, 'relationship' | 'notes' | 'requester_label' | 'receiver_label'>> = {};
+      const updateData: Partial<Pick<DbConnection, 'relationship' | 'relationship_start_date' | 'notes' | 'requester_label' | 'receiver_label'>> = {};
       if (input.relationship) updateData.relationship = input.relationship;
+      if (input.relationshipStartDate !== undefined) updateData.relationship_start_date = input.relationshipStartDate;
       if (input.notes !== undefined) updateData.notes = input.notes;
       if (input.label !== undefined) {
         if (isRequester) {
@@ -682,6 +684,7 @@ function mapDbToConnection(data: DbConnection): ProfileConnection {
     receiverId: data.receiver_id,
     relationship: data.relationship as ConnectionRelationship,
     status: data.status as ConnectionStatus,
+    relationshipStartDate: data.relationship_start_date ?? undefined,
     requesterLabel: data.requester_label ?? undefined,
     receiverLabel: data.receiver_label ?? undefined,
     notes: data.notes ?? undefined,

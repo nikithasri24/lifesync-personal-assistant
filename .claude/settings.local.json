@@ -121,7 +121,13 @@
       "Bash(src/components/v2/index.ts:*)",
       "Bash(/tmp/remove_gamification.sh:*)",
       "Bash(/tmp/remove_gamification.sh)",
-      "Bash(GAMIFICATION_REMOVAL_SUMMARY.md:*)"
+      "Bash(GAMIFICATION_REMOVAL_SUMMARY.md:*)",
+      "Bash(vite build)",
+      "Bash(CRITICAL_FIXES_COMPLETE.md:*)",
+      "Bash(TOGETHER_TASKS_7-9_COMPLETE.md:*)",
+      "Bash(TOGETHER_TASKS_5-6_COMPLETE.md:*)",
+      "Bash(CHECKLIST_TASKS_5-6_UPDATE.md:*)",
+      "Bash(git status:*)"
     ],
     "deny": [],
     "ask": []

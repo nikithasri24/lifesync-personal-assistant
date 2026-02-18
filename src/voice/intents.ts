@@ -3,6 +3,13 @@ import * as mealPlanningAPI from '../api/mealPlanningAPI'
 import { currentMonth, monthRange } from '../finance/utils/date'
 import { formatCurrency } from '../finance/utils/currency'
 import { parseTimeWindow } from './time'
+import { supabase } from '../lib/supabase'
+
+async function getCurrentUserId(): Promise<string> {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) throw new Error('Not authenticated');
+  return user.id;
+}
 
 export type IntentContext = {
   timeframe?: { fromISO?: string; toISO?: string; label?: string }
@@ -130,7 +137,7 @@ function parseOrdinal(text: string): number | undefined {
   return undefined
 }
 
-async function resolveTargetTransaction(n: number | undefined, preferVoiceEntry: boolean, lastRefIndex?: number): Promise<{ tx: { id: string; accountId: string; amount: number; categoryId?: string; dateISO: string; description: string; type: 'debit' | 'credit' }; index: number } | undefined> {
+async function resolveTargetTransaction(n: number | undefined, preferVoiceEntry: boolean, lastRefIndex?: number): Promise<{ tx: { id: string; userId: string; accountId: string; amount: number; categoryId?: string; dateISO: string; description: string; type: 'debit' | 'credit' }; index: number } | undefined> {
   const api = await getFinanceAPI()
   const { items } = await api.listTransactions({ limit: 100 })
   if (!items.length) return undefined
@@ -177,7 +184,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     const found = items.find(i => i.id === ctx.pendingRename?.txnId) ?? items.find(i => /voice entry/i.test(i.description)) ?? items[0]
     if (!found) return { reply: 'I could not find a transaction to rename.', context: { ...ctx, pendingRename: undefined } }
     const newDesc = text.trim()
-    await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: newDesc, type: found.type })
+    await api.upsertTransaction({ id: found.id, userId: found.userId, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: newDesc, type: found.type })
     return { reply: `Renamed the last transaction to "${newDesc}".`, context: { ...ctx, pendingRename: undefined }, toast: { message: 'Transaction renamed', type: 'success' } }
   }
 
@@ -191,7 +198,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     const { items } = await api.listTransactions({ limit: 50 })
     const found = items.find(i => i.id === ctx.pendingAssignCategory?.txnId) ?? items.find(i => /voice entry/i.test(i.description)) ?? items[0]
     if (!found) return { reply: 'I could not find a transaction to categorize.', context: { ...ctx, pendingAssignCategory: undefined } }
-    await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: resolved.id, dateISO: found.dateISO, description: found.description, type: found.type })
+    await api.upsertTransaction({ id: found.id, userId: found.userId, accountId: found.accountId, amount: found.amount, categoryId: resolved.id, dateISO: found.dateISO, description: found.description, type: found.type })
     return { reply: `Categorized the last transaction as ${resolved.name}.`, context: { ...ctx, pendingAssignCategory: undefined, lastCategoryId: resolved.id, lastCategoryName: resolved.name }, toast: { message: 'Transaction categorized', type: 'success' } }
   }
 
@@ -200,7 +207,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     const found = items.find(i => i.id === ctx.pendingSetAmount?.txnId) ?? items.find(i => /voice entry/i.test(i.description)) ?? items[0]
     if (!found) return { reply: 'I could not find a transaction to update.', context: { ...ctx, pendingSetAmount: undefined } }
     const amt = parseAmount(text); if (amt == null) return { reply: 'Please say the amount again.', context: { ...ctx } }
-    await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: Math.abs(amt), categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type })
+    await api.upsertTransaction({ id: found.id, userId: found.userId, accountId: found.accountId, amount: Math.abs(amt), categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type })
     return { reply: `Updated the amount to ${formatCurrency(Math.abs(amt))}.`, context: { ...ctx, pendingSetAmount: undefined }, toast: { message: 'Amount updated', type: 'success' } }
   }
 
@@ -209,7 +216,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     const found = items.find(i => i.id === ctx.pendingMoveAccount?.txnId) ?? items.find(i => /voice entry/i.test(i.description)) ?? items[0]
     if (!found) return { reply: 'I could not find a transaction to move.', context: { ...ctx, pendingMoveAccount: undefined } }
     const r = await resolveAccountIdByName(text); if (!r.id) return { reply: "I couldn't find that account. Please say the account name again.", context: { ...ctx } }
-    await api.upsertTransaction({ id: found.id, accountId: r.id, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type })
+    await api.upsertTransaction({ id: found.id, userId: found.userId, accountId: r.id, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type })
     return { reply: `Moved the transaction to ${r.name}.`, context: { ...ctx, pendingMoveAccount: undefined }, toast: { message: 'Transaction moved to account', type: 'success' } }
   }
 
@@ -220,7 +227,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     const isCredit = /(credit|income|incoming|refund)/.test(t); const isDebit = /(debit|expense|outgoing|charge|purchase)/.test(t)
     if (!isCredit && !isDebit) return { reply: 'Should I set it to debit or credit?', context: { ...ctx } }
     const newType = (isCredit ? 'credit' : 'debit')
-    await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: newType })
+    await api.upsertTransaction({ id: found.id, userId: found.userId, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: newType })
     return { reply: `Set the transaction type to ${newType}.`, context: { ...ctx, pendingSetType: undefined }, toast: { message: 'Transaction type updated', type: 'success' } }
   }
 
@@ -321,7 +328,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
   if (/^(rename|update|change) (the )?(last )?(transaction|entry)/.test(t) || /^set description to /.test(t)) {
     const api = await getFinanceAPI(); const { items } = await api.listTransactions({ limit: 50 })
     const found = items.find(i => /voice entry/i.test(i.description)) ?? items[0]; if (!found) return { reply: 'I could not find a recent transaction to rename.' }
-    const m = text.match(/to (.+)$/); if (m?.[1]) { const newDesc = m[1].trim(); await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: newDesc, type: found.type }); return { reply: `Renamed the last transaction to "${newDesc}".`, toast: { message: 'Transaction renamed', type: 'success' } } }
+    const m = text.match(/to (.+)$/); if (m?.[1]) { const newDesc = m[1].trim(); await api.upsertTransaction({ id: found.id, userId: found.userId, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: newDesc, type: found.type }); return { reply: `Renamed the last transaction to "${newDesc}".`, toast: { message: 'Transaction renamed', type: 'success' } } }
     return { reply: 'What should I rename it to?', context: { ...ctx, pendingRename: { txnId: found.id } } }
   }
 
@@ -342,7 +349,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
           .filter(x => x.score > 0).sort((a,b) => b.score - a.score).slice(0,3).map(x => x.name)
         const suggestionText = scored.length ? ` Did you mean: ${scored.join(', ')}?` : '';
         return { reply: `I couldn't find that category.${suggestionText} Please say the category again.`, context: { ...ctx, pendingAssignCategory: { txnId: found.id }, pendingCategorySuggestions: scored } }
-      }; await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: r.id, dateISO: found.dateISO, description: found.description, type: found.type }); return { reply: `Categorized the last transaction as ${r.name}.`, context: { ...ctx, lastCategoryId: r.id, lastCategoryName: r.name }, toast: { message: 'Transaction categorized', type: 'success' } } }
+      }; await api.upsertTransaction({ id: found.id, userId: found.userId, accountId: found.accountId, amount: found.amount, categoryId: r.id, dateISO: found.dateISO, description: found.description, type: found.type }); return { reply: `Categorized the last transaction as ${r.name}.`, context: { ...ctx, lastCategoryId: r.id, lastCategoryName: r.name }, toast: { message: 'Transaction categorized', type: 'success' } } }
     return { reply: 'Which category should I set?', context: { ...ctx, pendingAssignCategory: { txnId: found.id } } }
   }
 
@@ -357,7 +364,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     }
     if (!found) return { reply: 'I could not find a recent transaction to update.' }
     const amt = parseAmount(t); if (amt == null) return { reply: 'What amount should I set?', context: { ...ctx, pendingSetAmount: { txnId: found.id } } }
-    await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: Math.abs(amt), categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type })
+    await api.upsertTransaction({ id: found.id, userId: found.userId, accountId: found.accountId, amount: Math.abs(amt), categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type })
     return { reply: `Updated the amount to ${formatCurrency(Math.abs(amt))}.`, toast: { message: 'Amount updated', type: 'success' } }
   }
 
@@ -370,7 +377,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
       const same = items.find(i => isSameUTCDate(new Date(i.dateISO), date))
       if (same) found = same
     }
-    const m = text.match(/to (account )?(.+)$/); if (m?.[2]) { const r = await resolveAccountIdByName(m[2]); if (!r.id) return { reply: `I couldn't find that account. Please say the account again.`, context: { ...ctx, pendingMoveAccount: { txnId: found.id } } }; await api.upsertTransaction({ id: found.id, accountId: r.id, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type }); return { reply: `Moved the transaction to ${r.name}.`, toast: { message: 'Transaction moved to account', type: 'success' } } }
+    const m = text.match(/to (account )?(.+)$/); if (m?.[2]) { const r = await resolveAccountIdByName(m[2]); if (!r.id) return { reply: `I couldn't find that account. Please say the account again.`, context: { ...ctx, pendingMoveAccount: { txnId: found.id } } }; await api.upsertTransaction({ id: found.id, userId: found.userId, accountId: r.id, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type }); return { reply: `Moved the transaction to ${r.name}.`, toast: { message: 'Transaction moved to account', type: 'success' } } }
     return { reply: 'Which account should I move it to?', context: { ...ctx, pendingMoveAccount: { txnId: found.id } } }
   }
 
@@ -386,7 +393,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     const isCredit = /(credit|income|refund)/.test(t); const isDebit = /(debit|expense|charge|purchase)/.test(t)
     if (!isCredit && !isDebit) return { reply: 'Should I set it to debit or credit?', context: { ...ctx, pendingSetType: { txnId: found.id } } }
     const newType = (isCredit ? 'credit' : 'debit')
-    await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: newType })
+    await api.upsertTransaction({ id: found.id, userId: found.userId, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: newType })
     return { reply: `Set the transaction type to ${newType}.`, toast: { message: 'Transaction type updated', type: 'success' } }
   }
 
@@ -396,7 +403,8 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     if (!snap) { const { items } = await api.listTransactions({ limit: 50 }); const found = items.find(i => /voice entry/i.test(i.description)); if (found) return { reply: `Do you want me to delete the last voice transaction of ${formatCurrency(found.amount)}?`, context: { ...ctx, pendingDelete: { id: found.id, amount: found.amount } } } }
     if (!snap) return { reply: 'I could not find a recent voice transaction to undo.' }
     const inverseType = snap.type === 'debit' ? 'credit' : 'debit'
-    await api.upsertTransaction({ accountId: snap.accountId, amount: snap.amount, categoryId: undefined, dateISO: new Date().toISOString(), description: 'Voice reversal of last entry', type: inverseType })
+    const userId = await getCurrentUserId()
+    await api.upsertTransaction({ userId, accountId: snap.accountId, amount: snap.amount, categoryId: undefined, dateISO: new Date().toISOString(), description: 'Voice reversal of last entry', type: inverseType })
     return { reply: `Undid the last entry by recording a ${inverseType} of ${formatCurrency(snap.amount)}.`, context: { ...ctx, lastTxnSnapshot: undefined }, toast: { message: 'Reversed last voice transaction', type: 'success' } }
   }
 
@@ -415,7 +423,8 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     }
     let categoryId: string | undefined; if (cname) { const r = await resolveCategoryIdByName(cname); categoryId = r.id }
     const accounts = await api.listAccounts(); const accountId = accounts[0]?.id || 'manual'
-    await api.upsertTransaction({ accountId, amount: Math.abs(amount), categoryId, dateISO: new Date().toISOString(), description: `Voice entry${cname ? ' - ' + cname : ''}`, type: 'debit' })
+    const userId = await getCurrentUserId()
+    await api.upsertTransaction({ userId, accountId, amount: Math.abs(amount), categoryId, dateISO: new Date().toISOString(), description: `Voice entry${cname ? ' - ' + cname : ''}`, type: 'debit' })
     return { reply: `Recorded ${formatCurrency(Math.abs(amount))}${cname ? ' for ' + cname : ''}.`, context: { lastCategoryId: categoryId, lastCategoryName: cname, lastTxnSnapshot: { accountId, amount: Math.abs(amount), type: 'debit' }, lastRefIndex: 1 }, toast: { message: 'Transaction recorded', type: 'success' } }
   }
 
@@ -427,7 +436,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     const amt = parseAmount(t)
     if (target && amt != null) {
       const f = target.tx
-      await api.upsertTransaction({ id: f.id, accountId: f.accountId, amount: Math.abs(amt), categoryId: f.categoryId, dateISO: f.dateISO, description: f.description, type: f.type })
+      await api.upsertTransaction({ id: f.id, userId: f.userId, accountId: f.accountId, amount: Math.abs(amt), categoryId: f.categoryId, dateISO: f.dateISO, description: f.description, type: f.type })
       return { reply: `Okay, updated it to ${formatCurrency(Math.abs(amt))}.`, context: { ...ctx, lastRefIndex: target.index, lastRefTxnId: f.id }, toast: { message: 'Amount updated', type: 'success' } }
     }
   }

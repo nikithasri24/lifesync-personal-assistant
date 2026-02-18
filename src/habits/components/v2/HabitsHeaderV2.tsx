@@ -22,6 +22,8 @@ export interface HabitsHeaderV2Props {
   completedToday?: number;
   viewMode?: 'today' | 'weekly';
   onViewModeChange?: (mode: 'today' | 'weekly') => void;
+  selectedDate?: Date;
+  onDateChange?: (date: Date) => void;
 }
 
 export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
@@ -34,8 +36,67 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
   partnerName = 'Partner',
   viewMode = 'today',
   onViewModeChange,
+  selectedDate = new Date(),
+  onDateChange,
 }) => {
   const colors = useThemeColors();
+
+  const handlePrevious = () => {
+    if (!onDateChange) return;
+
+    const newDate = new Date(selectedDate);
+    if (viewMode === 'weekly') {
+      // Go back 7 days (previous week)
+      newDate.setDate(newDate.getDate() - 7);
+    } else {
+      // Go back 1 day
+      newDate.setDate(newDate.getDate() - 1);
+    }
+    onDateChange(newDate);
+  };
+
+  const handleNext = () => {
+    if (!onDateChange) return;
+
+    const newDate = new Date(selectedDate);
+    if (viewMode === 'weekly') {
+      // Go forward 7 days (next week)
+      newDate.setDate(newDate.getDate() + 7);
+    } else {
+      // Go forward 1 day
+      newDate.setDate(newDate.getDate() + 1);
+    }
+    onDateChange(newDate);
+  };
+
+  const handleToday = () => {
+    if (!onDateChange) return;
+    onDateChange(new Date());
+  };
+
+  // Format date label
+  const getDateLabel = () => {
+    const today = new Date();
+    const isToday = selectedDate.toDateString() === today.toDateString();
+
+    if (viewMode === 'today') {
+      if (isToday) {
+        return `Today, ${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      }
+      return selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: selectedDate.getFullYear() !== today.getFullYear() ? 'numeric' : undefined });
+    } else {
+      // Weekly view - show week range
+      const weekStart = new Date(selectedDate);
+      const day = weekStart.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      weekStart.setDate(weekStart.getDate() + diff);
+
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+
+      return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${weekEnd.getFullYear()}`;
+    }
+  };
 
   return (
     <div>
@@ -236,7 +297,8 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
           paddingRight: '1.5rem',
         }}
       >
-        <div
+        <button
+          onClick={handlePrevious}
           style={{
             width: '32px',
             height: '32px',
@@ -249,17 +311,36 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
             fontSize: '16px',
             fontWeight: 700,
             cursor: 'pointer',
+            border: 'none',
+            transition: 'background 0.2s',
           }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212, 165, 116, 0.2)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(212, 165, 116, 0.1)'}
+          aria-label="Previous"
         >
           ‹
-        </div>
-        <div style={{ fontSize: '16px', fontWeight: 600, color: '#5C4A3A' }}>
-          {viewMode === 'today'
-            ? `Today, ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-            : `${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${new Date().getFullYear()}`
-          }
-        </div>
-        <div
+        </button>
+        <button
+          onClick={handleToday}
+          style={{
+            fontSize: '16px',
+            fontWeight: 600,
+            color: '#5C4A3A',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            transition: 'background 0.2s',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212, 165, 116, 0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+          aria-label="Go to today"
+        >
+          {getDateLabel()}
+        </button>
+        <button
+          onClick={handleNext}
           style={{
             width: '32px',
             height: '32px',
@@ -272,10 +353,15 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
             fontSize: '16px',
             fontWeight: 700,
             cursor: 'pointer',
+            border: 'none',
+            transition: 'background 0.2s',
           }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212, 165, 116, 0.2)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(212, 165, 116, 0.1)'}
+          aria-label="Next"
         >
           ›
-        </div>
+        </button>
       </div>
 
       {/* Owner Filter for merged mode */}
