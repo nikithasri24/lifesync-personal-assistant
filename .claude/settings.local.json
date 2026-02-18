@@ -127,7 +127,8 @@
       "Bash(TOGETHER_TASKS_7-9_COMPLETE.md:*)",
       "Bash(TOGETHER_TASKS_5-6_COMPLETE.md:*)",
       "Bash(CHECKLIST_TASKS_5-6_UPDATE.md:*)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/v2/index.ts:*)"
     ],
     "deny": [],
     "ask": []

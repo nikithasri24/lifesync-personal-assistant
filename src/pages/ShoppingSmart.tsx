@@ -13,6 +13,12 @@ import { StoresRichView } from '../shopping/components/views/StoresRichView';
 import { SegmentedControlV2 } from '../components/v2/SegmentedControlV2';
 import { FABV2 } from '../components/v2/FABV2';
 import { ShoppingHeaderV2 } from '../shopping/components/v2/ShoppingHeaderV2';
+import { StatsCardsV2 } from '../shopping/components/v2/StatsCardsV2';
+import { FilterBarV2, type CategoryFilter, type PriorityFilter, type StoreFilter } from '../shopping/components/v2/FilterBarV2';
+import { AddItemModalV2 } from '../shopping/components/v2/AddItemModalV2';
+import { EditItemModalV2 } from '../shopping/components/v2/EditItemModalV2';
+import { AddPantryItemModalV2 } from '../shopping/components/v2/AddPantryItemModalV2';
+import { AddStoreModalV2 } from '../shopping/components/v2/AddStoreModalV2';
 import { AddItemChoiceModal } from '../shopping/components/modals/AddItemChoiceModal';
 import {
   useVoiceInput,
@@ -55,6 +61,13 @@ export default function ShoppingSmart(): ReactElement {
   const [distributionStrategy, setDistributionStrategy] = useState<DistributionStrategy>('mixed');
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isDistributing, setIsDistributing] = useState(false);
+
+  // Filter states
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
+  const [storeFilter, setStoreFilter] = useState<StoreFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showPurchasedOnly, setShowPurchasedOnly] = useState(false);
 
   // Form state management using consolidated hook
   const newItemForm = useItemForm();
@@ -195,6 +208,39 @@ export default function ShoppingSmart(): ReactElement {
     }
   };
 
+  // Apply filters
+  const filteredItems = shoppingItems.filter((item: ShoppingItem) => {
+    // Search filter
+    if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+
+    // Purchased filter
+    if (showPurchasedOnly && !item.purchased) {
+      return false;
+    }
+    if (!showPurchasedOnly && activeView === 'list' && item.purchased) {
+      return false; // Hide purchased in list view when not filtering
+    }
+
+    // Category filter
+    if (categoryFilter !== 'all' && item.category !== categoryFilter) {
+      return false;
+    }
+
+    // Priority filter
+    if (priorityFilter !== 'all' && item.priority !== priorityFilter) {
+      return false;
+    }
+
+    // Store filter
+    if (storeFilter !== 'all' && item.assignedStore !== storeFilter) {
+      return false;
+    }
+
+    return true;
+  });
+
   const totalMasterItems = shoppingItems.filter((item: ShoppingItem) => !item.purchased).length;
   const completedItems = shoppingItems.filter((item: ShoppingItem) => item.purchased).length;
   const totalEstimatedCost = shoppingItems.reduce((sum: number, item: ShoppingItem) => sum + (item.estimatedPrice ?? 0), 0);
@@ -214,69 +260,88 @@ export default function ShoppingSmart(): ReactElement {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: colors.bg.primary }}>
-      {/* Header with Stats */}
-      <ShoppingHeaderV2
-        title="Shopping"
-        subtitle={activeView === 'list' ? 'Smart grocery management' : activeView === 'pantry' ? `${pantryItems.length} items at home` : activeView === 'stores' ? `${stores.length} stores saved` : 'Purchase history'}
-        itemsCount={shoppingItems.length}
-        completedCount={completedItems}
-        totalCost={totalEstimatedCost}
-        onVoiceClick={handleVoiceInput}
-        onBarcodeClick={() => { void handleStartBarcodeScanning(); }}
-      />
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <ShoppingHeaderV2 />
 
-      {/* Segmented Control */}
-      <div style={{ padding: '16px 20px' }}>
-        <SegmentedControlV2
-          segments={[
-            { value: 'list', label: 'List' },
-            { value: 'pantry', label: 'Pantry' },
-            { value: 'stores', label: 'Stores' },
-            { value: 'history', label: 'History' },
-          ]}
-          value={activeView}
-          onChange={(value) => setActiveView(value as ViewType)}
-          aria-label="Shopping view selector"
+        {/* Stats Cards */}
+        <StatsCardsV2
+          totalItems={totalMasterItems + completedItems}
+          completedItems={completedItems}
+          totalCost={totalEstimatedCost}
+          remainingCost={shoppingItems.filter(i => !i.purchased).reduce((sum, item) => sum + (item.estimatedPrice ?? 0), 0)}
         />
+
+        {/* Segmented Control */}
+        <div className="mb-6">
+          <SegmentedControlV2
+            segments={[
+              { value: 'list', label: 'List' },
+              { value: 'pantry', label: 'Pantry' },
+              { value: 'stores', label: 'Stores' },
+              { value: 'history', label: 'History' },
+            ]}
+            value={activeView}
+            onChange={(value) => setActiveView(value as ViewType)}
+            aria-label="Shopping view selector"
+          />
+        </div>
+
+        {/* Filter Bar - Only show in list view */}
+        {activeView === 'list' && (
+          <FilterBarV2
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+            priorityFilter={priorityFilter}
+            onPriorityFilterChange={setPriorityFilter}
+            storeFilter={storeFilter}
+            onStoreFilterChange={setStoreFilter}
+            stores={stores}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            showPurchasedOnly={showPurchasedOnly}
+            onTogglePurchased={() => setShowPurchasedOnly(!showPurchasedOnly)}
+          />
+        )}
+
+        {/* Content based on active view */}
+        {activeView === 'list' && (
+          <MasterListView
+            items={filteredItems}
+            stores={stores}
+            onToggleItem={(itemId) => { void handleToggleItem(itemId); }}
+            onEditItem={startEditItem}
+            onRequestDeleteItem={(itemId) => setItemToDelete(itemId)}
+            onFindStores={openStoreSuggestions}
+            onShowStorePrefs={() => setShowStorePrefs(true)}
+          />
+        )}
+
+        {activeView === 'pantry' && (
+          <PantryGridView
+            items={pantryItems}
+            onItemClick={(item) => setSelectedPantryItem(item)}
+            onAddItem={() => setShowAddPantry(true)}
+          />
+        )}
+
+        {activeView === 'stores' && (
+          <StoresRichView
+            stores={stores}
+            shoppingItems={shoppingItems}
+            onViewStoreList={(store) => setSelectedStore(store)}
+            onAddStore={() => setShowAddStoreModal(true)}
+          />
+        )}
+
+        {activeView === 'history' && (
+          <ShoppingHistoryView
+            items={shoppingItems}
+            onScanReceipt={() => setShowScanReceipt(true)}
+          />
+        )}
       </div>
-
-      {/* Content based on active view */}
-      {activeView === 'list' && (
-        <MasterListView
-          items={shoppingItems}
-          stores={stores}
-          onToggleItem={(itemId) => { void handleToggleItem(itemId); }}
-          onEditItem={startEditItem}
-          onRequestDeleteItem={(itemId) => setItemToDelete(itemId)}
-          onFindStores={openStoreSuggestions}
-          onShowStorePrefs={() => setShowStorePrefs(true)}
-        />
-      )}
-
-      {activeView === 'pantry' && (
-        <PantryGridView
-          items={pantryItems}
-          onItemClick={(item) => setSelectedPantryItem(item)}
-          onAddItem={() => setShowAddPantry(true)}
-        />
-      )}
-
-      {activeView === 'stores' && (
-        <StoresRichView
-          stores={stores}
-          shoppingItems={shoppingItems}
-          onViewStoreList={(store) => setSelectedStore(store)}
-          onAddStore={() => setShowAddStoreModal(true)}
-        />
-      )}
-
-      {activeView === 'history' && (
-        <ShoppingHistoryView
-          items={shoppingItems}
-          onScanReceipt={() => setShowScanReceipt(true)}
-        />
-      )}
 
       {/* Floating Action Button - V2 Component */}
       <div className="fixed z-50" style={{ bottom: '116px', right: '24px' }}>
@@ -307,10 +372,51 @@ export default function ShoppingSmart(): ReactElement {
         }}
       />
 
+      {/* Add Item Modal V2 */}
+      <AddItemModalV2
+        isOpen={showAddItem}
+        formData={newItemForm.formData}
+        barcodeResult={barcodeResult}
+        stores={stores}
+        onClose={() => setShowAddItem(false)}
+        onSubmit={addItemToMaster}
+        onFormChange={(updates) => newItemForm.updateForm(updates)}
+        onBarcodeChange={setBarcodeResult}
+      />
+
+      {/* Edit Item Modal V2 */}
+      {editingItem && (
+        <EditItemModalV2
+          isOpen={showEditItem}
+          itemId={editingItem.id}
+          formData={editItemForm.formData}
+          barcodeResult={barcodeResult}
+          stores={stores}
+          onClose={closeEditModal}
+          onSubmit={updateExistingItem}
+          onDelete={() => {
+            if (editingItem) {
+              void deleteShoppingItem(editingItem.id);
+              closeEditModal();
+            }
+          }}
+          onFormChange={(updates) => editItemForm.updateForm(updates)}
+          onBarcodeChange={setBarcodeResult}
+        />
+      )}
+
+      {/* Add Pantry Modal V2 */}
+      <AddPantryItemModalV2
+        isOpen={showAddPantry}
+        onClose={() => setShowAddPantry(false)}
+        onSave={handleAddPantryItem}
+      />
+
+      {/* Barcode Scanner and Receipt Scanning - Keep original */}
       <ShoppingModals
-        showAddPantry={showAddPantry}
-        onAddPantryClose={() => setShowAddPantry(false)}
-        onAddPantrySave={handleAddPantryItem}
+        showAddPantry={false}
+        onAddPantryClose={() => {}}
+        onAddPantrySave={async () => {}}
         showScanReceipt={showScanReceipt}
         onScanReceiptClose={() => setShowScanReceipt(false)}
         onAddToPantry={handleReceiptItems}
@@ -323,18 +429,18 @@ export default function ShoppingSmart(): ReactElement {
         onBarcodeScannerClose={handleStopBarcodeScanning}
         onBarcodeCapture={() => { void captureNow(); }}
         onBarcodeStop={handleStopBarcodeScanning}
-        showEditItem={showEditItem}
+        showEditItem={false}
         editFormData={editItemForm.formData}
         stores={stores}
-        onEditItemClose={closeEditModal}
-        onEditItemSubmit={updateExistingItem}
-        onEditFormChange={(updates) => editItemForm.updateForm(updates)}
-        showAddItem={showAddItem}
+        onEditItemClose={() => {}}
+        onEditItemSubmit={() => {}}
+        onEditFormChange={() => {}}
+        showAddItem={false}
         addFormData={newItemForm.formData}
-        onAddItemClose={() => setShowAddItem(false)}
-        onAddItemSubmit={addItemToMaster}
-        onAddFormChange={(updates) => newItemForm.updateForm(updates)}
-        onBarcodeChange={setBarcodeResult}
+        onAddItemClose={() => {}}
+        onAddItemSubmit={() => {}}
+        onAddFormChange={() => {}}
+        onBarcodeChange={() => {}}
         showLocationSuggestions={showLocationSuggestions}
         selectedItemForSuggestions={selectedItemForSuggestions}
         userLocation={userLocation}
@@ -351,14 +457,14 @@ export default function ShoppingSmart(): ReactElement {
         }}
       />
 
-      {/* Add Store Modal */}
-      <AddStoreModal
+      {/* Add Store Modal V2 */}
+      <AddStoreModalV2
         isOpen={showAddStoreModal}
         onClose={() => setShowAddStoreModal(false)}
         onSubmit={(storeData) => {
           createStoreMutation.mutate(storeData, {
             onSuccess: () => {
-              showToast('Store added successfully!', 'success');
+              showToast('Store added successfully! 🏪', 'success');
               setShowAddStoreModal(false);
             },
             onError: (error) => {
