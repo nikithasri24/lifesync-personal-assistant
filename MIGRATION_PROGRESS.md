@@ -2,9 +2,9 @@
 
 ## Session Summary
 
-Successfully migrated **25 modals** to FormModalV2!
+Successfully migrated **26 modals** to FormModalV2!
 
-**Total Impact:** 2,639 lines eliminated (31% average reduction)
+**Total Impact:** 2,734 lines eliminated (31% average reduction)
 
 ---
 
@@ -201,15 +201,23 @@ Successfully migrated **25 modals** to FormModalV2!
 - **Special Features:** Radio button type selector (debit/credit), ISO date formatting, external props for accounts/categories
 - **Commit:** `feat: Migrate TransactionFormModalV2 to use FormModalV2`
 
+### 26. BudgetFormModalV2 (Finance)
+- **Before:** 279 lines
+- **After:** 184 lines
+- **Reduction:** 95 lines (34%)
+- **Form Fields:** 5 fields (monthYear, categoryId, limitAmount, rollover, notes)
+- **Special Features:** Month picker (type="month"), checkbox for rollover option with description, external categories prop
+- **Commit:** `feat: Migrate BudgetFormModalV2 to use FormModalV2`
+
 ---
 
 ## 📊 Cumulative Impact
 
 | Metric | Before | After | Savings |
 |--------|--------|-------|---------|
-| **Total Lines** | 8,709 | 6,070 | 2,639 (31%) |
-| **Average per Modal** | 348 | 243 | 105 (31%) |
-| **Boilerplate Eliminated** | ~2,900 lines | 0 | 2,900 (100%) |
+| **Total Lines** | 8,988 | 6,254 | 2,734 (31%) |
+| **Average per Modal** | 346 | 241 | 105 (31%) |
+| **Boilerplate Eliminated** | ~3,000 lines | 0 | 3,000 (100%) |
 
 ---
 
@@ -289,12 +297,14 @@ Per modal, we consistently eliminated:
 - [x] TripFormModalV2 (326 lines) ✅ COMPLETE
 - [x] BucketListFormModalV2 (471 lines) ✅ COMPLETE
 
-### Finance Modals - 🔄 IN PROGRESS (2/5+)
+### Finance Modals - 🔄 IN PROGRESS (3/5+)
 - [x] AccountFormModalV2 (313 lines) ✅ COMPLETE
 - [x] TransactionFormModalV2 (366 lines) ✅ COMPLETE
-- [ ] BudgetFormModalV2
-- [ ] GoalFormModalV2
-- [ ] Other Finance modals
+- [x] BudgetFormModalV2 (279 lines) ✅ COMPLETE
+- [ ] GoalFormModalV2 (306 lines)
+- [ ] LoanFormModalV2 (383 lines)
+- [ ] CreditCardFormModalV2 (448 lines)
+- [ ] InsuranceFormModalV2 (427 lines)
 
 ### Other Feature Modals
 - ~20+ more modals across Skincare, Calendar, Dashboard, Focus, etc.
