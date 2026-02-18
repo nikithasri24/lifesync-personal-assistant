@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { logger } from '@/services/logger';
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
@@ -57,7 +58,7 @@ export const FoodLogModalV2: React.FC<FoodLogModalV2Props> = ({
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) return JSON.parse(saved);
     } catch (error) {
-      console.error('Failed to load draft:', error);
+      logger.error('Nutrition', error as Error, { context: 'Failed to load draft' });
     }
     return null;
   };
@@ -119,7 +120,7 @@ export const FoodLogModalV2: React.FC<FoodLogModalV2Props> = ({
       localStorage.removeItem(STORAGE_KEY);
       onClose();
     } catch (error) {
-      console.error('Failed to save food log:', error);
+      logger.error('Nutrition', error as Error, { context: 'Failed to save food log' });
     } finally {
       setIsPending(false);
     }
@@ -207,6 +208,7 @@ export const FoodLogModalV2: React.FC<FoodLogModalV2Props> = ({
                       ? 'bg-terracotta-100 text-terracotta-600 border-2 border-terracotta-400'
                       : 'bg-gray-100 text-gray-700 border-2 border-transparent'
                   }`}
+                  aria-label={`Select ${meal.label} meal type`}
                 >
                   <span>{meal.emoji}</span>
                   <span>{meal.label}</span>

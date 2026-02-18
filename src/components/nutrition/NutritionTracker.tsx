@@ -98,7 +98,7 @@ export function NutritionTracker(): React.ReactElement {
 
       setActivePanel('none');
     } catch (err) {
-      logger.error('Nutrition', 'Failed to log photo meal:', err);
+      logger.error('Nutrition', err as Error, { context: 'Failed to log photo meal' });
     }
   };
 
@@ -195,6 +195,7 @@ export function NutritionTracker(): React.ReactElement {
           style={{
             background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
           }}
+          aria-label="Take photo of food"
         >
           <Camera className="w-5 h-5" />
           <span className="text-xs">Snap</span>
@@ -205,6 +206,7 @@ export function NutritionTracker(): React.ReactElement {
           style={{
             background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
           }}
+          aria-label="Search for food"
         >
           <Search className="w-5 h-5" />
           <span className="text-xs">Search</span>
@@ -215,6 +217,7 @@ export function NutritionTracker(): React.ReactElement {
           style={{
             background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
           }}
+          aria-label="Scan barcode"
         >
           <ScanBarcode className="w-5 h-5" />
           <span className="text-xs">Barcode</span>
@@ -226,6 +229,7 @@ export function NutritionTracker(): React.ReactElement {
             border: `2px solid ${colors.border.light}`,
             color: colors.text.primary,
           }}
+          aria-label="Quick add food"
         >
           <Plus className="w-5 h-5" />
           <span className="text-xs">Quick</span>
@@ -274,6 +278,7 @@ export function NutritionTracker(): React.ReactElement {
                     : colors.bg.secondary,
                   color: selectedMealType === m.type ? 'white' : colors.text.primary,
                 }}
+                aria-label={`Select ${m.label} meal type`}
               >
                 {m.icon} {m.label}
               </button>
@@ -329,7 +334,7 @@ export function NutritionTracker(): React.ReactElement {
               }}
               onFoodClick={(id) => {
                 // Handle food item click - could open edit modal
-                console.log('Food clicked:', id);
+                logger.debug('Nutrition', 'Food clicked', { id });
               }}
             />
           ))}

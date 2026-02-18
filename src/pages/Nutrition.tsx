@@ -18,7 +18,7 @@ const Nutrition: React.FC = () => {
         data-testid="nutrition-container"
       >
         {/* All content centered with max width */}
-        <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
           {/* Header with Terracotta Gradient */}
           <div
             style={{
@@ -30,7 +30,7 @@ const Nutrition: React.FC = () => {
             }}
           >
             <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-              🍽️ Nutrition
+              🍽️
             </h1>
             <div style={{ fontSize: '14px', opacity: 0.9 }}>
               Track your meals & macros
