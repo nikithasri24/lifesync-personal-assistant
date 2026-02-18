@@ -10,18 +10,19 @@ import { useHabits, useCreateHabitEntry } from '@/hooks/useHabitsQuery';
 import { useNotes } from '@/hooks/useNotesQuery';
 import { useJournalEntries } from '@/hooks/useJournalQuery';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { useToast } from '@/hooks/useToast';
 import { DashboardHeaderV2 } from '@/dashboard/components/v2/DashboardHeaderV2';
 import { QuickActionsV2 } from '@/dashboard/components/v2/QuickActionsV2';
 import { BriefingCardV2 } from '@/dashboard/components/v2/BriefingCardV2';
 import { TodayTasksSectionV2, TodayHabitsSectionV2, RecentNotesSectionV2 } from '@/dashboard/components/v2';
 import { QuickAddModalV2 } from '@/dashboard/components/v2/QuickAddModalV2';
 import { useTaskModals } from '@/todos/hooks/useTaskModals';
-import { showToast } from '@/services/toast';
 import type { Task, Habit, Note, JournalEntry } from '@/types';
 
 export default function Dashboard() {
   const colors = useThemeColors();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   // Data fetching
   const tasksQuery = useTasks();
