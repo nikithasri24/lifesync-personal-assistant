@@ -1,15 +1,18 @@
 /**
- * RecipeFormModalV2 Component
+ * RecipeFormModalV2 Component - MIGRATED to use FormModalV2
  * Together pattern modal for creating/editing recipes
- * Features: dynamic ingredients, dynamic instructions, nutrition, auto-save
+ *
+ * MIGRATION COMPLETE:
+ * - Reduced from 550 lines to ~430 lines (22% reduction)
+ * - Removed all boilerplate (ESC key, backdrop, auto-save, modal structure, delete confirmation)
+ * - Form state managed by FormModalV2
+ * - Dynamic arrays (ingredients, instructions) handled in render function
  */
 
-import React, { useEffect, useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import React from 'react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { logger } from '@/services/logger';
-
-const STORAGE_KEY = 'recipe_form_draft';
+import { FormModalV2 } from '@/components/v2';
 
 interface Ingredient {
   name: string;
@@ -56,8 +59,6 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
   onDelete,
 }) => {
   const colors = useThemeColors();
-  const [isPending, setIsPending] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const defaultFormData: RecipeFormData = {
     name: '',
@@ -79,151 +80,72 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
     isFavorite: false,
   };
 
-  const [formData, setFormData] = useState<RecipeFormData>(defaultFormData);
-
-  // Load draft or initial data
-  useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        setFormData({ ...defaultFormData, ...initialData });
-      } else if (!recipeId) {
-        try {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) {
-            const draft = JSON.parse(saved);
-            setFormData({ ...defaultFormData, ...draft });
-          }
-        } catch (error) {
-          logger.error('Meals', error as Error, { context: 'Failed to load recipe draft' });
-        }
-      }
-    }
-  }, [isOpen, recipeId, initialData]);
-
-  // Auto-save
-  useEffect(() => {
-    if (isOpen && formData.name && !recipeId) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-      } catch (error) {
-        logger.error('Meals', error as Error, { context: 'Failed to save recipe draft' });
-      }
-    }
-  }, [isOpen, formData, recipeId]);
-
-  // ESC key
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsPending(true);
-    try {
-      onSubmit(formData);
-      if (!recipeId) localStorage.removeItem(STORAGE_KEY);
-      onClose();
-    } finally {
-      setIsPending(false);
-    }
-  };
-
-  const addIngredient = () => {
-    setFormData({
-      ...formData,
-      ingredients: [...formData.ingredients, { name: '', amount: '', unit: 'cup', category: '' }],
-    });
-  };
-
-  const removeIngredient = (index: number) => {
-    setFormData({
-      ...formData,
-      ingredients: formData.ingredients.filter((_, i) => i !== index),
-    });
-  };
-
-  const updateIngredient = (index: number, field: keyof Ingredient, value: string) => {
-    const updated = [...formData.ingredients];
-    updated[index] = { ...updated[index], [field]: value };
-    setFormData({ ...formData, ingredients: updated });
-  };
-
-  const addInstruction = () => {
-    setFormData({
-      ...formData,
-      instructions: [...formData.instructions, ''],
-    });
-  };
-
-  const removeInstruction = (index: number) => {
-    setFormData({
-      ...formData,
-      instructions: formData.instructions.filter((_, i) => i !== index),
-    });
-  };
-
-  const updateInstruction = (index: number, value: string) => {
-    const updated = [...formData.instructions];
-    updated[index] = value;
-    setFormData({ ...formData, instructions: updated });
-  };
-
-  const handleDelete = () => {
-    if (showDeleteConfirm && onDelete) {
-      onDelete();
-      setShowDeleteConfirm(false);
-      onClose();
-    } else {
-      setShowDeleteConfirm(true);
-      setTimeout(() => setShowDeleteConfirm(false), 3000);
-    }
-  };
-
   return (
-    <div
-      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
-      style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        backdropFilter: 'blur(4px)',
+    <FormModalV2<RecipeFormData>
+      isOpen={isOpen}
+      onClose={onClose}
+      title={recipeId ? 'Edit Recipe' : 'Add Recipe'}
+      defaultData={defaultFormData}
+      initialData={initialData ? { ...defaultFormData, ...initialData } : undefined}
+      draftKey={recipeId ? undefined : 'recipe_form_draft'}
+      isPending={false}
+      submitText={recipeId ? 'Save Changes' : 'Add Recipe'}
+      isEditing={!!recipeId}
+      showDelete={!!recipeId && !!onDelete}
+      onDelete={onDelete ? async () => { onDelete(); } : undefined}
+      maxWidth="700px"
+      onSubmit={async (formData) => {
+        onSubmit(formData);
       }}
-      onClick={handleBackdropClick}
+      validate={(formData) => {
+        if (!formData.name.trim()) return 'Recipe name is required';
+        return null;
+      }}
     >
-      <div
-        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col"
-        style={{ maxHeight: '90vh', maxWidth: '700px' }}
-      >
-        <div className="lg:hidden pt-2 flex-shrink-0">
-          <div className="w-9 h-1 rounded-full mx-auto bg-gray-300" />
-        </div>
+      {(formState, setFormState) => {
+        // Dynamic array handlers
+        const addIngredient = () => {
+          setFormState({
+            ...formState,
+            ingredients: [...formState.ingredients, { name: '', amount: '', unit: 'cup', category: '' }],
+          });
+        };
 
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 flex-shrink-0">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {recipeId ? 'Edit Recipe' : 'Add Recipe'}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
+        const removeIngredient = (index: number) => {
+          setFormState({
+            ...formState,
+            ingredients: formState.ingredients.filter((_, i) => i !== index),
+          });
+        };
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="overflow-y-auto p-6 space-y-5 flex-1">
+        const updateIngredient = (index: number, field: keyof Ingredient, value: string) => {
+          const updated = [...formState.ingredients];
+          updated[index] = { ...updated[index], [field]: value };
+          setFormState({ ...formState, ingredients: updated });
+        };
+
+        const addInstruction = () => {
+          setFormState({
+            ...formState,
+            instructions: [...formState.instructions, ''],
+          });
+        };
+
+        const removeInstruction = (index: number) => {
+          setFormState({
+            ...formState,
+            instructions: formState.instructions.filter((_, i) => i !== index),
+          });
+        };
+
+        const updateInstruction = (index: number, value: string) => {
+          const updated = [...formState.instructions];
+          updated[index] = value;
+          setFormState({ ...formState, instructions: updated });
+        };
+
+        return (
+          <>
             {/* Basic Info */}
             <div>
               <label className="block text-sm font-semibold mb-2" style={{ color: colors.text.secondary }}>
@@ -231,8 +153,8 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
               </label>
               <input
                 type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={formState.name}
+                onChange={(e) => setFormState({ ...formState, name: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 required
                 autoFocus
@@ -246,8 +168,8 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
                 </label>
                 <input
                   type="text"
-                  value={formData.cuisine}
-                  onChange={(e) => setFormData({ ...formData, cuisine: e.target.value })}
+                  value={formState.cuisine}
+                  onChange={(e) => setFormState({ ...formState, cuisine: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                   placeholder="Italian, Mexican, etc."
                 />
@@ -257,8 +179,8 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
                   Difficulty
                 </label>
                 <select
-                  value={formData.difficulty}
-                  onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as RecipeFormData['difficulty'] })}
+                  value={formState.difficulty}
+                  onChange={(e) => setFormState({ ...formState, difficulty: e.target.value as RecipeFormData['difficulty'] })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 >
                   <option value="easy">Easy</option>
@@ -275,8 +197,8 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
                 </label>
                 <input
                   type="number"
-                  value={formData.prepTime}
-                  onChange={(e) => setFormData({ ...formData, prepTime: e.target.value })}
+                  value={formState.prepTime}
+                  onChange={(e) => setFormState({ ...formState, prepTime: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 />
               </div>
@@ -286,8 +208,8 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
                 </label>
                 <input
                   type="number"
-                  value={formData.cookTime}
-                  onChange={(e) => setFormData({ ...formData, cookTime: e.target.value })}
+                  value={formState.cookTime}
+                  onChange={(e) => setFormState({ ...formState, cookTime: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 />
               </div>
@@ -297,8 +219,8 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
                 </label>
                 <input
                   type="number"
-                  value={formData.servings}
-                  onChange={(e) => setFormData({ ...formData, servings: e.target.value })}
+                  value={formState.servings}
+                  onChange={(e) => setFormState({ ...formState, servings: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 />
               </div>
@@ -327,7 +249,7 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
                 </button>
               </div>
               <div className="space-y-2">
-                {formData.ingredients.map((ingredient, index) => (
+                {formState.ingredients.map((ingredient, index) => (
                   <div key={index} className="grid grid-cols-12 gap-2">
                     <input
                       type="text"
@@ -393,7 +315,7 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
                 </button>
               </div>
               <div className="space-y-2">
-                {formData.instructions.map((instruction, index) => (
+                {formState.instructions.map((instruction, index) => (
                   <div key={index} className="flex gap-2">
                     <span className="flex-shrink-0 w-6 h-6 rounded-full bg-terracotta-100 text-terracotta-600 text-xs font-semibold flex items-center justify-center mt-2">
                       {index + 1}
@@ -426,43 +348,43 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
               <div className="grid grid-cols-3 gap-3">
                 <input
                   type="number"
-                  value={formData.calories}
-                  onChange={(e) => setFormData({ ...formData, calories: e.target.value })}
+                  value={formState.calories}
+                  onChange={(e) => setFormState({ ...formState, calories: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-terracotta-300 outline-none"
                   placeholder="Calories"
                 />
                 <input
                   type="number"
-                  value={formData.protein}
-                  onChange={(e) => setFormData({ ...formData, protein: e.target.value })}
+                  value={formState.protein}
+                  onChange={(e) => setFormState({ ...formState, protein: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-terracotta-300 outline-none"
                   placeholder="Protein (g)"
                 />
                 <input
                   type="number"
-                  value={formData.carbs}
-                  onChange={(e) => setFormData({ ...formData, carbs: e.target.value })}
+                  value={formState.carbs}
+                  onChange={(e) => setFormState({ ...formState, carbs: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-terracotta-300 outline-none"
                   placeholder="Carbs (g)"
                 />
                 <input
                   type="number"
-                  value={formData.fat}
-                  onChange={(e) => setFormData({ ...formData, fat: e.target.value })}
+                  value={formState.fat}
+                  onChange={(e) => setFormState({ ...formState, fat: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-terracotta-300 outline-none"
                   placeholder="Fat (g)"
                 />
                 <input
                   type="number"
-                  value={formData.fiber}
-                  onChange={(e) => setFormData({ ...formData, fiber: e.target.value })}
+                  value={formState.fiber}
+                  onChange={(e) => setFormState({ ...formState, fiber: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-terracotta-300 outline-none"
                   placeholder="Fiber (g)"
                 />
                 <input
                   type="number"
-                  value={formData.sugar}
-                  onChange={(e) => setFormData({ ...formData, sugar: e.target.value })}
+                  value={formState.sugar}
+                  onChange={(e) => setFormState({ ...formState, sugar: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-terracotta-300 outline-none"
                   placeholder="Sugar (g)"
                 />
@@ -476,8 +398,8 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
               </label>
               <input
                 type="url"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                value={formState.imageUrl}
+                onChange={(e) => setFormState({ ...formState, imageUrl: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 placeholder="https://example.com/image.jpg"
               />
@@ -489,8 +411,8 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
               </label>
               <input
                 type="text"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                value={formState.tags}
+                onChange={(e) => setFormState({ ...formState, tags: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 placeholder="vegetarian, quick, healthy"
               />
@@ -500,50 +422,18 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
               <input
                 type="checkbox"
                 id="favorite"
-                checked={formData.isFavorite}
-                onChange={(e) => setFormData({ ...formData, isFavorite: e.target.checked })}
+                checked={formState.isFavorite}
+                onChange={(e) => setFormState({ ...formState, isFavorite: e.target.checked })}
                 className="w-5 h-5 text-terracotta-400 rounded focus:ring-terracotta-300"
               />
               <label htmlFor="favorite" className="font-medium text-gray-900 cursor-pointer">
                 Add to Favorites
               </label>
             </div>
-
-            {/* Delete Button (Edit Mode) */}
-            {recipeId && onDelete && (
-              <div className="pt-4">
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="w-full px-4 py-3 bg-red-50 hover:bg-red-100 border-2 border-red-200 rounded-xl font-semibold text-red-600 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {showDeleteConfirm ? 'Click again to confirm delete' : 'Delete Recipe'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="px-6 py-4 border-t border-gray-200 flex gap-3 flex-shrink-0 bg-white">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
-            >
-              {isPending ? 'Saving...' : recipeId ? 'Save Changes' : 'Add Recipe'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </>
+        );
+      }}
+    </FormModalV2>
   );
 };
 
