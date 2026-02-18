@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { logger } from '@/services/logger';
 import { format } from 'date-fns';
-import { Camera, Search, Plus, Utensils, ChevronLeft, ChevronRight, ScanBarcode } from 'lucide-react';
+import { Camera, Search, Plus, ChevronLeft, ChevronRight, ScanBarcode } from 'lucide-react';
 import { FoodPhotoUpload } from './FoodPhotoUpload';
 import { FoodLogItem } from './FoodLogItem';
 import { BarcodeScanner } from './BarcodeScanner';
@@ -140,33 +140,27 @@ export function NutritionTracker(): React.ReactElement {
 
   return (
     <div className="space-y-6">
-      {/* Header with date navigation */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: colors.text.primary }}>
-          <Utensils className="w-6 h-6" style={{ color: colors.accent.start }} />
-          Nutrition Tracker
-        </h2>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => changeDate(-1)}
-            className="p-2 rounded-lg transition-colors duration-200"
-            style={{ backgroundColor: colors.bg.secondary }}
-            aria-label="Previous day"
-          >
-            <ChevronLeft className="w-5 h-5" style={{ color: colors.text.primary }} />
-          </button>
-          <span className="font-medium min-w-[120px] text-center" style={{ color: colors.text.primary }}>
-            {format(selectedDate, 'MMM d, yyyy')}
-          </span>
-          <button
-            onClick={() => changeDate(1)}
-            className="p-2 rounded-lg transition-colors duration-200"
-            style={{ backgroundColor: colors.bg.secondary }}
-            aria-label="Next day"
-          >
-            <ChevronRight className="w-5 h-5" style={{ color: colors.text.primary }} />
-          </button>
-        </div>
+      {/* Date navigation */}
+      <div className="flex items-center justify-center gap-2">
+        <button
+          onClick={() => changeDate(-1)}
+          className="p-2 rounded-lg transition-colors duration-200"
+          style={{ backgroundColor: colors.bg.secondary }}
+          aria-label="Previous day"
+        >
+          <ChevronLeft className="w-5 h-5" style={{ color: colors.text.primary }} />
+        </button>
+        <span className="font-medium min-w-[120px] text-center" style={{ color: colors.text.primary }}>
+          {format(selectedDate, 'MMM d, yyyy')}
+        </span>
+        <button
+          onClick={() => changeDate(1)}
+          className="p-2 rounded-lg transition-colors duration-200"
+          style={{ backgroundColor: colors.bg.secondary }}
+          aria-label="Next day"
+        >
+          <ChevronRight className="w-5 h-5" style={{ color: colors.text.primary }} />
+        </button>
       </div>
 
       {dailyLogError || goalError ? (

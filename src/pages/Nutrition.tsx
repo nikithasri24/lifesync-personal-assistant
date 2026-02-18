@@ -4,17 +4,12 @@
  */
 
 import React from 'react';
-import { Utensils } from 'lucide-react';
 import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { useNutritionState, type NutritionTabView } from '@/nutrition/hooks/useNutritionState';
 import { NutritionTracker } from '@/components/nutrition/NutritionTracker';
-import { NutritionDashboard } from '@/components/nutrition/NutritionDashboard';
 
 const Nutrition: React.FC = () => {
   const colors = useThemeColors();
-  const { activeTab, setActiveTab } = useNutritionState();
 
   return (
     <FeatureErrorBoundary feature="Nutrition">
@@ -39,29 +34,9 @@ const Nutrition: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div
-          style={{
-            background: 'rgba(92, 74, 58, 0.1)',
-            borderRadius: '12px',
-            padding: '4px',
-            margin: '16px 20px',
-          }}
-        >
-          <SegmentedControl
-            segments={[
-              { value: 'tracker', label: 'Log Food' },
-              { value: 'dashboard', label: 'Dashboard' },
-            ]}
-            value={activeTab}
-            onChange={(value) => setActiveTab(value as NutritionTabView)}
-          />
-        </div>
-
-        {/* Tab Content */}
+        {/* Content */}
         <div className="px-6 pb-6">
-          {activeTab === 'tracker' && <NutritionTracker />}
-          {activeTab === 'dashboard' && <NutritionDashboard />}
+          <NutritionTracker />
         </div>
       </div>
     </FeatureErrorBoundary>
