@@ -19,7 +19,7 @@ import { MessageRevealListener } from './together/components';
 import { useMilestoneReminders } from './together/hooks';
 
 // Lazy load all page components for route-based code splitting
-const Dashboard = lazy(() => import('./pages/DashboardV3'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Calendar = lazy(() => import('./pages/Calendar'));
 const Focus = lazy(() => import('./pages/Focus'));
 const Habits = lazy(() => import('./pages/Habits'));

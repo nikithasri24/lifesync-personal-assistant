@@ -23,4 +23,7 @@ export { WeeklyOverviewV2 } from './WeeklyOverviewV2';
 export { UpcomingDeadlinesV2 } from './UpcomingDeadlinesV2';
 export { MorningBriefingV2 } from './MorningBriefingV2';
 export { SmartSchedulerV2 } from './SmartSchedulerV2';
+export { DashboardHeaderV2 } from './DashboardHeaderV2';
+export { QuickActionsV2 } from './QuickActionsV2';
+export { BriefingCardV2 } from './BriefingCardV2';
 
