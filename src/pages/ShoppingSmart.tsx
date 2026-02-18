@@ -39,10 +39,11 @@ import { PantryItemDetailsModal } from '../shopping/components/modals/PantryItem
 import { AddToPantryPrompt } from '../shopping/components/modals/AddToPantryPrompt';
 import ConfirmDialog from '../components/DebtPayoffCalculator/ConfirmDialog';
 import type { PantryItem } from '../types';
+import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
 
 type ViewType = 'list' | 'pantry' | 'stores' | 'history';
 
-export default function ShoppingSmart(): ReactElement {
+function ShoppingSmartContent(): ReactElement {
   const { shoppingItems, pantryItems, activeListId, isLoadingList, isLoadingItems, ensureActiveList } = useShoppingData();
   const { addShoppingItem, updateShoppingItem, deleteShoppingItem, toggleShoppingItem, createPantryItem, updatePantryItem, deletePantryItem } = useShoppingMutations({ activeListId, ensureActiveList, shoppingItems });
   const { data: stores = [], isLoading: isLoadingStores } = useStoresQuery();
@@ -550,5 +551,14 @@ export default function ShoppingSmart(): ReactElement {
         />
       )}
     </div>
+  );
+}
+
+// Wrap with error boundary for graceful error handling
+export default function ShoppingSmart(): ReactElement {
+  return (
+    <FeatureErrorBoundary feature="Shopping">
+      <ShoppingSmartContent />
+    </FeatureErrorBoundary>
   );
 }

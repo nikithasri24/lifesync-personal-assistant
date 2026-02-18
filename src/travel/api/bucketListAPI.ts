@@ -43,27 +43,28 @@ function rowToDestination(row: BucketListDestinationRow): BucketListDestination 
 
 /**
  * Convert application input (camelCase) to database format (snake_case)
+ * Also converts empty strings to null for optional fields
  */
 function inputToRow(input: Partial<BucketListDestinationInput>): Partial<BucketListDestinationRow> {
   return {
-    connection_id: input.connectionId,
+    connection_id: input.connectionId || null,
     shared_with: input.sharedWith,
     name: input.name,
-    description: input.description,
-    country_code: input.countryCode,
-    country_name: input.countryName,
-    city_name: input.cityName,
-    region_name: input.regionName,
+    description: input.description || null,
+    country_code: input.countryCode || null,
+    country_name: input.countryName || null,
+    city_name: input.cityName || null,
+    region_name: input.regionName || null,
     priority: input.priority,
     category: input.category,
-    estimated_budget: input.estimatedBudget,
-    currency: input.currency,
-    target_year: input.targetYear,
-    target_season: input.targetSeason,
+    estimated_budget: input.estimatedBudget || null,
+    currency: input.currency || 'USD',
+    target_year: input.targetYear || null,
+    target_season: input.targetSeason && input.targetSeason.trim() !== '' ? input.targetSeason : null,
     is_visited: input.isVisited,
-    visited_date: input.visitedDate,
-    notes: input.notes,
-    inspiration_url: input.inspirationUrl,
+    visited_date: input.visitedDate || null,
+    notes: input.notes || null,
+    inspiration_url: input.inspirationUrl || null,
     tags: input.tags,
     must_do: input.mustDo,
     must_eat: input.mustEat,
