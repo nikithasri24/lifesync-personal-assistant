@@ -1,0 +1,52 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Basket Weave Pattern (6x6 grid) -->
+  <g id="basket-weave">
+    <!-- Row 1 -->
+    <rect x="50" y="50" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="66" y="50" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="82" y="50" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="98" y="50" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="114" y="50" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="130" y="50" width="16" height="16" rx="2" fill="#C18B5E"/>
+
+    <!-- Row 2 -->
+    <rect x="50" y="66" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="66" y="66" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="82" y="66" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="98" y="66" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="114" y="66" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="130" y="66" width="16" height="16" rx="2" fill="#C18B5E"/>
+
+    <!-- Row 3 -->
+    <rect x="50" y="82" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="66" y="82" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="82" y="82" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="98" y="82" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="114" y="82" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="130" y="82" width="16" height="16" rx="2" fill="#D4A574"/>
+
+    <!-- Row 4 -->
+    <rect x="50" y="98" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="66" y="98" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="82" y="98" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="98" y="98" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="114" y="98" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="130" y="98" width="16" height="16" rx="2" fill="#D4A574"/>
+
+    <!-- Row 5 -->
+    <rect x="50" y="114" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="66" y="114" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="82" y="114" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="98" y="114" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="114" y="114" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="130" y="114" width="16" height="16" rx="2" fill="#C18B5E"/>
+
+    <!-- Row 6 -->
+    <rect x="50" y="130" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="66" y="130" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="82" y="130" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="98" y="130" width="16" height="16" rx="2" fill="#D4A574"/>
+    <rect x="114" y="130" width="16" height="16" rx="2" fill="#C18B5E"/>
+    <rect x="130" y="130" width="16" height="16" rx="2" fill="#C18B5E"/>
+  </g>
+</svg>

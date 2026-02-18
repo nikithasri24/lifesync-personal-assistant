@@ -1,11 +1,11 @@
 {
-  "name": "ELEVATE - Personal Suite",
-  "short_name": "ELEVATE",
-  "description": "Personal productivity and health tracking suite with Apple Health integration",
+  "name": "Life Weave - Skillful Living",
+  "short_name": "Life Weave",
+  "description": "Your personal life operating system - weaving together tasks, habits, finances, wellness, and more into one skillful life.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#6366f1",
+  "background_color": "#FDFBF7",
+  "theme_color": "#D4A574",
   "orientation": "portrait",
   "scope": "/",
   "icons": [

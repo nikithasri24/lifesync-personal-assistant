@@ -241,31 +241,31 @@ const WeeklyRoutineTable: React.FC<WeeklyRoutineTableProps> = ({ className = '' 
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[600px]">
           <thead>
             <tr style={{ backgroundColor: colors.bg.secondary }}>
               <th
-                className="px-4 py-3 text-left text-sm font-semibold w-24"
+                className="px-3 py-3 text-left text-sm font-semibold w-16"
                 style={{ color: colors.text.secondary }}
               >
                 Day
               </th>
               <th
-                className="px-4 py-3 text-left text-sm font-semibold"
+                className="px-3 py-3 text-left text-sm font-semibold"
                 style={{ color: colors.text.secondary }}
               >
-                <div className="flex items-center gap-2">
-                  <Sun className="h-4 w-4" style={{ color: '#F59E0B' }} />
-                  Morning (AM)
+                <div className="flex items-center gap-1.5">
+                  <Sun className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#F59E0B' }} />
+                  <span className="whitespace-nowrap">Morning</span>
                 </div>
               </th>
               <th
-                className="px-4 py-3 text-left text-sm font-semibold"
+                className="px-3 py-3 text-left text-sm font-semibold"
                 style={{ color: colors.text.secondary }}
               >
-                <div className="flex items-center gap-2">
-                  <Moon className="h-4 w-4" style={{ color: colors.accent.end }} />
-                  Night (PM)
+                <div className="flex items-center gap-1.5">
+                  <Moon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: colors.accent.end }} />
+                  <span className="whitespace-nowrap">Night</span>
                 </div>
               </th>
             </tr>
@@ -286,22 +286,22 @@ const WeeklyRoutineTable: React.FC<WeeklyRoutineTableProps> = ({ className = '' 
                   }}
                 >
                   {/* Day label */}
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     <div
-                      className="font-semibold"
+                      className="font-semibold text-sm whitespace-nowrap"
                       style={{ color: isToday ? colors.accent.end : colors.text.primary }}
                     >
                       {label}
                       {isToday && (
-                        <span className="ml-2 text-xs" style={{ color: colors.accent.end }}>
-                          (Today)
-                        </span>
+                        <div className="text-xs mt-0.5" style={{ color: colors.accent.end }}>
+                          Today
+                        </div>
                       )}
                     </div>
                   </td>
 
                   {/* AM Cell */}
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     <RoutineCell
                       value={routine?.amRoutine}
                       isEditing={editingCell?.day === dayValue && editingCell?.field === 'am'}
@@ -317,7 +317,7 @@ const WeeklyRoutineTable: React.FC<WeeklyRoutineTableProps> = ({ className = '' 
                   </td>
 
                   {/* PM Cell */}
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     <RoutineCell
                       value={routine?.pmRoutine}
                       isEditing={editingCell?.day === dayValue && editingCell?.field === 'pm'}

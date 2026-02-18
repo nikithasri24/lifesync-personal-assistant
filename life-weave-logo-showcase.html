@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Weave - Logo Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #F5F1EA 0%, #E8D5C4 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2D2D2D;
+            margin-bottom: 60px;
+            font-size: 2.5rem;
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .showcase-item {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .showcase-item h2 {
+            color: #666;
+            font-size: 1rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Basket Weave Pattern Generator */
+        .basket-weave {
+            display: grid;
+            gap: 0;
+        }
+
+        .basket-weave.size-4x4 {
+            grid-template-columns: repeat(4, 20px);
+            grid-template-rows: repeat(4, 20px);
+        }
+
+        .basket-weave.size-5x5 {
+            grid-template-columns: repeat(5, 24px);
+            grid-template-rows: repeat(5, 24px);
+        }
+
+        .basket-weave.size-6x6 {
+            grid-template-columns: repeat(6, 16px);
+            grid-template-rows: repeat(6, 16px);
+        }
+
+        .basket-weave .cell {
+            border-radius: 2px;
+        }
+
+        .basket-weave .cell.dark {
+            background-color: #C18B5E;
+        }
+
+        .basket-weave .cell.light {
+            background-color: #D4A574;
+        }
+
+        /* Logo Versions */
+        .logo-full {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-full .wordmark {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-full .brand-name {
+            font-size: 2rem;
+            font-weight: 500;
+            color: #2D2D2D;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-full .brand-line {
+            height: 2px;
+            background: linear-gradient(90deg, #D4A574 0%, #C18B5E 100%);
+            margin: 4px 0;
+        }
+
+        .logo-full .tagline {
+            font-size: 0.875rem;
+            color: #666;
+            font-weight: 400;
+        }
+
+        /* Stacked Logo */
+        .logo-stacked {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-stacked .brand-name {
+            font-size: 1.75rem;
+            font-weight: 500;
+            color: #2D2D2D;
+            text-align: center;
+        }
+
+        .logo-stacked .brand-line {
+            width: 100%;
+            max-width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, #D4A574 0%, #C18B5E 100%);
+        }
+
+        .logo-stacked .tagline {
+            font-size: 0.875rem;
+            color: #666;
+            font-weight: 400;
+        }
+
+        /* App Icon Styles */
+        .app-icon-container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .app-icon {
+            width: 120px;
+            height: 120px;
+            border-radius: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .app-icon.gradient {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+        }
+
+        .app-icon.white {
+            background: white;
+        }
+
+        .app-icon.dark {
+            background: #2D2D2D;
+        }
+
+        .app-icon-label {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .app-icon-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Color Palette */
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .color-swatch {
+            text-align: center;
+        }
+
+        .color-box {
+            width: 100%;
+            height: 100px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-name {
+            font-weight: 600;
+            color: #2D2D2D;
+            margin-bottom: 4px;
+        }
+
+        .color-code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        /* Dark Mode Section */
+        .dark-section {
+            background: #1A1A1A;
+            padding: 60px 40px;
+            border-radius: 20px;
+            margin-top: 40px;
+        }
+
+        .dark-section h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .dark-logo-examples {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Life Weave - Logo Design System</h1>
+
+        <!-- Primary Logo Versions -->
+        <div class="showcase-grid">
+            <!-- Horizontal Logo -->
+            <div class="showcase-item">
+                <h2>Primary Logo (Horizontal)</h2>
+                <div class="logo-full">
+                    <div class="basket-weave size-4x4">
+                        <div class="cell dark"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell dark"></div>
+                    </div>
+                    <div class="wordmark">
+                        <div class="brand-name">life weave</div>
+                        <div class="brand-line"></div>
+                        <div class="tagline">Where life comes together</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stacked Logo -->
+            <div class="showcase-item">
+                <h2>Stacked Logo</h2>
+                <div class="logo-stacked">
+                    <div class="basket-weave size-5x5">
+                        <div class="cell dark"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell light"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell dark"></div>
+                        <div class="cell light"></div>
+                        <div class="cell light"></div>
+                        <div class="cell dark"></div>
+                    </div>
+                    <div class="brand-name">life weave</div>
+                    <div class="brand-line"></div>
+                    <div class="tagline">Skillful Living</div>
+                </div>
+            </div>
+
+            <!-- Icon Only -->
+            <div class="showcase-item">
+                <h2>Icon Only</h2>
+                <div class="basket-weave size-6x6">
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell light"></div>
+                    <div class="cell light"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell light"></div>
+                    <div class="cell light"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell light"></div>
+                    <div class="cell light"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell light"></div>
+                    <div class="cell light"></div>
+                    <div class="cell light"></div>
+                    <div class="cell light"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell light"></div>
+                    <div class="cell light"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell light"></div>
+                    <div class="cell light"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell light"></div>
+                    <div class="cell light"></div>
+                    <div class="cell dark"></div>
+                    <div class="cell dark"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- App Icons Section -->
+        <div class="showcase-item" style="grid-column: 1 / -1;">
+            <h2>App Icon Variations</h2>
+            <div class="app-icon-container">
+                <div class="app-icon-wrapper">
+                    <div class="app-icon gradient">
+                        <div class="basket-weave size-5x5">
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.5);"></div>
+                            <div class="cell" style="background-color: rgba(255, 255, 255, 0.9);"></div>
+                        </div>
+                    </div>
+                    <div class="app-icon-label">Gradient Background</div>
+                </div>
+
+                <div class="app-icon-wrapper">
+                    <div class="app-icon white">
+                        <div class="basket-weave size-5x5">
+                            <div class="cell dark"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell light"></div>
+                            <div class="cell light"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell light"></div>
+                            <div class="cell light"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell light"></div>
+                            <div class="cell light"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell light"></div>
+                            <div class="cell light"></div>
+                            <div class="cell light"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell light"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell dark"></div>
+                            <div class="cell light"></div>
+                            <div class="cell light"></div>
+                            <div class="cell dark"></div>
+                        </div>
+                    </div>
+                    <div class="app-icon-label">White Background</div>
+                </div>
+
+                <div class="app-icon-wrapper">
+                    <div class="app-icon dark">
+                        <div class="basket-weave size-5x5">
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #E8C4A0;"></div>
+                            <div class="cell" style="background-color: #F5D9B8;"></div>
+                        </div>
+                    </div>
+                    <div class="app-icon-label">Dark Mode (Terracotta)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Color Palette -->
+        <div class="showcase-item" style="grid-column: 1 / -1;">
+            <h2>Brand Color Palette</h2>
+            <div class="color-palette">
+                <div class="color-swatch">
+                    <div class="color-box" style="background-color: #D4A574;"></div>
+                    <div class="color-name">Light Terracotta</div>
+                    <div class="color-code">#D4A574</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-box" style="background-color: #C18B5E;"></div>
+                    <div class="color-name">Dark Terracotta</div>
+                    <div class="color-code">#C18B5E</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-box" style="background-color: #A67347;"></div>
+                    <div class="color-name">Deep Earth</div>
+                    <div class="color-code">#A67347</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-box" style="background-color: #F5F1EA;"></div>
+                    <div class="color-name">Cream</div>
+                    <div class="color-code">#F5F1EA</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-box" style="background-color: #2D2D2D;"></div>
+                    <div class="color-name">Charcoal</div>
+                    <div class="color-code">#2D2D2D</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-box" style="background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);"></div>
+                    <div class="color-name">Primary Gradient</div>
+                    <div class="color-code">135deg</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dark Mode Examples -->
+        <div class="dark-section">
+            <h2>Dark Mode Variations (Option A: Enhanced Terracotta)</h2>
+            <div class="dark-logo-examples">
+                <!-- Dark Background #1A1A1A -->
+                <div class="logo-stacked">
+                    <div class="basket-weave size-5x5">
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                    </div>
+                    <div class="brand-name" style="color: #F5F1EA;">life weave</div>
+                    <div class="brand-line" style="background: linear-gradient(90deg, #E8C4A0 0%, #D4A574 100%);"></div>
+                    <div class="tagline" style="color: #CCCCCC;">Where life comes together</div>
+                </div>
+
+                <!-- Dark Background #2D2D2D -->
+                <div class="logo-stacked" style="background: #2D2D2D; padding: 40px; border-radius: 16px;">
+                    <div class="basket-weave size-5x5">
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #D4A574;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                    </div>
+                    <div class="brand-name" style="color: #F5F1EA;">life weave</div>
+                    <div class="brand-line" style="background: linear-gradient(90deg, #E8C4A0 0%, #D4A574 100%);"></div>
+                    <div class="tagline" style="color: #CCCCCC;">Skillful Living</div>
+                </div>
+
+                <!-- Pure Black Background -->
+                <div class="logo-stacked" style="background: #000000; padding: 40px; border-radius: 16px;">
+                    <div class="basket-weave size-5x5">
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #E8C4A0;"></div>
+                        <div class="cell" style="background-color: #F5D9B8;"></div>
+                    </div>
+                    <div class="brand-name" style="color: #F5F1EA;">life weave</div>
+                    <div class="brand-line" style="background: linear-gradient(90deg, #F5D9B8 0%, #E8C4A0 100%);"></div>
+                    <div class="tagline" style="color: #CCCCCC;">Where life comes together</div>
+                </div>
+            </div>
+
+            <!-- Dark Mode Color Guide -->
+            <div style="margin-top: 40px; background: white; padding: 30px; border-radius: 16px;">
+                <h3 style="color: #2D2D2D; margin-bottom: 20px; text-align: center;">Dark Mode Terracotta Palette</h3>
+                <div class="color-palette">
+                    <div class="color-swatch">
+                        <div class="color-box" style="background-color: #F5D9B8;"></div>
+                        <div class="color-name">Light (Pure Black BG)</div>
+                        <div class="color-code">#F5D9B8</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background-color: #E8C4A0;"></div>
+                        <div class="color-name">Light (Dark BG)</div>
+                        <div class="color-code">#E8C4A0</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background-color: #D4A574;"></div>
+                        <div class="color-name">Dark (All BG)</div>
+                        <div class="color-code">#D4A574</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background-color: #F5F1EA;"></div>
+                        <div class="color-name">Text Light</div>
+                        <div class="color-code">#F5F1EA</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background-color: #CCCCCC;"></div>
+                        <div class="color-name">Text Secondary</div>
+                        <div class="color-code">#CCCCCC</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

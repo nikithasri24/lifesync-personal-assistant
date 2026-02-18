@@ -30,7 +30,8 @@ const TravelPageContent: React.FC = () => {
   const [visitedLocations, setVisitedLocations] = React.useState<CategorizedLocation[]>([]);
   const [trips, setTrips] = React.useState<CategorizedTrip[]>([]);
   const { showToast } = useToast();
-  const [categoryFilter, setCategoryFilter] = React.useState<LocationVisitCategory | 'all'>('all');
+  type CategorySelection = 'mine' | 'partner';
+  const [categoryFilter, setCategoryFilter] = React.useState<CategorySelection[]>(['mine', 'partner']);
 
   // Trip editor state
   const [isTripEditorOpen, setIsTripEditorOpen] = React.useState(false);
@@ -90,10 +91,20 @@ const TravelPageContent: React.FC = () => {
   const filteredLocations = React.useMemo(() => {
     let filtered = visitedLocations;
 
-    // Filter by category (mine/partner/both/all)
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(loc => loc.visitCategory === categoryFilter);
+    // Filter by category (mine/partner) - multi-select
+    const showMine = categoryFilter.includes('mine');
+    const showPartner = categoryFilter.includes('partner');
+
+    if (!showMine || !showPartner) {
+      // If not both selected, filter
+      filtered = filtered.filter(loc => {
+        if (showMine && loc.visitCategory === 'mine') return true;
+        if (showPartner && loc.visitCategory === 'partner') return true;
+        if (showMine && showPartner && loc.visitCategory === 'both') return true;
+        return false;
+      });
     }
+    // If both selected, show all (no filtering needed)
 
     // Filter by location type
     if (locationTypeFilter !== 'all') {
@@ -418,56 +429,46 @@ const TravelPageContent: React.FC = () => {
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
       {/* Centered container following CLAUDE.md pattern */}
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
-        {/* Category Filter Tabs */}
+        {/* Category Filter Tabs - Multi-Select */}
         <div className="mb-6 p-1 rounded-xl flex gap-1" style={{ backgroundColor: colors.bg.secondary }}>
           <div className="flex space-x-1 overflow-x-auto w-full">
             <button
-              onClick={() => setCategoryFilter('all')}
+              onClick={() => {
+                if (categoryFilter.includes('mine')) {
+                  const newFilter = categoryFilter.filter(c => c !== 'mine');
+                  setCategoryFilter(newFilter.length === 0 ? ['mine', 'partner'] : newFilter);
+                } else {
+                  setCategoryFilter([...categoryFilter, 'mine']);
+                }
+              }}
               className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
-                categoryFilter === 'all' ? 'bg-white shadow-sm' : ''
+                categoryFilter.includes('mine') ? 'bg-white shadow-sm' : ''
               }`}
               style={{
-                color: categoryFilter === 'all' ? colors.accent.end : colors.text.secondary,
+                color: categoryFilter.includes('mine') ? colors.accent.end : colors.text.secondary,
               }}
-              aria-label="Show all trips"
-            >
-              All ({categoryCounts.all})
-            </button>
-            <button
-              onClick={() => setCategoryFilter('mine')}
-              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
-                categoryFilter === 'mine' ? 'bg-white shadow-sm' : ''
-              }`}
-              style={{
-                color: categoryFilter === 'mine' ? colors.accent.end : colors.text.secondary,
-              }}
-              aria-label="Show my trips"
+              aria-label={categoryFilter.includes('mine') ? "Hide my trips" : "Show my trips"}
             >
               Mine ({categoryCounts.mine})
             </button>
             <button
-              onClick={() => setCategoryFilter('partner')}
+              onClick={() => {
+                if (categoryFilter.includes('partner')) {
+                  const newFilter = categoryFilter.filter(c => c !== 'partner');
+                  setCategoryFilter(newFilter.length === 0 ? ['mine', 'partner'] : newFilter);
+                } else {
+                  setCategoryFilter([...categoryFilter, 'partner']);
+                }
+              }}
               className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
-                categoryFilter === 'partner' ? 'bg-white shadow-sm' : ''
+                categoryFilter.includes('partner') ? 'bg-white shadow-sm' : ''
               }`}
               style={{
-                color: categoryFilter === 'partner' ? colors.accent.end : colors.text.secondary,
+                color: categoryFilter.includes('partner') ? colors.accent.end : colors.text.secondary,
               }}
-              aria-label="Show partner trips"
+              aria-label={categoryFilter.includes('partner') ? "Hide partner trips" : "Show partner trips"}
             >
               Partner ({categoryCounts.partner})
-            </button>
-            <button
-              onClick={() => setCategoryFilter('both')}
-              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
-                categoryFilter === 'both' ? 'bg-white shadow-sm' : ''
-              }`}
-              style={{
-                color: categoryFilter === 'both' ? colors.accent.end : colors.text.secondary,
-              }}
-              aria-label="Show trips by both"
-            >
-              Both ({categoryCounts.both})
             </button>
           </div>
         </div>

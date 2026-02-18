@@ -122,22 +122,22 @@ const ProjectionsPage: React.FC = () => {
         }>
           <NetWorthChart data={netWorthChartData} />
         </Suspense>
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
           <div className="text-center p-3 rounded-lg bg-emerald-50">
             <p className="text-xs text-emerald-700 mb-1">Best Case</p>
-            <p className="text-lg font-bold text-emerald-900">
+            <p className="text-base sm:text-lg font-bold text-emerald-900 break-words">
               {formatCurrency(netWorthProjections[projectionYears - 1]?.optimistic || 0)}
             </p>
           </div>
           <div className="text-center p-3 rounded-lg bg-blue-50">
             <p className="text-xs text-blue-700 mb-1">Expected</p>
-            <p className="text-lg font-bold text-blue-900">
+            <p className="text-base sm:text-lg font-bold text-blue-900 break-words">
               {formatCurrency(netWorthProjections[projectionYears - 1]?.baseCase || 0)}
             </p>
           </div>
           <div className="text-center p-3 rounded-lg bg-amber-50">
             <p className="text-xs text-amber-700 mb-1">Worst Case</p>
-            <p className="text-lg font-bold text-amber-900">
+            <p className="text-base sm:text-lg font-bold text-amber-900 break-words">
               {formatCurrency(netWorthProjections[projectionYears - 1]?.pessimistic || 0)}
             </p>
           </div>
@@ -167,22 +167,22 @@ const ProjectionsPage: React.FC = () => {
         </Suspense>
         <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
           <p className="text-sm font-semibold text-purple-900 mb-2">30-Year Summary:</p>
-          <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-purple-700">Total Contributed</p>
-              <p className="font-bold text-purple-900">
+              <p className="font-bold text-purple-900 break-words">
                 {formatCurrency(investmentGrowthData.totalContributed)}
               </p>
             </div>
             <div>
               <p className="text-emerald-700">Investment Gains</p>
-              <p className="font-bold text-emerald-900">
+              <p className="font-bold text-emerald-900 break-words">
                 {formatCurrency(investmentGrowthData.totalGains)}
               </p>
             </div>
             <div>
               <p className="text-blue-700">Final Value</p>
-              <p className="font-bold text-blue-900">
+              <p className="font-bold text-blue-900 break-words">
                 {formatCurrency(investmentGrowthData.futureValue)}
               </p>
             </div>
