@@ -30,8 +30,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
   const colors = useThemeColors();
   const { showToast } = useToast();
 
-  // Owner filter state (for merged mode)
-  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
+  // Owner filter state (for merged mode) - default to both selected
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>(['mine', 'partner']);
 
   // Merged mode support
   const { data: mergedConnection } = useMergedMessagesConnection();
@@ -55,13 +55,24 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
 
   // Filter messages by sender if in merged mode
   const messages = useMemo(() => {
-    if (!mergedConnection || !currentUserId || ownerFilter === 'all') {
+    if (!mergedConnection || !currentUserId) {
       return allMessages;
     }
-    if (ownerFilter === 'mine') {
+
+    // If both selected, show all
+    const showMine = ownerFilter.includes('mine');
+    const showPartner = ownerFilter.includes('partner');
+
+    if (showMine && showPartner) {
+      return allMessages;
+    }
+    if (showMine) {
       return allMessages.filter(m => m.sender_id === currentUserId);
     }
-    return allMessages.filter(m => m.sender_id === mergedConnection.partnerId);
+    if (showPartner) {
+      return allMessages.filter(m => m.sender_id === mergedConnection.partnerId);
+    }
+    return allMessages;
   }, [allMessages, ownerFilter, currentUserId, mergedConnection]);
 
   // Find the viewing message from the ID with type guard validation

@@ -22,8 +22,8 @@ interface ChallengesViewProps {
 export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) => {
   const colors = useThemeColors();
 
-  // Owner filter state (for merged mode)
-  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
+  // Owner filter state (for merged mode) - default to both selected
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>(['mine', 'partner']);
 
   // Merged mode support
   const { data: mergedConnection } = useMergedChallengesConnection();
@@ -42,13 +42,24 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
 
   // Filter challenges by creator if in merged mode
   const challenges = useMemo(() => {
-    if (!mergedConnection || !currentUserId || ownerFilter === 'all') {
+    if (!mergedConnection || !currentUserId) {
       return allChallenges;
     }
-    if (ownerFilter === 'mine') {
+
+    // If both selected, show all
+    const showMine = ownerFilter.includes('mine');
+    const showPartner = ownerFilter.includes('partner');
+
+    if (showMine && showPartner) {
+      return allChallenges;
+    }
+    if (showMine) {
       return allChallenges.filter(c => c.creator_id === currentUserId);
     }
-    return allChallenges.filter(c => c.creator_id === mergedConnection.partnerId);
+    if (showPartner) {
+      return allChallenges.filter(c => c.creator_id === mergedConnection.partnerId);
+    }
+    return allChallenges;
   }, [allChallenges, ownerFilter, currentUserId, mergedConnection]);
 
   const hasPartner = partnerLink?.status === 'accepted';

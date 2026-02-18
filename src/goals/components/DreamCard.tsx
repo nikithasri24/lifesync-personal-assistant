@@ -85,12 +85,14 @@ export function DreamCard({
     >
       {/* Visual Section with Emoji */}
       <div
-        className="dream-visual h-36 flex items-center justify-center text-6xl relative"
+        className="dream-visual h-36 flex items-center justify-center relative px-4"
         style={{
           background: `linear-gradient(135deg, ${colors.accent.start}15 0%, ${colors.accent.end}15 100%)`,
         }}
       >
-        {getEmoji()}
+        <div className="text-5xl">
+          {getEmoji()}
+        </div>
         <div className="absolute top-3 right-3">
           <BadgeV2 variant={statusVariant} size="sm">
             {statusLabel}

@@ -29,8 +29,8 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
     editingMilestone: null as string | null,
   });
 
-  // Owner filter state (for merged mode)
-  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
+  // Owner filter state (for merged mode) - default to both selected
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>(['mine', 'partner']);
 
   // Merged mode support
   const { data: mergedConnection } = useMergedMilestonesConnection();
@@ -46,23 +46,45 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
 
   // Filter milestones by owner if in merged mode
   const filteredUpcomingMilestones = useMemo(() => {
-    if (!mergedConnection || !currentUserId || ownerFilter === 'all') {
+    if (!mergedConnection || !currentUserId) {
       return upcomingMilestones;
     }
-    if (ownerFilter === 'mine') {
+
+    // If both selected, show all
+    const showMine = ownerFilter.includes('mine');
+    const showPartner = ownerFilter.includes('partner');
+
+    if (showMine && showPartner) {
+      return upcomingMilestones;
+    }
+    if (showMine) {
       return upcomingMilestones.filter(m => m.user_id === currentUserId);
     }
-    return upcomingMilestones.filter(m => m.user_id === mergedConnection.partnerId);
+    if (showPartner) {
+      return upcomingMilestones.filter(m => m.user_id === mergedConnection.partnerId);
+    }
+    return upcomingMilestones;
   }, [upcomingMilestones, ownerFilter, currentUserId, mergedConnection]);
 
   const filteredAllMilestones = useMemo(() => {
-    if (!mergedConnection || !currentUserId || ownerFilter === 'all') {
+    if (!mergedConnection || !currentUserId) {
       return allMilestones;
     }
-    if (ownerFilter === 'mine') {
+
+    // If both selected, show all
+    const showMine = ownerFilter.includes('mine');
+    const showPartner = ownerFilter.includes('partner');
+
+    if (showMine && showPartner) {
+      return allMilestones;
+    }
+    if (showMine) {
       return allMilestones.filter(m => m.user_id === currentUserId);
     }
-    return allMilestones.filter(m => m.user_id === mergedConnection.partnerId);
+    if (showPartner) {
+      return allMilestones.filter(m => m.user_id === mergedConnection.partnerId);
+    }
+    return allMilestones;
   }, [allMilestones, ownerFilter, currentUserId, mergedConnection]);
 
   // Split into upcoming and past
