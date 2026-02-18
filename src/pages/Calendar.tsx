@@ -13,6 +13,7 @@ type ViewType = 'month' | 'week' | 'day';
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<ViewType>('month');
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Data fetching
   const { data: tasks = [] } = useTasks();
@@ -467,6 +468,7 @@ export default function Calendar() {
 
         {/* FAB - Add Event Button */}
         <button
+          onClick={() => setShowAddModal(true)}
           className="fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white text-3xl shadow-lg"
           style={{
             background: 'linear-gradient(135deg, #D4A574, #C18B5E)',
@@ -476,6 +478,60 @@ export default function Calendar() {
         >
           +
         </button>
+
+        {/* Add Event Modal */}
+        {showAddModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-end lg:items-center justify-center"
+            style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(4px)',
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowAddModal(false);
+              }
+            }}
+          >
+            <div
+              className="bg-white lg:rounded-3xl rounded-t-3xl w-full lg:max-w-md overflow-hidden"
+              style={{ maxHeight: '90vh' }}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900">Add Event</h2>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Close"
+                >
+                  <span className="text-2xl text-gray-500">×</span>
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6">
+                <div className="text-center py-8 text-gray-500">
+                  <div className="text-6xl mb-4">📅</div>
+                  <p className="text-lg font-semibold mb-2">Event Creation Coming Soon</p>
+                  <p className="text-sm">
+                    Full event creation and management features will be available in the next update.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
