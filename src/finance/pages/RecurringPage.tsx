@@ -6,8 +6,10 @@
 import React from 'react';
 import { PendingTransactionsReview, RecurringTransactionsList } from '../components/recurring';
 import { useGeneratePendingTransactionsMutation } from '@/hooks/useFinanceQuery';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 const RecurringPage: React.FC = () => {
+  const colors = useThemeColors();
   const generateMutation = useGeneratePendingTransactionsMutation();
 
   // Generate pending transactions on mount
@@ -16,12 +18,22 @@ const RecurringPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Pending Transactions Section */}
-      <PendingTransactionsReview />
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <h1 className="text-3xl font-bold flex items-center gap-3 mb-6" style={{ color: colors.text.primary }}>
+          <span className="text-4xl">🔄</span>
+          Recurring Transactions
+        </h1>
 
-      {/* Recurring Templates Section */}
-      <RecurringTransactionsList />
+        <div className="space-y-6">
+          {/* Pending Transactions Section */}
+          <PendingTransactionsReview />
+
+          {/* Recurring Templates Section */}
+          <RecurringTransactionsList />
+        </div>
+      </div>
     </div>
   );
 };

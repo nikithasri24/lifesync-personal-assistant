@@ -14,6 +14,7 @@ import { getTimePeriodRange, getPreviousPeriodRange, type TimePeriod } from '../
 import { useFinanceMetrics, type FinanceMetrics } from '../hooks/useFinanceMetrics';
 import type { Transaction } from '../types';
 import { logger } from '@/services/logger';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 // Components
 import MetricCard from '../components/metrics/MetricCard';
@@ -27,6 +28,7 @@ import { DollarSign, TrendingDown, TrendingUp, Filter } from 'lucide-react';
 type ReportTab = 'cash-flow' | 'spending' | 'income';
 
 const ReportsPage: React.FC = () => {
+  const colors = useThemeColors();
   const [activeTab, setActiveTab] = useState<ReportTab>('cash-flow');
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('last-6-months');
 
@@ -83,15 +85,19 @@ const ReportsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-primary">Reports</h2>
-          <p className="mt-1 text-sm text-primary opacity-70">
-            Comprehensive financial insights and analytics
-          </p>
-        </div>
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: colors.text.primary }}>
+              <span className="text-4xl">📊</span>
+              Reports
+            </h1>
+            <p className="mt-1 text-sm" style={{ color: colors.text.secondary }}>
+              Comprehensive financial insights and analytics
+            </p>
+          </div>
         <div className="flex flex-wrap items-center gap-3">
           <TimePeriodFilter value={timePeriod} onChange={setTimePeriod} />
           <button className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-primary hover:bg-slate-50">
@@ -158,32 +164,33 @@ const ReportsPage: React.FC = () => {
         </nav>
       </div>
 
-      {/* Report Content */}
-      <div className="pb-8">
-        {activeTab === 'cash-flow' && (
-          <CashFlowReport
-            transactions={transactions}
-            categories={categories}
-            dateRange={currentPeriod}
-            metrics={metrics}
-          />
-        )}
-        {activeTab === 'spending' && (
-          <SpendingReport
-            transactions={transactions}
-            categories={categories}
-            dateRange={currentPeriod}
-            metrics={metrics}
-          />
-        )}
-        {activeTab === 'income' && (
-          <IncomeReport
-            transactions={transactions}
-            categories={categories}
-            dateRange={currentPeriod}
-            metrics={metrics}
-          />
-        )}
+        {/* Report Content */}
+        <div className="pb-8">
+          {activeTab === 'cash-flow' && (
+            <CashFlowReport
+              transactions={transactions}
+              categories={categories}
+              dateRange={currentPeriod}
+              metrics={metrics}
+            />
+          )}
+          {activeTab === 'spending' && (
+            <SpendingReport
+              transactions={transactions}
+              categories={categories}
+              dateRange={currentPeriod}
+              metrics={metrics}
+            />
+          )}
+          {activeTab === 'income' && (
+            <IncomeReport
+              transactions={transactions}
+              categories={categories}
+              dateRange={currentPeriod}
+              metrics={metrics}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
