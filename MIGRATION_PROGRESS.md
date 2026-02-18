@@ -2,9 +2,9 @@
 
 ## Session Summary
 
-Successfully migrated **34 modals** to FormModalV2!
+Successfully migrated **35 modals** to FormModalV2!
 
-**Total Impact:** 3,449 lines eliminated (30% average reduction)
+**Total Impact:** 3,541 lines eliminated (29% average reduction)
 
 ---
 
@@ -275,15 +275,24 @@ Successfully migrated **34 modals** to FormModalV2!
 - **Migration Impact:** Added Together pattern, ESC/backdrop handlers, converted from dark mode to light mode, preserved calculation logic
 - **Commit:** `feat: Migrate CategoryFormModal and LoanPaymentModal`
 
+### 35. AddEventModal (Calendar)
+- **Before:** 363 lines
+- **After:** 271 lines
+- **Reduction:** 92 lines (25%)
+- **Form Fields:** 9 fields (title, eventType, allDay, startDate, startTime, endDate, endTime, location, description)
+- **Special Features:** 5 event types with emoji, conditional time fields (hidden when all-day checked), React Query mutation integration
+- **Migration Impact:** Already had Together pattern but eliminated all boilerplate (ESC, backdrop, auto-save, modal structure)
+- **Commit:** `feat: Migrate AddEventModal to FormModalV2`
+
 ---
 
 ## 📊 Cumulative Impact
 
 | Metric | Before | After | Savings |
 |--------|--------|-------|---------|
-| **Total Lines** | 11,647 | 8,198 | 3,449 (30%) |
-| **Average per Modal** | 343 | 241 | 102 (30%) |
-| **Boilerplate Eliminated** | ~3,700 lines | 0 | 3,700 (100%) |
+| **Total Lines** | 12,010 | 8,469 | 3,541 (29%) |
+| **Average per Modal** | 343 | 242 | 101 (29%) |
+| **Boilerplate Eliminated** | ~3,800 lines | 0 | 3,800 (100%) |
 
 ---
 
@@ -378,8 +387,11 @@ Per modal, we consistently eliminated:
 - [x] ProductFormModalV2 (330 lines) ✅ COMPLETE
 - [x] CategoryFormModal (168 lines) ✅ COMPLETE
 
+### Calendar Modals - In Progress (1/?)
+- [x] AddEventModal (363 lines) ✅ COMPLETE
+
 ### Other Feature Modals
-- ~20+ more modals across Calendar, Dashboard, Focus, etc.
+- ~20+ more modals across Dashboard, Focus, etc.
 
 **Estimated Total Impact when fully migrated:** ~2,500+ lines saved
 

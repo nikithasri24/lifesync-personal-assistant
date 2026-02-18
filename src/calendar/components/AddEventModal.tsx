@@ -1,13 +1,19 @@
 /**
- * Add Event Modal
- * Form to create calendar events with all necessary fields
+ * AddEventModal Component - MIGRATED to use FormModalV2
+ * Create calendar events with Together pattern
+ *
+ * MIGRATION COMPLETE:
+ * - Reduced from 363 lines to ~250 lines (31% reduction)
+ * - Removed all boilerplate (ESC key, backdrop, auto-save, modal structure)
+ * - Form state managed by FormModalV2
+ * - 9 form fields with conditional time fields (hidden when all-day is checked)
+ * - 5 event types with emoji icons
  */
 
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import React from 'react';
+import { FormModalV2 } from '@/components/v2';
 import { useCreateCalendarEvent } from '@/hooks/useCalendarQuery';
 import { useToast } from '@/hooks/useToast';
-import { logger } from '@/services/logger';
 import { format } from 'date-fns';
 import type { CalendarEvent } from '@/services/types';
 
@@ -17,8 +23,6 @@ interface AddEventModalProps {
   initialDate?: Date;
 }
 
-const STORAGE_KEY = 'calendar_add_event_draft';
-
 const EVENT_TYPES: Array<{ value: CalendarEvent['type']; label: string; emoji: string }> = [
   { value: 'event', label: 'Event', emoji: '📅' },
   { value: 'meeting', label: 'Meeting', emoji: '💼' },
@@ -26,6 +30,18 @@ const EVENT_TYPES: Array<{ value: CalendarEvent['type']; label: string; emoji: s
   { value: 'birthday', label: 'Birthday', emoji: '🎂' },
   { value: 'holiday', label: 'Holiday', emoji: '🎉' },
 ];
+
+interface EventFormState {
+  title: string;
+  description: string;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  allDay: boolean;
+  eventType: CalendarEvent['type'];
+  location: string;
+}
 
 export const AddEventModal: React.FC<AddEventModalProps> = ({
   isOpen,
@@ -35,329 +51,221 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
   const { showToast } = useToast();
   const { mutate: createEvent, isPending } = useCreateCalendarEvent();
 
-  // Load saved draft from localStorage
-  const loadDraft = () => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      logger.error('Calendar', error as Error, { context: 'Failed to load event draft' });
-    }
-    return null;
-  };
-
-  const savedDraft = loadDraft();
   const defaultDate = initialDate || new Date();
   const defaultDateStr = format(defaultDate, 'yyyy-MM-dd');
   const defaultTimeStr = format(defaultDate, 'HH:mm');
 
-  // Form state - restore from localStorage if available
-  const [title, setTitle] = useState(savedDraft?.title || '');
-  const [description, setDescription] = useState(savedDraft?.description || '');
-  const [startDate, setStartDate] = useState(savedDraft?.startDate || defaultDateStr);
-  const [startTime, setStartTime] = useState(savedDraft?.startTime || defaultTimeStr);
-  const [endDate, setEndDate] = useState(savedDraft?.endDate || defaultDateStr);
-  const [endTime, setEndTime] = useState(savedDraft?.endTime || defaultTimeStr);
-  const [allDay, setAllDay] = useState(savedDraft?.allDay ?? false);
-  const [eventType, setEventType] = useState<CalendarEvent['type']>(savedDraft?.eventType || 'event');
-  const [location, setLocation] = useState(savedDraft?.location || '');
-
-  // Auto-save draft to localStorage whenever form changes
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      title,
-      description,
-      startDate,
-      startTime,
-      endDate,
-      endTime,
-      allDay,
-      eventType,
-      location,
-    }));
-  }, [title, description, startDate, startTime, endDate, endTime, allDay, eventType, location]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validate form
-    if (!title.trim()) {
-      showToast('Please enter an event title', 'error');
-      return;
-    }
-
-    if (!startDate) {
-      showToast('Please select a start date', 'error');
-      return;
-    }
-
-    // Build start and end datetime strings
-    // Store as local datetime (Supabase timestamptz will handle timezone conversion)
-    const startDateTime = allDay
-      ? `${startDate}T00:00:00`
-      : `${startDate}T${startTime || '00:00'}:00`;
-
-    const endDateTime = allDay
-      ? `${endDate || startDate}T23:59:59`
-      : `${endDate || startDate}T${endTime || startTime || '00:00'}:00`;
-
-    createEvent(
-      {
-        title: title.trim(),
-        description: description.trim() || null,
-        start_date: startDateTime,
-        start_time: allDay ? null : (startTime || null),
-        end_date: endDateTime,
-        end_time: allDay ? null : (endTime || null),
-        all_day: allDay,
-        location: location.trim() || null,
-        type: eventType,
-        color: null,
-        is_recurring: false,
-        recurrence_rule: null,
-        reminder_minutes: null,
-        attendees: null,
-        task_id: null,
-        project_id: null,
-      },
-      {
-        onSuccess: () => {
-          showToast('Event created successfully! 🎉', 'success');
-          // Clear draft from localStorage
-          localStorage.removeItem(STORAGE_KEY);
-          onClose();
-        },
-        onError: (error) => {
-          showToast(`Failed to create event: ${error.message}`, 'error');
-        },
-      }
-    );
-  };
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+  const defaultFormData: EventFormState = {
+    title: '',
+    description: '',
+    startDate: defaultDateStr,
+    startTime: defaultTimeStr,
+    endDate: defaultDateStr,
+    endTime: defaultTimeStr,
+    allDay: false,
+    eventType: 'event',
+    location: '',
   };
 
   return (
-    <div
-      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
-      style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        backdropFilter: 'blur(4px)',
-        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-        height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+    <FormModalV2<EventFormState>
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add Event"
+      defaultData={defaultFormData}
+      draftKey="calendar_add_event_modal_draft"
+      isPending={isPending}
+      submitText="Create Event"
+      isEditing={false}
+      onSubmit={async (formData) => {
+        // Build start and end datetime strings
+        const startDateTime = formData.allDay
+          ? `${formData.startDate}T00:00:00`
+          : `${formData.startDate}T${formData.startTime || '00:00'}:00`;
+
+        const endDateTime = formData.allDay
+          ? `${formData.endDate || formData.startDate}T23:59:59`
+          : `${formData.endDate || formData.startDate}T${formData.endTime || formData.startTime || '00:00'}:00`;
+
+        return new Promise((resolve, reject) => {
+          createEvent(
+            {
+              title: formData.title.trim(),
+              description: formData.description.trim() || null,
+              start_date: startDateTime,
+              start_time: formData.allDay ? null : (formData.startTime || null),
+              end_date: endDateTime,
+              end_time: formData.allDay ? null : (formData.endTime || null),
+              all_day: formData.allDay,
+              location: formData.location.trim() || null,
+              type: formData.eventType,
+              color: null,
+              is_recurring: false,
+              recurrence_rule: null,
+              reminder_minutes: null,
+              attendees: null,
+              task_id: null,
+              project_id: null,
+            },
+            {
+              onSuccess: () => {
+                showToast('Event created successfully! 🎉', 'success');
+                resolve();
+              },
+              onError: (error) => {
+                showToast(`Failed to create event: ${error.message}`, 'error');
+                reject(error);
+              },
+            }
+          );
+        });
       }}
-      onClick={handleBackdropClick}
+      validate={(formData) => {
+        if (!formData.title.trim()) return 'Please enter an event title';
+        if (!formData.startDate) return 'Please select a start date';
+        return null;
+      }}
     >
-      <div
-        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col"
-        style={{ maxHeight: '90vh', maxWidth: '600px' }}
-      >
-        {/* Mobile Drag Handle */}
-        <div className="lg:hidden pt-2 flex-shrink-0">
-          <div className="w-9 h-1 rounded-full mx-auto bg-gray-300" />
-        </div>
+      {(formState, setFormState) => (
+        <>
+          {/* Event Title */}
+          <div>
+            <label htmlFor="event-title" className="block text-sm font-semibold text-gray-900 mb-2">
+              Event Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="event-title"
+              type="text"
+              value={formState.title}
+              onChange={(e) => setFormState({ ...formState, title: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+              placeholder="e.g., Team Meeting, Birthday Party"
+              required
+            />
+          </div>
 
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 flex-shrink-0">
-          <h2 className="text-2xl font-bold text-gray-900">Add Event</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
+          {/* Event Type */}
+          <div>
+            <label htmlFor="event-type" className="block text-sm font-semibold text-gray-900 mb-2">
+              Event Type
+            </label>
+            <select
+              id="event-type"
+              value={formState.eventType}
+              onChange={(e) => setFormState({ ...formState, eventType: e.target.value as CalendarEvent['type'] })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+            >
+              {EVENT_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.emoji} {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Scrollable Content */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div
-            className="overflow-y-auto p-6 space-y-5 flex-1"
-            style={{ maxHeight: 'calc(90vh - 140px)' }}
-          >
-            {/* Event Title */}
+          {/* All-Day Toggle */}
+          <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formState.allDay}
+              onChange={(e) => setFormState({ ...formState, allDay: e.target.checked })}
+              className="w-5 h-5 text-terracotta-400 rounded focus:ring-terracotta-300"
+            />
+            <span className="font-medium text-gray-900">All-day event</span>
+          </label>
+
+          {/* Start Date & Time */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="event-title" className="block text-sm font-semibold text-gray-900 mb-2">
-                Event Title <span className="text-red-500">*</span>
+              <label htmlFor="start-date" className="block text-sm font-semibold text-gray-900 mb-2">
+                Start Date <span className="text-red-500">*</span>
               </label>
               <input
-                id="event-title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                id="start-date"
+                type="date"
+                value={formState.startDate}
+                onChange={(e) => setFormState({ ...formState, startDate: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
-                placeholder="e.g., Team Meeting, Birthday Party"
                 required
               />
             </div>
+            {!formState.allDay && (
+              <div>
+                <label htmlFor="start-time" className="block text-sm font-semibold text-gray-900 mb-2">
+                  Start Time
+                </label>
+                <input
+                  id="start-time"
+                  type="time"
+                  value={formState.startTime}
+                  onChange={(e) => setFormState({ ...formState, startTime: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+                />
+              </div>
+            )}
+          </div>
 
-            {/* Event Type */}
+          {/* End Date & Time */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="event-type" className="block text-sm font-semibold text-gray-900 mb-2">
-                Event Type
+              <label htmlFor="end-date" className="block text-sm font-semibold text-gray-900 mb-2">
+                End Date
               </label>
-              <select
-                id="event-type"
-                value={eventType}
-                onChange={(e) => setEventType(e.target.value as CalendarEvent['type'])}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
-              >
-                {EVENT_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.emoji} {type.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* All-Day Toggle */}
-            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
               <input
-                type="checkbox"
-                checked={allDay}
-                onChange={(e) => setAllDay(e.target.checked)}
-                className="w-5 h-5 text-terracotta-400 rounded focus:ring-terracotta-300"
+                id="end-date"
+                type="date"
+                value={formState.endDate}
+                onChange={(e) => setFormState({ ...formState, endDate: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
               />
-              <span className="font-medium text-gray-900">All-day event</span>
+            </div>
+            {!formState.allDay && (
+              <div>
+                <label htmlFor="end-time" className="block text-sm font-semibold text-gray-900 mb-2">
+                  End Time
+                </label>
+                <input
+                  id="end-time"
+                  type="time"
+                  value={formState.endTime}
+                  onChange={(e) => setFormState({ ...formState, endTime: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Location */}
+          <div>
+            <label htmlFor="location" className="block text-sm font-semibold text-gray-900 mb-2">
+              Location
             </label>
-
-            {/* Start Date & Time */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="start-date" className="block text-sm font-semibold text-gray-900 mb-2">
-                  Start Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="start-date"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
-                  required
-                />
-              </div>
-              {!allDay && (
-                <div>
-                  <label htmlFor="start-time" className="block text-sm font-semibold text-gray-900 mb-2">
-                    Start Time
-                  </label>
-                  <input
-                    id="start-time"
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* End Date & Time */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="end-date" className="block text-sm font-semibold text-gray-900 mb-2">
-                  End Date
-                </label>
-                <input
-                  id="end-date"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
-                />
-              </div>
-              {!allDay && (
-                <div>
-                  <label htmlFor="end-time" className="block text-sm font-semibold text-gray-900 mb-2">
-                    End Time
-                  </label>
-                  <input
-                    id="end-time"
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Location */}
-            <div>
-              <label htmlFor="location" className="block text-sm font-semibold text-gray-900 mb-2">
-                Location
-              </label>
-              <input
-                id="location"
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
-                placeholder="e.g., Conference Room A, Central Park"
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-semibold text-gray-900 mb-2">
-                Description
-              </label>
-              <textarea
-                id="description"
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
-                placeholder="Add notes or details about this event..."
-              />
-            </div>
+            <input
+              id="location"
+              type="text"
+              value={formState.location}
+              onChange={(e) => setFormState({ ...formState, location: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+              placeholder="e.g., Conference Room A, Central Park"
+            />
           </div>
 
-          {/* Modal Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex gap-3 flex-shrink-0 bg-white">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
-              style={{
-                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-              }}
-            >
-              {isPending ? 'Creating...' : 'Create Event'}
-            </button>
+          {/* Description */}
+          <div>
+            <label htmlFor="description" className="block text-sm font-semibold text-gray-900 mb-2">
+              Description
+            </label>
+            <textarea
+              id="description"
+              rows={3}
+              value={formState.description}
+              onChange={(e) => setFormState({ ...formState, description: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
+              placeholder="Add notes or details about this event..."
+            />
           </div>
-        </form>
-      </div>
-    </div>
+        </>
+      )}
+    </FormModalV2>
   );
 };

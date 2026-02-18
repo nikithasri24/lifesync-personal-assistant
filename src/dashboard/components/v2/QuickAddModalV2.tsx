@@ -1,10 +1,10 @@
 /**
  * QuickAddModalV2 Component
- * CLAUDE.md compliant modal for quick task creation
+ * CLAUDE.md compliant modal for quick task creation with scheduling
  */
 
-import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Calendar, Clock } from 'lucide-react';
 import { useCreateTask } from '@/hooks/useTasksQuery';
 import { useToast } from '@/hooks/useToast';
 import { parseQuickAdd } from '@/todos/services/taskHelpers';
@@ -25,6 +25,24 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
 }) => {
   const { showToast } = useToast();
   const createTaskMutation = useCreateTask();
+
+  // Scheduling state
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [dueDate, setDueDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // YYYY-MM-DD format
+  });
+  const [dueTime, setDueTime] = useState('');
+
+  // Reset scheduling when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      const today = new Date();
+      setDueDate(today.toISOString().split('T')[0]);
+      setDueTime('');
+      setShowSchedule(false);
+    }
+  }, [isOpen]);
 
   // ESC key closes modal
   useEffect(() => {
@@ -47,6 +65,16 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
 
     const parsed = parseQuickAdd(value, []);
 
+    // Build due_date with time if specified
+    let finalDueDate: string;
+    if (dueTime) {
+      // Combine date and time
+      finalDueDate = `${dueDate}T${dueTime}:00`;
+    } else {
+      // Just date, set to start of day
+      finalDueDate = `${dueDate}T00:00:00`;
+    }
+
     createTaskMutation.mutate(
       {
         title: parsed.title,
@@ -55,7 +83,7 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
         status: 'todo',
         estimated_time: 25,
         actual_time: 0,
-        due_date: parsed.dueDate ? parsed.dueDate.toISOString() : new Date().toISOString(),
+        due_date: finalDueDate,
         project_id: parsed.projectId ?? null,
         tags: parsed.tags,
         category: 'work',
@@ -65,7 +93,8 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
           onChange('');
           onClose();
           if (showToast) {
-            showToast(`Task "${newTask.title}" created! ✓`, 'success');
+            const timeMsg = dueTime ? ` at ${dueTime}` : '';
+            showToast(`Task "${newTask.title}" scheduled${timeMsg}! 📅`, 'success');
           }
         },
         onError: (error) => {
@@ -119,7 +148,7 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 flex-shrink-0">
+        <div className="p-6 space-y-4 flex-shrink-0">
           <QuickAddForm
             value={value}
             onChange={onChange}
@@ -128,6 +157,62 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
             isLoading={createTaskMutation.isPending}
             autoFocus
           />
+
+          {/* Schedule Section */}
+          <div className="space-y-3">
+            {/* Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowSchedule(!showSchedule)}
+              className="flex items-center gap-2 text-sm font-semibold transition-colors"
+              style={{ color: showSchedule ? '#C18B5E' : '#6B7280' }}
+            >
+              <Calendar className="w-4 h-4" />
+              {showSchedule ? 'Scheduled' : 'Add to Calendar'}
+            </button>
+
+            {/* Date/Time Inputs */}
+            {showSchedule && (
+              <div className="space-y-3 pl-6">
+                {/* Date Input */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all text-sm"
+                  />
+                </div>
+
+                {/* Time Input (Optional) */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-2">
+                    <Clock className="w-3 h-3" />
+                    Time (optional)
+                  </label>
+                  <input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all text-sm"
+                    placeholder="Select time"
+                  />
+                  {dueTime && (
+                    <button
+                      type="button"
+                      onClick={() => setDueTime('')}
+                      className="text-xs text-gray-500 hover:text-gray-700 mt-1"
+                    >
+                      Clear time
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

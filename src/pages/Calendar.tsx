@@ -455,12 +455,18 @@ const CalendarContent = () => {
             {/* Day View */}
             {currentView === 'day' && (
               <div style={{ backgroundColor: colors.bg.white }}>
-                {/* All-day Events Section */}
+                {/* All-day Events & Tasks Section */}
                 {(() => {
-                  const { events: dayEvents } = getEventsForDay(currentDate);
+                  const { events: dayEvents, tasks: dayTasks } = getEventsForDay(currentDate);
                   const allDayEvents = dayEvents.filter(e => e.all_day);
+                  // Tasks without specific times (hour is 0 or midnight)
+                  const allDayTasks = dayTasks.filter(t => {
+                    if (!t.due_date) return false;
+                    const taskHour = new Date(t.due_date).getHours();
+                    return taskHour === 0;
+                  });
 
-                  return allDayEvents.length > 0 ? (
+                  return (allDayEvents.length > 0 || allDayTasks.length > 0) ? (
                     <div
                       className="border-b p-3"
                       style={{ borderColor: colors.border.light, backgroundColor: colors.bg.secondary }}
@@ -469,6 +475,7 @@ const CalendarContent = () => {
                         ALL DAY
                       </div>
                       <div className="space-y-2">
+                        {/* All-day Events */}
                         {allDayEvents.map((event, idx) => {
                           const eventColors = getEventColors(event.type);
                           return (
@@ -493,6 +500,28 @@ const CalendarContent = () => {
                             </div>
                           );
                         })}
+                        {/* All-day Tasks */}
+                        {allDayTasks.map((task, idx) => (
+                          <div
+                            key={`allday-task-${task.id || idx}`}
+                            style={{
+                              backgroundColor: '#DBEAFE',
+                              borderLeft: '3px solid #3B82F6',
+                              padding: '6px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                            }}
+                          >
+                            <div style={{ fontWeight: 600, color: colors.text.primary }}>
+                              ✓ {task.title}
+                            </div>
+                            {task.priority && task.priority !== 'medium' && (
+                              <div style={{ color: colors.text.secondary, fontSize: '11px', marginTop: '2px' }}>
+                                {task.priority === 'high' ? '🔴 High' : task.priority === 'low' ? '🟢 Low' : ''}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                 </div>
               ) : null;
@@ -594,7 +623,7 @@ const CalendarContent = () => {
             {/* Week View */}
             {currentView === 'week' && (
               <div>
-                {/* All-day Events Section */}
+                {/* All-day Events & Tasks Section */}
                 <div
                   style={{
                     display: 'grid',
@@ -616,8 +645,14 @@ const CalendarContent = () => {
                     ALL DAY
                   </div>
                   {weekDays.map((day) => {
-                    const { events: dayEvents } = getEventsForDay(day);
+                    const { events: dayEvents, tasks: dayTasks } = getEventsForDay(day);
                     const allDayEvents = dayEvents.filter(e => e.all_day);
+                    // Tasks without specific times
+                    const allDayTasks = dayTasks.filter(t => {
+                      if (!t.due_date) return false;
+                      const taskHour = new Date(t.due_date).getHours();
+                      return taskHour === 0;
+                    });
 
                     return (
                       <div
@@ -628,6 +663,7 @@ const CalendarContent = () => {
                           backgroundColor: isToday(day) ? '#FEF3E8' : colors.bg.secondary,
                         }}
                       >
+                    {/* All-day Events */}
                     {allDayEvents.map((event, idx) => {
                       const eventColors = getEventColors(event.type);
                       return (
@@ -647,6 +683,23 @@ const CalendarContent = () => {
                         </div>
                       );
                     })}
+                    {/* All-day Tasks */}
+                    {allDayTasks.map((task, idx) => (
+                      <div
+                        key={`allday-task-${task.id || idx}`}
+                        style={{
+                          backgroundColor: '#DBEAFE',
+                          borderLeft: '3px solid #3B82F6',
+                          padding: '4px',
+                          margin: '2px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        ✓ {task.title}
+                      </div>
+                    ))}
                   </div>
                 );
               })}
