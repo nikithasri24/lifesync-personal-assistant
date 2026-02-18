@@ -2,9 +2,9 @@
 
 ## Session Summary
 
-Successfully migrated **42 modals** to FormModalV2!
+Successfully migrated **44 modals** to FormModalV2!
 
-**Total Impact:** 3,865 lines eliminated (29% average reduction)
+**Total Impact:** 3,983 lines eliminated (29% average reduction)
 
 ---
 
@@ -347,15 +347,33 @@ Successfully migrated **42 modals** to FormModalV2!
 - **Migration Impact:** Added Together pattern, removed createPortal (FormModalV2 handles internally), ESC/backdrop handlers, converted from dark mode to light mode, preserved all business logic
 - **Commit:** `feat: Migrate SimpleRecipeEditModal and SwapMealModal to FormModalV2`
 
+### 43. QuickAddModalV2 (Dashboard)
+- **Before:** 244 lines
+- **After:** 160 lines
+- **Reduction:** 84 lines (34%)
+- **Form Fields:** External value/onChange for QuickAddForm integration, internal schedule state (dueDate, dueTime, showSchedule toggle)
+- **Special Features:** Auto-detect time from text input, optional scheduling section with calendar toggle, QuickAddForm component integration with customSubmitButton
+- **Migration Impact:** Removed manual Together pattern structure, ESC/backdrop handlers now built-in, preserved external value/onChange for QuickAddForm, used customSubmitButton for integration
+- **Commit:** `feat: Migrate QuickAddModalV2 and ProjectFormModal to FormModalV2`
+
+### 44. ProjectFormModal (Projects)
+- **Before:** 129 lines
+- **After:** 95 lines
+- **Reduction:** 34 lines (26%)
+- **Form Fields:** 5 fields (name, description, icon emoji, color picker, status dropdown)
+- **Special Features:** 3 status options (active, on_hold, completed), color picker with hex display
+- **Migration Impact:** Added Together pattern, ESC/backdrop handlers, auto-save, converted from dark mode to light mode, changed from controlled to uncontrolled component
+- **Commit:** `feat: Migrate QuickAddModalV2 and ProjectFormModal to FormModalV2`
+
 ---
 
 ## 📊 Cumulative Impact
 
 | Metric | Before | After | Savings |
 |--------|--------|-------|---------|
-| **Total Lines** | 13,536 | 9,671 | 3,865 (29%) |
-| **Average per Modal** | 322 | 230 | 92 (29%) |
-| **Boilerplate Eliminated** | ~4,264 lines | 0 | 4,264 (100%) |
+| **Total Lines** | 13,909 | 9,926 | 3,983 (29%) |
+| **Average per Modal** | 316 | 226 | 90 (28%) |
+| **Boilerplate Eliminated** | ~4,382 lines | 0 | 4,382 (100%) |
 
 ---
 
@@ -468,8 +486,15 @@ Per modal, we consistently eliminated:
 - [x] DebtFormModal (153 lines) ✅ COMPLETE
 - Note: StrategyCalculatorModal is not a form modal (display/calculator modal)
 
+### Dashboard - ✅ ALL COMPLETE (1/1)
+- [x] QuickAddModalV2 (244 lines) ✅ COMPLETE
+
+### Projects - ✅ ALL COMPLETE (1/1)
+- [x] ProjectFormModal (129 lines) ✅ COMPLETE
+- Note: DeleteConfirmModal is a simple confirmation modal, doesn't need FormModalV2
+
 ### Other Feature Modals
-- ~5+ more modals across Dashboard, etc.
+- ~1-2 remaining form modals to find
 - Note: Many modals found earlier are display/list modals (not form modals), don't need migration
 
 **Estimated Total Impact when fully migrated:** ~2,500+ lines saved
@@ -616,6 +641,6 @@ All completed migrations successfully use:
 ---
 
 **Last Updated:** 2026-02-18
-**Session Status:** ✅ Session 4 Continued - 42 modals migrated!
-**Modules Completed:** Finance (9/9), Skincare (3/3), Travel (3/3), Calendar (2/2), Focus (1/1), Schedule Blocks (1/1), Meals (5/5)
-**Next Session:** Continue with remaining modals (Dashboard, etc.)
+**Session Status:** ✅ Session 4 Continued - 44 modals migrated!
+**Modules Completed:** Finance (9/9), Skincare (3/3), Travel (3/3), Calendar (2/2), Focus (1/1), Schedule Blocks (1/1), Meals (5/5), Dashboard (1/1), Projects (1/1)
+**Next Session:** Search for any remaining form modals
