@@ -39,6 +39,27 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
     }
   }, [isOpen, onClose]);
 
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Store original overflow
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+
+      // Lock background scroll
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+
+      return () => {
+        // Restore original overflow
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.width = '';
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -188,7 +209,14 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
         </div>
 
         {/* Message Content */}
-        <div className="overflow-y-auto px-6 py-4 flex-1">
+        <div
+          className="overflow-y-auto px-6 py-4 flex-1"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+          }}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
           <div
             className="prose prose-lg max-w-none text-gray-900"
             style={{
