@@ -1,6 +1,5 @@
 /**
- * Script to fix task times by parsing titles
- * Finds tasks with times in titles (@ 6, at 5:30, etc.) and reschedules them
+ * Script to fix task times by parsing titles (with proper timezone handling)
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -26,17 +25,11 @@ envFile.split('\n').forEach(line => {
 const supabaseUrl = envVars.VITE_SUPABASE_URL;
 const supabaseKey = envVars.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Missing Supabase credentials in .env.local');
-  process.exit(1);
-}
-
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function fixTaskTimes() {
   console.log('🔍 Fetching tasks...\n');
 
-  // Get all tasks
   const { data: tasks, error } = await supabase
     .from('tasks')
     .select('*')
@@ -58,34 +51,42 @@ async function fixTaskTimes() {
   let updatedCount = 0;
 
   for (const task of tasks) {
-    // Parse the title to extract time
     const parsed = parseQuickAdd(task.title, []);
 
     if (parsed.dueTime) {
-      // Found a time in the title!
       const currentDueDate = new Date(task.due_date);
       const dateStr = currentDueDate.toISOString().split('T')[0];
-      const newDueDate = `${dateStr}T${parsed.dueTime}:00`;
+      
+      // Create a local date/time string without timezone conversion
+      // This ensures 18:00 means 6 PM in the user's local timezone
+      const localDateTime = `${dateStr}T${parsed.dueTime}:00`;
+      
+      // Convert to ISO string in local timezone (not UTC)
+      const [hours, minutes] = parsed.dueTime.split(':').map(Number);
+      const localDate = new Date(currentDueDate);
+      localDate.setHours(hours, minutes, 0, 0);
+      
+      const newDueDate = localDate.toISOString();
 
       console.log(`📝 Task: "${task.title}"`);
-      console.log(`   Old time: ${currentDueDate.toLocaleTimeString()}`);
-      console.log(`   New time: ${parsed.dueTime}`);
+      console.log(`   Old: ${new Date(task.due_date).toLocaleString()}`);
+      console.log(`   New: ${localDate.toLocaleString()}`);
+      console.log(`   Stored as: ${newDueDate}`);
       console.log(`   Clean title: "${parsed.title}"\n`);
 
-      // Update the task
       const { error: updateError } = await supabase
         .from('tasks')
         .update({
-          title: parsed.title, // Clean title without time
+          title: parsed.title,
           due_date: newDueDate,
           updated_at: new Date().toISOString(),
         })
         .eq('id', task.id);
 
       if (updateError) {
-        console.error(`   ❌ Error updating task: ${updateError.message}\n`);
+        console.error(`   ❌ Error: ${updateError.message}\n`);
       } else {
-        console.log(`   ✅ Updated successfully!\n`);
+        console.log(`   ✅ Updated!\n`);
         updatedCount++;
       }
     }
@@ -94,5 +95,4 @@ async function fixTaskTimes() {
   console.log(`\n✨ Done! Updated ${updatedCount} tasks.`);
 }
 
-// Run the script
 fixTaskTimes().catch(console.error);
