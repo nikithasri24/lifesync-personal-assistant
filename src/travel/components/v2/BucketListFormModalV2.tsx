@@ -1,10 +1,17 @@
 /**
- * BucketListFormModalV2 - Modal for creating/editing bucket list destinations
- * Following Together pattern with auto-save and terracotta theme
+ * BucketListFormModalV2 - MIGRATED to use FormModalV2
+ * Modal for creating/editing bucket list destinations
+ *
+ * MIGRATION COMPLETE:
+ * - Reduced from 471 lines to ~400 lines (15% reduction)
+ * - Removed boilerplate (ESC key, backdrop, auto-save, modal structure)
+ * - Form state managed by FormModalV2
+ * - Dynamic list handlers moved inside render function
  */
 
-import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, X } from 'lucide-react';
+import { FormModalV2 } from '@/components/v2';
 import type { BucketListPriority, BucketListCategory } from '../../types';
 
 export interface BucketListFormData {
@@ -39,8 +46,6 @@ interface BucketListFormModalV2Props {
   isPending?: boolean;
 }
 
-const STORAGE_KEY = 'travel_bucket_list_draft';
-
 const CATEGORIES: { value: BucketListCategory; label: string; emoji: string }[] = [
   { value: 'beach', label: 'Beach', emoji: '🏖️' },
   { value: 'mountain', label: 'Mountain', emoji: '⛰️' },
@@ -70,141 +75,67 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
   onSubmit,
   isPending = false,
 }) => {
-  // Load draft on mount
-  const loadDraft = () => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (error) {
-      console.error('Failed to load draft:', error);
-    }
-    return null;
+  const defaultFormData: BucketListFormData = {
+    name: '',
+    description: '',
+    countryName: '',
+    cityName: '',
+    priority: 'medium',
+    category: 'city',
+    estimatedBudget: undefined,
+    currency: 'USD',
+    targetYear: undefined,
+    targetSeason: '',
+    isVisited: false,
+    notes: '',
+    inspirationUrl: '',
+    mustDo: [],
+    mustEat: [],
+    mustSee: [],
   };
-
-  const savedDraft = !isEditing ? loadDraft() : null;
-
-  const [formData, setFormData] = useState<BucketListFormData>({
-    name: destination?.name || savedDraft?.name || '',
-    description: destination?.description || savedDraft?.description || '',
-    countryName: destination?.countryName || savedDraft?.countryName || '',
-    cityName: destination?.cityName || savedDraft?.cityName || '',
-    priority: destination?.priority || savedDraft?.priority || 'medium',
-    category: destination?.category || savedDraft?.category || 'city',
-    estimatedBudget: destination?.estimatedBudget || savedDraft?.estimatedBudget || undefined,
-    currency: destination?.currency || savedDraft?.currency || 'USD',
-    targetYear: destination?.targetYear || savedDraft?.targetYear || undefined,
-    targetSeason: destination?.targetSeason || savedDraft?.targetSeason || '',
-    isVisited: destination?.isVisited || false,
-    notes: destination?.notes || savedDraft?.notes || '',
-    inspirationUrl: destination?.inspirationUrl || savedDraft?.inspirationUrl || '',
-    mustDo: destination?.mustDo || savedDraft?.mustDo || [],
-    mustEat: destination?.mustEat || savedDraft?.mustEat || [],
-    mustSee: destination?.mustSee || savedDraft?.mustSee || [],
-  });
-
-  const [newMustDo, setNewMustDo] = useState('');
-  const [newMustEat, setNewMustEat] = useState('');
-  const [newMustSee, setNewMustSee] = useState('');
-
-  // Auto-save draft
-  useEffect(() => {
-    if (!isEditing && formData.name) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-    }
-  }, [formData, isEditing]);
-
-  // ESC key to close
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isOpen, onClose]);
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name.trim()) {
-      alert('Please enter a destination name');
-      return;
-    }
-
-    await onSubmit(formData);
-    localStorage.removeItem(STORAGE_KEY);
-  };
-
-  const addToList = (list: 'mustDo' | 'mustEat' | 'mustSee', value: string, setter: (val: string) => void) => {
-    if (!value.trim()) return;
-    setFormData(prev => ({
-      ...prev,
-      [list]: [...(prev[list] || []), value.trim()],
-    }));
-    setter('');
-  };
-
-  const removeFromList = (list: 'mustDo' | 'mustEat' | 'mustSee', index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      [list]: prev[list]?.filter((_, i) => i !== index) || [],
-    }));
-  };
-
-  if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
-      style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        backdropFilter: 'blur(4px)',
-        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-        height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+    <FormModalV2<BucketListFormData>
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? 'Edit Destination' : 'Add Dream Destination'}
+      defaultData={defaultFormData}
+      initialData={destination}
+      draftKey={isEditing ? undefined : 'travel_bucket_list_draft'}
+      isPending={isPending}
+      submitText={isEditing ? 'Update' : 'Add to Bucket List'}
+      isEditing={isEditing}
+      onSubmit={async (formData) => {
+        await onSubmit(formData);
       }}
-      onClick={handleBackdropClick}
+      validate={(formData) => {
+        if (!formData.name.trim()) return 'Destination name is required';
+        return null;
+      }}
     >
-      <div
-        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col"
-        style={{ maxHeight: '90vh', maxWidth: '600px' }}
-      >
-        {/* Mobile drag handle */}
-        <div className="lg:hidden pt-2 flex-shrink-0">
-          <div className="w-9 h-1 rounded-full mx-auto bg-gray-300" />
-        </div>
+      {(formState, setFormState) => {
+        const [newMustDo, setNewMustDo] = useState('');
+        const [newMustEat, setNewMustEat] = useState('');
+        const [newMustSee, setNewMustSee] = useState('');
 
-        {/* Fixed Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 flex-shrink-0">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? 'Edit Destination' : 'Add Dream Destination'}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
+        const addToList = (list: 'mustDo' | 'mustEat' | 'mustSee', value: string, setter: (val: string) => void) => {
+          if (!value.trim()) return;
+          setFormState({
+            ...formState,
+            [list]: [...(formState[list] || []), value.trim()],
+          });
+          setter('');
+        };
 
-        {/* Scrollable Form Content */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div
-            className="overflow-y-auto p-6 space-y-5 flex-1"
-            style={{ maxHeight: 'calc(90vh - 140px)' }}
-          >
+        const removeFromList = (list: 'mustDo' | 'mustEat' | 'mustSee', index: number) => {
+          setFormState({
+            ...formState,
+            [list]: formState[list]?.filter((_, i) => i !== index) || [],
+          });
+        };
+
+        return (
+          <>
             {/* Destination Name */}
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -212,8 +143,8 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
               </label>
               <input
                 type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={formState.name}
+                onChange={(e) => setFormState({ ...formState, name: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 placeholder="e.g., Santorini, Greece"
                 required
@@ -227,8 +158,8 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
               </label>
               <textarea
                 rows={3}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                value={formState.description}
+                onChange={(e) => setFormState({ ...formState, description: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
                 placeholder="What makes this destination special?"
               />
@@ -242,8 +173,8 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
                 </label>
                 <input
                   type="text"
-                  value={formData.countryName}
-                  onChange={(e) => setFormData({ ...formData, countryName: e.target.value })}
+                  value={formState.countryName}
+                  onChange={(e) => setFormState({ ...formState, countryName: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                   placeholder="Greece"
                 />
@@ -254,8 +185,8 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
                 </label>
                 <input
                   type="text"
-                  value={formData.cityName}
-                  onChange={(e) => setFormData({ ...formData, cityName: e.target.value })}
+                  value={formState.cityName}
+                  onChange={(e) => setFormState({ ...formState, cityName: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                   placeholder="Santorini"
                 />
@@ -272,14 +203,14 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
                   <button
                     key={cat.value}
                     type="button"
-                    onClick={() => setFormData({ ...formData, category: cat.value })}
+                    onClick={() => setFormState({ ...formState, category: cat.value })}
                     className="p-3 rounded-xl border-2 transition-all text-center"
                     style={{
-                      background: formData.category === cat.value
+                      background: formState.category === cat.value
                         ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)'
                         : 'white',
-                      borderColor: formData.category === cat.value ? '#C18B5E' : '#E5E7EB',
-                      color: formData.category === cat.value ? 'white' : '#1F2937',
+                      borderColor: formState.category === cat.value ? '#C18B5E' : '#E5E7EB',
+                      color: formState.category === cat.value ? 'white' : '#1F2937',
                     }}
                   >
                     <div className="text-2xl mb-1">{cat.emoji}</div>
@@ -299,14 +230,14 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
                   <button
                     key={pri.value}
                     type="button"
-                    onClick={() => setFormData({ ...formData, priority: pri.value })}
+                    onClick={() => setFormState({ ...formState, priority: pri.value })}
                     className="p-3 rounded-xl border-2 transition-all flex items-center gap-2"
                     style={{
-                      background: formData.priority === pri.value
+                      background: formState.priority === pri.value
                         ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)'
                         : 'white',
-                      borderColor: formData.priority === pri.value ? '#C18B5E' : '#E5E7EB',
-                      color: formData.priority === pri.value ? 'white' : '#1F2937',
+                      borderColor: formState.priority === pri.value ? '#C18B5E' : '#E5E7EB',
+                      color: formState.priority === pri.value ? 'white' : '#1F2937',
                     }}
                   >
                     <span className="text-xl">{pri.emoji}</span>
@@ -324,8 +255,8 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
                 </label>
                 <input
                   type="number"
-                  value={formData.estimatedBudget || ''}
-                  onChange={(e) => setFormData({ ...formData, estimatedBudget: e.target.value ? Number(e.target.value) : undefined })}
+                  value={formState.estimatedBudget || ''}
+                  onChange={(e) => setFormState({ ...formState, estimatedBudget: e.target.value ? Number(e.target.value) : undefined })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                   placeholder="3000"
                 />
@@ -336,8 +267,8 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
                 </label>
                 <input
                   type="number"
-                  value={formData.targetYear || ''}
-                  onChange={(e) => setFormData({ ...formData, targetYear: e.target.value ? Number(e.target.value) : undefined })}
+                  value={formState.targetYear || ''}
+                  onChange={(e) => setFormState({ ...formState, targetYear: e.target.value ? Number(e.target.value) : undefined })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                   placeholder="2027"
                   min={new Date().getFullYear()}
@@ -351,8 +282,8 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
                 Best Season
               </label>
               <select
-                value={formData.targetSeason}
-                onChange={(e) => setFormData({ ...formData, targetSeason: e.target.value })}
+                value={formState.targetSeason}
+                onChange={(e) => setFormState({ ...formState, targetSeason: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
               >
                 <option value="">Any time</option>
@@ -395,7 +326,7 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {formData.mustDo?.map((item, idx) => (
+                {formState.mustDo?.map((item, idx) => (
                   <div
                     key={idx}
                     className="flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-lg text-sm"
@@ -421,8 +352,8 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
               </label>
               <input
                 type="url"
-                value={formData.inspirationUrl}
-                onChange={(e) => setFormData({ ...formData, inspirationUrl: e.target.value })}
+                value={formState.inspirationUrl}
+                onChange={(e) => setFormState({ ...formState, inspirationUrl: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 placeholder="https://..."
               />
@@ -435,36 +366,15 @@ export const BucketListFormModalV2: React.FC<BucketListFormModalV2Props> = ({
               </label>
               <textarea
                 rows={3}
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                value={formState.notes}
+                onChange={(e) => setFormState({ ...formState, notes: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
                 placeholder="Additional thoughts or planning notes..."
               />
             </div>
-          </div>
-
-          {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex gap-3 flex-shrink-0 bg-white">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
-              style={{
-                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-              }}
-            >
-              {isPending ? 'Saving...' : (isEditing ? 'Update' : 'Add to Bucket List')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </>
+        );
+      }}
+    </FormModalV2>
   );
 };
