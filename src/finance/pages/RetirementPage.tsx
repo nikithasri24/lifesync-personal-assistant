@@ -18,8 +18,11 @@ import RetirementAccountEditor from '../components/retirement/RetirementAccountE
 import type { Account, RetirementAccountWithStats, RetirementAccountMetadataInput } from '../types';
 import { logger } from '../../services/logger';
 import { useAuth } from '@/hooks/useAuth';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 const RetirementPage: React.FC = () => {
+  const colors = useThemeColors();
+
   // Auth and merged connection
   const { user } = useAuth();
   const { data: mergedConnection } = useFinanceMergedConnectionQuery();
@@ -107,8 +110,15 @@ const RetirementPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-600 dark:text-gray-400">Loading retirement accounts...</div>
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-2" />
+              <p className="text-sm text-primary opacity-60">Loading retirement accounts...</p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -119,7 +129,20 @@ const RetirementPage: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6 p-6">
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">🏦</span>
+            Retirement
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
+            Manage your retirement accounts and track progress toward your goals
+          </p>
+        </div>
+
+        <div className="space-y-6">
       {/* Show unconfigured accounts prompt */}
       {unconfiguredAccounts.length > 0 && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
@@ -216,6 +239,7 @@ const RetirementPage: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

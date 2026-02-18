@@ -12,8 +12,11 @@ import { useNetWorthQuery, useAccountsQuery, useLoansQuery, useFinanceMergedConn
 import type { Account } from '../types';
 import { useAuth } from '@/hooks/useAuth';
 import { OwnerBadge } from '../../components/common/OwnerBadge';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 const NetWorthPage: React.FC = () => {
+  const colors = useThemeColors();
+
   // Auth and merged connection
   const { user } = useAuth();
   const { data: mergedConnection } = useFinanceMergedConnectionQuery();
@@ -85,17 +88,34 @@ const NetWorthPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-2" />
-          <p className="text-sm text-primary opacity-60">Loading net worth data...</p>
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-2" />
+              <p className="text-sm text-primary opacity-60">Loading net worth data...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">💰</span>
+            Net Worth
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
+            Track your assets, liabilities, and overall financial health
+          </p>
+        </div>
+
+        <div className="space-y-6">
       {/* Enhanced Metric Cards */}
       {last && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -318,6 +338,7 @@ const NetWorthPage: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
