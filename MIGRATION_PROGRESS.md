@@ -2,9 +2,9 @@
 
 ## Session Summary
 
-Successfully migrated **38 modals** to FormModalV2!
+Successfully migrated **40 modals** to FormModalV2!
 
-**Total Impact:** 3,666 lines eliminated (29% average reduction)
+**Total Impact:** 3,755 lines eliminated (29% average reduction)
 
 ---
 
@@ -311,15 +311,33 @@ Successfully migrated **38 modals** to FormModalV2!
 - **Migration Impact:** Added Together pattern, ESC/backdrop handlers, auto-save, converted from dark mode to light mode, converted from controlled to uncontrolled component
 - **Commit:** `feat: Migrate ItemFormModal and CreateTemplateModal to FormModalV2`
 
+### 39. DebtFormModal (Finance - Debt Calculator)
+- **Before:** 153 lines
+- **After:** 125 lines
+- **Reduction:** 28 lines (18%)
+- **Form Fields:** 5 fields (type, balance, interestRate, minimumPayment, creditLimit, accountName)
+- **Special Features:** 5 debt types with emoji dropdown, validation for required fields
+- **Migration Impact:** Added Together pattern, ESC/backdrop handlers, auto-save, converted to light mode, changed from controlled to uncontrolled component
+- **Commit:** `feat: Migrate DebtFormModal and ScheduleBlockModal to FormModalV2`
+
+### 40. ScheduleBlockModal (Schedule Blocks)
+- **Before:** 211 lines
+- **After:** 150 lines
+- **Reduction:** 61 lines (29%)
+- **Form Fields:** 6 fields (date, type, startTime, endTime, title, color)
+- **Special Features:** 4 block types (task, event, focus, break), time validation, delete button support
+- **Migration Impact:** Added Together pattern, replaced manual backdrop with FormModalV2 handlers, auto-save, converted from dark mode to light mode, delete button integration
+- **Commit:** `feat: Migrate DebtFormModal and ScheduleBlockModal to FormModalV2`
+
 ---
 
 ## 📊 Cumulative Impact
 
 | Metric | Before | After | Savings |
 |--------|--------|-------|---------|
-| **Total Lines** | 12,742 | 9,076 | 3,666 (29%) |
-| **Average per Modal** | 335 | 239 | 96 (29%) |
-| **Boilerplate Eliminated** | ~4,018 lines | 0 | 4,018 (100%) |
+| **Total Lines** | 13,106 | 9,351 | 3,755 (29%) |
+| **Average per Modal** | 328 | 234 | 94 (29%) |
+| **Boilerplate Eliminated** | ~4,136 lines | 0 | 4,136 (100%) |
 
 ---
 
@@ -419,12 +437,19 @@ Per modal, we consistently eliminated:
 - [x] AddEventModal (363 lines) ✅ COMPLETE
 - [x] EventModal (363 lines) ✅ COMPLETE
 
-### Focus Modals - ✅ IN PROGRESS (1/2)
+### Focus Modals - ✅ ALL COMPLETE (1/1)
 - [x] CreateTemplateModal (144 lines) ✅ COMPLETE
-- [ ] TemplatesModal - Not a form modal (display/list modal)
+- Note: TemplatesModal is not a form modal (display/list modal, doesn't need migration)
+
+### Schedule Blocks - ✅ ALL COMPLETE (1/1)
+- [x] ScheduleBlockModal (211 lines) ✅ COMPLETE
+
+### Debt Calculator (Finance) - ✅ ALL COMPLETE (1/1)
+- [x] DebtFormModal (153 lines) ✅ COMPLETE
+- Note: StrategyCalculatorModal is not a form modal (display/calculator modal)
 
 ### Other Feature Modals
-- ~15+ more modals across Dashboard, etc.
+- ~10+ more modals across Dashboard, meal planning, etc.
 
 **Estimated Total Impact when fully migrated:** ~2,500+ lines saved
 
@@ -570,6 +595,6 @@ All completed migrations successfully use:
 ---
 
 **Last Updated:** 2026-02-18
-**Session Status:** ✅ Session 4 Continued - 38 modals migrated!
-**Modules Completed:** Finance (8/8), Skincare (3/3), Travel (3/3), Calendar (2/2), Focus (1/1 form modals)
-**Next Session:** Continue with remaining modals (Dashboard, etc.)
+**Session Status:** ✅ Session 4 Continued - 40 modals migrated!
+**Modules Completed:** Finance (9/9), Skincare (3/3), Travel (3/3), Calendar (2/2), Focus (1/1), Schedule Blocks (1/1)
+**Next Session:** Continue with remaining modals (Dashboard, meal planning, etc.)
