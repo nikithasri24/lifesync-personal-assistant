@@ -162,7 +162,7 @@ export default function Calendar() {
         </div>
 
         {/* Navigation Row */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between">
           <button
             onClick={handlePrevious}
             className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
@@ -183,15 +183,6 @@ export default function Calendar() {
             <span className="text-white text-lg">›</span>
           </button>
         </div>
-
-        {/* Today Button */}
-        <button
-          onClick={handleToday}
-          className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}
-        >
-          Today
-        </button>
       </div>
 
       {/* Weekday Headers */}
