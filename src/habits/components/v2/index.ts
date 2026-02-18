@@ -14,3 +14,6 @@ export type { HabitFormModalV2Props } from './HabitFormModalV2';
 
 export { StreakIndicatorV2 } from './StreakIndicatorV2';
 export type { StreakIndicatorV2Props } from './StreakIndicatorV2';
+
+export { HabitWeeklyGridV2 } from './HabitWeeklyGridV2';
+export type { HabitWeeklyGridV2Props } from './HabitWeeklyGridV2';

@@ -20,6 +20,8 @@ export interface HabitsHeaderV2Props {
   onOwnerFilterChange?: (value: OwnerFilterValue) => void;
   partnerName?: string;
   completedToday?: number;
+  viewMode?: 'today' | 'weekly';
+  onViewModeChange?: (mode: 'today' | 'weekly') => void;
 }
 
 export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
@@ -30,6 +32,8 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
   ownerFilter = 'all',
   onOwnerFilterChange,
   partnerName = 'Partner',
+  viewMode = 'today',
+  onViewModeChange,
 }) => {
   const colors = useThemeColors();
 
@@ -62,46 +66,6 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
         <p style={{ fontSize: '15px', color: '#9B8B7A' }}>
           Build better routines
         </p>
-
-        {/* Header Icons */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '44px',
-            right: '20px',
-            display: 'flex',
-            gap: '12px',
-          }}
-        >
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
-              background: 'rgba(212, 165, 116, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '18px',
-            }}
-          >
-            📊
-          </div>
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
-              background: 'rgba(212, 165, 116, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '18px',
-            }}
-          >
-            ⚙️
-          </div>
-        </div>
       </div>
 
       {/* Stats Header */}
@@ -206,6 +170,57 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
         </div>
       </div>
 
+      {/* View Toggle */}
+      {onViewModeChange && (
+        <div
+          style={{
+            padding: '4px',
+            background: 'rgba(212, 165, 116, 0.1)',
+            borderRadius: '12px',
+            display: 'flex',
+            gap: '4px',
+            marginBottom: '16px',
+          }}
+        >
+          <button
+            onClick={() => onViewModeChange('today')}
+            style={{
+              flex: 1,
+              padding: '8px 16px',
+              borderRadius: '8px',
+              background: viewMode === 'today' ? 'white' : 'transparent',
+              border: 'none',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: viewMode === 'today' ? '#C18B5E' : '#6B5847',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              boxShadow: viewMode === 'today' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+            }}
+          >
+            📅 Today
+          </button>
+          <button
+            onClick={() => onViewModeChange('weekly')}
+            style={{
+              flex: 1,
+              padding: '8px 16px',
+              borderRadius: '8px',
+              background: viewMode === 'weekly' ? 'white' : 'transparent',
+              border: 'none',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: viewMode === 'weekly' ? '#C18B5E' : '#6B5847',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              boxShadow: viewMode === 'weekly' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+            }}
+          >
+            📊 Weekly
+          </button>
+        </div>
+      )}
+
       {/* Date Navigation */}
       <div
         style={{
@@ -239,7 +254,10 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
           ‹
         </div>
         <div style={{ fontSize: '16px', fontWeight: 600, color: '#5C4A3A' }}>
-          Today, {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {viewMode === 'today'
+            ? `Today, ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+            : `${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${new Date().getFullYear()}`
+          }
         </div>
         <div
           style={{

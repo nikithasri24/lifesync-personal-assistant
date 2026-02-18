@@ -25,7 +25,7 @@ import {
   getHabitsMergedConnection,
 } from '@/api/habitsAPI';
 import { logger } from '@/services/logger';
-import { recordHabitCompletion } from '@/services/gamification';
+// import { recordHabitCompletion } from '@/services/gamification'; // Gamification removed
 import { dataEvents } from '@/lib/dataEvents';
 import type { MergedConnectionResult } from '@/shared/api/SharedDataProvider';
 
@@ -106,13 +106,8 @@ export function useCreateHabit(): UseMutationResult<HabitData, Error, Omit<Habit
     onSuccess: (newHabit) => {
       logger.info('Habits', 'Habit created successfully', { id: newHabit.id, name: newHabit.name });
 
-      // Optimistically add to cache for immediate UI response
-      queryClient.setQueryData<HabitData[]>(
-        [...queryKeys.tasks.all, 'habits', undefined] as const,
-        (old) => {
-          return old ? [newHabit, ...old] : [newHabit];
-        }
-      );
+      // Invalidate all habits queries to refetch with any filters
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
 
       // Emit event - DataSyncProvider handles cache invalidation
       dataEvents.emit('habit:created', { habitId: newHabit.id!, habit: newHabit });
@@ -141,21 +136,8 @@ export function useUpdateHabit(): UseMutationResult<HabitData, Error, { id: stri
     onSuccess: (updatedHabit, { updates }) => {
       logger.info('Habits', 'Habit updated successfully', { id: updatedHabit.id, name: updatedHabit.name });
 
-      // Update the specific habit detail cache for immediate UI response
-      queryClient.setQueryData(
-        [...queryKeys.tasks.all, 'habits', 'detail', updatedHabit.id] as const,
-        updatedHabit
-      );
-
-      // Optimistically update in list caches
-      queryClient.setQueryData<HabitData[]>(
-        [...queryKeys.tasks.all, 'habits', undefined] as const,
-        (old) => {
-          return old?.map((habit) =>
-            habit.id === updatedHabit.id ? updatedHabit : habit
-          );
-        }
-      );
+      // Invalidate all habits queries to refetch with any filters
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
 
       // Emit event - DataSyncProvider handles cache invalidation
       dataEvents.emit('habit:updated', { habitId: updatedHabit.id!, habit: updatedHabit, changes: updates });
@@ -181,16 +163,8 @@ export function useDeleteHabit(): UseMutationResult<void, Error, string> {
     onSuccess: (_data, deletedId) => {
       logger.info('Habits', 'Habit deleted successfully', { id: deletedId });
 
-      // Remove from cache
-      queryClient.removeQueries({ queryKey: [...queryKeys.tasks.all, 'habits', 'detail', deletedId] });
-
-      // Optimistically remove from list caches for immediate UI response
-      queryClient.setQueryData<HabitData[]>(
-        [...queryKeys.tasks.all, 'habits', undefined] as const,
-        (old) => {
-          return old?.filter((habit) => habit.id !== deletedId);
-        }
-      );
+      // Invalidate all habits queries to refetch with any filters
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
 
       // Emit event - DataSyncProvider handles cache invalidation
       dataEvents.emit('habit:deleted', { habitId: deletedId });
@@ -299,10 +273,8 @@ export function useCreateHabitEntry(): UseMutationResult<
         value: newEntry.value
       });
 
-      // Record gamification points for habit completion
-      recordHabitCompletion(newEntry.habit_id, 0).catch((err) => {
-        logger.error('Gamification', err instanceof Error ? err : new Error(String(err)));
-      });
+      // Invalidate habit entries queries to refetch
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
 
       // Emit event - DataSyncProvider handles cache invalidation
       dataEvents.emit('habit:entry-logged', {
@@ -333,6 +305,9 @@ export function useUpdateHabitEntry(): UseMutationResult<HabitEntryData, Error, 
     onSuccess: (updatedEntry) => {
       logger.info('Habits', 'Habit entry updated successfully', { id: updatedEntry.id, habitId: updatedEntry.habit_id });
 
+      // Invalidate habit entries queries to refetch
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+
       // Emit event - DataSyncProvider handles cache invalidation
       dataEvents.emit('habit:entry-logged', {
         habitId: updatedEntry.habit_id,
@@ -351,6 +326,8 @@ export function useUpdateHabitEntry(): UseMutationResult<HabitEntryData, Error, 
  * Delete a habit entry
  */
 export function useDeleteHabitEntry(): UseMutationResult<void, Error, { id: string; habitId: string; date: string }> {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({ id, habitId }: { id: string; habitId: string; date: string }) => {
       logger.debug('Habits', 'Deleting habit entry', { id, habitId });
@@ -359,6 +336,9 @@ export function useDeleteHabitEntry(): UseMutationResult<void, Error, { id: stri
     },
     onSuccess: (_data, { habitId, date }) => {
       logger.info('Habits', 'Habit entry deleted successfully', { habitId, date });
+
+      // Invalidate habit entries queries to refetch
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
 
       // Emit event - DataSyncProvider handles cache invalidation
       dataEvents.emit('habit:entry-logged', {
@@ -388,6 +368,9 @@ export function useDeleteHabitEntriesForDate(): UseMutationResult<void, Error, {
     onSuccess: (_data, { habitId, date }) => {
       logger.info('Habits', 'Habit entries deleted for date', { habitId, date });
 
+      // Invalidate habit entries queries to refetch
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+
       // Emit event - DataSyncProvider handles cache invalidation
       dataEvents.emit('habit:entry-logged', {
         habitId,
@@ -405,6 +388,8 @@ export function useDeleteHabitEntriesForDate(): UseMutationResult<void, Error, {
  * Delete all entries for a date range (reset weekly/monthly progress)
  */
 export function useDeleteHabitEntriesForDateRange(): UseMutationResult<void, Error, { habitId: string; startDate: string; endDate: string }> {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({ habitId, startDate, endDate }: { habitId: string; startDate: string; endDate: string }) => {
       logger.debug('Habits', 'Deleting habit entries for date range', { habitId, startDate, endDate });
@@ -413,6 +398,9 @@ export function useDeleteHabitEntriesForDateRange(): UseMutationResult<void, Err
     },
     onSuccess: (_data, { habitId, startDate }) => {
       logger.info('Habits', 'Habit entries deleted for date range', { habitId, startDate });
+
+      // Invalidate habit entries queries to refetch
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
 
       // Emit event - DataSyncProvider handles cache invalidation
       dataEvents.emit('habit:entry-logged', {
@@ -431,6 +419,8 @@ export function useDeleteHabitEntriesForDateRange(): UseMutationResult<void, Err
  * Delete all entries for a habit (reset history)
  */
 export function useDeleteAllHabitEntries(): UseMutationResult<void, Error, string> {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (habitId: string) => {
       logger.debug('Habits', 'Deleting all habit entries', { habitId });
@@ -439,6 +429,9 @@ export function useDeleteAllHabitEntries(): UseMutationResult<void, Error, strin
     },
     onSuccess: (_data, habitId) => {
       logger.info('Habits', 'All habit entries deleted', { habitId });
+
+      // Invalidate habit entries queries to refetch
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
 
       // Emit event - DataSyncProvider handles cache invalidation
       dataEvents.emit('habit:updated', { habitId });

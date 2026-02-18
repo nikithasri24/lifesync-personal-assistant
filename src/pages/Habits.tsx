@@ -37,6 +37,7 @@ import { HabitsErrorState } from '../habits/components/layout/HabitsErrorState';
 import { HabitsHeaderV2 } from '../habits/components/v2/HabitsHeaderV2';
 import { HabitCardV2 } from '../habits/components/v2/HabitCardV2';
 import { HabitFormModalV2 } from '../habits/components/v2/HabitFormModalV2';
+import { HabitWeeklyGridV2 } from '../habits/components/v2/HabitWeeklyGridV2';
 import { FABV2 } from '../components/v2/FABV2';
 
 // Helper function to get the start and end of the current week (Monday to Sunday)
@@ -79,6 +80,7 @@ const Habits: React.FC = () => {
     showForm: false,
     editingHabitId: null as string | null,
     ownerFilter: 'all' as OwnerFilterValue,
+    viewMode: 'today' as 'today' | 'weekly',
   });
 
   const todayKey = new Date().toISOString().split('T')[0];
@@ -223,7 +225,7 @@ const Habits: React.FC = () => {
     }
   };
 
-  // Toggle completion
+  // Toggle completion (for today view)
   const handleToggleComplete = (habitId: string): void => {
     const habit = apiHabits.find(h => h.id === habitId);
     if (!habit) return;
@@ -233,41 +235,55 @@ const Habits: React.FC = () => {
 
     if (habitWithStats.hasReachedTarget) {
       // Unmark complete
-      if (habit.frequency === 'weekly') {
-        deleteEntriesForDateMutation.mutate(
-          { habitId, date: todayKey },
-          {
-            onSuccess: () => {
-              showToast('Marked incomplete', 'success');
-            },
-          }
-        );
-      } else if (habit.frequency === 'monthly') {
-        deleteEntriesForDateMutation.mutate(
-          { habitId, date: todayKey },
-          {
-            onSuccess: () => {
-              showToast('Marked incomplete', 'success');
-            },
-          }
-        );
-      } else {
-        // Daily
-        deleteEntriesForDateMutation.mutate(
-          { habitId, date: todayKey },
-          {
-            onSuccess: () => {
-              showToast('Marked incomplete', 'success');
-            },
-          }
-        );
-      }
+      deleteEntriesForDateMutation.mutate(
+        { habitId, date: todayKey },
+        {
+          onSuccess: () => {
+            showToast('Marked incomplete', 'success');
+          },
+        }
+      );
     } else {
       // Mark complete
       createEntryMutation.mutate(
         {
           habit_id: habitId,
           date: todayKey,
+          value: 1,
+        },
+        {
+          onSuccess: () => {
+            showToast('Marked complete! ✅', 'success');
+          },
+          onError: (error) => {
+            logger.error('Habits', error);
+            showToast('Could not record the completion. Please try again.', 'error');
+          },
+        }
+      );
+    }
+  };
+
+  // Toggle completion for weekly view (with specific date)
+  const handleToggleWeeklyEntry = (habitId: string, date: string): void => {
+    const isChecked = apiEntries.some(e => e.habit_id === habitId && e.date === date);
+
+    if (isChecked) {
+      // Delete entry
+      deleteEntriesForDateMutation.mutate(
+        { habitId, date },
+        {
+          onSuccess: () => {
+            showToast('Marked incomplete', 'success');
+          },
+        }
+      );
+    } else {
+      // Create entry
+      createEntryMutation.mutate(
+        {
+          habit_id: habitId,
+          date,
           value: 1,
         },
         {
@@ -335,57 +351,67 @@ const Habits: React.FC = () => {
           ownerFilter={modals.state.ownerFilter}
           onOwnerFilterChange={(value) => modals.set('ownerFilter', value)}
           partnerName={partnerName}
+          viewMode={modals.state.viewMode}
+          onViewModeChange={(mode) => modals.set('viewMode', mode)}
         />
 
-        {/* Habits List */}
-        <div style={{ padding: '16px 0 100px' }}>
-          {habitsWithStats.length === 0 ? (
-            <div
-              className="p-8 rounded-xl border-2 border-dashed text-center"
-              style={{ borderColor: colors.border.medium }}
-            >
-              <div className="text-4xl mb-3">🎯</div>
-              <p className="font-medium mb-2" style={{ color: colors.text.primary }}>
-                No habits yet
-              </p>
-              <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
-                Get started by adding your first habit
-              </p>
-              <button
-                onClick={() => {
-                  modals.set('editingHabitId', null);
-                  modals.open('showForm');
-                }}
-                className="px-4 py-2 rounded-lg font-semibold text-white"
-                style={{
-                  background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-                }}
+        {/* Habits List or Weekly Grid */}
+        {modals.state.viewMode === 'today' ? (
+          <div style={{ padding: '16px 0 100px' }}>
+            {habitsWithStats.length === 0 ? (
+              <div
+                className="p-8 rounded-xl border-2 border-dashed text-center"
+                style={{ borderColor: colors.border.medium }}
               >
-                Add First Habit
-              </button>
-            </div>
-          ) : (
-            habitsWithStats.map((habitWithStats) => (
-              <HabitCardV2
-                key={habitWithStats.habit.id}
-                habit={habitWithStats.habit}
-                habitEntries={apiEntries.filter(e => e.habit_id === habitWithStats.habit.id)}
-                todayCompletions={habitWithStats.todayCompletions}
-                targetCount={habitWithStats.targetCount}
-                hasReachedTarget={habitWithStats.hasReachedTarget}
-                currentStreak={habitWithStats.currentStreak}
-                bestStreak={habitWithStats.habit.best_streak}
-                isCompleting={createEntryMutation.isPending}
-                onComplete={() => handleToggleComplete(habitWithStats.habit.id)}
-                onEdit={() => handleEditHabit(habitWithStats.habit)}
-                onDelete={() => {}} // Not used anymore
-                mergedConnection={mergedConnection}
-                currentUserId={currentUserId}
-                partnerName={partnerName}
-              />
-            ))
-          )}
-        </div>
+                <div className="text-4xl mb-3">🎯</div>
+                <p className="font-medium mb-2" style={{ color: colors.text.primary }}>
+                  No habits yet
+                </p>
+                <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
+                  Get started by adding your first habit
+                </p>
+                <button
+                  onClick={() => {
+                    modals.set('editingHabitId', null);
+                    modals.open('showForm');
+                  }}
+                  className="px-4 py-2 rounded-lg font-semibold text-white"
+                  style={{
+                    background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+                  }}
+                >
+                  Add First Habit
+                </button>
+              </div>
+            ) : (
+              habitsWithStats.map((habitWithStats) => (
+                <HabitCardV2
+                  key={habitWithStats.habit.id}
+                  habit={habitWithStats.habit}
+                  habitEntries={apiEntries.filter(e => e.habit_id === habitWithStats.habit.id)}
+                  todayCompletions={habitWithStats.todayCompletions}
+                  targetCount={habitWithStats.targetCount}
+                  hasReachedTarget={habitWithStats.hasReachedTarget}
+                  currentStreak={habitWithStats.currentStreak}
+                  bestStreak={habitWithStats.habit.best_streak}
+                  isCompleting={createEntryMutation.isPending}
+                  onComplete={() => handleToggleComplete(habitWithStats.habit.id)}
+                  onEdit={() => handleEditHabit(habitWithStats.habit)}
+                  onDelete={() => {}} // Not used anymore
+                  mergedConnection={mergedConnection}
+                  currentUserId={currentUserId}
+                  partnerName={partnerName}
+                />
+              ))
+            )}
+          </div>
+        ) : (
+          <HabitWeeklyGridV2
+            habits={filteredHabits}
+            entries={apiEntries}
+            onToggleEntry={handleToggleWeeklyEntry}
+          />
+        )}
 
         {/* FAB for quick add */}
         <button
