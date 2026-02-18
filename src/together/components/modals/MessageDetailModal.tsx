@@ -102,7 +102,7 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden lg:mx-4"
+        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden lg:mx-4 flex flex-col"
         style={{
           maxHeight: '90vh',
           maxWidth: '600px',
@@ -110,12 +110,12 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
         }}
       >
         {/* Drag Handle (mobile) */}
-        <div className="lg:hidden pt-2">
+        <div className="lg:hidden pt-2 flex-shrink-0">
           <div className="w-9 h-1 bg-gray-300 rounded-full mx-auto" />
         </div>
 
         {/* Header */}
-        <div className="relative px-6 py-8 text-center">
+        <div className="relative px-6 py-8 text-center flex-shrink-0">
           <div className="absolute top-4 right-4 flex items-center gap-2">
             {isDraft && onEdit && (
               <button
@@ -188,19 +188,16 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
         </div>
 
         {/* Message Content */}
-        <div
-          className="overflow-y-auto px-6 pb-20"
-          style={{ maxHeight: 'calc(90vh - 220px)' }}
-        >
+        <div className="overflow-y-auto px-6 py-4 flex-1">
           <div
-            className="prose prose-lg max-w-none text-gray-900 pb-8"
+            className="prose prose-lg max-w-none text-gray-900"
             style={{
               lineHeight: '1.8',
               fontSize: '1.1rem',
             }}
           >
             {message.message_body.split('\n').map((paragraph, i) => (
-              <p key={i} className="mb-4 last:mb-0">
+              <p key={i} className="mb-4 last:mb-8">
                 {paragraph}
               </p>
             ))}
@@ -208,7 +205,7 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
 
           {/* Photo Gallery (if photos exist) */}
           {message.photo_urls && message.photo_urls.length > 0 && (
-            <div className="mt-8">
+            <div className="mt-8 mb-8">
               <div className="p-6 rounded-2xl border-2 border-dashed border-gray-300">
                 <div className="text-center">
                   <span className="text-4xl mb-3 block">📷</span>
@@ -225,7 +222,7 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+        <div className="px-6 py-4 border-t border-gray-200 flex gap-3 flex-shrink-0 bg-white">
           <button
             type="button"
             onClick={onClose}
