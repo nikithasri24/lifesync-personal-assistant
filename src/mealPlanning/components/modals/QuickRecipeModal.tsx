@@ -1,40 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { Loader2, Save } from 'lucide-react';
-import { ModalShell } from './ModalShell';
-import { useThemeColors } from '../../../hooks/useThemeColors';
+/**
+ * QuickRecipeModal - MIGRATED to use FormModalV2
+ * Quick recipe creation from meal plan with ingredient/instruction parsing
+ *
+ * MIGRATION COMPLETE:
+ * - Reduced from 228 lines to ~145 lines (36% reduction)
+ * - Removed ModalShell wrapper (FormModalV2 provides modal structure)
+ * - ESC key handler now built-in to FormModalV2
+ * - Removed body overflow styling (FormModalV2 handles)
+ * - Converted to light mode following design standards
+ * - Preserved ingredient/instruction parsing logic
+ */
+
+import React from 'react';
+import { FormModalV2 } from '@/components/v2';
 import type { Recipe } from '../../../types';
 
 interface QuickRecipeModalProps {
+  isOpen: boolean;
   initialName: string;
   onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void;
   onClose: () => void;
+  isPending?: boolean;
 }
 
-export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeModalProps): React.JSX.Element {
-  const colors = useThemeColors();
-  const [name, setName] = useState<string>(initialName);
-  const [ingredientsText, setIngredientsText] = useState<string>('');
-  const [instructionsText, setInstructionsText] = useState<string>('');
-  const [saving, setSaving] = useState<boolean>(false);
+interface RecipeFormState {
+  name: string;
+  ingredientsText: string;
+  instructionsText: string;
+}
 
-  useEffect((): (() => void) => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [onClose]);
+export function QuickRecipeModal({
+  isOpen,
+  initialName,
+  onSave,
+  onClose,
+  isPending = false,
+}: QuickRecipeModalProps): React.JSX.Element {
+  const defaultFormData: RecipeFormState = {
+    name: initialName,
+    ingredientsText: '',
+    instructionsText: '',
+  };
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault();
-    setSaving(true);
-
-    const ingredientLines = ingredientsText
+  const handleSubmit = async (formData: RecipeFormState): Promise<void> => {
+    const ingredientLines = formData.ingredientsText
       .split(/[,\n]/)
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
@@ -51,13 +60,13 @@ export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeMo
       return { amount: undefined, unit: undefined, name: line };
     });
 
-    const instructions = instructionsText
+    const instructions = formData.instructionsText
       .split('\n')
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
 
     const recipeData: Omit<Recipe, 'id' | 'createdAt'> = {
-      name: name.trim(),
+      name: formData.name.trim(),
       description: undefined,
       ingredients,
       instructions,
@@ -71,158 +80,72 @@ export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeMo
       notes: undefined,
     };
 
-    try {
-      onSave(recipeData);
-      onClose();
-    } finally {
-      setSaving(false);
-    }
+    onSave(recipeData);
   };
 
   return (
-    <ModalShell title="Recipe" subtitle={`Quick recipe for "${initialName}"`} onClose={onClose} maxWidthClass="max-w-lg">
-      <form onSubmit={(e) => void handleSubmit(e)}>
-        <div className="space-y-3">
+    <FormModalV2<RecipeFormState>
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Quick Recipe"
+      subtitle={`Quick recipe for "${initialName}"`}
+      defaultData={defaultFormData}
+      isPending={isPending}
+      submitText="Save Recipe"
+      isEditing={false}
+      onSubmit={handleSubmit}
+      validate={(formData) => {
+        if (!formData.name.trim()) return 'Please enter a recipe name';
+        return null;
+      }}
+    >
+      {(formState, setFormState) => (
+        <>
+          {/* Recipe Name */}
           <div>
-            <label
-              className="block text-xs font-medium mb-1"
-              style={{ color: colors.text.secondary }}
-            >
-              Recipe Name
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Recipe Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2"
-              style={{
-                backgroundColor: colors.bg.white,
-                borderColor: colors.border.medium,
-                color: colors.text.primary,
-                border: `1px solid ${colors.border.medium}`,
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = colors.accent.start;
-                e.currentTarget.style.outlineColor = colors.accent.start;
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = colors.border.medium;
-              }}
+              value={formState.name}
+              onChange={(e) => setFormState({ ...formState, name: e.target.value })}
               placeholder="e.g., Bagel with Cream Cheese"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+              required
+              autoFocus
             />
           </div>
 
+          {/* Ingredients */}
           <div>
-            <label
-              className="block text-xs font-medium mb-1"
-              style={{ color: colors.text.secondary }}
-            >
-              Ingredients{' '}
-              <span style={{ color: colors.text.tertiary, fontWeight: 'normal' }}>
-                (one per line)
-              </span>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Ingredients <span className="text-sm text-gray-600 font-normal">(one per line)</span>
             </label>
             <textarea
-              value={ingredientsText}
-              onChange={(e) => setIngredientsText(e.target.value)}
+              value={formState.ingredientsText}
+              onChange={(e) => setFormState({ ...formState, ingredientsText: e.target.value })}
               rows={4}
-              className="w-full rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2"
-              style={{
-                backgroundColor: colors.bg.white,
-                borderColor: colors.border.medium,
-                color: colors.text.primary,
-                border: `1px solid ${colors.border.medium}`,
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = colors.accent.start;
-                e.currentTarget.style.outlineColor = colors.accent.start;
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = colors.border.medium;
-              }}
               placeholder="2 bagels&#10;4 oz cream cheese&#10;1 tomato&#10;salt, pepper"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
             />
           </div>
 
+          {/* Instructions */}
           <div>
-            <label
-              className="block text-xs font-medium mb-1"
-              style={{ color: colors.text.secondary }}
-            >
-              Instructions{' '}
-              <span style={{ color: colors.text.tertiary, fontWeight: 'normal' }}>
-                (optional)
-              </span>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Instructions <span className="text-sm text-gray-600 font-normal">(optional)</span>
             </label>
             <textarea
-              value={instructionsText}
-              onChange={(e) => setInstructionsText(e.target.value)}
+              value={formState.instructionsText}
+              onChange={(e) => setFormState({ ...formState, instructionsText: e.target.value })}
               rows={3}
-              className="w-full rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2"
-              style={{
-                backgroundColor: colors.bg.white,
-                borderColor: colors.border.medium,
-                color: colors.text.primary,
-                border: `1px solid ${colors.border.medium}`,
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = colors.accent.start;
-                e.currentTarget.style.outlineColor = colors.accent.start;
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = colors.border.medium;
-              }}
               placeholder="Toast bagels, spread cream cheese..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
             />
           </div>
-
-          <div
-            className="flex items-center justify-end gap-2 pt-2 border-t"
-            style={{ borderColor: colors.border.light }}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50 transition-colors duration-200"
-              style={{
-                color: colors.text.primary,
-                backgroundColor: 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = colors.bg.secondary;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving || !name.trim()}
-              className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50 transition-all duration-200"
-              style={{
-                background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
-                color: 'white',
-              }}
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-3.5 w-3.5" />
-                  Save
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </form>
-    </ModalShell>
+        </>
+      )}
+    </FormModalV2>
   );
 }

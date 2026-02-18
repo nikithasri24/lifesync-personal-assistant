@@ -2,9 +2,9 @@
 
 ## Session Summary
 
-Successfully migrated **46 modals** to FormModalV2!
+Successfully migrated **48 modals** to FormModalV2!
 
-**Total Impact:** 4,039 lines eliminated (29% average reduction)
+**Total Impact:** 4,189 lines eliminated (29% average reduction)
 
 ---
 
@@ -383,15 +383,33 @@ Successfully migrated **46 modals** to FormModalV2!
 - **Migration Impact:** Removed ModalShell wrapper, ESC handler built-in, converted to light mode, preserved external state management
 - **Commit:** `feat: Migrate RescheduleMealModal and CopyWeekModal to FormModalV2`
 
+### 47. QuickRecipeModal (Meal Planning)
+- **Before:** 228 lines
+- **After:** 145 lines
+- **Reduction:** 83 lines (36%)
+- **Form Fields:** 3 fields (recipe name, ingredients text area, instructions text area)
+- **Special Features:** Ingredient/instruction parsing (supports "2 cups flour" format), ModalShell removal
+- **Migration Impact:** Removed ModalShell wrapper, ESC/body overflow handling built-in, converted to light mode, preserved parsing logic
+- **Commit:** `feat: Migrate QuickRecipeModal and RecipeEditModal to FormModalV2`
+
+### 48. RecipeEditModal (Meal Planning)
+- **Before:** 252 lines
+- **After:** 185 lines
+- **Reduction:** 67 lines (27%)
+- **Form Fields:** 8 fields (name, description, servings, prep time, cook time, difficulty, tags, ingredients, instructions)
+- **Special Features:** Auto-save to backend (debounced 2 seconds), custom header with auto-save indicator ("Saving..." / "Auto-saved"), ingredient/instruction parsing
+- **Migration Impact:** ESC handler built-in, preserved auto-save useEffect logic, added customHeader prop for auto-save indicator, converted to light mode
+- **Commit:** `feat: Migrate QuickRecipeModal and RecipeEditModal to FormModalV2`
+
 ---
 
 ## 📊 Cumulative Impact
 
 | Metric | Before | After | Savings |
 |--------|--------|-------|---------|
-| **Total Lines** | 14,150 | 10,111 | 4,039 (29%) |
-| **Average per Modal** | 308 | 220 | 88 (29%) |
-| **Boilerplate Eliminated** | ~4,436 lines | 0 | 4,436 (100%) |
+| **Total Lines** | 14,630 | 10,441 | 4,189 (29%) |
+| **Average per Modal** | 305 | 217 | 88 (29%) |
+| **Boilerplate Eliminated** | ~4,584 lines | 0 | 4,584 (100%) |
 
 ---
 
@@ -443,7 +461,7 @@ Per modal, we consistently eliminated:
 - [x] AddPantryItemModalV2 (278 lines) ✅ COMPLETE
 - [x] AddStoreModalV2 (229 lines) ✅ COMPLETE
 
-### Meals Modals - ✅ ALL COMPLETE (7/7)
+### Meals Modals - ✅ ALL COMPLETE (9/9)
 - [x] ImportRecipeModalV2 (143 lines) ✅ COMPLETE
 - [x] MealFormModalV2 (296 lines) ✅ COMPLETE
 - [x] RecipeFormModalV2 (550 lines) ✅ COMPLETE
@@ -451,6 +469,8 @@ Per modal, we consistently eliminated:
 - [x] SwapMealModal (292 lines) ✅ COMPLETE
 - [x] RescheduleMealModal (151 lines) ✅ COMPLETE
 - [x] CopyWeekModal (90 lines) ✅ COMPLETE
+- [x] QuickRecipeModal (228 lines) ✅ COMPLETE
+- [x] RecipeEditModal (252 lines) ✅ COMPLETE
 
 ### Notes Modals - ✅ ALL COMPLETE (1/1)
 - [x] NoteFormModalV2 (350 lines) ✅ COMPLETE
@@ -661,6 +681,6 @@ All completed migrations successfully use:
 ---
 
 **Last Updated:** 2026-02-18
-**Session Status:** ✅ Session 4 Continued - 46 modals migrated!
-**Modules Completed:** Finance (9/9), Skincare (3/3), Travel (3/3), Calendar (2/2), Focus (1/1), Schedule Blocks (1/1), Meals (7/7), Dashboard (1/1), Projects (1/1)
+**Session Status:** ✅ Session 4 Continued - 48 modals migrated!
+**Modules Completed:** Finance (9/9), Skincare (3/3), Travel (3/3), Calendar (2/2), Focus (1/1), Schedule Blocks (1/1), Meals (9/9), Dashboard (1/1), Projects (1/1)
 **Next Session:** Search for any final remaining form modals (if any)
