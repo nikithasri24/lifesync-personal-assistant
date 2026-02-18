@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { logger } from '@/services/logger';
 
 type VisaType = 'tourist' | 'business' | 'work' | 'student' | 'transit';
 type EntryType = 'single' | 'multiple';
@@ -54,7 +55,7 @@ export const VisaFormModalV2: React.FC<VisaFormModalV2Props> = ({
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) return JSON.parse(saved);
     } catch (error) {
-      console.error('Failed to load draft:', error);
+      logger.error('Travel', error as Error, { context: 'Failed to load visa draft' });
     }
     return null;
   };
@@ -124,7 +125,7 @@ export const VisaFormModalV2: React.FC<VisaFormModalV2Props> = ({
       localStorage.removeItem(STORAGE_KEY);
       onClose();
     } catch (error) {
-      console.error('Failed to save visa:', error);
+      logger.error('Travel', error as Error, { context: 'Failed to save visa' });
     } finally {
       setIsPending(false);
     }

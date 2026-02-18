@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { logger } from '@/services/logger';
 
 type TripStatus = 'planning' | 'upcoming' | 'in_progress' | 'completed';
 
@@ -55,7 +56,7 @@ export const TripFormModalV2: React.FC<TripFormModalV2Props> = ({
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) return JSON.parse(saved);
     } catch (error) {
-      console.error('Failed to load draft:', error);
+      logger.error('Travel', error as Error, { context: 'Failed to load trip draft' });
     }
     return null;
   };
@@ -117,7 +118,7 @@ export const TripFormModalV2: React.FC<TripFormModalV2Props> = ({
       localStorage.removeItem(STORAGE_KEY);
       onClose();
     } catch (error) {
-      console.error('Failed to save trip:', error);
+      logger.error('Travel', error as Error, { context: 'Failed to save trip' });
     } finally {
       setIsPending(false);
     }

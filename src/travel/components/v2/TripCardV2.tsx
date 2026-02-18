@@ -72,27 +72,18 @@ export const TripCardV2: React.FC<TripCardV2Props> = ({
   return (
     <div
       onClick={onClick}
-      className="cursor-pointer transition-transform hover:scale-[1.01] active:scale-[0.98]"
+      className="cursor-pointer transition-transform hover:scale-[1.01] active:scale-[0.98] rounded-2xl overflow-hidden shadow-sm mb-4 relative"
       style={{
-        backgroundColor: 'white',
-        borderRadius: '16px',
-        overflow: 'hidden',
-        boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
-        marginBottom: '16px',
-        position: 'relative',
+        backgroundColor: colors.bg.white,
       }}
     >
       {/* Cover Image / Placeholder */}
       <div
+        className="h-36 flex items-center justify-center text-5xl"
         style={{
-          height: '140px',
           background: coverPhoto
             ? `url(${coverPhoto}) center/cover`
             : 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '48px',
         }}
       >
         {!coverPhoto && '✈️'}
@@ -101,17 +92,10 @@ export const TripCardV2: React.FC<TripCardV2Props> = ({
       {/* Owner Badge */}
       {showOwnerBadge && owner && (
         <div
+          className="absolute top-3 right-3 px-2.5 py-1 rounded-xl text-xs font-bold shadow-md"
           style={{
-            position: 'absolute',
-            top: '12px',
-            right: '12px',
-            padding: '4px 10px',
             background: 'rgba(255, 255, 255, 0.95)',
-            borderRadius: '12px',
-            fontSize: '10px',
-            fontWeight: 700,
-            color: '#C18B5E',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            color: colors.accent.end,
           }}
         >
           {owner.displayName}
@@ -119,10 +103,10 @@ export const TripCardV2: React.FC<TripCardV2Props> = ({
       )}
 
       {/* Content */}
-      <div style={{ padding: '16px' }}>
+      <div className="p-4">
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#5C4A3A', flex: 1 }}>
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-lg font-bold flex-1" style={{ color: colors.text.primary }}>
             {name}
           </h3>
           <div
@@ -144,7 +128,7 @@ export const TripCardV2: React.FC<TripCardV2Props> = ({
         </div>
 
         {/* Dates */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#6B5847', marginBottom: '12px' }}>
+        <div className="flex items-center gap-1.5 text-sm mb-3" style={{ color: colors.text.secondary }}>
           <span>📅</span>
           <span>{formatDateRange(startDate, endDate)}</span>
         </div>
@@ -152,15 +136,10 @@ export const TripCardV2: React.FC<TripCardV2Props> = ({
         {/* Description */}
         {description && (
           <p
+            className="text-sm mb-3 line-clamp-2"
             style={{
-              fontSize: '13px',
-              color: '#6B5847',
+              color: colors.text.secondary,
               lineHeight: 1.4,
-              marginBottom: '12px',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
             }}
           >
             {description}
@@ -169,11 +148,9 @@ export const TripCardV2: React.FC<TripCardV2Props> = ({
 
         {/* Meta */}
         <div
+          className="flex gap-3 pt-3 border-t"
           style={{
-            display: 'flex',
-            gap: '12px',
-            paddingTop: '12px',
-            borderTop: '1px solid #E8DCC8',
+            borderColor: colors.border.light,
           }}
         >
           {budget && (

@@ -31,30 +31,21 @@ export const TravelStatsBarV2: React.FC<TravelStatsBarV2Props> = ({
 
   return (
     <div
+      className="grid gap-3 p-4 rounded-2xl shadow-sm"
       style={{
-        display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '12px',
-        padding: '16px 20px',
-        background: 'white',
-        margin: '0 20px 16px',
-        borderRadius: '16px',
-        boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
+        backgroundColor: colors.bg.white,
       }}
     >
       {stats.map((stat, index) => (
         <div key={index} style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#C18B5E' }}>
+          <div className="text-2xl font-extrabold" style={{ color: colors.accent.end }}>
             {stat.number}
           </div>
           <div
+            className="text-xs uppercase font-semibold tracking-wide mt-1"
             style={{
-              fontSize: '11px',
-              color: '#9B8B7A',
-              textTransform: 'uppercase',
-              fontWeight: 600,
-              letterSpacing: '0.3px',
-              marginTop: '4px',
+              color: colors.text.secondary,
             }}
           >
             {stat.label}

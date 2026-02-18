@@ -16,13 +16,14 @@ import { logger } from '@/services/logger';
 import { useCurrentUserId, useMergedConnection, usePartnerName } from '@/hooks/useOwnerInfo';
 import { useToast } from '@/hooks/useToast';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
 import TripEditor from '../components/TripEditor';
 import ConfirmDialog from '../../components/DebtPayoffCalculator/ConfirmDialog';
 import { TravelStatsBarV2, TripCardV2, TripFormModalV2, LocationCardV2 } from '../components/v2';
 
 type LocationTypeFilter = 'all' | 'countries' | 'states' | 'parks' | 'islands';
 
-const TravelPage: React.FC = () => {
+const TravelPageContent: React.FC = () => {
   const colors = useThemeColors();
   const [loading, setLoading] = React.useState(true);
   const [visitedLocations, setVisitedLocations] = React.useState<CategorizedLocation[]>([]);
@@ -1167,5 +1168,14 @@ function AllLocationsListCard<T>({
     </div>
   );
 }
+
+// Wrap with error boundary for graceful error handling
+const TravelPage: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="Travel">
+      <TravelPageContent />
+    </FeatureErrorBoundary>
+  );
+};
 
 export default TravelPage;

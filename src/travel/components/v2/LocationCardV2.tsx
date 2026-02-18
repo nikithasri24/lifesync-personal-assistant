@@ -28,44 +28,37 @@ export const LocationCardV2: React.FC<LocationCardV2Props> = ({
   return (
     <div
       onClick={onClick}
-      className="cursor-pointer transition-transform active:scale-[0.98]"
+      className="cursor-pointer transition-transform active:scale-[0.98] p-4 rounded-xl shadow-sm"
       style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '16px',
-        boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
+        backgroundColor: colors.bg.white,
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <div style={{ fontSize: '28px' }}>{icon}</div>
-        <div style={{ fontSize: '18px', fontWeight: 800, color: '#C18B5E' }}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-3xl">{icon}</div>
+        <div className="text-lg font-extrabold" style={{ color: colors.accent.end }}>
           {total ? `${count}/${total}` : count}
         </div>
       </div>
 
       {/* Title */}
-      <div style={{ fontSize: '14px', fontWeight: 600, color: '#5C4A3A', marginBottom: total ? '8px' : 0 }}>
+      <div className="text-sm font-semibold" style={{ color: colors.text.primary, marginBottom: total ? '8px' : 0 }}>
         {title}
       </div>
 
       {/* Progress Bar */}
       {total && (
         <div
+          className="h-1.5 rounded-full overflow-hidden"
           style={{
-            background: '#E8DCC8',
-            height: '6px',
-            borderRadius: '3px',
-            overflow: 'hidden',
+            backgroundColor: colors.border.light,
           }}
         >
           <div
+            className="h-full rounded-full transition-all duration-300"
             style={{
               background: 'linear-gradient(90deg, #D4A574 0%, #C18B5E 100%)',
-              height: '100%',
-              borderRadius: '3px',
               width: `${progress}%`,
-              transition: 'width 0.3s',
             }}
           />
         </div>
