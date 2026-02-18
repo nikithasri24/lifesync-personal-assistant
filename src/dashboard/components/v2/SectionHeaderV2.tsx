@@ -26,19 +26,19 @@ export const SectionHeaderV2: React.FC<SectionHeaderV2Props> = ({
   className = '',
 }) => {
   return (
-    <div className={`flex items-center justify-between mb-6 ${className}`}>
-      <div className="flex items-center gap-3">
+    <div className={`flex items-center justify-between mb-6 gap-4 ${className}`}>
+      <div className="flex items-center gap-3 min-w-0 flex-1">
         {Icon && (
-          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 flex-shrink-0">
             <Icon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
           </div>
         )}
-        <div>
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <div className="min-w-0">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white truncate">
             {title}
           </h3>
           {subtitle && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 truncate">
               {subtitle}
             </p>
           )}
@@ -51,8 +51,8 @@ export const SectionHeaderV2: React.FC<SectionHeaderV2Props> = ({
           whileHover={{ x: 4 }}
           whileTap={{ scale: 0.95 }}
           className="
-            flex items-center gap-1.5
-            text-sm font-medium
+            flex items-center gap-1.5 flex-shrink-0
+            text-sm font-medium whitespace-nowrap
             text-[var(--color-primary-600)] dark:text-[var(--color-primary-400)]
             hover:text-[var(--color-primary-700)] dark:hover:text-[var(--color-primary-300)]
             transition-colors duration-200

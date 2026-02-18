@@ -55,7 +55,7 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
       transition={{ delay: index * 0.05, duration: 0.3 }}
       whileHover={{ y: -2 }}
       className="
-        group flex items-center gap-4 p-4
+        group flex items-center gap-3 p-4
         bg-white dark:bg-gray-800
         rounded-xl
         border border-gray-200 dark:border-gray-700
@@ -87,14 +87,14 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
       </button>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
           {task.title}
         </p>
         {task.due_date && (
           <div className="flex items-center gap-1.5 mt-1">
-            <Clock className="h-3 w-3 text-gray-500 dark:text-gray-400" />
-            <p className="text-xs text-gray-600 dark:text-gray-400">
+            <Clock className="h-3 w-3 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
               Due {format(new Date(task.due_date), 'MMM dd')}
             </p>
           </div>
@@ -103,8 +103,8 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
 
       {/* Priority Badge */}
       <div className={`
-        px-3 py-1 rounded-full
-        text-xs font-medium
+        px-2.5 py-1 rounded-full
+        text-xs font-medium whitespace-nowrap
         ${styles.bg} ${styles.text}
         border ${styles.border}
         flex-shrink-0
