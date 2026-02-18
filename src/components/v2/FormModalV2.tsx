@@ -119,9 +119,12 @@ export function FormModalV2<T extends Record<string, any>>({
   const mergedInitialData = { ...defaultData, ...initialData } as T;
 
   // Auto-save draft support (only if draftKey provided and not editing)
-  const [draft, updateDraft, clearDraft] = draftKey
-    ? useDraftStorage(draftKey, mergedInitialData, { disabled: isEditing })
-    : [null, () => {}, () => {}, false] as const;
+  // IMPORTANT: Always call the hook to avoid conditional hook call violations
+  const [draft, updateDraft, clearDraft] = useDraftStorage(
+    draftKey || '_no_draft',
+    mergedInitialData,
+    { disabled: !draftKey || isEditing }
+  );
 
   // Form state - use draft if available and not editing
   const [formState, setFormState] = React.useState<T>(

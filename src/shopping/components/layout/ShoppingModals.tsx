@@ -1,5 +1,8 @@
 import React from 'react';
-import { AddItemModal, EditItemModal, BarcodeScannerModal, ReceiptScanningModal, AddPantryItemModal, StoreSuggestionsModal } from '../modals';
+import { BarcodeScannerModal, ReceiptScanningModal, StoreSuggestionsModal } from '../modals';
+import { AddItemModalV2 as AddItemModal } from '../v2/AddItemModalV2';
+import { EditItemModalV2 as EditItemModal } from '../v2/EditItemModalV2';
+import { AddPantryItemModalV2 as AddPantryItemModal } from '../v2/AddPantryItemModalV2';
 import type { ShoppingItem, Store as StoreType } from '../../types';
 import type { PantryItem } from '../../../types';
 import type { Coordinates } from '../../services/locationService';
