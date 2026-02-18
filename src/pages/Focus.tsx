@@ -171,16 +171,19 @@ const Focus: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
-      {/* Header with Terracotta Gradient */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-          padding: '60px 0 20px',
-          color: 'white',
-          marginBottom: '16px',
-        }}
-      >
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem', textAlign: 'center' }}>
+      {/* All content centered with max width */}
+      <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
+        {/* Header with Terracotta Gradient */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            padding: '60px 1.5rem 20px',
+            color: 'white',
+            marginBottom: '16px',
+            borderRadius: '0 0 16px 16px',
+            textAlign: 'center',
+          }}
+        >
           <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
             ⏱️ Focus
           </h1>
@@ -188,33 +191,33 @@ const Focus: React.FC = () => {
             {getSubtitle()}
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem 5rem' }}>
-        {/* Circular Timer */}
-        <CircularTimerV2
-          seconds={seconds}
-          totalSeconds={totalSeconds}
-          state={timerState}
-          size={240}
-        />
+        {/* Content */}
+        <div style={{ padding: '0 1.5rem' }}>
+          {/* Circular Timer */}
+          <CircularTimerV2
+            seconds={seconds}
+            totalSeconds={totalSeconds}
+            state={timerState}
+            size={240}
+          />
 
-        {/* Timer Controls */}
-        <TimerControlsV2
-          isActive={timerState === 'active'}
-          isPaused={timerState === 'paused'}
-          onPlayPause={() => void handlePlayPause()}
-          onReset={() => void handleReset()}
-          disabled={createSession.isPending || updateSession.isPending}
-        />
+          {/* Timer Controls */}
+          <TimerControlsV2
+            isActive={timerState === 'active'}
+            isPaused={timerState === 'paused'}
+            onPlayPause={() => void handlePlayPause()}
+            onReset={() => void handleReset()}
+            disabled={createSession.isPending || updateSession.isPending}
+          />
 
-        {/* Preset Grid */}
-        <PresetGridV2
-          activePresetId={activePreset}
-          onSelectPreset={handleSelectPreset}
-          presets={PRESETS}
-        />
+          {/* Preset Grid */}
+          <PresetGridV2
+            activePresetId={activePreset}
+            onSelectPreset={handleSelectPreset}
+            presets={PRESETS}
+          />
+        </div>
       </div>
     </div>
   );
