@@ -168,9 +168,15 @@ const CalendarContent = () => {
   const getEventsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
 
-    const dayTasks = tasks.filter(t =>
-      t.due_date && t.due_date.startsWith(dateStr) && t.status !== 'done'
-    );
+    const dayTasks = tasks.filter(t => {
+      if (!t.due_date || t.status === 'done') return false;
+
+      // Convert UTC date to local date for comparison
+      const taskDate = new Date(t.due_date);
+      const taskDateStr = format(taskDate, 'yyyy-MM-dd');
+
+      return taskDateStr === dateStr;
+    });
 
     const dayEvents = calendarEvents.filter(e => {
       const eventDate = e.start_date.split('T')[0];
@@ -459,11 +465,14 @@ const CalendarContent = () => {
                 {(() => {
                   const { events: dayEvents, tasks: dayTasks } = getEventsForDay(currentDate);
                   const allDayEvents = dayEvents.filter(e => e.all_day);
-                  // Tasks without specific times (hour is 0 or midnight)
+                  // Tasks without specific times (hour is 0/midnight in local time)
                   const allDayTasks = dayTasks.filter(t => {
                     if (!t.due_date) return false;
-                    const taskHour = new Date(t.due_date).getHours();
-                    return taskHour === 0;
+                    const taskDate = new Date(t.due_date);
+                    const taskHour = taskDate.getHours();
+                    const taskMinute = taskDate.getMinutes();
+                    // Consider it all-day if it's exactly midnight (00:00)
+                    return taskHour === 0 && taskMinute === 0;
                   });
 
                   return (allDayEvents.length > 0 || allDayTasks.length > 0) ? (
@@ -647,11 +656,13 @@ const CalendarContent = () => {
                   {weekDays.map((day) => {
                     const { events: dayEvents, tasks: dayTasks } = getEventsForDay(day);
                     const allDayEvents = dayEvents.filter(e => e.all_day);
-                    // Tasks without specific times
+                    // Tasks without specific times (exactly midnight in local time)
                     const allDayTasks = dayTasks.filter(t => {
                       if (!t.due_date) return false;
-                      const taskHour = new Date(t.due_date).getHours();
-                      return taskHour === 0;
+                      const taskDate = new Date(t.due_date);
+                      const taskHour = taskDate.getHours();
+                      const taskMinute = taskDate.getMinutes();
+                      return taskHour === 0 && taskMinute === 0;
                     });
 
                     return (
