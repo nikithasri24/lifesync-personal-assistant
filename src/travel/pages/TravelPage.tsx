@@ -114,16 +114,16 @@ const TravelPage: React.FC = () => {
     return filtered;
   }, [visitedLocations, categoryFilter, locationTypeFilter]);
 
-  // Get visited countries map
+  // Get visited countries map (always show ALL visited, regardless of filters)
   const visitedCountriesMap = React.useMemo(() => {
     const map: Record<string, VisitStatus> = {};
-    filteredLocations
+    visitedLocations
       .filter(loc => loc.locationType === 'country')
       .forEach(loc => {
         map[loc.countryCode] = loc.status;
       });
     return map;
-  }, [filteredLocations]);
+  }, [visitedLocations]);
 
   // Get visited countries categories (for map coloring)
   const visitedCountriesCategories = React.useMemo(() => {
@@ -136,16 +136,16 @@ const TravelPage: React.FC = () => {
     return map;
   }, [visitedLocations]);
 
-  // Get visited states map
+  // Get visited states map (always show ALL visited, regardless of filters)
   const visitedStatesMap = React.useMemo(() => {
     const map: Record<string, VisitStatus> = {};
-    filteredLocations
+    visitedLocations
       .filter(loc => loc.locationType === 'state' && loc.stateCode)
       .forEach(loc => {
         map[loc.stateCode!] = loc.status;
       });
     return map;
-  }, [filteredLocations]);
+  }, [visitedLocations]);
 
   // Get visited states categories (for map coloring)
   const visitedStatesCategories = React.useMemo(() => {
@@ -158,16 +158,16 @@ const TravelPage: React.FC = () => {
     return map;
   }, [visitedLocations]);
 
-  // Get visited parks map
+  // Get visited parks map (always show ALL visited, regardless of filters)
   const visitedParksMap = React.useMemo(() => {
     const map: Record<string, VisitStatus> = {};
-    filteredLocations
+    visitedLocations
       .filter(loc => loc.locationType === 'national_park' && loc.nationalParkId)
       .forEach(loc => {
         map[loc.nationalParkId!] = loc.status;
       });
     return map;
-  }, [filteredLocations]);
+  }, [visitedLocations]);
 
   // Get visited parks categories (for map coloring)
   const visitedParksCategories = React.useMemo(() => {
@@ -180,10 +180,10 @@ const TravelPage: React.FC = () => {
     return map;
   }, [visitedLocations]);
 
-  // Get visited islands map
+  // Get visited islands map (always show ALL visited, regardless of filters)
   const visitedIslandsMap = React.useMemo(() => {
     const map: Record<string, VisitStatus> = {};
-    filteredLocations
+    visitedLocations
       .filter(loc => loc.locationType === 'island' && loc.islandName)
       .forEach(loc => {
         // Use a composite key: countryCode-islandName or just the island ID if available
@@ -191,7 +191,7 @@ const TravelPage: React.FC = () => {
         map[key] = loc.status;
       });
     return map;
-  }, [filteredLocations]);
+  }, [visitedLocations]);
 
   // Get visited islands categories (for map coloring)
   const visitedIslandsCategories = React.useMemo(() => {
