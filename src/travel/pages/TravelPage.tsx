@@ -116,96 +116,53 @@ const TravelPageContent: React.FC = () => {
     return filtered;
   }, [visitedLocations, categoryFilter, locationTypeFilter]);
 
-  // Get visited countries map (always show ALL visited, regardless of filters)
-  const visitedCountriesMap = React.useMemo(() => {
-    const map: Record<string, VisitStatus> = {};
+  // Helper function to create location maps - reduces code duplication
+  const createLocationMaps = React.useCallback((
+    locType: CategorizedLocation['locationType'],
+    getKey: (loc: CategorizedLocation) => string,
+    condition?: (loc: CategorizedLocation) => boolean
+  ) => {
+    const statusMap: Record<string, VisitStatus> = {};
+    const categoryMap: Record<string, LocationVisitCategory> = {};
+
     visitedLocations
-      .filter(loc => loc.locationType === 'country')
+      .filter(loc => loc.locationType === locType && (!condition || condition(loc)))
       .forEach(loc => {
-        map[loc.countryCode] = loc.status;
+        const key = getKey(loc);
+        statusMap[key] = loc.status;
+        categoryMap[key] = loc.visitCategory;
       });
-    return map;
+
+    return { statusMap, categoryMap };
   }, [visitedLocations]);
 
-  // Get visited countries categories (for map coloring)
-  const visitedCountriesCategories = React.useMemo(() => {
-    const map: Record<string, LocationVisitCategory> = {};
-    visitedLocations
-      .filter(loc => loc.locationType === 'country')
-      .forEach(loc => {
-        map[loc.countryCode] = loc.visitCategory;
-      });
-    return map;
-  }, [visitedLocations]);
+  // Get visited countries maps (always show ALL visited, regardless of filters)
+  const { statusMap: visitedCountriesMap, categoryMap: visitedCountriesCategories } = React.useMemo(
+    () => createLocationMaps('country', loc => loc.countryCode),
+    [createLocationMaps]
+  );
 
-  // Get visited states map (always show ALL visited, regardless of filters)
-  const visitedStatesMap = React.useMemo(() => {
-    const map: Record<string, VisitStatus> = {};
-    visitedLocations
-      .filter(loc => loc.locationType === 'state' && loc.stateCode)
-      .forEach(loc => {
-        map[loc.stateCode!] = loc.status;
-      });
-    return map;
-  }, [visitedLocations]);
+  // Get visited states maps
+  const { statusMap: visitedStatesMap, categoryMap: visitedStatesCategories } = React.useMemo(
+    () => createLocationMaps('state', loc => loc.stateCode!, loc => !!loc.stateCode),
+    [createLocationMaps]
+  );
 
-  // Get visited states categories (for map coloring)
-  const visitedStatesCategories = React.useMemo(() => {
-    const map: Record<string, LocationVisitCategory> = {};
-    visitedLocations
-      .filter(loc => loc.locationType === 'state' && loc.stateCode)
-      .forEach(loc => {
-        map[loc.stateCode!] = loc.visitCategory;
-      });
-    return map;
-  }, [visitedLocations]);
+  // Get visited parks maps
+  const { statusMap: visitedParksMap, categoryMap: visitedParksCategories } = React.useMemo(
+    () => createLocationMaps('national_park', loc => loc.nationalParkId!, loc => !!loc.nationalParkId),
+    [createLocationMaps]
+  );
 
-  // Get visited parks map (always show ALL visited, regardless of filters)
-  const visitedParksMap = React.useMemo(() => {
-    const map: Record<string, VisitStatus> = {};
-    visitedLocations
-      .filter(loc => loc.locationType === 'national_park' && loc.nationalParkId)
-      .forEach(loc => {
-        map[loc.nationalParkId!] = loc.status;
-      });
-    return map;
-  }, [visitedLocations]);
-
-  // Get visited parks categories (for map coloring)
-  const visitedParksCategories = React.useMemo(() => {
-    const map: Record<string, LocationVisitCategory> = {};
-    visitedLocations
-      .filter(loc => loc.locationType === 'national_park' && loc.nationalParkId)
-      .forEach(loc => {
-        map[loc.nationalParkId!] = loc.visitCategory;
-      });
-    return map;
-  }, [visitedLocations]);
-
-  // Get visited islands map (always show ALL visited, regardless of filters)
-  const visitedIslandsMap = React.useMemo(() => {
-    const map: Record<string, VisitStatus> = {};
-    visitedLocations
-      .filter(loc => loc.locationType === 'island' && loc.islandName)
-      .forEach(loc => {
-        // Use a composite key: countryCode-islandName or just the island ID if available
-        const key = loc.nationalParkId || `${loc.countryCode}-${loc.islandName}`;
-        map[key] = loc.status;
-      });
-    return map;
-  }, [visitedLocations]);
-
-  // Get visited islands categories (for map coloring)
-  const visitedIslandsCategories = React.useMemo(() => {
-    const map: Record<string, LocationVisitCategory> = {};
-    visitedLocations
-      .filter(loc => loc.locationType === 'island' && loc.islandName)
-      .forEach(loc => {
-        const key = loc.nationalParkId || `${loc.countryCode}-${loc.islandName}`;
-        map[key] = loc.visitCategory;
-      });
-    return map;
-  }, [visitedLocations]);
+  // Get visited islands maps
+  const { statusMap: visitedIslandsMap, categoryMap: visitedIslandsCategories } = React.useMemo(
+    () => createLocationMaps(
+      'island',
+      loc => loc.nationalParkId || `${loc.countryCode}-${loc.islandName}`,
+      loc => !!loc.islandName
+    ),
+    [createLocationMaps]
+  );
 
   // Count locations by category
   const categoryCounts = React.useMemo(() => {
@@ -227,205 +184,138 @@ const TravelPageContent: React.FC = () => {
     };
   }, [filteredLocations]);
 
+  // Generic location toggle handler - reduces code duplication across all location types
+  const handleLocationToggle = React.useCallback(async (
+    locationTypeName: string,
+    findExisting: () => CategorizedLocation | undefined,
+    buildLocationData: () => any,
+    visitedByUserIds?: string[]
+  ) => {
+    try {
+      const existingLocation = findExisting();
+
+      if (existingLocation) {
+        // Optimistically remove from UI
+        setVisitedLocations(prev => prev.filter(loc => loc.id !== existingLocation.id));
+
+        // Remove from server
+        await travelAPI.deleteLocation(existingLocation.id);
+      } else {
+        // Add to server
+        const newLocation = await travelAPI.markLocation(buildLocationData(), visitedByUserIds);
+
+        // Import categorizeLocation to add visitCategory
+        const { categorizeLocation } = await import('../api/data');
+        const categorizedLocation: CategorizedLocation = {
+          ...newLocation,
+          visitCategory: categorizeLocation(newLocation, currentUserId!, partnerId)
+        };
+
+        // Optimistically add to UI with proper category
+        setVisitedLocations(prev => [...prev, categorizedLocation]);
+      }
+    } catch (error) {
+      logger.error('Travel', `Error toggling ${locationTypeName}`, { error });
+      showToast(`Failed to update ${locationTypeName}. Please try again.`, 'error');
+      // Reload data to sync with server on error
+      await loadData();
+    }
+  }, [visitedLocations, currentUserId, partnerId, showToast, loadData]);
+
+  // Location click handlers using generic toggle
   const handleCountryClick = async (countryCode: string, visitedByUserIds?: string[]) => {
-    // Validate country code
     if (!countryCode || countryCode.length !== 2) {
       logger.error('Travel', 'Invalid country code', { countryCode });
       return;
     }
 
-    try {
-      // Check if country is already visited
-      const existingLocation = visitedLocations.find(
-        loc => loc.countryCode === countryCode && loc.locationType === 'country'
-      );
-
-      if (existingLocation) {
-        // Optimistically remove from UI
-        setVisitedLocations(prev => prev.filter(loc => loc.id !== existingLocation.id));
-
-        // Remove from server
-        await travelAPI.deleteLocation(existingLocation.id);
-      } else {
-        // Add to server
-        const newLocation = await travelAPI.markLocation({
-          locationType: 'country',
-          countryCode,
-          countryName: countryCode, // Will be enriched with proper name from API
-          status: 'visited',
-          visitCount: 1,
-        }, visitedByUserIds);
-
-        // Import categorizeLocation to add visitCategory
-        const { categorizeLocation } = await import('../api/data');
-        const categorizedLocation: CategorizedLocation = {
-          ...newLocation,
-          visitCategory: categorizeLocation(newLocation, currentUserId!, partnerId)
-        };
-
-        // Optimistically add to UI with proper category
-        setVisitedLocations(prev => [...prev, categorizedLocation]);
-      }
-    } catch (error) {
-      logger.error('Travel', 'Error toggling country', { error });
-      showToast('Failed to update country. Please try again.', 'error');
-      // Reload data to sync with server on error
-      await loadData();
-    }
+    await handleLocationToggle(
+      'country',
+      () => visitedLocations.find(loc => loc.countryCode === countryCode && loc.locationType === 'country'),
+      () => ({
+        locationType: 'country' as const,
+        countryCode,
+        countryName: countryCode,
+        status: 'visited' as const,
+        visitCount: 1,
+      }),
+      visitedByUserIds
+    );
   };
 
   const handleStateClick = async (stateCode: string, countryCode: string, visitedByUserIds?: string[]) => {
-    // Validate codes
     if (!stateCode || !countryCode) {
       logger.error('Travel', 'Invalid state or country code', { stateCode, countryCode });
       return;
     }
 
-    try {
-      // Check if state is already visited
-      const existingLocation = visitedLocations.find(
-        loc => loc.stateCode === stateCode && loc.locationType === 'state'
-      );
-
-      if (existingLocation) {
-        // Optimistically remove from UI
-        setVisitedLocations(prev => prev.filter(loc => loc.id !== existingLocation.id));
-
-        // Remove from server
-        await travelAPI.deleteLocation(existingLocation.id);
-      } else {
-        // Add to server
-        const newLocation = await travelAPI.markLocation({
-          locationType: 'state',
-          countryCode,
-          countryName: countryCode, // Will be enriched
-          stateCode,
-          stateName: stateCode, // Will be enriched
-          status: 'visited',
-          visitCount: 1,
-        }, visitedByUserIds);
-
-        // Import categorizeLocation to add visitCategory
-        const { categorizeLocation } = await import('../api/data');
-        const categorizedLocation: CategorizedLocation = {
-          ...newLocation,
-          visitCategory: categorizeLocation(newLocation, currentUserId!, partnerId)
-        };
-
-        // Optimistically add to UI with proper category
-        setVisitedLocations(prev => [...prev, categorizedLocation]);
-      }
-    } catch (error) {
-      logger.error('Travel', 'Error toggling state', { error });
-      showToast('Failed to update state. Please try again.', 'error');
-      // Reload data to sync with server on error
-      await loadData();
-    }
+    await handleLocationToggle(
+      'state',
+      () => visitedLocations.find(loc => loc.stateCode === stateCode && loc.locationType === 'state'),
+      () => ({
+        locationType: 'state' as const,
+        countryCode,
+        countryName: countryCode,
+        stateCode,
+        stateName: stateCode,
+        status: 'visited' as const,
+        visitCount: 1,
+      }),
+      visitedByUserIds
+    );
   };
 
   const handleParkClick = async (parkId: string, visitedByUserIds?: string[]) => {
-    // Find park details
     const park = nationalParks.find(p => p.id === parkId);
     if (!park) {
       logger.error('Travel', 'Park not found', { parkId });
       return;
     }
 
-    try {
-      // Check if park is already visited
-      const existingLocation = visitedLocations.find(
-        loc => loc.nationalParkId === parkId && loc.locationType === 'national_park'
-      );
-
-      if (existingLocation) {
-        // Optimistically remove from UI
-        setVisitedLocations(prev => prev.filter(loc => loc.id !== existingLocation.id));
-
-        // Remove from server
-        await travelAPI.deleteLocation(existingLocation.id);
-      } else {
-        // Add to server
-        const newLocation = await travelAPI.markLocation({
-          locationType: 'national_park',
-          countryCode: park.countryCode,
-          countryName: park.countryCode, // Will be enriched
-          stateCode: park.stateCode,
-          stateName: park.stateCode,
-          nationalParkId: park.id,
-          nationalParkName: park.name,
-          status: 'visited',
-          visitCount: 1,
-        }, visitedByUserIds);
-
-        // Import categorizeLocation to add visitCategory
-        const { categorizeLocation } = await import('../api/data');
-        const categorizedLocation: CategorizedLocation = {
-          ...newLocation,
-          visitCategory: categorizeLocation(newLocation, currentUserId!, partnerId)
-        };
-
-        // Optimistically add to UI with proper category
-        setVisitedLocations(prev => [...prev, categorizedLocation]);
-      }
-    } catch (error) {
-      logger.error('Travel', 'Error toggling park', { error });
-      showToast('Failed to update park. Please try again.', 'error');
-      // Reload data to sync with server on error
-      await loadData();
-    }
+    await handleLocationToggle(
+      'park',
+      () => visitedLocations.find(loc => loc.nationalParkId === parkId && loc.locationType === 'national_park'),
+      () => ({
+        locationType: 'national_park' as const,
+        countryCode: park.countryCode,
+        countryName: park.countryCode,
+        stateCode: park.stateCode,
+        stateName: park.stateCode,
+        nationalParkId: park.id,
+        nationalParkName: park.name,
+        status: 'visited' as const,
+        visitCount: 1,
+      }),
+      visitedByUserIds
+    );
   };
 
   const handleIslandClick = async (islandId: string, visitedByUserIds?: string[]) => {
-    // Find island details
     const island = islands.find(i => i.id === islandId);
     if (!island) {
       logger.error('Travel', 'Island not found', { islandId });
       return;
     }
 
-    try {
-      // Check if island is already visited (match by island ID using the key format)
-      const existingLocation = visitedLocations.find(
+    await handleLocationToggle(
+      'island',
+      () => visitedLocations.find(
         loc => loc.locationType === 'island' &&
         (loc.nationalParkId === islandId || `${loc.countryCode}-${loc.islandName}` === islandId)
-      );
-
-      if (existingLocation) {
-        // Optimistically remove from UI
-        setVisitedLocations(prev => prev.filter(loc => loc.id !== existingLocation.id));
-
-        // Remove from server
-        await travelAPI.deleteLocation(existingLocation.id);
-      } else {
-        // Add to server
-        const newLocation = await travelAPI.markLocation({
-          locationType: 'island',
-          countryCode: island.countryCode,
-          countryName: island.countryCode, // Will be enriched
-          stateCode: island.stateCode,
-          stateName: island.stateCode,
-          islandName: island.name,
-          nationalParkId: island.id, // Store island ID here for easy lookup
-          status: 'visited',
-          visitCount: 1,
-        }, visitedByUserIds);
-
-        // Import categorizeLocation to add visitCategory
-        const { categorizeLocation } = await import('../api/data');
-        const categorizedLocation: CategorizedLocation = {
-          ...newLocation,
-          visitCategory: categorizeLocation(newLocation, currentUserId!, partnerId)
-        };
-
-        // Optimistically add to UI with proper category
-        setVisitedLocations(prev => [...prev, categorizedLocation]);
-      }
-    } catch (error) {
-      logger.error('Travel', 'Error toggling island', { error });
-      showToast('Failed to update island. Please try again.', 'error');
-      // Reload data to sync with server on error
-      await loadData();
-    }
+      ),
+      () => ({
+        locationType: 'island' as const,
+        countryCode: island.countryCode,
+        countryName: island.countryCode,
+        stateCode: island.stateCode,
+        stateName: island.stateCode,
+        islandName: island.name,
+        nationalParkId: island.id,
+        status: 'visited' as const,
+        visitCount: 1,
+      }),
+      visitedByUserIds
+    );
   };
 
   // Trip handlers
