@@ -1,22 +1,18 @@
 import React from 'react';
-import { Card } from '../components/Card';
-import { Button } from '../ui/Button';
-import { Dialog } from '../ui/Dialog';
-import { Input } from '../ui/Input';
-import { Select } from '../ui/Select';
 import { useAccountsQuery, useInstitutionsQuery, useUpsertAccountMutation, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
-import { formatCurrency } from '../utils/currency';
-import type { Account, AccountType } from '../types';
+import type { Account } from '../types';
 import { logger } from '../../services/logger';
 import { useAuth } from '@/hooks/useAuth';
-import { OwnerBadge } from '../../components/common/OwnerBadge';
 import { OwnerFilter } from '../components/OwnerFilter';
 import useFinanceFilters from '../store/useFinanceFilters';
+import { AccountCardV2, AccountFormModalV2, type AccountFormData } from '@/finance/components/v2';
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { Plus } from 'lucide-react';
 
 const AccountsPage: React.FC = () => {
-  const [open, setOpen] = React.useState(false);
-  const [form, setForm] = React.useState<Partial<Account>>({ type: 'checking', balance: 0 });
-  const [isEditing, setIsEditing] = React.useState(false);
+  const colors = useThemeColors();
+  const [showModal, setShowModal] = React.useState(false);
+  const [editingAccount, setEditingAccount] = React.useState<Account | undefined>(undefined);
 
   // Auth and merged connection
   const { user } = useAuth();
@@ -55,152 +51,142 @@ const AccountsPage: React.FC = () => {
     return acc;
   }, {});
 
-  const onSave = async (): Promise<void> => {
-    if (!form.name || !form.type) {
-      alert('Please provide an account name and type');
-      return;
-    }
-
+  const handleSave = async (formData: AccountFormData): Promise<void> => {
     try {
       await upsertAccountMutation.mutateAsync({
-        id: form.id,
-        name: form.name,
-        type: form.type,
-        balance: form.balance ?? 0,
-        institutionId: form.institutionId,
-        userId: form.userId, // Include userId for ownership
+        id: editingAccount?.id,
+        name: formData.name,
+        type: formData.type,
+        balance: formData.balance,
+        creditLimit: formData.creditLimit,
+        apr: formData.apr,
+        notes: formData.notes,
+        institutionId: editingAccount?.institutionId,
+        userId: editingAccount?.userId || user?.id,
       });
-      setOpen(false);
-      setForm({ type: 'checking', balance: 0 }); // Reset form
-      setIsEditing(false);
+      setShowModal(false);
+      setEditingAccount(undefined);
     } catch (error) {
-      logger.error('AccountsPage', error instanceof Error ? error : new Error(String(error)), { context: 'onSave', form });
-      alert('Failed to save account. Please try again.');
+      logger.error('AccountsPage', error instanceof Error ? error : new Error(String(error)), { context: 'handleSave', formData });
+      throw error; // Let modal handle error display
     }
   };
 
-  const onEdit = (account: Account): void => {
-    setForm(account);
-    setIsEditing(true);
-    setOpen(true);
+  const handleEdit = (account: Account): void => {
+    setEditingAccount(account);
+    setShowModal(true);
   };
 
-  const onAddNew = (): void => {
-    setForm({ type: 'checking', balance: 0, userId: user?.id });
-    setIsEditing(false);
-    setOpen(true);
+  const handleAddNew = (): void => {
+    setEditingAccount(undefined);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = (): void => {
+    setShowModal(false);
+    setEditingAccount(undefined);
   };
 
   const instName = (id?: string): string => insts.find((i) => i.id === id)?.name ?? 'Manual Accounts';
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">🏦 Accounts</h2>
-        <div className="flex items-center gap-3">
-          {/* Owner Filter - only show in merged mode */}
-          {mergedConnection && (
-            <OwnerFilter
-              value={filters.ownerFilter}
-              onChange={filters.setOwnerFilter}
-              partnerName={partnerName}
-            />
-          )}
-          <Button onClick={onAddNew}>+ Add Account</Button>
-        </div>
-      </div>
-      {Object.entries(grouped).map(([instId, list]) => (
-        <Card key={instId} title={instName(instId)}>
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            {list.map((a) => {
-              const isOwner = user && a.userId === user.id;
-              const canEdit = !mergedConnection || isOwner;
-
-              return (
-                <div key={a.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 hover:bg-slate-100 transition-colors">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <div className="font-medium">{a.name}</div>
-                      {mergedConnection && user && (
-                        <OwnerBadge
-                          userId={a.userId}
-                          currentUserId={user.id}
-                          partnerName={partnerName}
-                          size="sm"
-                        />
-                      )}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {a.type}
-                      {a.creditLimit && ` • ${formatCurrency(a.balance)} / ${formatCurrency(a.creditLimit)} limit`}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="font-semibold">{formatCurrency(a.liability ? -a.balance : a.balance)}</div>
-                      <div className="text-xs text-slate-500">Updated {new Date(a.lastUpdatedISO).toLocaleDateString()}</div>
-                    </div>
-                    {canEdit ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onEdit(a)}
-                        className="text-xs"
-                      >
-                        Edit
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-slate-500 px-2">View Only</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      ))}
-
-      <Dialog open={open} onOpenChange={setOpen} title={isEditing ? 'Edit Account' : 'Add Manual Account'}>
-        <div className="space-y-3">
-          <Input label="Account name" value={form.name ?? ''} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-          <Select label="Type" value={(form.type as string) ?? 'checking'} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as AccountType }))}>
-            <optgroup label="Standard Accounts">
-              {['checking', 'savings', 'credit', 'brokerage', 'loan', 'investment'].map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Retirement Accounts">
-              {['401k', '403b', 'traditional_ira', 'roth_ira', 'sep_ira', 'simple_ira', 'hsa'].map((t) => (
-                <option key={t} value={t}>
-                  {t.replace('_', ' ').toUpperCase()}
-                </option>
-              ))}
-            </optgroup>
-          </Select>
-          <Input label="Balance" type="number" value={String(form.balance ?? 0)} onChange={(e) => setForm((f) => ({ ...f, balance: Number(e.target.value) }))} />
-
-          {/* Owner selection - only show in merged mode */}
-          {mergedConnection && user && partnerId && (
-            <Select
-              label="Owner"
-              value={form.userId ?? user.id}
-              onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">🏦</span>
+            Accounts
+          </h1>
+          <div className="flex items-center gap-3">
+            {/* Owner Filter - only show in merged mode */}
+            {mergedConnection && (
+              <OwnerFilter
+                value={filters.ownerFilter}
+                onChange={filters.setOwnerFilter}
+                partnerName={partnerName}
+              />
+            )}
+            <button
+              onClick={handleAddNew}
+              className="px-4 py-3 rounded-xl font-semibold text-white transition-opacity flex items-center gap-2"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
+              aria-label="Add account"
             >
-              <option value={user.id}>Me</option>
-              <option value={partnerId}>{partnerName || 'Partner'}</option>
-            </Select>
-          )}
-
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => void onSave()}>Save</Button>
+              <Plus className="w-5 h-5" />
+              Add Account
+            </button>
           </div>
         </div>
-      </Dialog>
+
+        {/* Grouped Accounts */}
+        <div className="space-y-6">
+          {Object.entries(grouped).map(([instId, list]) => (
+            <div key={instId}>
+              <h2 className="text-lg font-bold mb-3" style={{ color: colors.text.primary }}>
+                {instName(instId)}
+              </h2>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {list.map((account) => {
+                  const isOwner = user && account.userId === user.id;
+                  const canEdit = !mergedConnection || isOwner;
+
+                  return (
+                    <AccountCardV2
+                      key={account.id}
+                      account={account}
+                      onClick={canEdit ? () => handleEdit(account) : undefined}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredAccounts.length === 0 && (
+          <div
+            className="p-8 rounded-xl border-2 border-dashed text-center"
+            style={{ borderColor: colors.border.medium }}
+          >
+            <div className="text-4xl mb-3">🏦</div>
+            <p className="font-medium mb-2" style={{ color: colors.text.primary }}>
+              No accounts yet
+            </p>
+            <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
+              Get started by adding your first account
+            </p>
+            <button
+              onClick={handleAddNew}
+              className="px-4 py-2 rounded-lg font-semibold text-white"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
+            >
+              Add First Account
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Account Form Modal */}
+      <AccountFormModalV2
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        initialData={editingAccount ? {
+          name: editingAccount.name,
+          type: editingAccount.type,
+          balance: editingAccount.balance,
+          creditLimit: editingAccount.creditLimit,
+          apr: editingAccount.apr,
+          notes: editingAccount.notes,
+        } : undefined}
+        isPending={upsertAccountMutation.isPending}
+      />
     </div>
   );
 };
