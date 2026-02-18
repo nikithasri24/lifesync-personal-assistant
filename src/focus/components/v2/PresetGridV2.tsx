@@ -5,9 +5,7 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { gradients } from '@/styles/colors';
 
 export interface TimerPreset {
   id: string;
@@ -50,16 +48,15 @@ export const PresetGridV2: React.FC<PresetGridV2Props> = ({
           const isActive = preset.id === activePresetId;
 
           return (
-            <motion.button
+            <button
               key={preset.id}
               type="button"
               onClick={() => onSelectPreset(preset)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
               className="
                 p-4 rounded-xl
                 text-center
                 transition-all duration-200
+                hover:scale-102 active:scale-98
               "
               style={{
                 backgroundColor: isActive ? '#FEF3E8' : colors.bg.card,
@@ -82,7 +79,7 @@ export const PresetGridV2: React.FC<PresetGridV2Props> = ({
               >
                 {preset.minutes} {preset.minutes === 1 ? 'minute' : 'minutes'}
               </div>
-            </motion.button>
+            </button>
           );
         })}
       </div>

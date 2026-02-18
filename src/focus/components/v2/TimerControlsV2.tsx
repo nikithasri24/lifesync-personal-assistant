@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, Settings } from 'lucide-react';
 import { gradients } from '@/styles/colors';
 import { useThemeColors } from '@/hooks/useThemeColors';
@@ -48,17 +47,17 @@ export const TimerControlsV2: React.FC<TimerControlsV2Props> = ({
   return (
     <div className="flex items-center justify-center gap-4 mt-8">
       {/* Reset Button */}
-      <motion.button
+      <button
         type="button"
         onClick={onReset}
         disabled={disabled}
-        whileHover={{ scale: disabled ? 1 : 1.05 }}
-        whileTap={{ scale: disabled ? 1 : 0.95 }}
         className="
           w-16 h-16 rounded-full
           flex items-center justify-center
           shadow-md
-          transition-all duration-200
+          transition-transform duration-200
+          hover:scale-105 active:scale-95
+          disabled:hover:scale-100
         "
         style={{
           backgroundColor: colors.bg.card,
@@ -67,21 +66,21 @@ export const TimerControlsV2: React.FC<TimerControlsV2Props> = ({
         aria-label="Reset timer"
       >
         <RotateCcw className="w-6 h-6" />
-      </motion.button>
+      </button>
 
       {/* Play/Pause Button (Primary) */}
-      <motion.button
+      <button
         type="button"
         onClick={onPlayPause}
         disabled={disabled}
-        whileHover={{ scale: disabled ? 1 : 1.08 }}
-        whileTap={{ scale: disabled ? 1 : 0.92 }}
         className="
           w-20 h-20 rounded-full
           flex items-center justify-center
           text-white
           shadow-lg
-          transition-all duration-200
+          transition-transform duration-200
+          hover:scale-110 active:scale-90
+          disabled:hover:scale-100
         "
         style={{
           background: gradients.primary,
@@ -90,21 +89,21 @@ export const TimerControlsV2: React.FC<TimerControlsV2Props> = ({
         aria-label={getPlayPauseLabel()}
       >
         {getPlayPauseIcon()}
-      </motion.button>
+      </button>
 
       {/* Settings Button */}
       {onSettings && (
-        <motion.button
+        <button
           type="button"
           onClick={onSettings}
           disabled={disabled}
-          whileHover={{ scale: disabled ? 1 : 1.05 }}
-          whileTap={{ scale: disabled ? 1 : 0.95 }}
           className="
             w-16 h-16 rounded-full
             flex items-center justify-center
             shadow-md
-            transition-all duration-200
+            transition-transform duration-200
+            hover:scale-105 active:scale-95
+            disabled:hover:scale-100
           "
           style={{
             backgroundColor: colors.bg.card,
@@ -113,7 +112,7 @@ export const TimerControlsV2: React.FC<TimerControlsV2Props> = ({
           aria-label="Settings"
         >
           <Settings className="w-6 h-6" />
-        </motion.button>
+        </button>
       )}
     </div>
   );

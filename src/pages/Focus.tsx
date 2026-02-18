@@ -23,6 +23,13 @@ import { useThemeColors } from '../hooks/useThemeColors';
 
 type TimerState = 'ready' | 'active' | 'paused' | 'complete';
 
+const PRESETS: TimerPreset[] = [
+  { id: 'pomodoro', name: 'Pomodoro', emoji: '🍅', minutes: 25 },
+  { id: 'short-break', name: 'Short Break', emoji: '☕', minutes: 5 },
+  { id: 'deep-work', name: 'Deep Work', emoji: '🧠', minutes: 90 },
+  { id: 'long-break', name: 'Long Break', emoji: '🌟', minutes: 15 },
+];
+
 const Focus: React.FC = () => {
   const colors = useThemeColors();
 
@@ -164,43 +171,37 @@ const Focus: React.FC = () => {
   };
 
   return (
-    <div
-      className="min-h-screen pb-24"
-      style={{ backgroundColor: colors.bg.primary }}
-    >
-      {/* Header */}
-      <FocusHeaderV2 subtitle={getSubtitle()} />
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <FocusHeaderV2 subtitle={getSubtitle()} />
 
-      {/* Main Content */}
-      <div className="max-w-md mx-auto px-6">
-        {/* Circular Timer */}
-        <CircularTimerV2
-          seconds={seconds}
-          totalSeconds={totalSeconds}
-          state={timerState}
-          size={240}
-        />
+        {/* Content */}
+        <div className="px-6">
+          {/* Circular Timer */}
+          <CircularTimerV2
+            seconds={seconds}
+            totalSeconds={totalSeconds}
+            state={timerState}
+            size={240}
+          />
 
-        {/* Timer Controls */}
-        <TimerControlsV2
-          isActive={timerState === 'active'}
-          isPaused={timerState === 'paused'}
-          onPlayPause={() => void handlePlayPause()}
-          onReset={() => void handleReset()}
-          disabled={createSession.isPending || updateSession.isPending}
-        />
+          {/* Timer Controls */}
+          <TimerControlsV2
+            isActive={timerState === 'active'}
+            isPaused={timerState === 'paused'}
+            onPlayPause={() => void handlePlayPause()}
+            onReset={() => void handleReset()}
+            disabled={createSession.isPending || updateSession.isPending}
+          />
 
-        {/* Preset Grid */}
-        <PresetGridV2
-          activePresetId={activePreset}
-          onSelectPreset={handleSelectPreset}
-          presets={[
-            { id: 'pomodoro', name: 'Pomodoro', emoji: '🍅', minutes: 25 },
-            { id: 'short-break', name: 'Short Break', emoji: '☕', minutes: 5 },
-            { id: 'deep-work', name: 'Deep Work', emoji: '🧠', minutes: 90 },
-            { id: 'long-break', name: 'Long Break', emoji: '🌟', minutes: 15 },
-          ]}
-        />
+          {/* Preset Grid */}
+          <PresetGridV2
+            activePresetId={activePreset}
+            onSelectPreset={handleSelectPreset}
+            presets={PRESETS}
+          />
+        </div>
       </div>
     </div>
   );

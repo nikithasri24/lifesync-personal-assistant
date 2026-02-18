@@ -571,9 +571,12 @@ aside nav::-webkit-scrollbar-thumb:hover {
 .hover\:shadow-lg:hover { box-shadow: var(--shadow-lg); }
 .hover\:shadow-glow:hover { box-shadow: var(--shadow-glow); }
 
+.hover\:scale-110:hover { transform: scale(1.10); }
 .hover\:scale-105:hover { transform: scale(1.05); }
 .hover\:scale-102:hover { transform: scale(1.02); }
 .hover\:-translate-y-1:hover { transform: translateY(-0.25rem); }
+.active\:scale-90:active { transform: scale(0.90); }
+.active\:scale-98:active { transform: scale(0.98); }
 
 /* Focus Effects */
 .focus\:outline-none:focus { outline: none; }
@@ -850,8 +853,8 @@ aside nav::-webkit-scrollbar-thumb:hover {
 
 /* Beautiful Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes slideInLeft {
@@ -900,6 +903,7 @@ aside nav::-webkit-scrollbar-thumb:hover {
   100% { transform: scale(1); opacity: 1; }
 }
 
+.animate-fadeIn { animation: fadeIn 0.3s ease-out; }
 .animate-fade-in { animation: fadeIn 0.4s var(--ease-2); }
 .animate-slide-in-left { animation: slideInLeft 0.4s var(--ease-2); }
 .animate-slide-in-right { animation: slideInRight 0.4s var(--ease-2); }

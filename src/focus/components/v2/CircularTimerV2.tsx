@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { ProgressRingV2 } from '@/components/v2';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
@@ -81,12 +80,7 @@ export const CircularTimerV2: React.FC<CircularTimerV2Props> = ({
           showPercentage={false}
         >
           {/* Timer Display */}
-          <motion.div
-            className="flex flex-col items-center justify-center"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
+          <div className="flex flex-col items-center justify-center animate-fadeIn">
             <div
               className="text-5xl font-bold tracking-tight"
               style={{ color: colors.text.primary }}
@@ -99,7 +93,7 @@ export const CircularTimerV2: React.FC<CircularTimerV2Props> = ({
             >
               {getStateLabel()}
             </div>
-          </motion.div>
+          </div>
         </ProgressRingV2>
       </div>
     </div>
