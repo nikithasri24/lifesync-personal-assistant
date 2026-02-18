@@ -1,20 +1,22 @@
 /**
  * DashboardHeaderV2 Component
- * Time-based greeting header with terracotta gradient
+ * Time-based greeting header matching Together tab design
  */
 
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 export const DashboardHeaderV2: React.FC = () => {
   const { user } = useAuth();
+  const colors = useThemeColors();
 
-  // Get time-based greeting
-  const getGreeting = () => {
+  // Get time-based greeting and emoji
+  const getGreetingData = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return { text: 'Good morning', emoji: '☀️' };
+    if (hour < 18) return { text: 'Good afternoon', emoji: '🌤️' };
+    return { text: 'Good evening', emoji: '🌙' };
   };
 
   // Format date
@@ -29,21 +31,17 @@ export const DashboardHeaderV2: React.FC = () => {
   const userName = user?.email?.split('@')[0] || 'there';
   const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
 
+  const greeting = getGreetingData();
+
   return (
-    <div
-      className="px-5 py-5 rounded-xl mb-6"
-      style={{
-        background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-      }}
-    >
-      <div className="text-white">
-        <div className="text-2xl font-bold mb-1">
-          {getGreeting()}, {displayName}!
-        </div>
-        <div className="text-sm opacity-90">
-          {formattedDate}
-        </div>
-      </div>
+    <div className="mb-6">
+      <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+        <span className="text-4xl">{greeting.emoji}</span>
+        {greeting.text}, {displayName}!
+      </h1>
+      <p className="text-sm" style={{ color: colors.text.secondary }}>
+        {formattedDate}
+      </p>
     </div>
   );
 };

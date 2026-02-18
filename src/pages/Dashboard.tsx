@@ -95,8 +95,8 @@ function DashboardContent() {
 
   // Stats
   const stats = {
-    tasks: tasks.length,
-    habits: habits.length,
+    tasks: todayTasks.length, // Count only today's tasks
+    habits: todayHabits.length, // Count only incomplete habits for today
     notes: notes.length,
     journal: journalEntries.length,
   };

@@ -16,10 +16,10 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({ onAddTask }) => 
   const navigate = useNavigate();
 
   const actions = [
-    { icon: '✓', label: 'Add Task', onClick: onAddTask || (() => navigate('/todos')) },
-    { icon: '📝', label: 'New Note', onClick: () => navigate('/notes') },
-    { icon: '📔', label: 'Journal', onClick: () => navigate('/journal') },
-    { icon: '⏱️', label: 'Focus', onClick: () => navigate('/focus') },
+    { icon: '➕', label: 'Add Task', onClick: onAddTask || (() => navigate('/todos')), primary: true },
+    { icon: '📝', label: 'New Note', onClick: () => navigate('/notes'), primary: false },
+    { icon: '📔', label: 'Journal', onClick: () => navigate('/journal'), primary: false },
+    { icon: '⏱️', label: 'Focus', onClick: () => navigate('/focus'), primary: false },
   ];
 
   return (
@@ -28,15 +28,27 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({ onAddTask }) => 
         <button
           key={action.label}
           onClick={action.onClick}
-          className="border-2 rounded-xl p-4 flex flex-col items-center gap-2 transition-all hover:border-terracotta-400 hover:bg-terracotta-50"
+          className={`rounded-xl p-4 flex flex-col items-center gap-2 transition-all ${
+            action.primary
+              ? 'shadow-md hover:shadow-lg'
+              : 'border hover:border-terracotta-300 hover:bg-gray-50'
+          }`}
           style={{
-            backgroundColor: colors.bg.white,
-            borderColor: colors.border.light,
+            backgroundColor: action.primary
+              ? 'transparent'
+              : colors.bg.white,
+            background: action.primary
+              ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)'
+              : undefined,
+            borderColor: action.primary ? undefined : colors.border.light,
           }}
           aria-label={action.label}
         >
           <div className="text-2xl">{action.icon}</div>
-          <div className="text-sm font-semibold" style={{ color: colors.text.primary }}>
+          <div
+            className="text-sm font-semibold"
+            style={{ color: action.primary ? '#FFFFFF' : colors.text.primary }}
+          >
             {action.label}
           </div>
         </button>
