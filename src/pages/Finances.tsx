@@ -4,7 +4,6 @@
  */
 
 import React from 'react';
-import { DollarSign } from 'lucide-react';
 import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
@@ -32,25 +31,38 @@ const Finances: React.FC = () => {
 
   return (
     <FeatureErrorBoundary feature="Finances">
-      <div
-        style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}
-        data-testid="finances-container"
-      >
-        {/* Header */}
-        <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
-          <div className="px-6 pt-4 pb-3">
-            <div className="flex items-center gap-2 mb-4">
-              <DollarSign size={24} style={{ color: colors.accent.start }} />
-              <h1 className="text-2xl font-bold" style={{ color: colors.text.primary }}>
-                Finances
-              </h1>
-            </div>
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        {/* Header with Terracotta Gradient */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            padding: '60px 20px 20px',
+            color: 'white',
+            marginBottom: '16px',
+          }}
+        >
+          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
+            💰 Finances
+          </h1>
+          <div style={{ fontSize: '14px', opacity: 0.9 }}>
+            Track income, expenses & wealth
+          </div>
+        </div>
 
-            {/* Tab Navigation - Scrollable */}
-            <div className="overflow-x-auto -mx-6 px-6 pb-2">
-              <SegmentedControl
-                scrollable
-                segments={[
+        {/* Tab Navigation - Scrollable */}
+        <div
+          style={{
+            background: 'rgba(212, 165, 116, 0.1)',
+            borderRadius: '12px',
+            padding: '4px',
+            margin: '0 20px 16px',
+            overflowX: 'auto',
+          }}
+        >
+          <div className="overflow-x-auto">
+            <SegmentedControl
+              scrollable
+              segments={[
                   { value: 'dashboard', label: 'Dashboard' },
                   { value: 'accounts', label: 'Accounts' },
                   { value: 'transactions', label: 'Transactions' },
@@ -69,7 +81,6 @@ const Finances: React.FC = () => {
                 value={activeTab}
                 onChange={(value) => setActiveTab(value as FinanceTabView)}
               />
-            </div>
           </div>
         </div>
 
