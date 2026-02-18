@@ -19,7 +19,7 @@ export function ActivityView({ activities, isLoading, currentUserId }: ActivityV
 
   if (isLoading) {
     return (
-      <div className="px-5 pb-24">
+      <div className="pb-4">
         <div className="text-center py-12" style={{ color: colors.text.tertiary }}>
           Loading activity...
         </div>
@@ -29,7 +29,7 @@ export function ActivityView({ activities, isLoading, currentUserId }: ActivityV
 
   if (activities.length === 0) {
     return (
-      <div className="px-5 pb-24">
+      <div className="pb-4">
         <div
           className="text-center py-16 px-10 mt-20 rounded-2xl"
           style={{ backgroundColor: colors.bg.white }}
@@ -53,7 +53,7 @@ export function ActivityView({ activities, isLoading, currentUserId }: ActivityV
   }
 
   return (
-    <div className="px-5 pb-24">
+    <div className="pb-4">
       <h2
         className="text-xl font-bold mb-4"
         style={{ color: colors.text.primary }}

@@ -66,26 +66,25 @@ export const Shared: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }} data-testid="shared-container">
-      <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
-        {/* Header with Gradient */}
-        <div
-          className="px-5 py-6 mb-4"
-          style={{
-            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-            color: 'white',
-          }}
-        >
-          <h1 className="text-3xl font-bold mb-2">👥 Shared</h1>
-          <p className="text-sm opacity-90">Collaborate with family & friends</p>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">👥</span>
+            Shared
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
+            Collaborate with family & friends
+          </p>
         </div>
 
         {/* Stats Grid */}
-        <div className="px-0">
+        <div className="mb-6">
           <StatsGrid stats={stats} />
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-5 mb-4">
+        <div className="mb-6">
           <SegmentedControl
             segments={[
               { value: 'partner', label: 'Partner' },

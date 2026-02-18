@@ -16,7 +16,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
 
   return (
     <div
-      className="grid grid-cols-3 gap-3 px-5 py-4 mx-5 mb-4 rounded-2xl"
+      className="grid grid-cols-3 gap-3 px-5 py-4 rounded-2xl"
       style={{
         backgroundColor: colors.bg.white,
         boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
