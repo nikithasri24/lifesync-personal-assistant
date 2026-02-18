@@ -11,14 +11,14 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
-  FileText,
 } from 'lucide-react';
-import type { InsurancePolicy, InsurancePolicyInput } from '../types';
+import type { InsurancePolicy } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { InsuranceCard } from '../components/insurance/InsuranceCard';
-import { InsurancePolicyForm } from '../components/insurance/InsurancePolicyForm';
+import { InsuranceFormModalV2, type InsuranceFormData } from '@/finance/components/v2';
 import { logger } from '../../services/logger';
 import { useAuth } from '@/hooks/useAuth';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import {
   useFinanceMergedConnectionQuery,
   useInsurancePoliciesQuery,
@@ -26,6 +26,8 @@ import {
 } from '@/hooks/useFinanceQuery';
 
 const InsurancePage: React.FC = () => {
+  const colors = useThemeColors();
+
   // Auth and merged connection
   const { user } = useAuth();
   const { data: mergedConnection } = useFinanceMergedConnectionQuery();
@@ -39,37 +41,51 @@ const InsurancePage: React.FC = () => {
   const { data: policies = [], isLoading, error } = useInsurancePoliciesQuery();
   const upsertPolicyMutation = useUpsertInsurancePolicyMutation();
 
-  const [_selectedPolicyId, _setSelectedPolicyId] = React.useState<string | null>(null);
   const [filterType, setFilterType] = React.useState<string>('all');
-  const [showForm, setShowForm] = React.useState(false);
+  const [showModal, setShowModal] = React.useState(false);
   const [editingPolicy, setEditingPolicy] = React.useState<InsurancePolicy | undefined>(undefined);
 
   const handleAddPolicy = (): void => {
     logger.debug('Insurance', 'Add Policy button clicked');
     setEditingPolicy(undefined);
-    setShowForm(true);
+    setShowModal(true);
   };
 
   const handleEditPolicy = (policy: InsurancePolicy): void => {
     setEditingPolicy(policy);
-    setShowForm(true);
+    setShowModal(true);
   };
 
-  const handleSavePolicy = async (policyInput: InsurancePolicyInput): Promise<void> => {
+  const handleSavePolicy = async (formData: InsuranceFormData): Promise<void> => {
     try {
-      await upsertPolicyMutation.mutateAsync(policyInput);
-      setShowForm(false);
+      await upsertPolicyMutation.mutateAsync({
+        id: editingPolicy?.id,
+        policyName: formData.policyName,
+        policyType: formData.policyType,
+        provider: formData.provider,
+        policyNumber: formData.policyNumber,
+        coverageAmount: formData.coverageAmount,
+        premium: formData.premium,
+        premiumFrequency: formData.premiumFrequency,
+        deductible: formData.deductible,
+        renewalDate: formData.renewalDate,
+        beneficiaries: formData.beneficiaries,
+        notes: formData.notes,
+        userId: editingPolicy?.userId || user?.id,
+      });
+      setShowModal(false);
       setEditingPolicy(undefined);
     } catch (error) {
       logger.error('Insurance', error instanceof Error ? error : new Error(String(error)), {
         context: 'handleSavePolicy',
-        policyInput,
+        formData,
       });
+      throw error; // Let modal handle error display
     }
   };
 
-  const handleCancelForm = (): void => {
-    setShowForm(false);
+  const handleCloseModal = (): void => {
+    setShowModal(false);
     setEditingPolicy(undefined);
   };
 
@@ -157,38 +173,59 @@ const InsurancePage: React.FC = () => {
 
   if (policies.length === 0) {
     return (
-      <>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center max-w-md">
-            <Shield className="h-16 w-16 text-primary opacity-40 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-primary mb-2">No Insurance Policies Yet</h3>
-            <p className="text-sm text-primary opacity-70 mb-6">
-              Track all your insurance policies in one place. Monitor premiums, coverage, renewals, and claims.
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <div
+            className="p-8 rounded-xl border-2 border-dashed text-center"
+            style={{ borderColor: colors.border.medium }}
+          >
+            <div className="text-4xl mb-3">🛡️</div>
+            <p className="font-medium mb-2" style={{ color: colors.text.primary }}>
+              No insurance policies yet
+            </p>
+            <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
+              Track all your insurance policies in one place
             </p>
             <button
               onClick={handleAddPolicy}
-              className="px-4 py-2 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors inline-flex items-center gap-2"
+              className="px-4 py-2 rounded-lg font-semibold text-white"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
             >
-              <Plus className="h-4 w-4" />
-              Add Insurance Policy
+              Add First Policy
             </button>
           </div>
         </div>
 
         {/* Form Modal */}
-        {showForm && (
-          <InsurancePolicyForm
-            policy={editingPolicy}
-            onSave={handleSavePolicy}
-            onCancel={handleCancelForm}
-          />
-        )}
-      </>
+        <InsuranceFormModalV2
+          isOpen={showModal}
+          onClose={handleCloseModal}
+          onSave={handleSavePolicy}
+          initialData={editingPolicy ? {
+            policyName: editingPolicy.policyName,
+            policyType: editingPolicy.type,
+            provider: editingPolicy.provider,
+            policyNumber: editingPolicy.policyNumber,
+            coverageAmount: editingPolicy.coverageAmount,
+            premium: editingPolicy.premiumAmount,
+            premiumFrequency: editingPolicy.premiumFrequency,
+            deductible: editingPolicy.deductible,
+            renewalDate: editingPolicy.renewalDate,
+            beneficiaries: editingPolicy.beneficiaries,
+            notes: editingPolicy.notes,
+          } : undefined}
+          isPending={upsertPolicyMutation.isPending}
+        />
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Active Policies */}
@@ -355,14 +392,29 @@ const InsurancePage: React.FC = () => {
         </div>
       </div>
 
+        </div>
+      </div>
+
       {/* Form Modal */}
-      {showForm && (
-        <InsurancePolicyForm
-          policy={editingPolicy}
-          onSave={handleSavePolicy}
-          onCancel={handleCancelForm}
-        />
-      )}
+      <InsuranceFormModalV2
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onSave={handleSavePolicy}
+        initialData={editingPolicy ? {
+          policyName: editingPolicy.policyName,
+          policyType: editingPolicy.type,
+          provider: editingPolicy.provider,
+          policyNumber: editingPolicy.policyNumber,
+          coverageAmount: editingPolicy.coverageAmount,
+          premium: editingPolicy.premiumAmount,
+          premiumFrequency: editingPolicy.premiumFrequency,
+          deductible: editingPolicy.deductible,
+          renewalDate: editingPolicy.renewalDate,
+          beneficiaries: editingPolicy.beneficiaries,
+          notes: editingPolicy.notes,
+        } : undefined}
+        isPending={upsertPolicyMutation.isPending}
+      />
     </div>
   );
 };
