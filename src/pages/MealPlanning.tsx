@@ -357,17 +357,17 @@ const MealPlanning: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
-      {/* Header with Logo and Title */}
-      <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
-        <div className="px-6 pt-4 pb-3">
-          <div className="flex items-center gap-2 mb-4">
-            <ChefHat size={24} style={{ color: colors.accent.start }} />
-            <h1 className="text-2xl font-bold" style={{ color: colors.text.primary }}>
-              Meal Planning
-            </h1>
-          </div>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-4" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">🍽️</span>
+            Meal Planning
+          </h1>
+        </div>
 
-          {/* Tab Navigation */}
+        {/* Tab Navigation */}
+        <div className="mb-6">
           <SegmentedControl
             segments={[
               { value: 'today', label: 'Today' },
@@ -379,64 +379,90 @@ const MealPlanning: React.FC = () => {
             onChange={(value) => setActiveTab(value as TabView)}
           />
         </div>
-      </div>
 
-      {/* Tab Content */}
-      {activeTab === 'today' && (
-        <TodayView
-          todaysMeals={todaysMeals}
-          recipes={recipes}
-          onAddMeal={(mealType) => {
-            const today = format(new Date(), 'yyyy-MM-dd');
-            modalState.openRecipeForm(today, mealType);
-          }}
-          onLogMeal={(mealId) => {
-            const updates: PlannedMealUpdate = { status: 'logged' };
-            void updatePlannedMealWrapper({ mealId, updates });
-            showToast('Meal logged!', 'success');
-          }}
-          onEditMeal={(meal) => {
-            modalState.openSimpleEdit(meal);
-          }}
-        />
-      )}
+        {/* Tab Content */}
+        {activeTab === 'today' && (
+          <TodayView
+            todaysMeals={todaysMeals}
+            recipes={recipes}
+            onAddMeal={(mealType) => {
+              const today = format(new Date(), 'yyyy-MM-dd');
+              modalState.openRecipeForm(today, mealType);
+            }}
+            onLogMeal={(mealId) => {
+              const updates: PlannedMealUpdate = { status: 'logged' };
+              void updatePlannedMealWrapper({ mealId, updates });
+              showToast('Meal logged!', 'success');
+            }}
+            onEditMeal={(meal) => {
+              modalState.openSimpleEdit(meal);
+            }}
+          />
+        )}
 
-      {activeTab === 'week' && (
-        <WeekView
-          weekDays={weekNav.weekDays}
-          mealsByDate={mealsByDate}
-          recipes={recipes}
-          onPreviousWeek={weekNav.goToPreviousWeek}
-          onNextWeek={weekNav.goToNextWeek}
-          onToday={weekNav.goToThisWeek}
-          onCellClick={(date, mealType) => {
-            modalState.openRecipeForm(date, mealType);
-          }}
-        />
-      )}
+        {activeTab === 'week' && (
+          <WeekView
+            weekDays={weekNav.weekDays}
+            mealsByDate={mealsByDate}
+            recipes={recipes}
+            onPreviousWeek={weekNav.goToPreviousWeek}
+            onNextWeek={weekNav.goToNextWeek}
+            onToday={weekNav.goToThisWeek}
+            onCellClick={(date, mealType) => {
+              modalState.openRecipeForm(date, mealType);
+            }}
+          />
+        )}
 
-      {activeTab === 'recipes' && (
-        <RecipesView
-          recipes={recipeFiltering.filteredRecipes}
-          searchQuery={recipeFiltering.searchQuery}
-          showFavoritesOnly={recipeFiltering.showFavoritesOnly}
-          onSearchChange={recipeFiltering.setSearchQuery}
-          onToggleFavorites={recipeFiltering.toggleFavoritesOnly}
-          onViewRecipe={modalState.openRecipeView}
-          onEditRecipe={modalState.openRecipeEdit}
-          onDeleteRecipe={handleDeleteRecipe}
-          onAddRecipe={() => modalState.openRecipeForm('', '')}
-        />
-      )}
+        {activeTab === 'recipes' && (
+          <RecipesView
+            recipes={recipeFiltering.filteredRecipes}
+            searchQuery={recipeFiltering.searchQuery}
+            showFavoritesOnly={recipeFiltering.showFavoritesOnly}
+            onSearchChange={recipeFiltering.setSearchQuery}
+            onToggleFavorites={recipeFiltering.toggleFavoritesOnly}
+            onViewRecipe={modalState.openRecipeView}
+            onEditRecipe={modalState.openRecipeEdit}
+            onDeleteRecipe={handleDeleteRecipe}
+            onAddRecipe={() => modalState.openRecipeForm('', '')}
+          />
+        )}
 
-      {activeTab === 'grocery' && (
-        <GroceryView
+        {activeTab === 'grocery' && (
+          <GroceryView
+            groceryList={groceryState.groceryList}
+            neededItems={groceryState.neededItems}
+            atHomeItems={groceryState.atHomeItems}
+            onUpdateItemStatus={groceryState.updateItemStatus}
+            onCopyToClipboard={() => {
+              const text = groceryState.neededItems
+                .map((item) => {
+                  const amount =
+                    item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount ?? '';
+                  return `☐ ${amount} ${item.name}`.trim();
+                })
+                .join('\n');
+              void navigator.clipboard.writeText(text);
+              showToast('Shopping list copied to clipboard!', 'success');
+            }}
+            onSendToShoppingList={handleSendToShoppingList}
+          />
+        )}
+
+        {/* Modals */}
+        <ModalContainer
+          showGroceryList={modalState.showGroceryList}
+          onCloseGroceryList={() => modalState.setShowGroceryList(false)}
           groceryList={groceryState.groceryList}
           neededItems={groceryState.neededItems}
           atHomeItems={groceryState.atHomeItems}
-          onUpdateItemStatus={groceryState.updateItemStatus}
-          onCopyToClipboard={() => {
-            const text = groceryState.neededItems
+          inCartItems={groceryState.inCartItems}
+          purchasedItems={groceryState.purchasedItems}
+          weekStartDate={weekNav.currentWeekStart}
+          updateItemStatus={groceryState.updateItemStatus}
+          getStatusColor={groceryState.getStatusColor}
+          onCopyCart={() => {
+            const text = groceryState.inCartItems
               .map((item) => {
                 const amount =
                   item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount ?? '';
@@ -447,52 +473,26 @@ const MealPlanning: React.FC = () => {
             showToast('Shopping list copied to clipboard!', 'success');
           }}
           onSendToShoppingList={handleSendToShoppingList}
+          showCopyWeek={modalState.showCopyWeek}
+          onCloseCopyWeek={() => modalState.setShowCopyWeek(false)}
+          sourceWeekStart={weekNav.currentWeekStart}
+          targetWeekStart={weekCopy.copyTargetWeek}
+          onTargetWeekChange={(d) => weekCopy.setCopyTargetWeek(startOfWeek(d, { weekStartsOn }))}
+          mealCount={plannedMeals.length}
+          weekStartsOn={weekStartsOn}
+          onCopy={handleCopyWeek}
+          recipeFormModal={modalState.recipeFormModal}
+          onCloseRecipeForm={modalState.closeRecipeForm}
+          simpleEditModal={modalState.simpleEditModal}
+          onCloseSimpleEdit={modalState.closeSimpleEdit}
+          editingRecipeId={modalState.editingRecipeId}
+          onCloseRecipeEdit={modalState.closeRecipeEdit}
+          onOpenRecipeEdit={modalState.openRecipeEdit}
+          viewingRecipeId={modalState.viewingRecipeId}
+          onCloseRecipeView={modalState.closeRecipeView}
+          recipes={recipes}
         />
-      )}
-
-      {/* Modals */}
-      <ModalContainer
-        showGroceryList={modalState.showGroceryList}
-        onCloseGroceryList={() => modalState.setShowGroceryList(false)}
-        groceryList={groceryState.groceryList}
-        neededItems={groceryState.neededItems}
-        atHomeItems={groceryState.atHomeItems}
-        inCartItems={groceryState.inCartItems}
-        purchasedItems={groceryState.purchasedItems}
-        weekStartDate={weekNav.currentWeekStart}
-        updateItemStatus={groceryState.updateItemStatus}
-        getStatusColor={groceryState.getStatusColor}
-        onCopyCart={() => {
-          const text = groceryState.inCartItems
-            .map((item) => {
-              const amount =
-                item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount ?? '';
-              return `☐ ${amount} ${item.name}`.trim();
-            })
-            .join('\n');
-          void navigator.clipboard.writeText(text);
-          showToast('Shopping list copied to clipboard!', 'success');
-        }}
-        onSendToShoppingList={handleSendToShoppingList}
-        showCopyWeek={modalState.showCopyWeek}
-        onCloseCopyWeek={() => modalState.setShowCopyWeek(false)}
-        sourceWeekStart={weekNav.currentWeekStart}
-        targetWeekStart={weekCopy.copyTargetWeek}
-        onTargetWeekChange={(d) => weekCopy.setCopyTargetWeek(startOfWeek(d, { weekStartsOn }))}
-        mealCount={plannedMeals.length}
-        weekStartsOn={weekStartsOn}
-        onCopy={handleCopyWeek}
-        recipeFormModal={modalState.recipeFormModal}
-        onCloseRecipeForm={modalState.closeRecipeForm}
-        simpleEditModal={modalState.simpleEditModal}
-        onCloseSimpleEdit={modalState.closeSimpleEdit}
-        editingRecipeId={modalState.editingRecipeId}
-        onCloseRecipeEdit={modalState.closeRecipeEdit}
-        onOpenRecipeEdit={modalState.openRecipeEdit}
-        viewingRecipeId={modalState.viewingRecipeId}
-        onCloseRecipeView={modalState.closeRecipeView}
-        recipes={recipes}
-      />
+      </div>
     </div>
   );
 };
