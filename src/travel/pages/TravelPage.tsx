@@ -538,6 +538,7 @@ const TravelPageContent: React.FC = () => {
               style={{
                 color: categoryFilter === 'all' ? colors.accent.end : colors.text.secondary,
               }}
+              aria-label="Show all trips"
             >
               All ({categoryCounts.all})
             </button>
@@ -549,6 +550,7 @@ const TravelPageContent: React.FC = () => {
               style={{
                 color: categoryFilter === 'mine' ? colors.accent.end : colors.text.secondary,
               }}
+              aria-label="Show my trips"
             >
               Mine ({categoryCounts.mine})
             </button>
@@ -560,6 +562,7 @@ const TravelPageContent: React.FC = () => {
               style={{
                 color: categoryFilter === 'partner' ? colors.accent.end : colors.text.secondary,
               }}
+              aria-label="Show partner trips"
             >
               Partner ({categoryCounts.partner})
             </button>
@@ -571,6 +574,7 @@ const TravelPageContent: React.FC = () => {
               style={{
                 color: categoryFilter === 'both' ? colors.accent.end : colors.text.secondary,
               }}
+              aria-label="Show trips by both"
             >
               Both ({categoryCounts.both})
             </button>
@@ -594,6 +598,7 @@ const TravelPageContent: React.FC = () => {
                   color: locationTypeFilter === 'all' ? 'white' : colors.text.primary,
                   borderColor: colors.border.medium,
                 }}
+                aria-label="Show all location types"
               >
                 All Locations
               </button>
@@ -609,6 +614,7 @@ const TravelPageContent: React.FC = () => {
                   color: locationTypeFilter === 'countries' ? 'white' : colors.text.primary,
                   borderColor: colors.border.medium,
                 }}
+                aria-label="Filter by countries"
               >
                 Countries
               </button>
@@ -624,6 +630,7 @@ const TravelPageContent: React.FC = () => {
                   color: locationTypeFilter === 'states' ? 'white' : colors.text.primary,
                   borderColor: colors.border.medium,
                 }}
+                aria-label="Filter by US states"
               >
                 States
               </button>
@@ -639,6 +646,7 @@ const TravelPageContent: React.FC = () => {
                   color: locationTypeFilter === 'parks' ? 'white' : colors.text.primary,
                   borderColor: colors.border.medium,
                 }}
+                aria-label="Filter by national parks"
               >
                 Parks
               </button>
@@ -654,6 +662,7 @@ const TravelPageContent: React.FC = () => {
                   color: locationTypeFilter === 'islands' ? 'white' : colors.text.primary,
                   borderColor: colors.border.medium,
                 }}
+                aria-label="Filter by islands"
               >
                 Islands
               </button>
@@ -751,6 +760,7 @@ const TravelPageContent: React.FC = () => {
               style={{
                 background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
               }}
+              aria-label="Add new trip"
             >
               <Plus className="h-5 w-5" />
               Add Trip
@@ -773,6 +783,7 @@ const TravelPageContent: React.FC = () => {
                 style={{
                   background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
                 }}
+                aria-label="Plan your first trip"
               >
                 <Plus className="h-5 w-5" />
                 Plan Your First Trip

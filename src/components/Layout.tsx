@@ -22,6 +22,7 @@ import {
   Utensils,
   Plane,
   Heart,
+  CheckCircle,
 } from 'lucide-react';
 import { useComposedStore } from '../stores/useComposedStore';
 import { useToast } from '../hooks/useToast';
@@ -41,7 +42,7 @@ const navigation = [
   { name: 'AI Assistant', icon: MessageCircle, view: 'assistant' as const, path: '/assistant', section: 'main' },
   { name: 'Calendar', icon: Calendar, view: 'calendar' as const, path: '/calendar', section: 'main' },
   { name: 'Focus', icon: Timer, view: 'focus' as const, path: '/focus', section: 'main' },
-  { name: 'Habits', icon: Target, view: 'habits' as const, path: '/habits', section: 'productivity' },
+  { name: 'Habits', icon: CheckCircle, view: 'habits' as const, path: '/habits', section: 'productivity' },
   { name: 'Tasks', icon: Target, view: 'todos' as const, path: '/todos', section: 'productivity' },
   { name: 'Notes', icon: FileText, view: 'notes' as const, path: '/notes', section: 'productivity' },
   // { name: 'Projects', icon: FolderOpen, view: 'projects' as const, path: '/projects', section: 'productivity' },
