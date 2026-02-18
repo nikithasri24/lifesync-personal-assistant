@@ -13,10 +13,12 @@ import { WelcomeBonusTracker } from '../components/creditCards/WelcomeBonusTrack
 import { UtilizationDashboard } from '../components/creditCards/UtilizationDashboard';
 import { useAuth } from '@/hooks/useAuth';
 import { OwnerBadge } from '../../components/common/OwnerBadge';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 type TabType = 'cards' | 'bonuses' | 'utilization';
 
 const CreditCardsPage: React.FC = () => {
+  const colors = useThemeColors();
   const [selectedCard, setSelectedCard] = useState<Account | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('cards');
 
@@ -43,18 +45,29 @@ const CreditCardsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-2" />
+              <p className="text-sm text-primary opacity-60">Loading credit cards...</p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-500 mb-2">Error loading credit cards</p>
-          <p className="text-sm text-primary opacity-60">{error.message}</p>
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <p className="text-red-500 mb-2">Error loading credit cards</p>
+              <p className="text-sm text-primary opacity-60">{error.message}</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -67,11 +80,18 @@ const CreditCardsPage: React.FC = () => {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-primary">Credit Cards</h1>
-      </div>
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">💳</span>
+            Credit Cards
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
+            Track balances, rewards, and credit utilization
+          </p>
+        </div>
 
       {/* Tabs */}
       <div className="flex border-b border-primary/10 mb-6">
@@ -155,13 +175,14 @@ const CreditCardsPage: React.FC = () => {
       {activeTab === 'bonuses' && <WelcomeBonusTracker />}
       {activeTab === 'utilization' && <UtilizationDashboard />}
 
-      {/* Detailed View Modal */}
-      {selectedCard && (
-        <CreditCardDetailsModal
-          card={selectedCard}
-          onClose={() => setSelectedCard(null)}
-        />
-      )}
+        {/* Detailed View Modal */}
+        {selectedCard && (
+          <CreditCardDetailsModal
+            card={selectedCard}
+            onClose={() => setSelectedCard(null)}
+          />
+        )}
+      </div>
     </div>
   );
 };

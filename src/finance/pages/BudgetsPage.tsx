@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { logger } from '@/services/logger';
 import {
@@ -17,11 +17,11 @@ import {
 } from '@/hooks/useFinanceQuery';
 import { currentMonth, monthRange } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
-import { OwnerBadge } from '../../components/common/OwnerBadge';
 import { OwnerFilter } from '../components/OwnerFilter';
-import BudgetEditor from '../components/budgets/BudgetEditor';
+import { BudgetCardV2, BudgetFormModalV2, type BudgetFormData } from '@/finance/components/v2';
 import useFinanceFilters from '../store/useFinanceFilters';
-import type { Budget, Category, Transaction } from '../types';
+import type { Budget, Transaction } from '../types';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 const BudgetsPage: React.FC = () => {
   const [month, setMonth] = React.useState(currentMonth());
@@ -206,21 +206,33 @@ const BudgetsPage: React.FC = () => {
     return Array.from(months).sort().reverse();
   }, [transactions]);
 
+  const colors = useThemeColors();
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">📊 Budgets</h1>
-        <div className="flex items-center gap-3">
-          {/* Owner Filter - only show in merged mode */}
-          {mergedConnection && (
-            <OwnerFilter
-              value={filters.ownerFilter}
-              onChange={filters.setOwnerFilter}
-              partnerName={partnerName}
-            />
-          )}
-          <select
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">📊</span>
+            Budgets
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
+            Track spending against your monthly budgets
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            {/* Owner Filter - only show in merged mode */}
+            {mergedConnection && (
+              <OwnerFilter
+                value={filters.ownerFilter}
+                onChange={filters.setOwnerFilter}
+                partnerName={partnerName}
+              />
+            )}
+            <select
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
@@ -237,10 +249,10 @@ const BudgetsPage: React.FC = () => {
             <Plus size={16} />
             Add Budget
           </button>
+          </div>
         </div>
-      </div>
 
-      {loading ? (
+        {loading ? (
         <div className="text-center py-12 text-slate-500">Loading budgets...</div>
       ) : (
         <div className="space-y-8">
@@ -636,18 +648,29 @@ const BudgetsPage: React.FC = () => {
             </div>
           )}
         </div>
-      )}
+        )}
 
-      {/* Budget Editor Modal */}
-      <BudgetEditor
-        isOpen={editorOpen}
-        onClose={handleCloseEditor}
-        onSave={handleSaveBudget}
-        onDelete={handleDeleteBudget}
-        budget={editingBudget}
-        month={month}
-        categories={categories}
-      />
+        {/* Budget Editor Modal */}
+        <BudgetFormModalV2
+          isOpen={editorOpen}
+          onClose={handleCloseEditor}
+          onSave={async (formData: BudgetFormData) => {
+            await handleSaveBudget({
+              categoryId: formData.categoryId,
+              limit: formData.limitAmount,
+              userId: user?.id,
+            });
+          }}
+          initialData={editingBudget ? {
+            categoryId: editingBudget.categoryId,
+            limitAmount: editingBudget.limit,
+            monthYear: editingBudget.month,
+            notes: editingBudget.notes,
+            rollover: editingBudget.rollover,
+          } : undefined}
+          isPending={upsertBudget.isPending}
+        />
+      </div>
     </div>
   );
 };
