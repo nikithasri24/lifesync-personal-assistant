@@ -69,7 +69,11 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
 
   const isReceived = message.status === 'revealed';
   const isDraft = message.status === 'draft' || message.status === 'scheduled';
-  const sentDate = message.sent_at ? formatDateLong(message.sent_at.split('T')[0]) : 'Draft';
+  const sentDate = isReceived && message.revealed_at
+    ? formatDateLong(message.revealed_at.split('T')[0])
+    : message.sent_at
+    ? formatDateLong(message.sent_at.split('T')[0])
+    : 'Draft';
 
   const getRevealTriggerText = () => {
     switch (message.reveal_trigger) {

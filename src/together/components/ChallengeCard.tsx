@@ -30,7 +30,8 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
     ? Math.min((challenge.current_progress / challenge.target_value) * 100, 100)
     : 0;
 
-  const isCompleted = challenge.status === 'completed';
+  // Consider challenge completed if status is 'completed' OR progress reached 100%
+  const isCompleted = challenge.status === 'completed' || progress >= 100;
   const isExpired = challenge.status === 'expired';
 
   const getRewardIcon = () => {

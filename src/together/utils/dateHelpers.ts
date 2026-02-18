@@ -56,6 +56,10 @@ export function getNextOccurrence(dateString: string, recurring: boolean): strin
     date.getDate()
   );
 
+  // Normalize both dates to midnight for accurate comparison
+  thisYearDate.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
   // If this year's occurrence has passed, return next year
   if (thisYearDate < today) {
     const nextYear = new Date(

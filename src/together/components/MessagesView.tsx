@@ -275,54 +275,59 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
             </div>
           )}
 
-          {/* Delivered Messages */}
+          {/* Revealed Messages (Sent or Received) */}
           {revealed.length > 0 && (
             <div>
               <h3 className="text-lg font-bold mb-3" style={{ color: colors.text.primary }}>
-                Delivered Messages
+                {currentUserId && revealed.some(m => m.sender_id !== currentUserId)
+                  ? 'Received Messages'
+                  : 'Sent Messages'}
               </h3>
               <div className="space-y-3">
-                {revealed.map((message) => (
-                  <div
-                    key={message.id}
-                    className="p-5 rounded-xl border hover:shadow-md transition-shadow cursor-pointer"
-                    style={{
-                      backgroundColor: colors.bg.white,
-                      borderColor: colors.border.light,
-                    }}
-                    onClick={() => handleViewMessage(message)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
-                          ❤️ {message.title}
-                        </h4>
-                        {mergedConnection && currentUserId && (
-                          <OwnerBadge
-                            userId={message.sender_id}
-                            currentUserId={currentUserId}
-                            partnerName={partnerName}
-                            size="sm"
-                          />
-                        )}
+                {revealed.map((message) => {
+                  const isReceiver = currentUserId && message.sender_id !== currentUserId;
+                  return (
+                    <div
+                      key={message.id}
+                      className="p-5 rounded-xl border hover:shadow-md transition-shadow cursor-pointer"
+                      style={{
+                        backgroundColor: colors.bg.white,
+                        borderColor: colors.border.light,
+                      }}
+                      onClick={() => handleViewMessage(message)}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
+                            ❤️ {message.title}
+                          </h4>
+                          {mergedConnection && currentUserId && (
+                            <OwnerBadge
+                              userId={message.sender_id}
+                              currentUserId={currentUserId}
+                              partnerName={partnerName}
+                              size="sm"
+                            />
+                          )}
+                        </div>
+                        {getStatusBadge(message)}
                       </div>
-                      {getStatusBadge(message)}
+                      <p className="text-sm mb-2" style={{ color: colors.text.secondary }}>
+                        {isReceiver ? 'Received' : 'Delivered'}: {message.revealed_at ? formatDateLong(message.revealed_at.split('T')[0]) : 'Unknown'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="text-sm underline"
+                          style={{ color: '#D4A574' }}
+                          aria-label="Read message again"
+                        >
+                          Read Again
+                        </button>
+                        <Star className="w-4 h-4" style={{ color: '#FFD700' }} />
+                      </div>
                     </div>
-                    <p className="text-sm mb-2" style={{ color: colors.text.secondary }}>
-                      Delivered: {message.revealed_at ? formatDateLong(message.revealed_at.split('T')[0]) : 'Unknown'}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="text-sm underline"
-                        style={{ color: '#D4A574' }}
-                        aria-label="Read message again"
-                      >
-                        Read Again
-                      </button>
-                      <Star className="w-4 h-4" style={{ color: '#FFD700' }} />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
