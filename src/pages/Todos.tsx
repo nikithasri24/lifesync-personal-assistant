@@ -133,7 +133,6 @@ const TodosContent: React.FC = () => {
   // Modal State
   // ============================================================================
   const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [quickAddText, setQuickAddText] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
@@ -174,34 +173,6 @@ const TodosContent: React.FC = () => {
   // ============================================================================
   // Task Handlers
   // ============================================================================
-
-  const handleQuickAddSubmit = useCallback(() => {
-    if (!quickAddText.trim()) return;
-
-    // Set due date based on current view
-    const today = new Date().toISOString().split('T')[0];
-    const dueDate = activeView === 'today' ? today : null;
-
-    createTaskMutation.mutate(
-      {
-        title: quickAddText.trim(),
-        status: 'todo',
-        priority: 'medium',
-        category: 'personal',
-        due_date: dueDate,
-      } as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>,
-      {
-        onSuccess: () => {
-          showToast('Task created successfully! ✅', 'success');
-          setShowQuickAdd(false);
-          setQuickAddText('');
-        },
-        onError: (error) => {
-          showToast(`Failed to create task: ${error.message}`, 'error');
-        },
-      }
-    );
-  }, [quickAddText, activeView, createTaskMutation, showToast]);
 
   const handleTaskClick = useCallback((taskId: string) => {
     setEditingTaskId(taskId);
@@ -498,15 +469,27 @@ const TodosContent: React.FC = () => {
         {/* Quick Add Modal */}
         <QuickAddModalV2
           isOpen={showQuickAdd}
-          value={quickAddText}
-          onChange={setQuickAddText}
-          onClose={() => {
-            setShowQuickAdd(false);
-            setQuickAddText('');
+          onClose={() => setShowQuickAdd(false)}
+          onSubmit={(text) => {
+            // Set due date based on current view
+            const today = new Date().toISOString().split('T')[0];
+            const dueDate = activeView === 'today' ? today : null;
+
+            void createTaskMutation.mutateAsync(
+              {
+                title: text.trim(),
+                status: 'todo',
+                priority: 'medium',
+                category: 'personal',
+                due_date: dueDate,
+              } as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>
+            ).then(() => {
+              showToast('Task created successfully! ✅', 'success');
+            }).catch((error) => {
+              showToast(`Failed to create task: ${error.message}`, 'error');
+            });
           }}
-          onSubmit={handleQuickAddSubmit}
-          isLoading={createTaskMutation.isPending}
-          isError={createTaskMutation.isError}
+          isPending={createTaskMutation.isPending}
         />
 
         {/* Full Edit Modal */}
