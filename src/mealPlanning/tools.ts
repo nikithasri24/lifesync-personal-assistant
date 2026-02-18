@@ -184,7 +184,8 @@ async function executeSuggestMeal(
       message: `Based on your pantry, I suggest these ${mealType} options: ${finalSuggestions.join(', ')}`
     };
   } catch (error) {
-    logger.error('MealTools', 'Operation failed', { error,
+    logger.error('MealTools', error as Error, {
+      context: 'Operation failed',
       operation: 'suggest_meal',
       args
     });
@@ -247,7 +248,8 @@ async function executeGetRecipes(
       message: `You have ${recipes.length} recipe${recipes.length !== 1 ? 's' : ''}${category ? ` in ${category}` : ''}`
     };
   } catch (error) {
-    logger.error('MealTools', 'Operation failed', { error,
+    logger.error('MealTools', error as Error, {
+      context: 'Operation failed',
       operation: 'get_recipes',
       args
     });
@@ -314,7 +316,8 @@ async function executeAddRecipe(
       }
     };
   } catch (error) {
-    logger.error('MealTools', 'Operation failed', { error,
+    logger.error('MealTools', error as Error, {
+      context: 'Operation failed',
       operation: 'add_recipe',
       args
     });

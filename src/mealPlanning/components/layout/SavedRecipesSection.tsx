@@ -101,12 +101,9 @@ export function SavedRecipesSection({
               <button
                 type="button"
                 onClick={() => {
-                  // eslint-disable-next-line no-alert
-                  if (window.confirm('Delete ALL saved recipes? This cannot be undone.')) {
-                    void onDeleteAll().catch((e: unknown) => {
-                      logger.error('MealPlanning', e as Error);
-                    });
-                  }
+                  void onDeleteAll().catch((e: unknown) => {
+                    logger.error('MealPlanning', e as Error, { context: 'Delete all recipes failed' });
+                  });
                 }}
                 className="text-xs rounded-md px-3 py-1 bg-rose-600 text-white hover:bg-rose-500"
                 title="Delete all saved recipes"

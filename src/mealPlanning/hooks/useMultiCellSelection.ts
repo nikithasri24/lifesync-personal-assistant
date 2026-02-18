@@ -162,12 +162,6 @@ export function useMultiCellSelection(
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete ${mealsToDelete.length} meal${mealsToDelete.length > 1 ? 's' : ''} from ${selectedCells.size} selected cell${selectedCells.size > 1 ? 's' : ''}?`
-    );
-
-    if (!confirmed) return;
-
     try {
       // Optimistically update the UI
       queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
