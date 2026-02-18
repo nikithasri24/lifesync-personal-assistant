@@ -108,21 +108,20 @@ export default function AssistantV2() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <AssistantHeaderV2 onNewChat={handleNewChat} />
+    <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh' }}>
+      {/* Centered container like Together module */}
+      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        {/* Header */}
+        <AssistantHeaderV2 onNewChat={handleNewChat} />
 
-      {/* Messages Area - Full width with specific background */}
-      <div
-        className="flex-1 overflow-y-auto px-4 py-4 pb-32"
-        style={{ backgroundColor: '#F9FAFB' }}
-      >
-        {/* Centered container for messages on desktop */}
-        <div className="max-w-2xl mx-auto">
-          <div className="flex flex-col gap-3">
-            {/* Empty State */}
+        {/* Messages Area - Centered content */}
+        <div className="px-6 py-4 pb-32" style={{ minHeight: 'calc(100vh - 60px)' }}>
+          <div className="flex flex-col gap-3" style={{ minHeight: messages.length === 0 ? 'calc(100vh - 200px)' : 'auto' }}>
+            {/* Empty State - Vertically centered */}
             {messages.length === 0 && !isThinking && (
-              <EmptyConversationStateV2 onSuggestionClick={handleSuggestionClick} />
+              <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 200px)' }}>
+                <EmptyConversationStateV2 onSuggestionClick={handleSuggestionClick} />
+              </div>
             )}
 
             {/* Timestamp (show at start if messages exist) */}
@@ -153,16 +152,16 @@ export default function AssistantV2() {
             <div ref={messagesEndRef} />
           </div>
         </div>
-      </div>
 
-      {/* Fixed Input Area - positioned above tab bar on mobile, accounts for sidebar on desktop */}
-      <div className="fixed bottom-16 lg:bottom-0 left-0 lg:left-80 right-0 z-10">
-        <div className="max-w-2xl mx-auto">
-          <ConversationInputV2
-            onSendMessage={handleSendMessage}
-            disabled={isThinking || sendMessage.isPending}
-            placeholder="Ask me anything..."
-          />
+        {/* Fixed Input Area - positioned above tab bar on mobile, accounts for sidebar on desktop */}
+        <div className="fixed bottom-16 lg:bottom-0 left-0 lg:left-80 right-0 z-10">
+          <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem' }}>
+            <ConversationInputV2
+              onSendMessage={handleSendMessage}
+              disabled={isThinking || sendMessage.isPending}
+              placeholder="Ask me anything..."
+            />
+          </div>
         </div>
       </div>
     </div>
