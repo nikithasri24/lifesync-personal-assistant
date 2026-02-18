@@ -19,6 +19,8 @@ import { CalendarView } from '../components/CalendarView';
 import CategoryFormModal from '../components/CategoryFormModal';
 import ItemFormModal from '../components/ItemFormModal';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { useToast } from '@/hooks/useToast';
+import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
 import { ProductCardV2, ProductFormModalV2, CategoryCardV2 } from '../components/v2';
 import {
   useSkincareProducts,
@@ -39,8 +41,9 @@ import type { PersonalCareCategory, PersonalCareItem, PersonalCareCategoryInput,
 
 type ViewType = 'routine' | 'schedule' | 'products' | 'setup';
 
-const SelfCarePage: React.FC = () => {
+const SelfCareContent: React.FC = () => {
   const colors = useThemeColors();
+  const { showToast } = useToast();
   const [view, setView] = React.useState<ViewType>('routine');
   const [isInitialized, setIsInitialized] = React.useState(false);
 
@@ -113,23 +116,27 @@ const SelfCarePage: React.FC = () => {
           id: editingProduct.id,
           updates: productData,
         });
+        showToast('Product updated successfully! ✨', 'success');
       } else {
         await createProductMutation.mutateAsync(productData);
+        showToast('Product added successfully! ✨', 'success');
       }
       setShowProductModal(false);
       setEditingProduct(undefined);
     } catch (error) {
-      logger.error('Skincare', 'Error saving product', { error });
-      alert('Failed to save product. Please try again.');
+      logger.error('Skincare', error as Error, { context: 'Error saving product' });
+      showToast('Failed to save product. Please try again.', 'error');
     }
   };
 
   const handleDeleteProduct = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+    // Note: Confirmation should be handled in the modal/component, not here
     try {
       await deleteProductMutation.mutateAsync(id);
+      showToast('Product deleted successfully! 🗑️', 'success');
     } catch (error) {
-      logger.error('Skincare', 'Error deleting product', { error });
+      logger.error('Skincare', error as Error, { context: 'Error deleting product' });
+      showToast('Failed to delete product. Please try again.', 'error');
     }
   };
 
@@ -138,9 +145,10 @@ const SelfCarePage: React.FC = () => {
     try {
       await createCategoryMutation.mutateAsync(categoryData);
       setShowCategoryModal(false);
+      showToast('Category created successfully! 🎉', 'success');
     } catch (error) {
-      logger.error('Skincare', 'Error creating category', { error });
-      alert('Failed to create category. Please try again.');
+      logger.error('Skincare', error as Error, { context: 'Error creating category' });
+      showToast('Failed to create category. Please try again.', 'error');
     }
   };
 
@@ -151,15 +159,17 @@ const SelfCarePage: React.FC = () => {
           id: editingItem.id,
           updates: itemData,
         });
+        showToast('Item updated successfully! ✨', 'success');
       } else {
         await createItemMutation.mutateAsync(itemData);
+        showToast('Item added successfully! ✨', 'success');
       }
       setShowItemModal(false);
       setSelectedCategoryForItem(null);
       setEditingItem(undefined);
     } catch (error) {
-      logger.error('Skincare', 'Error saving item', { error });
-      alert('Failed to save item. Please try again.');
+      logger.error('Skincare', error as Error, { context: 'Error saving item' });
+      showToast('Failed to save item. Please try again.', 'error');
     }
   };
 
@@ -170,7 +180,8 @@ const SelfCarePage: React.FC = () => {
         updates: { isActive: !item.isActive },
       });
     } catch (error) {
-      logger.error('Skincare', 'Error toggling item', { error });
+      logger.error('Skincare', error as Error, { context: 'Error toggling item' });
+      showToast('Failed to toggle item. Please try again.', 'error');
     }
   };
 
@@ -193,22 +204,73 @@ const SelfCarePage: React.FC = () => {
     { value: 'setup', label: '⚙️ Setup' },
   ];
 
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          {/* Header */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              padding: '60px 1.5rem 20px',
+              color: 'white',
+              marginLeft: '-1.5rem',
+              marginRight: '-1.5rem',
+              marginTop: '-1.5rem',
+              marginBottom: '16px',
+              borderRadius: '0 0 16px 16px',
+            }}
+          >
+            <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>✨</h1>
+            <div style={{ fontSize: '14px', opacity: 0.9 }}>
+              Skincare routines, products & personal care
+            </div>
+          </div>
+
+          {/* View Toggle Skeleton */}
+          <div
+            className="h-12 rounded-xl mb-4 animate-pulse"
+            style={{ backgroundColor: colors.border.medium }}
+          />
+
+          {/* Content Skeleton */}
+          <div className="space-y-4 animate-pulse">
+            <div className="h-10 rounded-xl" style={{ backgroundColor: colors.border.medium }} />
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="h-32 rounded-xl"
+                  style={{ backgroundColor: colors.border.medium }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
-      {/* All content centered with max width */}
-      <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
+      {/* All content centered with max width - CLAUDE.md pattern */}
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
         {/* Header with Terracotta Gradient */}
         <div
           style={{
             background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
             padding: '60px 1.5rem 20px',
             color: 'white',
+            marginLeft: '-1.5rem',
+            marginRight: '-1.5rem',
+            marginTop: '-1.5rem',
             marginBottom: '16px',
             borderRadius: '0 0 16px 16px',
           }}
         >
           <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-            ✨ Self Care
+            ✨
           </h1>
           <div style={{ fontSize: '14px', opacity: 0.9 }}>
             Skincare routines, products & personal care
@@ -262,6 +324,7 @@ const SelfCarePage: React.FC = () => {
               color: 'white',
               cursor: 'pointer',
             }}
+            aria-label="Add product"
           >
             + Add Product
           </button>
@@ -316,6 +379,7 @@ const SelfCarePage: React.FC = () => {
               color: 'white',
               cursor: 'pointer',
             }}
+            aria-label="Add category"
           >
             + Add Category
           </button>
@@ -400,6 +464,15 @@ const SelfCarePage: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+// Wrap with error boundary for graceful error handling
+const SelfCarePage: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="Self Care">
+      <SelfCareContent />
+    </FeatureErrorBoundary>
   );
 };
 

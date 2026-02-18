@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface ProductCardV2Props {
   id: string;
@@ -25,6 +26,8 @@ export const ProductCardV2: React.FC<ProductCardV2Props> = ({
   useFrequency,
   onClick,
 }) => {
+  const colors = useThemeColors();
+
   const renderStars = () => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -33,7 +36,7 @@ export const ProductCardV2: React.FC<ProductCardV2Props> = ({
           key={i}
           style={{
             fontSize: '14px',
-            color: i <= rating ? '#D4A574' : '#E8DCC8',
+            color: i <= rating ? colors.accent.start : colors.border.light,
           }}
         >
           ★
@@ -48,7 +51,7 @@ export const ProductCardV2: React.FC<ProductCardV2Props> = ({
       onClick={onClick}
       className="cursor-pointer transition-all hover:shadow-lg"
       style={{
-        background: 'white',
+        background: colors.bg.white,
         borderRadius: '12px',
         padding: '16px',
         boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
@@ -62,11 +65,11 @@ export const ProductCardV2: React.FC<ProductCardV2Props> = ({
           top: '12px',
           right: '12px',
           padding: '4px 8px',
-          background: '#E8DCC8',
+          background: colors.bg.secondary,
           borderRadius: '8px',
           fontSize: '10px',
           fontWeight: '700',
-          color: '#6B5847',
+          color: colors.text.secondary,
           textTransform: 'uppercase',
         }}
       >
@@ -78,7 +81,7 @@ export const ProductCardV2: React.FC<ProductCardV2Props> = ({
         style={{
           fontSize: '14px',
           fontWeight: '700',
-          color: '#5C4A3A',
+          color: colors.text.primary,
           marginBottom: '4px',
           paddingRight: '60px',
         }}
@@ -90,7 +93,7 @@ export const ProductCardV2: React.FC<ProductCardV2Props> = ({
       <div
         style={{
           fontSize: '12px',
-          color: '#9B8B7A',
+          color: colors.text.tertiary,
           marginBottom: '8px',
         }}
       >
@@ -102,7 +105,7 @@ export const ProductCardV2: React.FC<ProductCardV2Props> = ({
         <div
           style={{
             fontSize: '11px',
-            color: '#6B5847',
+            color: colors.text.secondary,
             marginBottom: '8px',
           }}
         >
