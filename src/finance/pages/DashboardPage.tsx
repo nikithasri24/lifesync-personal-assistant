@@ -20,8 +20,10 @@ import { OwnerBadge } from '../../components/common/OwnerBadge';
 import { SplitMetricCard } from '../components/SplitMetricCard';
 import { OwnerFilter } from '../components/OwnerFilter';
 import useFinanceFilters from '../store/useFinanceFilters';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 const DashboardPage: React.FC = () => {
+  const colors = useThemeColors();
   const [month, setMonth] = React.useState(currentMonth());
   const [showAccountModal, setShowAccountModal] = React.useState(false);
   const [editingAccount, setEditingAccount] = React.useState<Account | undefined>(undefined);
@@ -267,18 +269,30 @@ const DashboardPage: React.FC = () => {
 
 
   return (
-    <>
-      <div className="space-y-6">
-        {/* Owner Filter - only show in merged mode */}
-        {mergedConnection && (
-          <div className="flex justify-end">
-            <OwnerFilter
-              value={filters.ownerFilter}
-              onChange={filters.setOwnerFilter}
-              partnerName={partnerName}
-            />
-          </div>
-        )}
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">🏠</span>
+            Dashboard
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
+            Overview of your financial health and activity
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {/* Owner Filter - only show in merged mode */}
+          {mergedConnection && (
+            <div className="flex justify-end">
+              <OwnerFilter
+                value={filters.ownerFilter}
+                onChange={filters.setOwnerFilter}
+                partnerName={partnerName}
+              />
+            </div>
+          )}
 
         {/* Metrics Section - Adapts to Owner Filter in Merged Mode */}
         {mergedConnection && user && (
@@ -572,23 +586,24 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
       </Card>
+          </div>
         </div>
-      </div>
 
-      {/* Account Modal */}
-      {showAccountModal && (
-        <AccountModal
-          account={editingAccount}
-          onClose={() => {
-            setShowAccountModal(false);
-            setEditingAccount(undefined);
-          }}
-          onSuccess={() => {
-            void refetchAccounts();
-          }}
-        />
-      )}
-    </>
+        {/* Account Modal */}
+        {showAccountModal && (
+          <AccountModal
+            account={editingAccount}
+            onClose={() => {
+              setShowAccountModal(false);
+              setEditingAccount(undefined);
+            }}
+            onSuccess={() => {
+              void refetchAccounts();
+            }}
+          />
+        )}
+      </div>
+    </div>
   );
 };
 
