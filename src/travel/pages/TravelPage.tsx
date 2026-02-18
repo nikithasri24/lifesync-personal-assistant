@@ -384,49 +384,28 @@ const TravelPageContent: React.FC = () => {
   if (loading) {
     return (
       <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
-        {/* All content centered with max width */}
-        <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
-          {/* Header with Terracotta Gradient */}
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-              padding: '60px 1.5rem 20px',
-              color: 'white',
-              marginBottom: '16px',
-              borderRadius: '0 0 16px 16px',
-            }}
-          >
-            <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-              ✈️ Travel
-            </h1>
-            <div style={{ fontSize: '14px', opacity: 0.9 }}>
-              Track your adventures worldwide
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <div className="space-y-6">
+            {/* Stats Bar Skeleton */}
+            <div className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+
+            {/* Location Cards Skeleton */}
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />
+              ))}
             </div>
-          </div>
 
-          <div style={{ padding: '0 1.5rem' }}>
-            <div className="space-y-6">
-              {/* Stats Bar Skeleton */}
-              <div className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+            {/* Map Skeleton */}
+            <div className="h-96 bg-gray-200 rounded-xl animate-pulse" />
 
-              {/* Location Cards Skeleton */}
-              <div className="grid grid-cols-2 gap-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />
+            {/* Trips Skeleton */}
+            <div className="space-y-4">
+              <div className="h-8 bg-gray-200 rounded-xl animate-pulse" style={{ maxWidth: '200px' }} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-48 bg-gray-200 rounded-xl animate-pulse" />
                 ))}
-              </div>
-
-              {/* Map Skeleton */}
-              <div className="h-96 bg-gray-200 rounded-xl animate-pulse" />
-
-              {/* Trips Skeleton */}
-              <div className="space-y-4">
-                <div className="h-8 bg-gray-200 rounded-xl animate-pulse" style={{ maxWidth: '200px' }} />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-48 bg-gray-200 rounded-xl animate-pulse" />
-                  ))}
-                </div>
               </div>
             </div>
           </div>
@@ -437,29 +416,10 @@ const TravelPageContent: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
-      {/* All content centered with max width */}
-      <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
-        {/* Header with Terracotta Gradient */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-            padding: '60px 1.5rem 20px',
-            color: 'white',
-            marginBottom: '16px',
-            borderRadius: '0 0 16px 16px',
-          }}
-        >
-          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-            ✈️ Travel
-          </h1>
-          <div style={{ fontSize: '14px', opacity: 0.9 }}>
-            Track your adventures worldwide
-          </div>
-        </div>
-
-        <div style={{ padding: '0 1.5rem' }}>
-          {/* Category Filter Tabs */}
-          <div className="mb-6 p-1 rounded-xl flex gap-1" style={{ backgroundColor: colors.bg.secondary }}>
+      {/* Centered container following CLAUDE.md pattern */}
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Category Filter Tabs */}
+        <div className="mb-6 p-1 rounded-xl flex gap-1" style={{ backgroundColor: colors.bg.secondary }}>
           <div className="flex space-x-1 overflow-x-auto w-full">
             <button
               onClick={() => setCategoryFilter('all')}
@@ -808,7 +768,6 @@ const TravelPageContent: React.FC = () => {
             partnerId={partnerId}
           />
           </div>
-        </div>
         </div>
       </div>
 

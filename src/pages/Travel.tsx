@@ -24,66 +24,72 @@ const Travel: React.FC = () => {
         style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}
         data-testid="travel-container"
       >
-        {/* Header with Terracotta Gradient */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-            padding: '60px 20px 20px',
-            color: 'white',
-            marginBottom: '16px',
-          }}
-        >
-          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-            🗺️ Travel
-          </h1>
-          <div style={{ fontSize: '14px', opacity: 0.9 }}>
-            Track your adventures worldwide
-          </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div
-          style={{
-            background: 'rgba(92, 74, 58, 0.1)',
-            borderRadius: '12px',
-            padding: '4px',
-            margin: '16px 20px',
-          }}
-        >
-          <SegmentedControl
-            segments={[
-              { value: 'map', label: 'Map' },
-              { value: 'visa', label: 'Visa' },
-              { value: 'bucketlist', label: 'Bucket List' },
-            ]}
-            value={activeTab}
-            onChange={(value) => setActiveTab(value as TravelTabView)}
-          />
-        </div>
-
-        {/* Tab Content */}
-        <div className="pb-6">
-          <React.Suspense
-            fallback={
-              <div className="text-center py-12" style={{ color: colors.text.tertiary }}>
-                Loading...
-              </div>
-            }
+        {/* All content centered with max width */}
+        <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
+          {/* Header with Terracotta Gradient */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              padding: '60px 1.5rem 20px',
+              color: 'white',
+              marginBottom: '16px',
+              borderRadius: '0 0 16px 16px',
+            }}
           >
-            {activeTab === 'map' && <TravelMapPage />}
-            {activeTab === 'visa' && <VisaPage />}
-            {activeTab === 'bucketlist' && (
-              <div className="px-6 py-12 text-center">
-                <div className="text-6xl mb-4">🗺️</div>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
-                  Bucket List Coming Soon
-                </h3>
-                <p className="text-sm" style={{ color: colors.text.tertiary }}>
-                  Create and track your dream destinations
-                </p>
-              </div>
-            )}
-          </React.Suspense>
+            <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
+              ✈️ Travel
+            </h1>
+            <div style={{ fontSize: '14px', opacity: 0.9 }}>
+              Track your adventures worldwide
+            </div>
+          </div>
+
+          <div style={{ padding: '0 1.5rem' }}>
+            {/* Tab Navigation */}
+            <div
+              style={{
+                background: 'rgba(92, 74, 58, 0.1)',
+                borderRadius: '12px',
+                padding: '4px',
+                marginBottom: '16px',
+              }}
+            >
+              <SegmentedControl
+                segments={[
+                  { value: 'map', label: 'Map' },
+                  { value: 'visa', label: 'Visa' },
+                  { value: 'bucketlist', label: 'Bucket List' },
+                ]}
+                value={activeTab}
+                onChange={(value) => setActiveTab(value as TravelTabView)}
+              />
+            </div>
+
+            {/* Tab Content */}
+            <div>
+              <React.Suspense
+                fallback={
+                  <div className="text-center py-12" style={{ color: colors.text.tertiary }}>
+                    Loading...
+                  </div>
+                }
+              >
+                {activeTab === 'map' && <TravelMapPage />}
+                {activeTab === 'visa' && <VisaPage />}
+                {activeTab === 'bucketlist' && (
+                  <div className="py-12 text-center">
+                    <div className="text-6xl mb-4">🗺️</div>
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
+                      Bucket List Coming Soon
+                    </h3>
+                    <p className="text-sm" style={{ color: colors.text.tertiary }}>
+                      Create and track your dream destinations
+                    </p>
+                  </div>
+                )}
+              </React.Suspense>
+            </div>
+          </div>
         </div>
       </div>
     </FeatureErrorBoundary>
