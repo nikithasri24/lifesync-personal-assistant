@@ -2,9 +2,9 @@
 
 ## Session Summary
 
-Successfully migrated **24 modals** to FormModalV2!
+Successfully migrated **25 modals** to FormModalV2!
 
-**Total Impact:** 2,435 lines eliminated (30% average reduction)
+**Total Impact:** 2,639 lines eliminated (31% average reduction)
 
 ---
 
@@ -185,15 +185,31 @@ Successfully migrated **24 modals** to FormModalV2!
 - **Special Features:** 9-option category grid, 4-option priority grid, dynamic list management with Enter key support
 - **Commit:** `feat: Migrate BucketListFormModalV2 to use FormModalV2`
 
+### 24. AccountFormModalV2 (Finance)
+- **Before:** 313 lines
+- **After:** 235 lines
+- **Reduction:** 78 lines (25%)
+- **Form Fields:** 6 fields (name, type, balance, creditLimit, apr, notes)
+- **Special Features:** 9 account type options with emoji, conditional credit card fields based on type === 'credit'
+- **Commit:** `feat: Migrate AccountFormModalV2 to use FormModalV2`
+
+### 25. TransactionFormModalV2 (Finance)
+- **Before:** 366 lines
+- **After:** 240 lines
+- **Reduction:** 126 lines (34%)
+- **Form Fields:** 8 fields (date, description, type, amount, accountId, categoryId, merchantName, notes)
+- **Special Features:** Radio button type selector (debit/credit), ISO date formatting, external props for accounts/categories
+- **Commit:** `feat: Migrate TransactionFormModalV2 to use FormModalV2`
+
 ---
 
 ## 📊 Cumulative Impact
 
 | Metric | Before | After | Savings |
 |--------|--------|-------|---------|
-| **Total Lines** | 8,030 | 5,595 | 2,435 (30%) |
-| **Average per Modal** | 349 | 243 | 106 (30%) |
-| **Boilerplate Eliminated** | ~2,700 lines | 0 | 2,700 (100%) |
+| **Total Lines** | 8,709 | 6,070 | 2,639 (31%) |
+| **Average per Modal** | 348 | 243 | 105 (31%) |
+| **Boilerplate Eliminated** | ~2,900 lines | 0 | 2,900 (100%) |
 
 ---
 
@@ -269,14 +285,19 @@ Per modal, we consistently eliminated:
 ### Nutrition Modals - ✅ ALL COMPLETE (1/1)
 - [x] FoodLogModalV2 (329 lines) ✅ COMPLETE
 
-### Travel Modals - 🔄 IN PROGRESS (2/3+)
+### Travel Modals - ✅ ALL COMPLETE (2/2)
 - [x] TripFormModalV2 (326 lines) ✅ COMPLETE
 - [x] BucketListFormModalV2 (471 lines) ✅ COMPLETE
-- [ ] VisaFormModalV2
-- [ ] Other Travel modals
+
+### Finance Modals - 🔄 IN PROGRESS (2/5+)
+- [x] AccountFormModalV2 (313 lines) ✅ COMPLETE
+- [x] TransactionFormModalV2 (366 lines) ✅ COMPLETE
+- [ ] BudgetFormModalV2
+- [ ] GoalFormModalV2
+- [ ] Other Finance modals
 
 ### Other Feature Modals
-- ~25+ more modals across Finance, Skincare, Calendar, Dashboard, Focus, etc.
+- ~20+ more modals across Skincare, Calendar, Dashboard, Focus, etc.
 
 **Estimated Total Impact when fully migrated:** ~2,500+ lines saved
 

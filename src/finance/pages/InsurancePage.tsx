@@ -162,10 +162,49 @@ const InsurancePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-2" />
-          <p className="text-sm text-primary opacity-60">Loading insurance policies...</p>
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-2" />
+              <p className="text-sm text-primary opacity-60">Loading insurance policies...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+              <span className="text-4xl">🛡️</span>
+              Insurance
+            </h1>
+            <p className="text-sm" style={{ color: colors.text.secondary }}>
+              Track all your insurance policies and renewals
+            </p>
+          </div>
+
+          <div
+            className="p-8 rounded-xl border-2 border-dashed text-center"
+            style={{ borderColor: colors.border.medium }}
+          >
+            <div className="text-4xl mb-3">⚠️</div>
+            <p className="font-medium mb-2" style={{ color: colors.text.primary }}>
+              Insurance feature not yet set up
+            </p>
+            <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
+              The insurance tracking database table needs to be created. Please contact support or check the setup documentation.
+            </p>
+            <p className="text-xs" style={{ color: colors.text.tertiary }}>
+              Error: {error.message}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -175,6 +214,17 @@ const InsurancePage: React.FC = () => {
     return (
       <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+              <span className="text-4xl">🛡️</span>
+              Insurance
+            </h1>
+            <p className="text-sm" style={{ color: colors.text.secondary }}>
+              Track all your insurance policies and renewals
+            </p>
+          </div>
+
           <div
             className="p-8 rounded-xl border-2 border-dashed text-center"
             style={{ borderColor: colors.border.medium }}
@@ -196,28 +246,28 @@ const InsurancePage: React.FC = () => {
               Add First Policy
             </button>
           </div>
-        </div>
 
-        {/* Form Modal */}
-        <InsuranceFormModalV2
-          isOpen={showModal}
-          onClose={handleCloseModal}
-          onSave={handleSavePolicy}
-          initialData={editingPolicy ? {
-            policyName: editingPolicy.policyName,
-            policyType: editingPolicy.type,
-            provider: editingPolicy.provider,
-            policyNumber: editingPolicy.policyNumber,
-            coverageAmount: editingPolicy.coverageAmount,
-            premium: editingPolicy.premiumAmount,
-            premiumFrequency: editingPolicy.premiumFrequency,
-            deductible: editingPolicy.deductible,
-            renewalDate: editingPolicy.renewalDate,
-            beneficiaries: editingPolicy.beneficiaries,
-            notes: editingPolicy.notes,
-          } : undefined}
-          isPending={upsertPolicyMutation.isPending}
-        />
+          {/* Form Modal */}
+          <InsuranceFormModalV2
+            isOpen={showModal}
+            onClose={handleCloseModal}
+            onSave={handleSavePolicy}
+            initialData={editingPolicy ? {
+              policyName: editingPolicy.policyName,
+              policyType: editingPolicy.type,
+              provider: editingPolicy.provider,
+              policyNumber: editingPolicy.policyNumber,
+              coverageAmount: editingPolicy.coverageAmount,
+              premium: editingPolicy.premiumAmount,
+              premiumFrequency: editingPolicy.premiumFrequency,
+              deductible: editingPolicy.deductible,
+              renewalDate: editingPolicy.renewalDate,
+              beneficiaries: editingPolicy.beneficiaries,
+              notes: editingPolicy.notes,
+            } : undefined}
+            isPending={upsertPolicyMutation.isPending}
+          />
+        </div>
       </div>
     );
   }
@@ -225,6 +275,17 @@ const InsurancePage: React.FC = () => {
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">🛡️</span>
+            Insurance
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
+            Track all your insurance policies and renewals
+          </p>
+        </div>
+
         <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

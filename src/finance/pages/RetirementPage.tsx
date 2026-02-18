@@ -240,6 +240,7 @@ const RetirementPage: React.FC = () => {
         </div>
       )}
       </div>
+      </div>
     </div>
   );
 };
