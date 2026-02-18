@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, addDays, subDays } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, addDays, subDays, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
 import { useTasks } from '@/hooks/useTasksQuery';
 import { useCalendarEvents } from '@/hooks/useCalendarQuery';
 
@@ -22,6 +22,8 @@ export default function Calendar() {
   const handlePrevious = () => {
     if (currentView === 'month') {
       setCurrentDate(subMonths(currentDate, 1));
+    } else if (currentView === 'week') {
+      setCurrentDate(subWeeks(currentDate, 1));
     } else if (currentView === 'day') {
       setCurrentDate(subDays(currentDate, 1));
     }
@@ -30,6 +32,8 @@ export default function Calendar() {
   const handleNext = () => {
     if (currentView === 'month') {
       setCurrentDate(addMonths(currentDate, 1));
+    } else if (currentView === 'week') {
+      setCurrentDate(addWeeks(currentDate, 1));
     } else if (currentView === 'day') {
       setCurrentDate(addDays(currentDate, 1));
     }
@@ -70,6 +74,15 @@ export default function Calendar() {
 
   const monthDays = generateMonthDays();
 
+  // Generate week days
+  const generateWeekDays = () => {
+    const start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Start on Sunday
+    const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+    return eachDayOfInterval({ start, end });
+  };
+
+  const weekDays = generateWeekDays();
+
   // Get events/tasks for a specific day
   const getEventsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -90,6 +103,10 @@ export default function Calendar() {
   const getDateDisplay = () => {
     if (currentView === 'month') {
       return format(currentDate, 'MMMM yyyy');
+    } else if (currentView === 'week') {
+      const start = startOfWeek(currentDate, { weekStartsOn: 0 });
+      const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+      return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
     } else if (currentView === 'day') {
       return format(currentDate, 'EEEE, MMM d');
     }
@@ -322,8 +339,137 @@ export default function Calendar() {
 
         {/* Week View */}
         {currentView === 'week' && (
-          <div className="p-6 text-center text-gray-500">
-            Week view coming soon
+          <div>
+            {/* Week day headers */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '60px repeat(7, 1fr)',
+                backgroundColor: 'white',
+                borderBottom: '1px solid #E5E7EB',
+              }}
+            >
+              <div style={{ width: '60px' }}></div>
+              {weekDays.map((day) => (
+                <div
+                  key={day.toString()}
+                  style={{
+                    padding: '12px 4px',
+                    textAlign: 'center',
+                    borderRight: '1px solid #E5E7EB',
+                  }}
+                >
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase' }}>
+                    {format(day, 'EEE')}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: isToday(day) ? 700 : 600,
+                      color: isToday(day) ? '#D4A574' : '#1F2937',
+                      marginTop: '4px',
+                    }}
+                  >
+                    {format(day, 'd')}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Week grid with hours */}
+            <div style={{ backgroundColor: 'white' }}>
+              {generateDayHours().map(({ hour, label }) => (
+                <div
+                  key={hour}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '60px repeat(7, 1fr)',
+                    borderBottom: '1px solid #E5E7EB',
+                    minHeight: '60px',
+                  }}
+                >
+                  {/* Hour Label */}
+                  <div
+                    style={{
+                      padding: '8px',
+                      fontSize: '12px',
+                      color: '#6B7280',
+                      borderRight: '1px solid #E5E7EB',
+                    }}
+                  >
+                    {label}
+                  </div>
+
+                  {/* Day columns */}
+                  {weekDays.map((day) => {
+                    const { tasks: dayTasks, events: dayEvents } = getEventsForDay(day);
+                    const timeSlotEvents = dayEvents.filter(e => {
+                      // Simple check if event is in this hour
+                      const eventHour = new Date(e.start_date).getHours();
+                      return eventHour === hour;
+                    });
+                    const timeSlotTasks = dayTasks.filter(t => {
+                      // For now, just show tasks at their due time if set
+                      if (!t.due_date) return false;
+                      const taskHour = new Date(t.due_date).getHours();
+                      return taskHour === hour;
+                    });
+
+                    return (
+                      <div
+                        key={day.toString()}
+                        style={{
+                          borderRight: '1px solid #E5E7EB',
+                          padding: '4px',
+                          position: 'relative',
+                          backgroundColor: isToday(day) ? '#FEF3E8' : 'white',
+                        }}
+                      >
+                        {/* Events */}
+                        {timeSlotEvents.map((event, idx) => (
+                          <div
+                            key={`event-${idx}`}
+                            style={{
+                              backgroundColor: '#E0E7FF',
+                              borderLeft: '3px solid #4F46E5',
+                              padding: '4px',
+                              margin: '2px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                            }}
+                          >
+                            <div style={{ fontWeight: 600, color: '#1F2937' }}>
+                              {format(new Date(event.start_date), 'h:mm a')}
+                            </div>
+                            <div style={{ color: '#374151' }}>{event.title}</div>
+                          </div>
+                        ))}
+
+                        {/* Tasks */}
+                        {timeSlotTasks.map((task, idx) => (
+                          <div
+                            key={`task-${idx}`}
+                            style={{
+                              backgroundColor: '#DBEAFE',
+                              borderLeft: '3px solid #3B82F6',
+                              padding: '4px',
+                              margin: '2px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                            }}
+                          >
+                            <div style={{ fontWeight: 600, color: '#1F2937' }}>
+                              {format(new Date(task.due_date!), 'h:mm a')}
+                            </div>
+                            <div style={{ color: '#374151' }}>{task.title}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
