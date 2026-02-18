@@ -18,8 +18,9 @@ import { TodayTasksSectionV2, TodayHabitsSectionV2, RecentNotesSectionV2 } from 
 import { QuickAddModalV2 } from '@/dashboard/components/v2/QuickAddModalV2';
 import { useTaskModals } from '@/todos/hooks/useTaskModals';
 import type { Task, Habit, Note, JournalEntry } from '@/types';
+import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
 
-export default function Dashboard() {
+function DashboardContent() {
   const colors = useThemeColors();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -276,5 +277,14 @@ export default function Dashboard() {
         onChange={modals.setQuickAddText}
       />
     </div>
+  );
+}
+
+// Wrap with error boundary for graceful error handling
+export default function Dashboard() {
+  return (
+    <FeatureErrorBoundary feature="Dashboard">
+      <DashboardContent />
+    </FeatureErrorBoundary>
   );
 }
