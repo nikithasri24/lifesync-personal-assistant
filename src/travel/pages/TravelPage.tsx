@@ -494,9 +494,6 @@ const TravelPage: React.FC = () => {
       <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
           <div className="space-y-6">
-            {/* Header Skeleton */}
-            <div className="h-12 bg-gray-200 rounded-xl animate-pulse" style={{ maxWidth: '300px' }} />
-
             {/* Stats Bar Skeleton */}
             <div className="h-20 bg-gray-200 rounded-xl animate-pulse" />
 
@@ -529,12 +526,6 @@ const TravelPage: React.FC = () => {
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
       {/* Centered container following CLAUDE.md pattern */}
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
-        {/* Page Header */}
-        <h1 className="text-3xl font-bold flex items-center gap-3 mb-6" style={{ color: colors.text.primary }}>
-          <span className="text-4xl">✈️</span>
-          Travel
-        </h1>
-
         {/* Category Filter Tabs */}
         <div className="mb-6 p-1 rounded-xl flex gap-1" style={{ backgroundColor: colors.bg.secondary }}>
           <div className="flex space-x-1 overflow-x-auto w-full">
