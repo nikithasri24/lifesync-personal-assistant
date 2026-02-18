@@ -24,6 +24,7 @@ import { useComposedStore } from '@/stores/useComposedStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useModalState } from '@/hooks/useModalState';
 import { useToast } from '@/hooks/useToast';
+import { isSameDay } from '@/utils/dateUtils';
 import { SegmentedControlV2, FABV2, InputV2 } from '@/components/v2';
 import {
   JournalHeaderV2,
@@ -341,13 +342,9 @@ export const JournalContainer: React.FC = () => {
 
             {/* Selected Date Entries */}
             {selectedDate && (() => {
-              const selectedEntries = typedEntries.filter((entry) => {
-                const entryDate = new Date(entry.createdAt);
-                entryDate.setHours(0, 0, 0, 0);
-                const selected = new Date(selectedDate);
-                selected.setHours(0, 0, 0, 0);
-                return entryDate.getTime() === selected.getTime();
-              });
+              const selectedEntries = typedEntries.filter((entry) =>
+                isSameDay(entry.createdAt, selectedDate)
+              );
 
               return (
                 <div>

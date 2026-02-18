@@ -5,10 +5,10 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Paperclip } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { BadgeV2 } from '@/components/v2';
+import { getRelativeTime } from '@/utils/dateUtils';
 
 export interface JournalEntryCardV2Props {
   id: string;
@@ -37,26 +37,6 @@ export const JournalEntryCardV2: React.FC<JournalEntryCardV2Props> = ({
 }) => {
   const colors = useThemeColors();
 
-  // Format date
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-    if (diffDays === 0) {
-      if (diffHours === 0) return 'Today';
-      return 'Today';
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return `${diffDays} days ago`;
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-  };
-
   // Strip HTML tags from content for preview
   const getTextContent = (html: string): string => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -64,15 +44,13 @@ export const JournalEntryCardV2: React.FC<JournalEntryCardV2Props> = ({
   };
 
   return (
-    <motion.div
+    <div
       onClick={onClick}
-      whileHover={{ scale: 1.005 }}
-      whileTap={{ scale: 0.995 }}
-      transition={{ duration: 0.15 }}
-      className="rounded-2xl p-4 cursor-pointer shadow-sm mb-4"
+      className="rounded-2xl p-4 cursor-pointer shadow-sm mb-4 transition-transform hover:scale-[1.005] active:scale-[0.995]"
       style={{
         backgroundColor: colors.bg.card,
         boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
+        transitionDuration: '150ms',
       }}
     >
       {/* Header: Title and Date */}
@@ -90,7 +68,7 @@ export const JournalEntryCardV2: React.FC<JournalEntryCardV2Props> = ({
           className="text-xs whitespace-nowrap ml-3"
           style={{ color: colors.text.tertiary }}
         >
-          {formatDate(createdAt)}
+          {getRelativeTime(createdAt)}
         </span>
       </div>
 
@@ -123,7 +101,7 @@ export const JournalEntryCardV2: React.FC<JournalEntryCardV2Props> = ({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
 

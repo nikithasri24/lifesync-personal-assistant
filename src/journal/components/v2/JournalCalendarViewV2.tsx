@@ -7,6 +7,7 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { isSameDay } from '@/utils/dateUtils';
 
 export interface JournalCalendarViewV2Props {
   entries: Array<{ createdAt: Date | string }>;
@@ -63,11 +64,7 @@ export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
       const date = new Date(year, month, day);
       date.setHours(0, 0, 0, 0);
 
-      const hasEntry = entries.some((entry) => {
-        const entryDate = new Date(entry.createdAt);
-        entryDate.setHours(0, 0, 0, 0);
-        return entryDate.getTime() === date.getTime();
-      });
+      const hasEntry = entries.some((entry) => isSameDay(entry.createdAt, date));
 
       const isToday = date.getTime() === today.getTime();
 
