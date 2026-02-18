@@ -109,13 +109,15 @@ export default function Calendar() {
 
   return (
     <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh' }}>
-      {/* Header with terracotta gradient */}
-      <div
-        className="px-5 py-4"
-        style={{
-          background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-        }}
-      >
+      {/* Centered container */}
+      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        {/* Header with terracotta gradient */}
+        <div
+          className="px-5 py-4"
+          style={{
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+          }}
+        >
         {/* Title and View Toggle */}
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-2xl font-bold text-white">📅 Calendar</h1>
@@ -326,17 +328,18 @@ export default function Calendar() {
         )}
       </div>
 
-      {/* FAB - Add Event Button */}
-      <button
-        className="fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white text-3xl shadow-lg"
-        style={{
-          background: 'linear-gradient(135deg, #D4A574, #C18B5E)',
-          boxShadow: '0 4px 12px rgba(212, 165, 116, 0.4)',
-        }}
-        aria-label="Add event"
-      >
-        +
-      </button>
+        {/* FAB - Add Event Button */}
+        <button
+          className="fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white text-3xl shadow-lg"
+          style={{
+            background: 'linear-gradient(135deg, #D4A574, #C18B5E)',
+            boxShadow: '0 4px 12px rgba(212, 165, 116, 0.4)',
+          }}
+          aria-label="Add event"
+        >
+          +
+        </button>
+      </div>
     </div>
   );
 }
