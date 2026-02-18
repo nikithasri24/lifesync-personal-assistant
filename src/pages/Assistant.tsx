@@ -14,8 +14,9 @@ import { ConversationInputV2 } from '@/assistant/components/v2/ConversationInput
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { ConversationMessage } from '@/types/infrastructure';
 import { logger } from '@/services/logger';
+import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
 
-export default function AssistantV2() {
+function AssistantContent() {
   const colors = useThemeColors();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState(false);
@@ -189,5 +190,14 @@ export default function AssistantV2() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrap with error boundary for graceful error handling
+export default function AssistantV2() {
+  return (
+    <FeatureErrorBoundary feature="Assistant">
+      <AssistantContent />
+    </FeatureErrorBoundary>
   );
 }

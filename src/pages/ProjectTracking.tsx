@@ -9,8 +9,9 @@ import { ProjectsFiltersBar } from '../projects/components/layout/ProjectsFilter
 import { EmptyProjectsState } from '../projects/components/layout/EmptyProjectsState';
 import { ProjectCard } from '../projects/components/layout/ProjectCard';
 import { FABV2 } from '@/components/v2/FABV2';
+import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
 
-const ProjectTracking: React.FC = () => {
+const ProjectTrackingContent: React.FC = () => {
   const hookResult = useProjectTracking();
   const {
     loading,
@@ -130,6 +131,15 @@ const ProjectTracking: React.FC = () => {
         handleDeleteProject={handleDeleteProject}
       />
     </div>
+  );
+};
+
+// Wrap with error boundary for graceful error handling
+const ProjectTracking: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="Projects">
+      <ProjectTrackingContent />
+    </FeatureErrorBoundary>
   );
 };
 
