@@ -5,6 +5,7 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/services/logger';
 import { AuthenticationError, DatabaseError, NotFoundError } from '@/lib/errors';
+import { getMergedConnectionId } from '@/shared/api/SharedDataProvider';
 import type { BucketListDestination, BucketListDestinationRow, BucketListDestinationInput, CategorizedBucketListDestination, BucketListCategory_Ownership } from '../types';
 
 /**
@@ -110,15 +111,9 @@ export async function listBucketListDestinations(): Promise<CategorizedBucketLis
     throw new DatabaseError(error.message);
   }
 
-  // Get partner ID for categorization
-  const { data: connectionData } = await supabase
-    .from('merged_connections')
-    .select('partnerId')
-    .eq('userId', user.id)
-    .eq('feature', 'travel')
-    .maybeSingle();
-
-  const partnerId = connectionData?.partnerId || null;
+  // Get partner ID for categorization using shared data provider
+  const mergedConnection = await getMergedConnectionId('travel');
+  const partnerId = mergedConnection?.partnerId || null;
 
   return (data || []).map((row: BucketListDestinationRow) => {
     const dest = rowToDestination(row);
