@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { CheckSquare, Plus } from 'lucide-react';
+import { CheckSquare } from 'lucide-react';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import type { Task } from '../../../lib/supabase';
 import { SectionHeaderV2 } from './SectionHeaderV2';
 import { EmptyStateV2 } from './EmptyStateV2';
@@ -25,13 +26,16 @@ export const TodayTasksSectionV2: React.FC<TodayTasksSectionV2Props> = ({
   onComplete,
   completingTask,
 }) => {
+  const colors = useThemeColors();
+
   return (
-    <div className="
-      bg-white dark:bg-gray-800
-      rounded-2xl p-6
-      border border-gray-200 dark:border-gray-700
-      shadow-sm
-    ">
+    <div
+      className="rounded-2xl p-6 border mb-6"
+      style={{
+        backgroundColor: colors.bg.white,
+        borderColor: colors.border.light,
+      }}
+    >
       <SectionHeaderV2
         title="Today's Tasks"
         icon={CheckSquare}

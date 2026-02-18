@@ -31,7 +31,7 @@ export const DashboardHeaderV2: React.FC = () => {
 
   return (
     <div
-      className="px-5 py-5"
+      className="px-5 py-5 rounded-xl mb-6"
       style={{
         background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
       }}

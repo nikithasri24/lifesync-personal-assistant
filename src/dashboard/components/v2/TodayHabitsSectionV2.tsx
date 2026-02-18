@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Target, Sparkles } from 'lucide-react';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import { SectionHeaderV2 } from './SectionHeaderV2';
 import { EmptyStateV2 } from './EmptyStateV2';
 import { HabitCardV2, type HabitWithProgress } from './HabitCardV2';
@@ -26,13 +27,16 @@ export const TodayHabitsSectionV2: React.FC<TodayHabitsSectionV2Props> = ({
   completingHabit,
   completedHabits,
 }) => {
+  const colors = useThemeColors();
+
   return (
-    <div className="
-      bg-white dark:bg-gray-800
-      rounded-2xl p-6
-      border border-gray-200 dark:border-gray-700
-      shadow-sm
-    ">
+    <div
+      className="rounded-2xl p-6 border mb-6"
+      style={{
+        backgroundColor: colors.bg.white,
+        borderColor: colors.border.light,
+      }}
+    >
       <SectionHeaderV2
         title="Today's Habits"
         icon={Target}

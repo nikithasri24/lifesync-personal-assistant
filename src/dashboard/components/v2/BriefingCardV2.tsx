@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import type { Task, Habit } from '@/types';
 
 interface BriefingCardV2Props {
@@ -12,6 +13,7 @@ interface BriefingCardV2Props {
 }
 
 export const BriefingCardV2: React.FC<BriefingCardV2Props> = ({ tasks, habits }) => {
+  const colors = useThemeColors();
   // Get time-based greeting icon
   const getGreetingIcon = () => {
     const hour = new Date().getHours();
@@ -45,9 +47,9 @@ export const BriefingCardV2: React.FC<BriefingCardV2Props> = ({ tasks, habits })
   }
 
   return (
-    <div className="bg-white rounded-xl p-4 mb-4">
+    <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: colors.bg.white }}>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-base font-bold text-gray-900">
+        <div className="text-base font-bold" style={{ color: colors.text.primary }}>
           {getGreetingIcon()} {getBriefingTitle()}
         </div>
       </div>
@@ -55,14 +57,15 @@ export const BriefingCardV2: React.FC<BriefingCardV2Props> = ({ tasks, habits })
         {briefingItems.map((item, index) => (
           <li
             key={index}
-            className="pl-5 relative text-sm text-gray-700 leading-relaxed"
+            className="pl-5 relative text-sm leading-relaxed"
             style={{
               listStyle: 'none',
+              color: colors.text.primary,
             }}
           >
             <span
               className="absolute left-0 text-lg"
-              style={{ color: '#D4A574' }}
+              style={{ color: colors.accent.start }}
             >
               •
             </span>
