@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar,
   Target,
@@ -17,8 +17,12 @@ import {
   Plane,
   Heart,
   Settings,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
+import { supabase } from '@/lib/supabase';
+import { logger } from '@/services/logger';
 
 interface MenuItem {
   name: string;
@@ -38,6 +42,7 @@ const menuItems: MenuItem[] = [
   { name: 'Projects', icon: FolderOpen, path: '/projects', section: 'Productivity' },
   { name: 'Journal', icon: BookOpen, path: '/journal', section: 'Wellbeing' },
   { name: 'Self Care', icon: Sparkles, path: '/self-care', section: 'Wellbeing' },
+  { name: 'Nutrition', icon: Sparkles, path: '/nutrition', section: 'Wellbeing' },
   { name: 'Travel', icon: MapPin, path: '/travel', section: 'Personal' },
   { name: 'Visa Calculator', icon: Plane, path: '/travel/visa', section: 'Personal' },
   { name: 'Finances', icon: DollarSign, path: '/finances', section: 'Personal' },
@@ -56,9 +61,41 @@ const groupedItems = menuItems.reduce((acc, item) => {
 }, {} as Record<string, MenuItem[]>);
 
 export default function More() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      logger.info('More', 'User initiated logout');
+      await supabase.auth.signOut();
+      logger.info('More', 'Logout successful');
+      navigate('/');
+    } catch (error) {
+      logger.error('More', error as Error, { context: 'Logout failed' });
+    }
+  };
+
   return (
-    <div style={{ backgroundColor: '#FAF8F5', minHeight: '100vh' }}>
+    <div style={{ backgroundColor: '#FAF8F5', minHeight: '100vh', paddingBottom: '120px' }}>
       <div className="px-6 py-4">
+        {/* Theme Toggle at Top */}
+        <div className="mb-6">
+          <h3
+            className="text-xs font-semibold uppercase tracking-wider mb-3 px-3"
+            style={{ color: '#9B8B7A' }}
+          >
+            Appearance
+          </h3>
+          <div
+            className="rounded-2xl overflow-hidden p-4"
+            style={{
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 2px 8px rgba(139, 111, 71, 0.08)',
+            }}
+          >
+            <ThemeToggle />
+          </div>
+        </div>
+
         {Object.entries(groupedItems).map(([section, items]) => (
           <div key={section} className="mb-6">
             <h3
@@ -116,6 +153,52 @@ export default function More() {
             </div>
           </div>
         ))}
+
+        {/* Account Section with Logout */}
+        <div className="mb-6">
+          <h3
+            className="text-xs font-semibold uppercase tracking-wider mb-3 px-3"
+            style={{ color: '#9B8B7A' }}
+          >
+            Account
+          </h3>
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 2px 8px rgba(139, 111, 71, 0.08)',
+            }}
+          >
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-between px-5 py-4 transition-colors hover:bg-gray-50"
+              style={{ minHeight: '60px' }}
+              aria-label="Logout from account"
+            >
+              <div className="flex items-center space-x-4">
+                <div
+                  className="flex items-center justify-center rounded-lg"
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                  }}
+                >
+                  <LogOut size={20} style={{ color: '#EF4444' }} aria-hidden="true" />
+                </div>
+                <span
+                  className="font-medium"
+                  style={{
+                    fontSize: '17px',
+                    color: '#EF4444',
+                  }}
+                >
+                  Logout
+                </span>
+              </div>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
