@@ -23,10 +23,38 @@ const getEventColors = (type: 'event' | 'meeting' | 'reminder' | 'birthday' | 'h
   return colorMap[type] || colorMap.event;
 };
 
+// Helper function to format event time properly
+const formatEventTime = (event: { start_date: string; start_time?: string | null; end_date?: string; end_time?: string | null }, showEndTime = false) => {
+  // Use start_time if available, otherwise parse start_date
+  let timeStr: string;
+  if (event.start_time) {
+    const [hours, minutes] = event.start_time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    timeStr = `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  } else {
+    timeStr = format(new Date(event.start_date.replace('Z', '')), 'h:mm a');
+  }
+
+  if (showEndTime && event.end_date) {
+    if (event.end_time) {
+      const [hours, minutes] = event.end_time.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const hour12 = hours % 12 || 12;
+      timeStr += ` - ${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+    } else {
+      timeStr += ` - ${format(new Date(event.end_date.replace('Z', '')), 'h:mm a')}`;
+    }
+  }
+
+  return timeStr;
+};
+
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<ViewType>('month');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedDateTime, setSelectedDateTime] = useState<Date | undefined>(undefined);
 
   // Data fetching
   const { data: tasks = [] } = useTasks();
@@ -55,6 +83,14 @@ export default function Calendar() {
 
   const handleToday = () => {
     setCurrentDate(new Date());
+  };
+
+  // Handle clicking on a time slot to create event
+  const handleTimeSlotClick = (date: Date, hour: number) => {
+    const newDateTime = new Date(date);
+    newDateTime.setHours(hour, 0, 0, 0);
+    setSelectedDateTime(newDateTime);
+    setShowAddModal(true);
   };
 
   // Generate month grid
@@ -127,12 +163,13 @@ export default function Calendar() {
     return format(currentDate, 'MMMM yyyy');
   };
 
-  // Generate day view hours
+  // Generate day view hours (full 24 hours)
   const generateDayHours = () => {
     const hours = [];
-    for (let i = 6; i <= 17; i++) {
-      const hour12 = i > 12 ? i - 12 : i;
-      const period = i >= 12 ? 'PM' : 'AM';
+    for (let i = 0; i <= 23; i++) {
+      let hour12 = i % 12;
+      if (hour12 === 0) hour12 = 12; // Convert 0 to 12 for midnight/noon
+      const period = i < 12 ? 'AM' : 'PM';
       hours.push({ hour: i, label: `${hour12} ${period}` });
     }
     return hours;
@@ -176,7 +213,7 @@ export default function Calendar() {
         </div>
 
         {/* Navigation Row */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <button
             onClick={handlePrevious}
             className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
@@ -195,6 +232,18 @@ export default function Calendar() {
             aria-label="Next"
           >
             <span className="text-white text-lg">›</span>
+          </button>
+        </div>
+
+        {/* Today Button */}
+        <div className="flex justify-center">
+          <button
+            onClick={handleToday}
+            className="px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}
+            aria-label="Go to today"
+          >
+            Today
           </button>
         </div>
       </div>
@@ -367,7 +416,16 @@ export default function Calendar() {
               // Filter events for this hour
               const timeSlotEvents = dayEvents.filter(e => {
                 if (e.all_day) return false; // All-day events shown separately
-                const eventHour = new Date(e.start_date).getHours();
+                // Use start_time if available, otherwise parse start_date
+                let eventHour: number;
+                if (e.start_time) {
+                  eventHour = parseInt(e.start_time.split(':')[0], 10);
+                } else {
+                  // Parse the datetime string as local time
+                  const dateStr = e.start_date.replace('Z', ''); // Remove Z if present
+                  const localDate = new Date(dateStr);
+                  eventHour = localDate.getHours();
+                }
                 return eventHour === hour;
               });
 
@@ -393,7 +451,11 @@ export default function Calendar() {
                   </div>
 
                   {/* Hour Content */}
-                  <div className="flex-1 p-1 relative">
+                  <div
+                    className="flex-1 p-1 relative cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => handleTimeSlotClick(currentDate, hour)}
+                    title="Click to create event"
+                  >
                     {/* Events */}
                     {timeSlotEvents.map((event, idx) => {
                       const eventColors = getEventColors(event.type);
@@ -408,10 +470,10 @@ export default function Calendar() {
                             borderRadius: '4px',
                             fontSize: '11px',
                           }}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <div style={{ fontWeight: 600, color: '#1F2937' }}>
-                            {format(new Date(event.start_date), 'h:mm a')}
-                            {event.end_date && ` - ${format(new Date(event.end_date), 'h:mm a')}`}
+                            {formatEventTime(event, true)}
                           </div>
                           <div style={{ color: '#374151' }}>{event.title}</div>
                           {event.location && (
@@ -435,6 +497,7 @@ export default function Calendar() {
                           borderRadius: '4px',
                           fontSize: '11px',
                         }}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <div style={{ fontWeight: 600, color: '#1F2937' }}>
                           {format(new Date(task.due_date!), 'h:mm a')}
@@ -577,7 +640,16 @@ export default function Calendar() {
                     // Filter events for this hour
                     const timeSlotEvents = dayEvents.filter(e => {
                       if (e.all_day) return false; // All-day events shown separately
-                      const eventHour = new Date(e.start_date).getHours();
+                      // Use start_time if available, otherwise parse start_date
+                      let eventHour: number;
+                      if (e.start_time) {
+                        eventHour = parseInt(e.start_time.split(':')[0], 10);
+                      } else {
+                        // Parse the datetime string as local time
+                        const dateStr = e.start_date.replace('Z', ''); // Remove Z if present
+                        const localDate = new Date(dateStr);
+                        eventHour = localDate.getHours();
+                      }
                       return eventHour === hour;
                     });
 
@@ -591,12 +663,15 @@ export default function Calendar() {
                     return (
                       <div
                         key={day.toString()}
+                        className="cursor-pointer hover:bg-opacity-50 transition-colors"
                         style={{
                           borderRight: '1px solid #E5E7EB',
                           padding: '4px',
                           position: 'relative',
                           backgroundColor: isToday(day) ? '#FEF3E8' : 'white',
                         }}
+                        onClick={() => handleTimeSlotClick(day, hour)}
+                        title="Click to create event"
                       >
                         {/* Events */}
                         {timeSlotEvents.map((event, idx) => {
@@ -612,9 +687,10 @@ export default function Calendar() {
                                 borderRadius: '4px',
                                 fontSize: '11px',
                               }}
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <div style={{ fontWeight: 600, color: '#1F2937' }}>
-                                {format(new Date(event.start_date), 'h:mm a')}
+                                {formatEventTime(event, false)}
                               </div>
                               <div style={{ color: '#374151' }}>{event.title}</div>
                             </div>
@@ -633,6 +709,7 @@ export default function Calendar() {
                               borderRadius: '4px',
                               fontSize: '11px',
                             }}
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <div style={{ fontWeight: 600, color: '#1F2937' }}>
                               {format(new Date(task.due_date!), 'h:mm a')}
@@ -666,8 +743,11 @@ export default function Calendar() {
         {/* Add Event Modal */}
         <AddEventModal
           isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          initialDate={currentDate}
+          onClose={() => {
+            setShowAddModal(false);
+            setSelectedDateTime(undefined);
+          }}
+          initialDate={selectedDateTime || currentDate}
         />
       </div>
     </div>

@@ -110,6 +110,7 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
     }
 
     // Build start and end datetime strings
+    // Store as local datetime (Supabase timestamptz will handle timezone conversion)
     const startDateTime = allDay
       ? `${startDate}T00:00:00`
       : `${startDate}T${startTime || '00:00'}:00`;
