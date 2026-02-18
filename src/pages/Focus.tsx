@@ -13,7 +13,6 @@ import {
   useUpdateFocusSession,
 } from '../hooks/useFocusQuery';
 import {
-  FocusHeaderV2,
   CircularTimerV2,
   PresetGridV2,
   TimerControlsV2,
@@ -172,36 +171,50 @@ const Focus: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
-      <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
-        {/* Header */}
-        <FocusHeaderV2 subtitle={getSubtitle()} />
-
-        {/* Content */}
-        <div className="px-6">
-          {/* Circular Timer */}
-          <CircularTimerV2
-            seconds={seconds}
-            totalSeconds={totalSeconds}
-            state={timerState}
-            size={240}
-          />
-
-          {/* Timer Controls */}
-          <TimerControlsV2
-            isActive={timerState === 'active'}
-            isPaused={timerState === 'paused'}
-            onPlayPause={() => void handlePlayPause()}
-            onReset={() => void handleReset()}
-            disabled={createSession.isPending || updateSession.isPending}
-          />
-
-          {/* Preset Grid */}
-          <PresetGridV2
-            activePresetId={activePreset}
-            onSelectPreset={handleSelectPreset}
-            presets={PRESETS}
-          />
+      {/* Header with Terracotta Gradient */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+          padding: '60px 0 20px',
+          color: 'white',
+          marginBottom: '16px',
+        }}
+      >
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
+            ⏱️ Focus
+          </h1>
+          <div style={{ fontSize: '14px', opacity: 0.9 }}>
+            {getSubtitle()}
+          </div>
         </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem 5rem' }}>
+        {/* Circular Timer */}
+        <CircularTimerV2
+          seconds={seconds}
+          totalSeconds={totalSeconds}
+          state={timerState}
+          size={240}
+        />
+
+        {/* Timer Controls */}
+        <TimerControlsV2
+          isActive={timerState === 'active'}
+          isPaused={timerState === 'paused'}
+          onPlayPause={() => void handlePlayPause()}
+          onReset={() => void handleReset()}
+          disabled={createSession.isPending || updateSession.isPending}
+        />
+
+        {/* Preset Grid */}
+        <PresetGridV2
+          activePresetId={activePreset}
+          onSelectPreset={handleSelectPreset}
+          presets={PRESETS}
+        />
       </div>
     </div>
   );
