@@ -5,11 +5,11 @@
 
 import React, { useState } from 'react';
 import { format, subDays } from 'date-fns';
-import { TrendingUp, Target, Flame, Beef, Wheat, Droplet, Settings } from 'lucide-react';
-import { MacroProgressBar } from './MacroProgressBar';
+import { Settings } from 'lucide-react';
 import { useDailyLogQuery, useNutritionGoalQuery, useSetNutritionGoalMutation } from '@/hooks/useNutritionQuery';
 import ErrorState from '@/components/ErrorState';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { CalorieSummaryV2, MacroProgressV2, NutritionStatsV2, WeeklyChartV2 } from '@/nutrition/components/v2';
 
 export function NutritionDashboard(): React.ReactElement {
   const colors = useThemeColors();
@@ -77,122 +77,61 @@ export function NutritionDashboard(): React.ReactElement {
 
   return (
     <div className="space-y-6">
-      {/* Today's Summary */}
-      <div
-        className="rounded-2xl p-6 text-white"
-        style={{
-          background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
-        }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold opacity-90">Today's Nutrition</h3>
-          <button
-            onClick={() => {
-              setGoalForm({
-                calories: goal?.calories_target || 2000,
-                protein: goal?.protein_target_g || 150,
-                carbs: goal?.carbs_target_g || 200,
-                fat: goal?.fat_target_g || 65,
-              });
-              setShowGoalSettings(true);
-            }}
-            className="p-2 rounded-lg transition-all duration-200 active:scale-95"
-            style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-            aria-label="Edit nutrition goals"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
-        </div>
-        
-        <div className="flex items-center justify-center mb-6">
-          <div className="relative">
-            <svg className="w-32 h-32 transform -rotate-90">
-              <circle cx="64" cy="64" r="56" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="12" />
-              <circle
-                cx="64" cy="64" r="56" fill="none" stroke="white" strokeWidth="12"
-                strokeDasharray={`${(totals.calories / (goal?.calories_target || 2000)) * 352} 352`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold">{Math.round(totals.calories)}</span>
-              <span className="text-sm opacity-80">/ {goal?.calories_target || 2000}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="bg-white/10 rounded-xl p-3">
-            <Beef className="w-5 h-5 mx-auto mb-1 opacity-80" />
-            <div className="text-xl font-bold">{Math.round(totals.protein)}g</div>
-            <div className="text-xs opacity-70">Protein</div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-3">
-            <Wheat className="w-5 h-5 mx-auto mb-1 opacity-80" />
-            <div className="text-xl font-bold">{Math.round(totals.carbs)}g</div>
-            <div className="text-xs opacity-70">Carbs</div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-3">
-            <Droplet className="w-5 h-5 mx-auto mb-1 opacity-80" />
-            <div className="text-xl font-bold">{Math.round(totals.fat)}g</div>
-            <div className="text-xs opacity-70">Fat</div>
-          </div>
-        </div>
-
-        {remaining && remaining.calories > 0 && (
-          <div className="mt-4 text-center text-sm opacity-80">
-            {remaining.calories} calories remaining today
-          </div>
-        )}
+      {/* Settings Button */}
+      <div className="flex justify-end px-5">
+        <button
+          onClick={() => {
+            setGoalForm({
+              calories: goal?.calories_target || 2000,
+              protein: goal?.protein_target_g || 150,
+              carbs: goal?.carbs_target_g || 200,
+              fat: goal?.fat_target_g || 65,
+            });
+            setShowGoalSettings(true);
+          }}
+          className="p-2 rounded-lg transition-all duration-200 active:scale-95"
+          style={{ backgroundColor: colors.bg.secondary }}
+          aria-label="Edit nutrition goals"
+        >
+          <Settings className="w-5 h-5" style={{ color: colors.text.primary }} />
+        </button>
       </div>
 
-      {/* Goal Progress */}
+      {/* Calorie Summary */}
+      {goal && <CalorieSummaryV2 consumed={totals.calories} goal={goal.calories_target} />}
+
+      {/* Macro Progress */}
       {goal && (
-        <div
-          className="rounded-xl p-4 space-y-4"
-          style={{
-            backgroundColor: colors.bg.white,
-            border: `1px solid ${colors.border.light}`,
+        <MacroProgressV2
+          macros={{
+            protein: { current: totals.protein, goal: goal.protein_target_g },
+            carbs: { current: totals.carbs, goal: goal.carbs_target_g },
+            fat: { current: totals.fat, goal: goal.fat_target_g },
           }}
-        >
-          <h3 className="font-semibold flex items-center gap-2" style={{ color: colors.text.primary }}>
-            <Target className="w-5 h-5" style={{ color: colors.accent.start }} />
-            Goal Progress
-          </h3>
-          <MacroProgressBar
-            label="Calories"
-            current={totals.calories}
-            target={goal.calories_target}
-            unit="cal"
-            color={colors.accent.start}
-            icon={<Flame className="w-4 h-4" style={{ color: colors.accent.start }} />}
-          />
-          <MacroProgressBar
-            label="Protein"
-            current={totals.protein}
-            target={goal.protein_target_g}
-            unit="g"
-            color={colors.accent.start}
-            icon={<Beef className="w-4 h-4" style={{ color: colors.accent.start }} />}
-          />
-          <MacroProgressBar
-            label="Carbs"
-            current={totals.carbs}
-            target={goal.carbs_target_g}
-            unit="g"
-            color={colors.accent.end}
-            icon={<Wheat className="w-4 h-4" style={{ color: colors.accent.end }} />}
-          />
-          <MacroProgressBar
-            label="Fat"
-            current={totals.fat}
-            target={goal.fat_target_g}
-            unit="g"
-            color={colors.accent.start}
-            icon={<Droplet className="w-4 h-4" style={{ color: colors.accent.start }} />}
-          />
-        </div>
+        />
       )}
+
+      {/* Weekly Stats */}
+      <NutritionStatsV2
+        dayStreak={7}
+        avgCalories={totals.calories}
+        avgProtein={totals.protein}
+        goalHitRate={75}
+      />
+
+      {/* Weekly Chart */}
+      <WeeklyChartV2
+        weeklyData={[
+          { day: 'Mon', calories: 1800 },
+          { day: 'Tue', calories: 2100 },
+          { day: 'Wed', calories: 1950 },
+          { day: 'Thu', calories: 2050 },
+          { day: 'Fri', calories: 1900 },
+          { day: 'Sat', calories: 2200 },
+          { day: 'Sun', calories: totals.calories },
+        ]}
+        goal={goal?.calories_target || 2000}
+      />
 
       {/* Goal Settings Modal */}
       {showGoalSettings && (
