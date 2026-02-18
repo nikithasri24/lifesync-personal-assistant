@@ -189,11 +189,11 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
 
         {/* Message Content */}
         <div
-          className="overflow-y-auto px-6 pb-12"
+          className="overflow-y-auto px-6 pb-20"
           style={{ maxHeight: 'calc(90vh - 220px)' }}
         >
           <div
-            className="prose prose-lg max-w-none text-gray-900"
+            className="prose prose-lg max-w-none text-gray-900 pb-8"
             style={{
               lineHeight: '1.8',
               fontSize: '1.1rem',
