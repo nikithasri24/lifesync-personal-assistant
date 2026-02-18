@@ -2,9 +2,9 @@
 
 ## Session Summary
 
-Successfully migrated **35 modals** to FormModalV2!
+Successfully migrated **36 modals** to FormModalV2!
 
-**Total Impact:** 3,541 lines eliminated (29% average reduction)
+**Total Impact:** 3,602 lines eliminated (28% average reduction)
 
 ---
 
@@ -284,15 +284,24 @@ Successfully migrated **35 modals** to FormModalV2!
 - **Migration Impact:** Already had Together pattern but eliminated all boilerplate (ESC, backdrop, auto-save, modal structure)
 - **Commit:** `feat: Migrate AddEventModal to FormModalV2`
 
+### 36. EventModal (Calendar)
+- **Before:** 363 lines
+- **After:** 302 lines
+- **Reduction:** 61 lines (17%)
+- **Form Fields:** 10 fields (title, allDay, startDate, startTime, endDate, endTime, type, reminder, location, description)
+- **Special Features:** Create/edit modes, delete button support, 5 event types with emoji, 7 reminder options, conditional time fields
+- **Migration Impact:** Added Together pattern, ESC/backdrop handlers, converted from dark mode to light mode
+- **Commit:** `feat: Migrate EventModal to FormModalV2`
+
 ---
 
 ## 📊 Cumulative Impact
 
 | Metric | Before | After | Savings |
 |--------|--------|-------|---------|
-| **Total Lines** | 12,010 | 8,469 | 3,541 (29%) |
-| **Average per Modal** | 343 | 242 | 101 (29%) |
-| **Boilerplate Eliminated** | ~3,800 lines | 0 | 3,800 (100%) |
+| **Total Lines** | 12,373 | 8,771 | 3,602 (28%) |
+| **Average per Modal** | 344 | 244 | 100 (28%) |
+| **Boilerplate Eliminated** | ~3,900 lines | 0 | 3,900 (100%) |
 
 ---
 
@@ -387,8 +396,9 @@ Per modal, we consistently eliminated:
 - [x] ProductFormModalV2 (330 lines) ✅ COMPLETE
 - [x] CategoryFormModal (168 lines) ✅ COMPLETE
 
-### Calendar Modals - In Progress (1/?)
+### Calendar Modals - ✅ ALL COMPLETE (2/2)
 - [x] AddEventModal (363 lines) ✅ COMPLETE
+- [x] EventModal (363 lines) ✅ COMPLETE
 
 ### Other Feature Modals
 - ~20+ more modals across Dashboard, Focus, etc.
