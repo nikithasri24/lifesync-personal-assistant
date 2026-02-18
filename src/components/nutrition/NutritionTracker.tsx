@@ -319,9 +319,10 @@ export function NutritionTracker(): React.ReactElement {
             <MealSectionV2
               key={group.type}
               mealType={group.type}
-              emoji={group.icon}
-              label={group.label}
-              foodItems={group.entries.map(entry => ({
+              mealLabel={group.label}
+              mealIcon={group.icon}
+              totalCalories={group.entries.reduce((sum, e) => sum + e.calories, 0)}
+              foodEntries={group.entries.map(entry => ({
                 id: entry.id,
                 name: entry.custom_food_name || 'Unknown food',
                 servingInfo: `${entry.quantity || 1} serving`,
@@ -332,7 +333,10 @@ export function NutritionTracker(): React.ReactElement {
                 setSelectedMealType(group.type);
                 setShowQuickAdd(true);
               }}
-              onDeleteFood={(id) => deleteLogMutation.mutate({ id, date: dateStr })}
+              onFoodClick={(id) => {
+                // Handle food item click - could open edit modal
+                console.log('Food clicked:', id);
+              }}
             />
           ))}
         </div>
