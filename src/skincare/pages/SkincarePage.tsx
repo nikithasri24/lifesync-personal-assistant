@@ -12,15 +12,14 @@
 import React from 'react';
 import { Sparkles, Package, Calendar, Settings, Plus, Pencil } from 'lucide-react';
 import { logger } from '@/services/logger';
-import { SelfCareHeader } from '../components/SelfCareHeader';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import ProductsLibrary from '../components/ProductsLibrary';
 import ProductFormModal from '../components/ProductFormModal';
 import WeeklyRoutineTable from '../components/WeeklyRoutineTable';
 import { CalendarView } from '../components/CalendarView';
 import CategoryFormModal from '../components/CategoryFormModal';
 import ItemFormModal from '../components/ItemFormModal';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { ProductCardV2, ProductFormModalV2, CategoryCardV2 } from '../components/v2';
 import {
   useSkincareProducts,
   useCreateProduct,
@@ -195,20 +194,39 @@ const SelfCarePage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <SelfCareHeader
-        activeView={view}
-        onAddProduct={view === 'products' ? handleAddProduct : undefined}
-        onAddCategory={view === 'setup' ? () => setShowCategoryModal(true) : undefined}
-      />
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      {/* Header with Terracotta Gradient */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+          padding: '60px 20px 20px',
+          color: 'white',
+          marginBottom: '16px',
+        }}
+      >
+        <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
+          ✨ Self Care
+        </h1>
+        <div style={{ fontSize: '14px', opacity: 0.9 }}>
+          Skincare routines, products & personal care
+        </div>
+      </div>
 
       {/* View Toggle */}
-      <SegmentedControl
-        segments={viewSegments}
-        value={view}
-        onChange={(value) => setView(value as ViewType)}
-      />
+      <div
+        style={{
+          background: 'rgba(92, 74, 58, 0.1)',
+          borderRadius: '12px',
+          padding: '4px',
+          margin: '16px 20px',
+        }}
+      >
+        <SegmentedControl
+          segments={viewSegments}
+          value={view}
+          onChange={(value) => setView(value as ViewType)}
+        />
+      </div>
 
       {/* Content */}
       {view === 'routine' && <WeeklyRoutineTable />}
@@ -218,137 +236,133 @@ const SelfCarePage: React.FC = () => {
       )}
 
       {view === 'products' && (
-        <ProductsLibrary
-          products={products}
-          onAddProduct={handleAddProduct}
-          onEditProduct={handleEditProduct}
-          onDeleteProduct={handleDeleteProduct}
-        />
+        <div className="px-6 pb-6">
+          {/* Add Product Button */}
+          <button
+            onClick={handleAddProduct}
+            className="w-full mb-4 transition-all hover:opacity-90"
+            style={{
+              padding: '12px',
+              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            + Add Product
+          </button>
+
+          {/* Products Grid (2 columns) */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '12px',
+            }}
+          >
+            {products.map((product) => (
+              <ProductCardV2
+                key={product.id}
+                id={product.id}
+                name={product.name}
+                brand={product.brand}
+                category={product.category}
+                rating={product.rating}
+                useFrequency={product.useFrequency}
+                onClick={() => handleEditProduct(product)}
+              />
+            ))}
+          </div>
+
+          {products.length === 0 && (
+            <div
+              className="text-center py-12"
+              style={{ color: colors.text.tertiary }}
+            >
+              <div className="text-4xl mb-3">🧴</div>
+              <p>No products yet. Add your first skincare product!</p>
+            </div>
+          )}
+        </div>
       )}
 
       {view === 'setup' && (
-        <div className="space-y-4">
-          {/* Categories and Items */}
+        <div className="px-6 pb-6">
+          {/* Add Category Button */}
+          <button
+            onClick={() => setShowCategoryModal(true)}
+            className="w-full mb-4 transition-all hover:opacity-90"
+            style={{
+              padding: '12px',
+              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            + Add Category
+          </button>
+
+          {/* Categories List */}
           {allCategories.map(category => {
             const categoryItems = itemsByCategory.get(category.id) || [];
             return (
-              <div
+              <CategoryCardV2
                 key={category.id}
-                className="rounded-2xl overflow-hidden shadow-sm"
-                style={{
-                  backgroundColor: colors.bg.white,
-                  borderWidth: '1px',
-                  borderColor: colors.border.light,
+                id={category.id}
+                name={category.name}
+                icon={category.icon}
+                color={category.color}
+                items={categoryItems.map(item => ({
+                  id: item.id,
+                  name: item.name,
+                  isActive: item.isActive,
+                  frequency: item.scheduleIntervalDays
+                    ? `Every ${item.scheduleIntervalDays} days`
+                    : undefined,
+                }))}
+                onAddItem={() => handleAddItemToCategory(category)}
+                onToggleItem={(itemId, currentActive) => {
+                  const item = categoryItems.find(i => i.id === itemId);
+                  if (item) handleToggleItemActive(item);
                 }}
-              >
-                {/* Category Header */}
-                <div
-                  className="flex items-center justify-between p-4"
-                  style={{
-                    background: `linear-gradient(135deg, ${colors.accent.start}10 0%, ${colors.accent.end}10 100%)`,
-                    borderBottom: `1px solid ${colors.border.light}`,
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{category.icon}</span>
-                    <div>
-                      <h3 className="font-semibold" style={{ color: colors.text.primary }}>
-                        {category.name}
-                      </h3>
-                      <p className="text-xs" style={{ color: colors.text.tertiary }}>
-                        {categoryItems.filter(i => i.isActive).length} active items
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleAddItemToCategory(category)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-full font-semibold transition-colors"
-                    style={{
-                      backgroundColor: colors.badge.bg,
-                      color: colors.badge.text,
-                    }}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Add Item
-                  </button>
-                </div>
-
-                {/* Items List */}
-                <div style={{ borderTop: `1px solid ${colors.border.light}` }}>
-                  {categoryItems.length === 0 ? (
-                    <p className="p-4 text-sm italic" style={{ color: colors.text.tertiary }}>
-                      No items yet. Add your first item!
-                    </p>
-                  ) : (
-                    categoryItems.map((item, index) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-4 transition-colors hover:bg-opacity-50"
-                        style={{
-                          borderTop: index > 0 ? `1px solid ${colors.border.light}` : 'none',
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-lg">{item.icon}</span>
-                          <div>
-                            <p
-                              className="font-medium"
-                              style={{ color: item.isActive ? colors.text.primary : colors.text.tertiary }}
-                            >
-                              {item.name}
-                            </p>
-                            {item.scheduleIntervalDays && (
-                              <p className="text-xs" style={{ color: colors.text.tertiary }}>
-                                Every {item.scheduleIntervalDays} days
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEditItem(item, category)}
-                            className="p-1.5 rounded-lg transition-colors"
-                            style={{
-                              color: colors.text.tertiary,
-                              backgroundColor: colors.bg.secondary,
-                            }}
-                            title="Edit item"
-                            aria-label="Edit item"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleToggleItemActive(item)}
-                            className="px-3 py-1 text-xs font-semibold rounded-full transition-colors"
-                            style={{
-                              backgroundColor: item.isActive ? 'rgba(16, 185, 129, 0.15)' : colors.bg.secondary,
-                              color: item.isActive ? '#059669' : colors.text.tertiary,
-                            }}
-                          >
-                            {item.isActive ? 'Active' : 'Inactive'}
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+                onEditItem={(itemId) => {
+                  const item = categoryItems.find(i => i.id === itemId);
+                  if (item) handleEditItem(item, category);
+                }}
+              />
             );
           })}
         </div>
       )}
 
       {/* Product Form Modal */}
-      {showProductModal && (
-        <ProductFormModal
-          product={editingProduct}
-          onSave={handleSaveProduct}
-          onClose={() => {
-            setShowProductModal(false);
-            setEditingProduct(undefined);
-          }}
-        />
-      )}
+      <ProductFormModalV2
+        isOpen={showProductModal}
+        onClose={() => {
+          setShowProductModal(false);
+          setEditingProduct(undefined);
+        }}
+        product={editingProduct ? {
+          id: editingProduct.id,
+          name: editingProduct.name,
+          brand: editingProduct.brand,
+          category: editingProduct.category,
+          rating: editingProduct.rating,
+          useFrequency: editingProduct.useFrequency,
+          purchaseDate: editingProduct.purchaseDate,
+          expiryDate: editingProduct.expiryDate,
+          notes: editingProduct.notes,
+        } : undefined}
+        isEditing={!!editingProduct}
+        onSubmit={handleSaveProduct}
+      />
 
       {/* Category Form Modal */}
       {showCategoryModal && (
