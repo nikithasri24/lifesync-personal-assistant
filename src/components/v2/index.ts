@@ -18,6 +18,9 @@ export type { FABV2Props } from './FABV2';
 export { ModalV2 } from './ModalV2';
 export type { ModalV2Props } from './ModalV2';
 
+export { FormModalV2 } from './FormModalV2';
+export type { FormModalV2Props } from './FormModalV2';
+
 export { SegmentedControlV2 } from './SegmentedControlV2';
 export type { SegmentedControlV2Props, Segment } from './SegmentedControlV2';
 
