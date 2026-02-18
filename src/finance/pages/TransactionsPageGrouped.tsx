@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Plus, Settings } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Card } from '../components/Card';
 import { FiltersBar } from '../components/FiltersBar';
 import { Button } from '../ui/Button';
@@ -13,7 +13,6 @@ import ImportCSVButton from '../components/ImportCSVButton';
 import { BudgetSummaryCard } from '../components/transactions/BudgetSummaryCard';
 import { TransactionGroupHeader } from '../components/transactions/TransactionGroupHeader';
 import { TransactionGroupTable } from '../components/transactions/TransactionGroupTable';
-import BudgetTemplateManager from '../components/budgets/BudgetTemplateManager';
 import { OwnerFilter } from '../components/OwnerFilter';
 import {
   useTransactionsQuery,
@@ -33,7 +32,6 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 const TransactionsPageGrouped: React.FC = () => {
   const colors = useThemeColors();
   const [showQuickAdd, setShowQuickAdd] = React.useState(false);
-  const [showTemplateManager, setShowTemplateManager] = React.useState(false);
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
   const [groupBy, setGroupBy] = React.useState<'category' | 'owner'>('category');
   const filters = useFinanceFilters();
@@ -229,14 +227,6 @@ const TransactionsPageGrouped: React.FC = () => {
               Add Transaction
             </Button>
             <ImportCSVButton onSuccess={() => loadData()} />
-            <Button
-              variant="outline"
-              onClick={() => setShowTemplateManager(true)}
-              disabled={loading}
-            >
-              <Settings className="h-4 w-4 mr-1" />
-              Budget Templates
-            </Button>
           </div>
         }
       >
@@ -305,32 +295,6 @@ const TransactionsPageGrouped: React.FC = () => {
       {/* Quick Add Modal */}
       {showQuickAdd && (
         <QuickAddTransaction onClose={() => setShowQuickAdd(false)} onSuccess={() => loadData()} />
-      )}
-
-      {/* Budget Template Manager Modal */}
-      {showTemplateManager && (
-        <BudgetTemplateManager
-          isOpen={showTemplateManager}
-          onClose={() => setShowTemplateManager(false)}
-          categories={categories}
-          existingTemplates={budgetTemplates}
-          onSave={async (templates): Promise<void> => {
-            const api = await getFinanceAPI();
-            for (const template of templates) {
-              await api.upsertBudgetTemplate({
-                categoryId: template.categoryId,
-                defaultAmount: template.defaultAmount,
-              });
-            }
-            setShowTemplateManager(false);
-            loadData();
-          }}
-          onDelete={async (categoryId): Promise<void> => {
-            const api = await getFinanceAPI();
-            await api.deleteBudgetTemplate(categoryId);
-            loadData();
-          }}
-        />
       )}
         </div>
       </div>
