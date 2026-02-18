@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, Check, Star } from 'lucide-react';
-import { usePartnerMessages } from '../hooks';
+import { Clock, Check, Star, Trash2 } from 'lucide-react';
+import { usePartnerMessages, useDeletePartnerMessage } from '../hooks';
 import { useMergedMessagesConnection } from '../hooks/useTogetherMergedMode';
 import { useCurrentUserId } from '@/hooks/useOwnerInfo';
 import { OwnerFilter, type OwnerFilterValue } from '@/components/common/OwnerFilter';
@@ -17,6 +17,7 @@ import { MessageDetailModal } from './modals/MessageDetailModal';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useModalState } from '@/hooks/useModalState';
 import { formatDateLong } from '../utils/dateHelpers';
+import { useToast } from '@/hooks/useToast';
 
 interface MessagesViewProps {
   partnerLink: PartnerLink | null | undefined;
@@ -27,6 +28,7 @@ const STORAGE_KEY_VIEWING = 'together_messages_viewing_id';
 
 export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
   const colors = useThemeColors();
+  const { showToast } = useToast();
 
   // Owner filter state (for merged mode)
   const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
@@ -46,6 +48,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
   });
 
   const { data: allMessages = [], isLoading } = usePartnerMessages();
+  const { mutate: deleteMessage, isPending: isDeleting } = useDeletePartnerMessage();
 
   // Get partner name for display
   const partnerName = mergedConnection?.partnerName ?? 'Partner';
@@ -99,6 +102,23 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
 
   const handleCloseViewMessage = () => {
     modals.set('viewingMessageId', null);
+  };
+
+  const handleDeleteMessage = (e: React.MouseEvent, messageId: string, messageTitle: string) => {
+    e.stopPropagation(); // Prevent opening the message
+
+    if (!confirm(`Are you sure you want to delete "${messageTitle}"? This cannot be undone.`)) {
+      return;
+    }
+
+    deleteMessage(messageId, {
+      onSuccess: () => {
+        showToast('Message deleted', 'success');
+      },
+      onError: (error) => {
+        showToast(`Failed to delete message: ${error.message}`, 'error');
+      },
+    });
   };
 
   const hasPartner = partnerLink?.status === 'accepted';
@@ -266,9 +286,20 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                     <p className="text-sm mb-2" style={{ color: colors.text.secondary }}>
                       {getRevealText(message)}
                     </p>
-                    <p className="text-sm line-clamp-2" style={{ color: colors.text.tertiary }}>
+                    <p className="text-sm mb-2 line-clamp-2" style={{ color: colors.text.tertiary }}>
                       {message.message_body.substring(0, 100)}...
                     </p>
+                    {/* Delete button - only show for own messages */}
+                    {currentUserId && message.sender_id === currentUserId && (
+                      <button
+                        onClick={(e) => handleDeleteMessage(e, message.id, message.title)}
+                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        disabled={isDeleting}
+                        aria-label="Delete message"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -315,15 +346,28 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                       <p className="text-sm mb-2" style={{ color: colors.text.secondary }}>
                         {isReceiver ? 'Received' : 'Delivered'}: {message.revealed_at ? formatDateLong(message.revealed_at.split('T')[0]) : 'Unknown'}
                       </p>
-                      <div className="flex items-center gap-2">
-                        <button
-                          className="text-sm underline"
-                          style={{ color: '#D4A574' }}
-                          aria-label="Read message again"
-                        >
-                          Read Again
-                        </button>
-                        <Star className="w-4 h-4" style={{ color: '#FFD700' }} />
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="text-sm underline"
+                            style={{ color: '#D4A574' }}
+                            aria-label="Read message again"
+                          >
+                            Read Again
+                          </button>
+                          <Star className="w-4 h-4" style={{ color: '#FFD700' }} />
+                        </div>
+                        {/* Delete button - only show for own messages */}
+                        {currentUserId && message.sender_id === currentUserId && (
+                          <button
+                            onClick={(e) => handleDeleteMessage(e, message.id, message.title)}
+                            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                            disabled={isDeleting}
+                            aria-label="Delete message"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -349,17 +393,30 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                     }}
                     onClick={() => handleViewMessage(message)}
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
-                        📝 {message.title}
-                      </h4>
-                      {mergedConnection && currentUserId && (
-                        <OwnerBadge
-                          userId={message.sender_id}
-                          currentUserId={currentUserId}
-                          partnerName={partnerName}
-                          size="sm"
-                        />
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
+                          📝 {message.title}
+                        </h4>
+                        {mergedConnection && currentUserId && (
+                          <OwnerBadge
+                            userId={message.sender_id}
+                            currentUserId={currentUserId}
+                            partnerName={partnerName}
+                            size="sm"
+                          />
+                        )}
+                      </div>
+                      {/* Delete button - only show for own messages */}
+                      {currentUserId && message.sender_id === currentUserId && (
+                        <button
+                          onClick={(e) => handleDeleteMessage(e, message.id, message.title)}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                          disabled={isDeleting}
+                          aria-label="Delete message"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
                       )}
                     </div>
                     <p className="text-sm" style={{ color: colors.text.tertiary }}>
