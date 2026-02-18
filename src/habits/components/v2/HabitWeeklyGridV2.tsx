@@ -6,6 +6,7 @@
 import React, { useMemo } from 'react';
 import type { HabitData, HabitEntryData } from '../../../services/types';
 import { useThemeColors } from '../../../hooks/useThemeColors';
+import { shadows } from '../../../styles/colors';
 
 export interface HabitWeeklyGridV2Props {
   habits: HabitData[];
@@ -104,7 +105,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
               style={{
                 fontSize: '11px',
                 fontWeight: 700,
-                color: day.isToday ? colors.primary : colors.text.secondary,
+                color: day.isToday ? colors.accent.end : colors.text.secondary,
                 marginBottom: '6px',
                 textTransform: 'uppercase',
               }}
@@ -167,7 +168,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
                 borderRadius: '12px',
                 padding: '12px',
                 marginBottom: '12px',
-                boxShadow: `0 2px 6px ${colors.shadow.light}`,
+                boxShadow: '0 2px 6px rgba(139, 111, 71, 0.06)',
               }}
             >
               <div
@@ -204,7 +205,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
                         height: '32px',
                         borderRadius: '8px',
                         background: isChecked
-                          ? `linear-gradient(135deg, ${colors.success} 0%, ${colors.successDark} 100%)`
+                          ? 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)'
                           : colors.border.light,
                         border: 'none',
                         display: 'flex',
@@ -235,7 +236,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
           background: colors.bg.white,
           borderRadius: '16px',
           padding: '20px',
-          boxShadow: `0 2px 8px ${colors.shadow.medium}`,
+          boxShadow: shadows.card,
         }}
       >
         <div
@@ -277,7 +278,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
               style={{
                 fontSize: '24px',
                 fontWeight: 700,
-                background: colors.gradient.primary,
+                background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
@@ -293,7 +294,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
               style={{
                 fontSize: '24px',
                 fontWeight: 700,
-                background: colors.gradient.primary,
+                background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}

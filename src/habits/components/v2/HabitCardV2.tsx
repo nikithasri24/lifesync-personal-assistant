@@ -121,7 +121,7 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
             background: hasReachedTarget
               ? 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)'
               : 'white',
-            border: `3px solid ${hasReachedTarget ? colors.success : colors.border.light}`,
+            border: `3px solid ${hasReachedTarget ? '#4CAF50' : colors.border.light}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -176,7 +176,7 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
             alignItems: 'center',
             gap: '4px',
             background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(245, 124, 0, 0.15) 100%)',
-            color: colors.warning,
+            color: '#F57C00',
             padding: '4px 10px',
             borderRadius: '12px',
             fontSize: '12px',
