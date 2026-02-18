@@ -326,6 +326,7 @@ const Habits: React.FC = () => {
           totalHabits={totalHabits}
           completionPercentage={completionPercentage}
           currentStreak={maxStreak}
+          completedToday={completedToday}
           onAddHabit={() => {
             modals.set('editingHabitId', null);
             modals.open('showForm');
@@ -337,7 +338,7 @@ const Habits: React.FC = () => {
         />
 
         {/* Habits List */}
-        <div className="pb-24">
+        <div style={{ padding: '16px 0 100px' }}>
           {habitsWithStats.length === 0 ? (
             <div
               className="p-8 rounded-xl border-2 border-dashed text-center"
@@ -392,13 +393,32 @@ const Habits: React.FC = () => {
             modals.set('editingHabitId', null);
             modals.open('showForm');
           }}
-          className="fixed w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-2xl transition-transform active:scale-95"
           style={{
-            bottom: '96px',
-            right: '32px',
+            position: 'fixed',
+            bottom: '100px',
+            right: '24px',
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
             background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-            boxShadow: '0 4px 16px rgba(193, 139, 94, 0.4)',
+            boxShadow: '0 8px 24px rgba(193, 139, 94, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '32px',
+            color: 'white',
+            cursor: 'pointer',
+            transition: 'all 0.3s',
+            border: 'none',
             zIndex: 50,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.boxShadow = '0 12px 32px rgba(193, 139, 94, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 8px 24px rgba(193, 139, 94, 0.4)';
           }}
           aria-label="Create new habit"
         >

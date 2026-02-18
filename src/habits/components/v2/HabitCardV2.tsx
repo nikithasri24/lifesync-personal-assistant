@@ -1,11 +1,10 @@
 /**
  * HabitCardV2 Component
- * Individual habit card matching design spec with completion toggle
+ * Habit card matching habits-design-spec.html exactly
  */
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { HabitData, HabitEntryData } from '../../../services/types';
 import type { MergedConnectionResult } from '../../../shared/api/SharedDataProvider';
 
@@ -38,14 +37,23 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
   currentUserId,
   partnerName = 'Partner',
 }) => {
-  const colors = useThemeColors();
-
   // Get frequency display text
   const getFrequencyText = () => {
-    if (habit.frequency === 'daily') return '📅 Daily';
-    if (habit.frequency === 'weekly') return '📆 Weekly';
-    if (habit.frequency === 'monthly') return '🗓️ Monthly';
-    return '⚙️ Custom';
+    if (habit.frequency === 'daily') return 'Daily';
+    if (habit.frequency === 'weekly') return `${targetCount}x per week`;
+    if (habit.frequency === 'monthly') return `${targetCount}x per month`;
+    return 'Custom';
+  };
+
+  // Get category emoji
+  const getCategoryEmoji = () => {
+    if (habit.category === 'Health') return '🧘';
+    if (habit.category === 'Fitness') return '💪';
+    if (habit.category === 'Learning') return '📚';
+    if (habit.category === 'Personal') return '✍️';
+    if (habit.category === 'Productivity') return '💼';
+    if (habit.category === 'Social') return '🤝';
+    return '🎯';
   };
 
   // Calculate progress percentage for multi-target habits
@@ -57,16 +65,19 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
 
   return (
     <motion.div
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.15 }}
-      className="relative cursor-pointer mb-3"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="relative mb-3"
       style={{
-        backgroundColor: 'white',
-        borderLeft: `4px solid ${hasReachedTarget ? '#22c55e' : '#D4A574'}`,
-        borderRadius: '12px',
+        background: hasReachedTarget
+          ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.03) 0%, rgba(56, 142, 60, 0.03) 100%)'
+          : 'white',
+        borderLeft: `4px solid ${hasReachedTarget ? '#4CAF50' : '#D4A574'}`,
+        borderRadius: '16px',
         padding: '16px',
-        boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
+        boxShadow: '0 2px 8px rgba(139, 111, 71, 0.08)',
       }}
     >
       {/* Owner badge (top-right, only in merged mode) */}
@@ -88,85 +99,60 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
         </div>
       )}
 
-      {/* Top section: Icon, Name, Checkbox */}
-      <div className="flex items-center gap-3 mb-3">
-        {/* Emoji icon */}
-        <span className="text-3xl">{habit.category === 'Health' ? '🧘' :
-                                     habit.category === 'Fitness' ? '💪' :
-                                     habit.category === 'Learning' ? '📚' :
-                                     habit.category === 'Personal' ? '✍️' :
-                                     habit.category === 'Productivity' ? '💼' :
-                                     habit.category === 'Social' ? '🤝' : '🎯'}</span>
-
-        {/* Name and frequency */}
-        <div className="flex-1" onClick={onEdit}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#5C4A3A' }}>
+      {/* Header: Name/Category and Check Button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+        <div style={{ flex: 1 }} onClick={onEdit}>
+          <div style={{ fontSize: '16px', fontWeight: 600, color: '#5C4A3A', marginBottom: '4px' }}>
             {habit.name}
-          </h3>
-          <p style={{ fontSize: '12px', color: '#9B8B7A' }}>
-            {getFrequencyText()}
-          </p>
+          </div>
+          <div style={{ fontSize: '12px', color: '#9B8B7A' }}>
+            {getCategoryEmoji()} {habit.category} • {getFrequencyText()}
+          </div>
         </div>
 
-        {/* Completion checkbox */}
+        {/* Large Circular Check Button - 56px */}
         <button
           onClick={(e) => {
             e.stopPropagation();
             onComplete();
           }}
-          className="flex-shrink-0"
           style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            border: `2px solid ${hasReachedTarget ? '#22c55e' : '#C18B5E'}`,
-            background: hasReachedTarget ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : 'transparent',
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: hasReachedTarget
+              ? 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)'
+              : 'white',
+            border: `3px solid ${hasReachedTarget ? '#4CAF50' : '#E8DCC8'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            fontSize: '28px',
             cursor: 'pointer',
             transition: 'all 0.2s',
+            flexShrink: 0,
+            color: hasReachedTarget ? 'white' : '#E8DCC8',
           }}
           aria-label={hasReachedTarget ? 'Mark incomplete' : 'Mark complete'}
         >
-          {hasReachedTarget && <span style={{ color: 'white', fontSize: '16px' }}>✓</span>}
+          {hasReachedTarget ? '✓' : '○'}
         </button>
       </div>
 
-      {/* Description (if exists) */}
-      {habit.description && (
-        <p style={{ fontSize: '13px', color: '#6B5847', marginBottom: '8px' }}>
-          {habit.description}
-        </p>
-      )}
-
-      {/* Streak indicator */}
-      {currentStreak > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-          <span style={{ fontSize: '14px' }}>🔥</span>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#ea580c' }}>
-            {currentStreak} day streak!
-          </span>
-        </div>
-      )}
-
-      {/* Progress bar (if has multi-target) */}
+      {/* Progress Section (for multi-target habits) */}
       {targetCount > 1 && (
-        <div style={{ marginTop: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <span style={{ fontSize: '11px', color: '#6B5847' }}>
-              {habit.frequency === 'weekly' ? 'Weekly' : habit.frequency === 'monthly' ? 'Monthly' : 'Daily'} Progress
+        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #F5F0EA' }}>
+          <div style={{ fontSize: '12px', color: '#6B5847', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+            <span>
+              {habit.frequency === 'weekly' ? 'Weekly' : habit.frequency === 'monthly' ? 'Monthly' : 'Today\'s'} Progress
             </span>
-            <span style={{ fontSize: '11px', color: '#6B5847', fontWeight: 600 }}>
-              {todayCompletions}/{targetCount}
-            </span>
+            <span>{todayCompletions} / {targetCount}</span>
           </div>
           <div
             style={{
-              width: '100%',
-              height: '6px',
-              backgroundColor: '#E8DCC8',
-              borderRadius: '3px',
+              background: '#F5F0EA',
+              height: '8px',
+              borderRadius: '4px',
               overflow: 'hidden',
             }}
           >
@@ -175,12 +161,32 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
                 width: `${progressPercentage}%`,
                 height: '100%',
                 background: hasReachedTarget
-                  ? 'linear-gradient(90deg, #22c55e 0%, #16a34a 100%)'
-                  : 'linear-gradient(90deg, #D4A574 0%, #C18B5E 100%)',
-                transition: 'width 0.3s',
+                  ? 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)'
+                  : 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+                transition: 'width 0.3s ease',
               }}
             />
           </div>
+        </div>
+      )}
+
+      {/* Streak Badge */}
+      {currentStreak > 0 && (
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(245, 124, 0, 0.15) 100%)',
+            color: '#F57C00',
+            padding: '4px 10px',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: 700,
+            marginTop: '8px',
+          }}
+        >
+          🔥 {currentStreak} day streak
         </div>
       )}
     </motion.div>
