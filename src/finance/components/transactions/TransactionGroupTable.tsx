@@ -35,12 +35,6 @@ export const TransactionGroupTable: React.FC<TransactionGroupTableProps> = ({
             <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">
               Description
             </th>
-            <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">
-              Category
-            </th>
-            <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">
-              Type
-            </th>
             <th className="px-4 py-2 text-right text-xs font-semibold text-slate-700">
               Amount
             </th>

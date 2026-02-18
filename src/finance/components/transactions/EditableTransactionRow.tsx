@@ -9,7 +9,6 @@ import type { Transaction, Category } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { logger } from '../../../services/logger';
 import { useUpsertTransactionMutation, useDeleteTransactionMutation } from '@/hooks/useFinanceQuery';
-import { OwnerBadge } from '../../../components/common/OwnerBadge';
 
 interface EditableTransactionRowProps {
   transaction: Transaction;
@@ -116,30 +115,6 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
           />
         </td>
         <td className="px-4 py-3">
-          <select
-            value={editData.categoryId}
-            onChange={(e) => setEditData({ ...editData, categoryId: e.target.value })}
-            className="w-full px-2 py-1 text-sm border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-          >
-            <option value="">Uncategorized</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-        </td>
-        <td className="px-4 py-3">
-          <select
-            value={editData.type}
-            onChange={(e) => setEditData({ ...editData, type: e.target.value as 'debit' | 'credit' })}
-            className="w-full px-2 py-1 text-sm border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-          >
-            <option value="debit">Debit</option>
-            <option value="credit">Credit</option>
-          </select>
-        </td>
-        <td className="px-4 py-3">
           <input
             type="number"
             step="0.01"
@@ -175,10 +150,6 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
     );
   }
 
-  const categoryName = transaction.categoryId
-    ? categories.find((c) => c.id === transaction.categoryId)?.name ?? 'Unknown'
-    : 'Uncategorized';
-
   return (
     <tr className="border-b border-slate-200 hover:bg-slate-50 transition-colors group">
       <td className="px-4 py-3 text-sm text-slate-700">
@@ -186,17 +157,7 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
       </td>
       <td className="px-4 py-3">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="font-medium text-slate-900 text-sm">{transaction.description}</div>
-            {currentUserId && (
-              <OwnerBadge
-                userId={transaction.userId}
-                currentUserId={currentUserId}
-                partnerName={partnerName}
-                size="sm"
-              />
-            )}
-          </div>
+          <div className="font-medium text-slate-900 text-sm">{transaction.description}</div>
           {transaction.merchantName && transaction.merchantName !== transaction.description && (
             <div className="text-xs text-slate-600">{transaction.merchantName}</div>
           )}
@@ -205,18 +166,6 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
           )}
         </div>
       </td>
-      <td className="px-4 py-3">
-        <span
-          className={`text-sm ${
-            transaction.categoryId
-              ? 'text-slate-700'
-              : 'text-slate-500 italic'
-          }`}
-        >
-          {categoryName}
-        </span>
-      </td>
-      <td className="px-4 py-3 text-sm text-slate-700 capitalize">{transaction.type}</td>
       <td className="px-4 py-3 text-sm text-right font-medium">
         <span
           className={
@@ -269,9 +218,7 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
     prevProps.transaction.notes === nextProps.transaction.notes &&
     prevProps.transaction.userId === nextProps.transaction.userId &&
     prevProps.transaction.merchantName === nextProps.transaction.merchantName &&
-    prevProps.categories.length === nextProps.categories.length &&
-    prevProps.currentUserId === nextProps.currentUserId &&
-    prevProps.partnerName === nextProps.partnerName
+    prevProps.categories.length === nextProps.categories.length
   );
 });
 
