@@ -285,7 +285,7 @@ const DashboardPage: React.FC = () => {
         <div className="space-y-6">
           {/* Owner Filter - only show in merged mode */}
           {mergedConnection && (
-            <div className="flex justify-end">
+            <div className="flex justify-end overflow-x-auto pb-2">
               <OwnerFilter
                 value={filters.ownerFilter}
                 onChange={filters.setOwnerFilter}
@@ -419,43 +419,43 @@ const DashboardPage: React.FC = () => {
           </button>
         }
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div className="space-y-3">
           {filteredAccounts.length === 0 ? (
-            <div className="col-span-full text-center py-6 text-slate-500">
+            <div className="text-center py-6 text-slate-500">
               {filters.ownerFilter === 'all' ? 'No accounts yet. Click "Add Account" to create one.' : 'No accounts for this owner filter.'}
             </div>
           ) : (
             filteredAccounts.map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 group hover:bg-slate-100 transition-colors">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="font-medium truncate">{a.name}</div>
-                    {mergedConnection && user && (
-                      <OwnerBadge
-                        userId={a.userId}
-                        currentUserId={user.id}
-                        partnerName={partnerName}
-                        size="sm"
-                      />
-                    )}
+              <div key={a.id} className="rounded-lg bg-slate-50 px-4 py-3 group hover:bg-slate-100 transition-colors">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="font-medium text-slate-900">{a.name}</div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="font-semibold text-slate-900">
+                      {formatCurrency(a.liability ? -a.balance : a.balance)}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingAccount(a);
+                        setShowAccountModal(true);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded transition-opacity"
+                      title="Edit account"
+                      aria-label="Edit account"
+                    >
+                      <Pencil size={14} className="text-slate-600" />
+                    </button>
                   </div>
-                  <div className="text-xs text-slate-500">{a.type}</div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="font-semibold">
-                    {formatCurrency(a.liability ? -a.balance : a.balance)}
-                  </div>
-                  <button
-                    onClick={() => {
-                      setEditingAccount(a);
-                      setShowAccountModal(true);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded transition-opacity"
-                    title="Edit account"
-                    aria-label="Edit account"
-                  >
-                    <Pencil size={14} className="text-slate-600" />
-                  </button>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-slate-500">{a.type}</div>
+                  {mergedConnection && user && (
+                    <OwnerBadge
+                      userId={a.userId}
+                      currentUserId={user.id}
+                      partnerName={partnerName}
+                      size="sm"
+                    />
+                  )}
                 </div>
               </div>
             ))
@@ -464,61 +464,55 @@ const DashboardPage: React.FC = () => {
       </Card>
 
       <Card title="Budget Progress (Top 5 Categories)" className="md:col-span-2 xl:col-span-2">
-        <div className="space-y-3">
+        <div className="space-y-4">
           {spendByCat.slice(0, 5).map((c) => {
             const percentage = c.budget > 0 ? Math.min(100, (c.total / c.budget) * 100) : 0;
             const isOverBudget = c.total > c.budget && c.budget > 0;
 
-            // Create visual block progress bar (10 blocks total)
-            const filledBlocks = Math.round((percentage / 100) * 10);
-            const emptyBlocks = 10 - filledBlocks;
-            const blockBar = '█'.repeat(filledBlocks) + '░'.repeat(emptyBlocks);
-
             return (
-              <div key={c.catId} className="flex items-center gap-4">
-                {/* Category Name */}
-                <div className="w-32 truncate font-medium text-slate-900" title={c.name}>
-                  {c.name}
-                </div>
-
-                {/* Spent / Budget */}
-                <div className="w-32 text-sm text-slate-600">
-                  {formatCurrency(c.total)} / {formatCurrency(c.budget)}
-                </div>
-
-                {/* Visual Block Progress Bar */}
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className={`font-mono text-sm tracking-tight ${
-                    isOverBudget ? 'text-rose-500' : 'text-blue-500'
-                  }`}>
-                    [{blockBar}]
-                  </span>
-                </div>
-
-                {/* Percentage */}
-                <div className={`w-12 text-right text-sm font-semibold ${
-                  isOverBudget ? 'text-rose-600' : 'text-slate-700'
-                }`}>
-                  {Math.round(percentage)}%
-                </div>
-
-                {/* Owner Badge */}
-                {mergedConnection && user && (
-                  <div className="w-20 text-right text-xs">
-                    {(() => {
-                      const ownership = categoryOwnership[c.catId];
-                      if (!ownership) return <span className="text-slate-500">-</span>;
-                      if (ownership.hasMe && ownership.hasPartner) {
-                        return <span className="text-slate-600 font-medium">Both</span>;
-                      } else if (ownership.hasMe) {
-                        return <span className="text-blue-600 font-medium">Me</span>;
-                      } else if (ownership.hasPartner) {
-                        return <span className="text-purple-600 font-medium">{partnerName}</span>;
-                      }
-                      return <span className="text-slate-500">-</span>;
-                    })()}
+              <div key={c.catId} className="space-y-2">
+                {/* Category Name and Amount */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-medium text-slate-900">{c.name}</div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="text-sm text-slate-600">
+                      {formatCurrency(c.total)} / {formatCurrency(c.budget)}
+                    </div>
+                    {mergedConnection && user && (
+                      <div className="text-xs">
+                        {(() => {
+                          const ownership = categoryOwnership[c.catId];
+                          if (!ownership) return <span className="text-slate-500">-</span>;
+                          if (ownership.hasMe && ownership.hasPartner) {
+                            return <span className="text-slate-600 font-medium">Both</span>;
+                          } else if (ownership.hasMe) {
+                            return <span className="text-blue-600 font-medium">Me</span>;
+                          } else if (ownership.hasPartner) {
+                            return <span className="text-purple-600 font-medium">{partnerName}</span>;
+                          }
+                          return <span className="text-slate-500">-</span>;
+                        })()}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Progress Bar */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 rounded-full overflow-hidden bg-slate-200">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        isOverBudget ? 'bg-rose-500' : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${Math.min(100, percentage)}%` }}
+                    />
+                  </div>
+                  <div className={`text-sm font-semibold min-w-[3rem] text-right ${
+                    isOverBudget ? 'text-rose-600' : 'text-slate-700'
+                  }`}>
+                    {Math.round(percentage)}%
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -538,27 +532,27 @@ const DashboardPage: React.FC = () => {
               const isIncome = txn.type === 'credit';
 
               return (
-                <div key={txn.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-slate-900 truncate">{txn.description}</span>
-                      {mergedConnection && user && (
-                        <OwnerBadge
-                          userId={txn.userId}
-                          currentUserId={user.id}
-                          partnerName={partnerName}
-                          size="sm"
-                        />
-                      )}
+                <div key={txn.id} className="py-3 px-3 rounded-lg hover:bg-slate-50 transition-colors">
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <span className="font-medium text-slate-900">{txn.description}</span>
+                    <div className={`font-semibold text-sm flex-shrink-0 ${isIncome ? 'text-emerald-600' : 'text-slate-900'}`}>
+                      {isIncome ? '+' : '-'}{formatCurrency(Math.abs(txn.amount))}
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <div className="text-xs text-slate-500">
                       {new Date(txn.dateISO).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       {' • '}
                       {category?.name || 'Uncategorized'}
                     </div>
-                  </div>
-                  <div className={`font-semibold text-sm ${isIncome ? 'text-emerald-600' : 'text-slate-900'}`}>
-                    {isIncome ? '+' : '-'}{formatCurrency(Math.abs(txn.amount))}
+                    {mergedConnection && user && (
+                      <OwnerBadge
+                        userId={txn.userId}
+                        currentUserId={user.id}
+                        partnerName={partnerName}
+                        size="sm"
+                      />
+                    )}
                   </div>
                 </div>
               );
