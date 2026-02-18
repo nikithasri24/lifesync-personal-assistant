@@ -17,6 +17,7 @@ import { useCurrentUserId, useMergedConnection, usePartnerName } from '@/hooks/u
 import { useToast } from '@/hooks/useToast';
 import TripEditor from '../components/TripEditor';
 import ConfirmDialog from '../../components/DebtPayoffCalculator/ConfirmDialog';
+import { TravelStatsBarV2, TripCardV2, TripFormModalV2, LocationCardV2 } from '../components/v2';
 
 type LocationTypeFilter = 'all' | 'countries' | 'states' | 'parks' | 'islands';
 
@@ -211,6 +212,16 @@ const TravelPage: React.FC = () => {
       both: visitedLocations.filter(loc => loc.visitCategory === 'both').length,
     };
   }, [visitedLocations]);
+
+  // Calculate stats for TravelStatsBarV2
+  const travelStats = React.useMemo(() => {
+    return {
+      countries: filteredLocations.filter(loc => loc.locationType === 'country').length,
+      states: filteredLocations.filter(loc => loc.locationType === 'state').length,
+      parks: filteredLocations.filter(loc => loc.locationType === 'national_park').length,
+      islands: filteredLocations.filter(loc => loc.locationType === 'island').length,
+    };
+  }, [filteredLocations]);
 
   const handleCountryClick = async (countryCode: string, visitedByUserIds?: string[]) => {
     // Validate country code
@@ -613,6 +624,46 @@ const TravelPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Travel Stats */}
+      <TravelStatsBarV2
+        countriesVisited={travelStats.countries}
+        statesVisited={travelStats.states}
+        parksVisited={travelStats.parks}
+        islandsVisited={travelStats.islands}
+      />
+
+      {/* Location Stats Cards */}
+      <div className="grid grid-cols-2 gap-3" style={{ padding: '0 20px 16px' }}>
+        <LocationCardV2
+          icon="🌐"
+          title="Countries"
+          count={travelStats.countries}
+          total={195}
+          onClick={() => setLocationTypeFilter('countries')}
+        />
+        <LocationCardV2
+          icon="🏛️"
+          title="US States"
+          count={travelStats.states}
+          total={50}
+          onClick={() => setLocationTypeFilter('states')}
+        />
+        <LocationCardV2
+          icon="🏞️"
+          title="National Parks"
+          count={travelStats.parks}
+          total={63}
+          onClick={() => setLocationTypeFilter('parks')}
+        />
+        <LocationCardV2
+          icon="🏝️"
+          title="Islands"
+          count={travelStats.islands}
+          total={42}
+          onClick={() => setLocationTypeFilter('islands')}
+        />
+      </div>
+
       {/* Map */}
       <div className="h-[60vh]">
         <LeafletTravelMapV2
@@ -661,109 +712,27 @@ const TravelPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {trips.map((trip) => {
               const isOwnTrip = trip.userId === currentUserId;
-              const startDate = new Date(trip.startDate);
-              const endDate = new Date(trip.endDate);
-              const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-
-              // Determine status color
-              const getStatusColor = (status: string) => {
-                switch (status) {
-                  case 'planning': return 'bg-gray-100 text-gray-800';
-                  case 'upcoming': return 'bg-[#F5EBE0] text-[#8B6F47]';
-                  case 'in_progress': return 'bg-green-100 text-green-800';
-                  case 'completed': return 'bg-purple-100 text-purple-800';
-                  case 'cancelled': return 'bg-red-100 text-red-800';
-                  default: return 'bg-gray-100 text-gray-800';
-                }
-              };
-
-              const getCategoryColor = (category: string) => {
-                switch (category) {
-                  case 'mine': return 'border-[#E8D9CE] bg-[#F9F3ED]';
-                  case 'partner': return 'border-purple-300 bg-purple-50';
-                  case 'both': return 'border-pink-300 bg-pink-50';
-                  default: return 'border-gray-200 bg-white';
-                }
-              };
+              const ownerDisplayName = trip.tripCategory === 'mine' ? 'Me' : (trip.tripCategory === 'partner' ? (partnerName || 'Partner') : 'Both');
 
               return (
-                <div
+                <TripCardV2
                   key={trip.id}
-                  className={`bg-white rounded-lg border-2 ${getCategoryColor(trip.tripCategory)} shadow-sm hover:shadow-md transition-shadow overflow-hidden`}
-                >
-                  <div className="p-6">
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-semibold text-gray-900 flex-1">{trip.name}</h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(trip.status)}`}>
-                        {trip.status.replace('_', ' ').toUpperCase()}
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    {trip.description && (
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">{trip.description}</p>
-                    )}
-
-                    {/* Dates */}
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
-                      </span>
-                    </div>
-
-                    {/* Duration */}
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                      <Clock className="h-4 w-4" />
-                      <span>{duration} {duration === 1 ? 'day' : 'days'}</span>
-                    </div>
-
-                    {/* Budget */}
-                    {trip.budget && (
-                      <div className="text-sm text-gray-600 mb-3">
-                        Budget: {trip.currency} {trip.budget.toLocaleString()}
-                      </div>
-                    )}
-
-                    {/* Tags */}
-                    {trip.tags && trip.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {trip.tags.slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {trip.tags.length > 3 && (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                            +{trip.tags.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-3 border-t border-gray-200">
-                      <button
-                        onClick={() => handleEditTrip(trip)}
-                        className="flex-1 px-3 py-2 text-sm font-medium text-[#C18B5E] hover:bg-[#F9F3ED] rounded-lg transition-colors"
-                      >
-                        Edit
-                      </button>
-                      {isOwnTrip && (
-                        <button
-                          onClick={() => setTripToDelete(trip.id)}
-                          className="flex-1 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  id={trip.id}
+                  name={trip.name}
+                  description={trip.description}
+                  startDate={trip.startDate}
+                  endDate={trip.endDate}
+                  status={trip.status as any}
+                  budget={trip.budget}
+                  currency={trip.currency}
+                  tags={trip.tags}
+                  onClick={() => handleEditTrip(trip)}
+                  showOwnerBadge={!!mergedConnection}
+                  owner={{
+                    isOwner: isOwnTrip,
+                    displayName: ownerDisplayName,
+                  }}
+                />
               );
             })}
           </div>
@@ -829,16 +798,26 @@ const TravelPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Trip Editor Modal */}
-      <TripEditor
+      {/* Trip Editor Modal - V2 */}
+      <TripFormModalV2
         isOpen={isTripEditorOpen}
         onClose={() => {
           setIsTripEditorOpen(false);
           setEditingTrip(undefined);
         }}
-        onSave={handleSaveTrip}
-        onDelete={handleDeleteTrip}
-        trip={editingTrip}
+        trip={editingTrip ? {
+          id: editingTrip.id,
+          name: editingTrip.name,
+          description: editingTrip.description,
+          startDate: editingTrip.startDate,
+          endDate: editingTrip.endDate,
+          status: editingTrip.status as any,
+          budget: editingTrip.budget,
+          currency: editingTrip.currency,
+          tags: editingTrip.tags,
+        } : undefined}
+        isEditing={!!editingTrip}
+        onSubmit={handleSaveTrip}
       />
 
       {/* Trip Deletion Confirmation */}

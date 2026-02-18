@@ -36,6 +36,7 @@ import VisaMap from './VisaMap';
 import PassportEditor from './PassportEditor';
 import VisaEditor from './VisaEditor';
 import { PassportSummaryCard } from './PassportSummaryCard';
+import { VisaItemCardV2, VisaFormModalV2 } from './v2';
 
 interface DestinationRequirement {
   country: string;
@@ -648,48 +649,27 @@ const VisaCalculator: React.FC = () => {
           <>
             <div className="space-y-2">
               {userVisas.map(visa => {
-                const ownerLabel = getOwnershipLabel(visa.userId);
-                const ownerColor = getOwnershipColor(visa.userId);
-                const isOwnVisa = !mergedConnection || visa.userId === currentUserId;
+                // Get country flag
+                const getCountryFlag = (countryCode: string): string => {
+                  const flagMap: Record<string, string> = {
+                    'US': '🇺🇸', 'GB': '🇬🇧', 'JP': '🇯🇵', 'FR': '🇫🇷', 'DE': '🇩🇪',
+                    'IT': '🇮🇹', 'ES': '🇪🇸', 'CA': '🇨🇦', 'AU': '🇦🇺', 'NZ': '🇳🇿',
+                    'CN': '🇨🇳', 'IN': '🇮🇳', 'BR': '🇧🇷', 'MX': '🇲🇽', 'ZA': '🇿🇦',
+                    'AE': '🇦🇪', 'SG': '🇸🇬', 'TH': '🇹🇭', 'KR': '🇰🇷', 'RU': '🇷🇺',
+                  };
+                  return flagMap[countryCode] || '🌍';
+                };
 
                 return (
-                  <div key={visa.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="text-2xl">{visa.countryCode === 'US' ? '🇺🇸' : visa.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">{visa.countryName}</span>
-                          {mergedConnection && ownerLabel && (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ownerColor}`}>
-                              {ownerLabel}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          Expires: {new Date(visa.expiryDate).toLocaleDateString()}
-                          {visa.multipleEntry && ' • Multiple Entry'}
-                        </div>
-                      </div>
-                    </div>
-                    {isOwnVisa && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditVisa(visa)}
-                          className="text-[#C18B5E] hover:text-[#8B6F47] text-sm font-medium"
-                          aria-label={`Edit visa for ${visa.countryName}`}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => setVisaToDelete(visa.id)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                          aria-label={`Remove visa for ${visa.countryName}`}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <VisaItemCardV2
+                    key={visa.id}
+                    country={visa.countryName}
+                    flag={getCountryFlag(visa.countryCode)}
+                    visaType={visa.visaType || 'visa'}
+                    issueDate={visa.issueDate}
+                    expiryDate={visa.expiryDate}
+                    onClick={() => handleEditVisa(visa)}
+                  />
                 );
               })}
             </div>
@@ -804,17 +784,25 @@ const VisaCalculator: React.FC = () => {
         availableCountries={availableCountries}
       />
 
-      {/* Visa Editor Modal */}
-      <VisaEditor
+      {/* Visa Editor Modal - V2 */}
+      <VisaFormModalV2
         isOpen={isVisaEditorOpen}
         onClose={() => {
           setIsVisaEditorOpen(false);
           setEditingVisa(undefined);
         }}
-        onSave={handleSaveVisa}
-        onDelete={handleDeleteVisa}
-        visa={editingVisa}
-        availableCountries={availableCountries}
+        visa={editingVisa ? {
+          id: editingVisa.id,
+          country: editingVisa.countryCode,
+          visaType: (editingVisa.visaType || 'tourist') as any,
+          issueDate: editingVisa.issueDate,
+          expiryDate: editingVisa.expiryDate,
+          visaNumber: editingVisa.visaNumber,
+          entryType: editingVisa.multipleEntry ? 'multiple' : 'single',
+          notes: editingVisa.notes,
+        } : undefined}
+        isEditing={!!editingVisa}
+        onSubmit={handleSaveVisa}
       />
 
       {/* Passport deletion confirmation dialog */}
