@@ -1149,6 +1149,408 @@ export const NutritionSummaryV2: React.FC<NutritionSummaryV2Props> = ({
 
 ---
 
+## Phase X: Code Quality & Cleanup (Post-Implementation) ⭐ **CRITICAL**
+
+After completing the V2 implementation, perform these code quality improvements based on lessons learned from Notes and Journal modules.
+
+### Step 1: Add Error Boundary (CRITICAL - Do First)
+
+**Why:** Prevents crashes in one feature from taking down entire app
+
+**File:** `src/pages/MealPlanning.tsx`
+
+**Changes:**
+```typescript
+// BEFORE
+const MealPlanningPage: React.FC = () => {
+  return <MealPlanningContent />;
+};
+
+export default MealPlanningPage;
+
+// AFTER
+import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
+
+const MealPlanningContent: React.FC = () => {
+  // All existing content
+};
+
+const MealPlanningPage: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="MealPlanning">
+      <MealPlanningContent />
+    </FeatureErrorBoundary>
+  );
+};
+
+export default MealPlanningPage;
+```
+
+**Impact:** High - App stability improved, errors isolated to feature
+
+---
+
+### Step 2: Investigate and Remove Dead Code
+
+**Why:** Reduces maintenance burden, improves clarity, smaller bundle
+
+**Investigation Commands:**
+```bash
+# List all component files
+find src/meals -name "*.tsx" -o -name "*.ts"
+
+# Check if component is imported anywhere
+grep -r "ComponentName" src --exclude-dir=meals
+
+# Check if routed in App.tsx
+grep "meals\|MealPlanning" src/App.tsx
+
+# Check exports
+grep -r "from.*meals" src
+```
+
+**Process:**
+1. List all components in legacy directories (`components/layout/`, `components/old/`, etc.)
+2. For each component:
+   - Search codebase for imports
+   - Check if routed in App.tsx
+   - Check if exported in index.ts
+   - If NOT used → Mark for deletion
+3. Delete unused files
+4. Clean up barrel exports (index.ts)
+
+**Common Dead Code Patterns:**
+- Old form components replaced by V2 modals
+- Legacy header/footer components
+- Unused loading/error states
+- Duplicate card components
+- View wrapper abstractions
+
+**Example Cleanup:**
+```bash
+# After investigation, delete unused files
+rm -rf src/meals/components/layout/OldComponent.tsx
+rm -rf src/meals/components/old/
+
+# Update index.ts to remove deleted exports
+# (Manual edit to remove references to deleted components)
+
+# Stage deletions
+git add -u src/meals/
+```
+
+**Expected Impact:** -200 to -1,000 lines depending on module size
+
+---
+
+### Step 3: Replace Duplicate Date Formatting
+
+**Why:** DRY principle, consistent formatting, less code to maintain
+
+**Problem Pattern:**
+```typescript
+// ❌ DUPLICATE in component (10-20 lines)
+const formatRelativeTime = (date: string) => {
+  const now = new Date();
+  const entryDate = new Date(date);
+  const diffMs = now.getTime() - entryDate.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return entryDate.toLocaleDateString();
+};
+```
+
+**Solution:**
+```typescript
+// ✅ USE SHARED UTILITY
+import { getRelativeTime } from '@/utils/dateUtils';
+
+// In component:
+{getRelativeTime(createdAt)}
+```
+
+**Available Utilities in `src/utils/dateUtils.ts`:**
+- `getRelativeTime(date)` - Returns "2 hours ago", "Yesterday", etc.
+- `isSameDay(date1, date2)` - Compares dates ignoring time
+- `formatDateForDisplay(date)` - Returns "Jan 15, 2025"
+- `formatDateTimeForDisplay(date)` - Returns "Jan 15, 2025 at 3:30 PM"
+- `addDays(date, days)` - Add/subtract days
+- `startOfDay(date)` - Set to 00:00:00
+- `endOfDay(date)` - Set to 23:59:59
+
+**Search for Duplicates:**
+```bash
+# Find potential date formatting code
+grep -r "toLocaleDateString\|getTime\|setHours.*0.*0.*0" src/meals/components/
+```
+
+**Expected Impact:** -15 to -40 lines per card component
+
+---
+
+### Step 4: Replace Framer Motion with CSS Transitions
+
+**Why:** Smaller bundle (-20-30KB), better performance, native browser optimization
+
+**Problem:**
+```typescript
+// ❌ HEAVY LIBRARY for simple hover/tap effects
+import { motion } from 'framer-motion';
+
+<motion.div
+  whileHover={{ scale: 1.01 }}
+  whileTap={{ scale: 0.98 }}
+  transition={{ duration: 0.15 }}
+>
+```
+
+**Solution:**
+```typescript
+// ✅ CSS TRANSITIONS (equivalent effect, zero JS)
+<div
+  className="transition-transform hover:scale-[1.01] active:scale-[0.98]"
+  style={{ transitionDuration: '150ms' }}
+>
+```
+
+**Common Framer Motion Replacements:**
+
+| Framer Motion | CSS Equivalent |
+|---------------|----------------|
+| `whileHover={{ scale: 1.01 }}` | `hover:scale-[1.01]` |
+| `whileTap={{ scale: 0.98 }}` | `active:scale-[0.98]` |
+| `whileHover={{ opacity: 0.8 }}` | `hover:opacity-80` |
+| `transition={{ duration: 0.15 }}` | `style={{ transitionDuration: '150ms' }}` |
+| `initial={{ opacity: 0 }}` | Use CSS `@keyframes` or remove (not needed for simple cards) |
+
+**Search for Usage:**
+```bash
+# Find Framer Motion imports
+grep -r "framer-motion" src/meals/
+```
+
+**Expected Impact:** -20-30KB bundle size
+
+---
+
+### Step 5: Use Theme Colors Consistently
+
+**Why:** Automatic dark mode support, consistency, easier theming
+
+**Problem:**
+```typescript
+// ❌ HARDCODED COLORS (no dark mode support)
+<div style={{ color: '#5C4A3A' }}>
+<div style={{ backgroundColor: '#F5F0EA' }}>
+<div style={{ borderColor: '#E8DCC8' }}>
+```
+
+**Solution:**
+```typescript
+// ✅ THEME COLORS (automatic dark mode)
+import { useThemeColors } from '@/hooks/useThemeColors';
+
+const colors = useThemeColors();
+
+<div style={{ color: colors.text.primary }}>
+<div style={{ backgroundColor: colors.bg.secondary }}>
+<div style={{ borderColor: colors.border.light }}>
+```
+
+**Theme Colors Reference:**
+```typescript
+// Background colors
+colors.bg.primary      // Page background
+colors.bg.secondary    // Section background
+colors.bg.tertiary     // Card accent background
+colors.bg.white        // Card background
+
+// Text colors
+colors.text.primary    // Headings, important text
+colors.text.secondary  // Body text, labels
+colors.text.tertiary   // Muted text, timestamps
+
+// Border colors
+colors.border.light    // Subtle borders
+colors.border.medium   // Standard borders
+
+// Accent colors (terracotta)
+colors.accent.start    // #D4A574 (gradient start)
+colors.accent.end      // #C18B5E (gradient end)
+
+// Badge colors
+colors.badge.bg        // Badge background
+colors.badge.text      // Badge text
+```
+
+**Search for Hardcoded Colors:**
+```bash
+# Find hex colors in components
+grep -r "#[0-9A-Fa-f]\{6\}" src/meals/components/
+```
+
+**Expected Impact:** 5-15 hardcoded colors replaced per module
+
+---
+
+### Step 6: Use Shared Date Comparison Utilities
+
+**Why:** DRY principle, consistent date logic
+
+**Problem:**
+```typescript
+// ❌ DUPLICATE date comparison (8-10 lines)
+const selectedItems = items.filter((item) => {
+  const itemDate = new Date(item.createdAt);
+  itemDate.setHours(0, 0, 0, 0);
+  const selected = new Date(selectedDate);
+  selected.setHours(0, 0, 0, 0);
+  return itemDate.getTime() === selected.getTime();
+});
+```
+
+**Solution:**
+```typescript
+// ✅ USE SHARED UTILITY (1 line)
+import { isSameDay } from '@/utils/dateUtils';
+
+const selectedItems = items.filter(item =>
+  isSameDay(item.createdAt, selectedDate)
+);
+```
+
+**Expected Impact:** -8 to -15 lines per occurrence
+
+---
+
+### Step 7: Clean Up Unused Imports
+
+**Why:** Cleaner code, better tree-shaking, smaller bundle
+
+**How:**
+```bash
+# Build will show warnings
+npm run build
+
+# Or use ESLint
+npx eslint src/meals --fix
+```
+
+**Common Unused Imports After V2 Migration:**
+- Old component imports (replaced by V2)
+- Unused icon imports
+- Framer Motion
+- Unused type imports
+- Duplicate utility imports
+
+---
+
+### Step 8: Clean Up Module Exports
+
+**Why:** Clear API, prevents importing deleted components
+
+**File:** `src/meals/index.ts` or `src/meals/components/v2/index.ts`
+
+**Before:**
+```typescript
+// ❌ Exports deleted/unused components
+export { OldComponent } from './components/OldComponent';
+export { LegacyHeader } from './components/LegacyHeader';
+export { UnusedView } from './components/UnusedView';
+// ... 15+ mixed exports
+```
+
+**After:**
+```typescript
+// ✅ Only export active components, grouped logically
+
+// V2 Components (primary)
+export { MealsHeaderV2 } from './MealsHeaderV2';
+export { RecipeCardV2 } from './RecipeCardV2';
+export { RecipeFormModalV2 } from './RecipeFormModalV2';
+export { MealCardV2 } from './MealCardV2';
+export { CalendarGridV2 } from './CalendarGridV2';
+
+// Legacy (actively used only)
+export { DetailView } from '../DetailView'; // Still routed in App.tsx
+
+// Hooks
+export { useRecipesQuery } from '../../hooks';
+```
+
+---
+
+### Step 9: Verification & Testing
+
+**Build Check:**
+```bash
+# Ensure no TypeScript errors
+npx tsc --noEmit
+
+# Ensure build succeeds
+npm run build
+
+# Check for warnings
+npm run build 2>&1 | grep -i "warning"
+```
+
+**Manual Testing:**
+- [ ] Feature loads without errors
+- [ ] All modals open/close correctly
+- [ ] CRUD operations work
+- [ ] Filters work
+- [ ] Search works (if applicable)
+- [ ] Responsive design intact
+- [ ] Error boundary catches errors (test by throwing error)
+
+**Performance Check:**
+```bash
+# Check bundle size before/after
+npm run build -- --stats
+```
+
+---
+
+### Code Quality Checklist
+
+After completing all steps, verify:
+
+- [ ] ✅ Error boundary added to main page component
+- [ ] ✅ Dead code identified and deleted (0 unused files remain)
+- [ ] ✅ Duplicate date formatting replaced with `getRelativeTime()`
+- [ ] ✅ Duplicate date comparison replaced with `isSameDay()`
+- [ ] ✅ Framer Motion replaced with CSS (if applicable)
+- [ ] ✅ Theme colors used consistently (no hardcoded hex colors)
+- [ ] ✅ Unused imports removed
+- [ ] ✅ Module exports cleaned up (only active components exported)
+- [ ] ✅ Build succeeds with no errors or warnings
+- [ ] ✅ Manual testing completed successfully
+- [ ] ✅ Module marked as 100% CLAUDE.md compliant
+
+---
+
+### Expected Overall Impact
+
+**Metrics:**
+- Lines removed: -200 to -1,000 (varies by module complexity)
+- Files deleted: 3-10 legacy components
+- Bundle size: -20-40KB (if Framer Motion removed)
+- Error boundaries: +1 (critical for stability)
+- Code grade: C/D range → A (95/100)
+
+**Benefits:**
+- ✅ Crash isolation (errors don't take down entire app)
+- ✅ Smaller bundle (faster load times)
+- ✅ Less maintenance (no duplicate code)
+- ✅ Consistent theming (dark mode ready)
+- ✅ Better performance (CSS vs JS animations)
+- ✅ Cleaner codebase (easier to understand)
+
+---
+
 ## Commit Message Template
 
 ```bash
