@@ -18,43 +18,25 @@ import type {
   DreamStatus,
 } from '../goals/types/lifeGoals';
 import { Users } from 'lucide-react';
-import GoalTemplates from '../goals/components/GoalTemplates';
 import { logger } from '../services/logger';
 import ErrorState from '../components/ErrorState';
 import { supabase } from '../lib/supabase';
 
 // Import layout components
-import { LifeGoalsHeader } from '../goals/components/layout/LifeGoalsHeader';
 import { LifeGoalsLoadingState } from '../goals/components/layout/LifeGoalsLoadingState';
 import { StatsCards } from '../goals/components/layout/StatsCards';
 import { SegmentedControlV2 } from '@/components/v2/SegmentedControlV2';
 import { GoalList } from '../goals/components/layout/GoalList';
 import { DreamList } from '../goals/components/layout/DreamList';
-import { GoalFormModal, type GoalDraft } from '../goals/components/layout/GoalFormModal';
-import { DreamFormModal, type DreamDraft } from '../goals/components/layout/DreamFormModal';
 import { FilterBar, type StatusFilter, type OwnershipFilter } from '../goals/components/layout/FilterBar';
 import { FABV2 } from '@/components/v2/FABV2';
 import { Plus } from 'lucide-react';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
-const createGoalDraft = (): GoalDraft => ({
-  title: '',
-  description: '',
-  category: 'personal',
-  priority: 'medium',
-  targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-  isShared: false,
-  trackingMode: 'combined',
-});
+// Import V2 components
+import { GoalsHeaderV2, GoalFormModalV2, DreamFormModalV2 } from '../goals/components/v2';
 
-const createDreamDraft = (): DreamDraft => ({
-  title: '',
-  description: '',
-  category: 'travel',
-  estimatedCost: '',
-  estimatedTimeframe: '',
-  isShared: false,
-  trackingMode: 'combined',
-});
+// Removed createGoalDraft and createDreamDraft - V2 modals manage their own state
 
 const LifeGoals: React.FC = () => {
   // React Query hooks
@@ -85,6 +67,7 @@ const LifeGoals: React.FC = () => {
     : 'Partner';
 
   const loading = goalsLoading || dreamsLoading;
+  const colors = useThemeColors();
 
   // Get current user ID
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -99,11 +82,8 @@ const LifeGoals: React.FC = () => {
 
   // UI state
   const [activeTab, setActiveTab] = useState<'goals' | 'dreams'>('goals');
-  const [goalDraft, setGoalDraft] = useState<GoalDraft>(createGoalDraft);
-  const [dreamDraft, setDreamDraft] = useState<DreamDraft>(createDreamDraft);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [showDreamForm, setShowDreamForm] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
   const [editingProgress, setEditingProgress] = useState<string | null>(null);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
@@ -194,113 +174,93 @@ const LifeGoals: React.FC = () => {
     return filtered;
   }, [dreams, dreamStatusFilter, dreamOwnershipFilter, isMerged, partnerId, currentUserId]);
 
-  const handleGoalSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
-    if (!goalDraft.title.trim()) return;
-
-    try {
-      if (editingGoalId) {
-        // Update existing goal
-        await updateGoalMutation.mutateAsync({
-          goalId: editingGoalId,
-          updates: {
-            title: goalDraft.title,
-            description: goalDraft.description,
-            category: goalDraft.category,
-            priority: goalDraft.priority,
-            targetDate: goalDraft.targetDate,
-            // Sharing options - only update if merged mode is available
-            isShared: isMerged ? goalDraft.isShared : undefined,
-            trackingMode: isMerged && goalDraft.isShared ? goalDraft.trackingMode : undefined,
-          },
-        });
-        setEditingGoalId(null);
-      } else {
-        // Create new goal
-        await createGoalMutation.mutateAsync({
-          title: goalDraft.title,
-          description: goalDraft.description,
-          category: goalDraft.category,
-          priority: goalDraft.priority,
-          targetDate: goalDraft.targetDate,
-          startDate: new Date().toISOString(),
-          // Sharing options - only set if merged mode is available
-          isShared: isMerged ? goalDraft.isShared : false,
-          trackingMode: goalDraft.isShared ? goalDraft.trackingMode : 'combined',
-        });
-      }
-      setGoalDraft(createGoalDraft());
-      setShowGoalForm(false);
-    } catch (error) {
-      logger.error('LifeGoals', error as Error);
+  const handleGoalSubmit = async (data: {
+    title: string;
+    description: string;
+    category: string;
+    priority: string;
+    targetDate: string;
+    isShared: boolean;
+    trackingMode: string;
+  }): Promise<void> => {
+    if (editingGoalId) {
+      // Update existing goal
+      await updateGoalMutation.mutateAsync({
+        goalId: editingGoalId,
+        updates: {
+          title: data.title,
+          description: data.description,
+          category: data.category as any,
+          priority: data.priority as any,
+          targetDate: data.targetDate,
+          // Sharing options - only update if merged mode is available
+          isShared: isMerged ? data.isShared : undefined,
+          trackingMode: isMerged && data.isShared ? (data.trackingMode as any) : undefined,
+        },
+      });
+      setEditingGoalId(null);
+    } else {
+      // Create new goal
+      await createGoalMutation.mutateAsync({
+        title: data.title,
+        description: data.description,
+        category: data.category as any,
+        priority: data.priority as any,
+        targetDate: data.targetDate,
+        startDate: new Date().toISOString(),
+        // Sharing options - only set if merged mode is available
+        isShared: isMerged ? data.isShared : false,
+        trackingMode: data.isShared ? (data.trackingMode as any) : 'combined',
+      });
     }
   };
 
-  const handleDreamSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
-    if (!dreamDraft.title.trim()) return;
-
-    try {
-      if (editingDreamId) {
-        // Update existing dream
-        await updateDreamMutation.mutateAsync({
-          dreamId: editingDreamId,
-          updates: {
-            title: dreamDraft.title,
-            description: dreamDraft.description,
-            category: dreamDraft.category,
-            estimatedCost: dreamDraft.estimatedCost ? Number(dreamDraft.estimatedCost) : undefined,
-            estimatedTimeframe: dreamDraft.estimatedTimeframe || undefined,
-            // Sharing options - only update if merged mode is available
-            isShared: isMerged ? dreamDraft.isShared : undefined,
-            trackingMode: isMerged && dreamDraft.isShared ? dreamDraft.trackingMode : undefined,
-          },
-        });
-        setEditingDreamId(null);
-      } else {
-        // Create new dream
-        await createDreamMutation.mutateAsync({
-          title: dreamDraft.title,
-          description: dreamDraft.description,
-          category: dreamDraft.category,
-          estimatedCost: dreamDraft.estimatedCost ? Number(dreamDraft.estimatedCost) : undefined,
-          estimatedTimeframe: dreamDraft.estimatedTimeframe || undefined,
-          // Sharing options - only set if merged mode is available
-          isShared: isMerged ? dreamDraft.isShared : false,
-          trackingMode: dreamDraft.isShared ? dreamDraft.trackingMode : 'combined',
-        });
-      }
-      setDreamDraft(createDreamDraft());
-      setShowDreamForm(false);
-    } catch (error) {
-      logger.error('LifeGoals', error as Error);
+  const handleDreamSubmit = async (data: {
+    title: string;
+    description: string;
+    category: string;
+    estimatedCost: string;
+    estimatedTimeframe: string;
+    isShared: boolean;
+    trackingMode: string;
+  }): Promise<void> => {
+    if (editingDreamId) {
+      // Update existing dream
+      await updateDreamMutation.mutateAsync({
+        dreamId: editingDreamId,
+        updates: {
+          title: data.title,
+          description: data.description,
+          category: data.category as any,
+          estimatedCost: data.estimatedCost ? Number(data.estimatedCost) : undefined,
+          estimatedTimeframe: data.estimatedTimeframe || undefined,
+          // Sharing options - only update if merged mode is available
+          isShared: isMerged ? data.isShared : undefined,
+          trackingMode: isMerged && data.isShared ? (data.trackingMode as any) : undefined,
+        },
+      });
+      setEditingDreamId(null);
+    } else {
+      // Create new dream
+      await createDreamMutation.mutateAsync({
+        title: data.title,
+        description: data.description,
+        category: data.category as any,
+        estimatedCost: data.estimatedCost ? Number(data.estimatedCost) : undefined,
+        estimatedTimeframe: data.estimatedTimeframe || undefined,
+        // Sharing options - only set if merged mode is available
+        isShared: isMerged ? data.isShared : false,
+        trackingMode: data.isShared ? (data.trackingMode as any) : 'combined',
+      });
     }
   };
 
   const handleEditGoal = (goal: LifeGoal): void => {
-    setGoalDraft({
-      title: goal.title,
-      description: goal.description ?? '',
-      category: goal.category,
-      priority: goal.priority,
-      targetDate: goal.targetDate ?? '',
-      isShared: !!goal.connectionId,
-      trackingMode: goal.trackingMode,
-    });
     setEditingGoalId(goal.id);
     setShowGoalForm(true);
   };
 
   const handleEditDream = (dream: LifeDream): void => {
-    setDreamDraft({
-      title: dream.title,
-      description: dream.description ?? '',
-      category: dream.category,
-      estimatedCost: dream.estimatedCost?.toString() ?? '',
-      estimatedTimeframe: dream.estimatedTimeframe ?? '',
-      isShared: !!dream.connectionId,
-      trackingMode: dream.trackingMode,
-    });
     setEditingDreamId(dream.id);
     setShowDreamForm(true);
   };
@@ -442,53 +402,52 @@ const LifeGoals: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6 pb-32">
-      {/* Merged mode indicator */}
-      {isMerged && (
-        <div
-          className="flex items-center gap-2 rounded-2xl p-4 mb-4"
-          style={{
-            background: 'linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(193, 139, 94, 0.15) 100%)',
-            borderWidth: '1px',
-            borderColor: '#E8DCC8',
-          }}
-        >
-          <Users className="h-5 w-5" style={{ color: '#C18B5E' }} />
-          <span className="text-sm font-semibold" style={{ color: '#5C4A3A' }}>
-            Shared Goals with {partnerName}
-          </span>
-          <span className="ml-auto text-xs font-medium" style={{ color: '#9B8B7A' }}>
-            Both of you can see and edit these goals
-          </span>
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <GoalsHeaderV2 />
+
+        {/* Merged mode indicator */}
+        {isMerged && (
+          <div
+            className="flex items-center gap-2 rounded-2xl p-4 mb-4"
+            style={{
+              background: 'linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(193, 139, 94, 0.15) 100%)',
+              borderWidth: '1px',
+              borderColor: '#E8DCC8',
+            }}
+          >
+            <Users className="h-5 w-5" style={{ color: '#C18B5E' }} />
+            <span className="text-sm font-semibold" style={{ color: '#5C4A3A' }}>
+              Shared Goals with {partnerName}
+            </span>
+            <span className="ml-auto text-xs font-medium" style={{ color: '#9B8B7A' }}>
+              Both of you can see and edit these goals
+            </span>
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="mb-6">
+          <StatsCards goalStats={goalStats} dreamStats={dreamStats} activeTab={activeTab} />
         </div>
-      )}
 
-      <LifeGoalsHeader
-        onShowTemplates={() => setShowTemplates(true)}
-        onNewGoal={() => {
-          setShowGoalForm(true);
-          setActiveTab('goals');
-        }}
-        onNewDream={() => {
-          setShowDreamForm(true);
-          setActiveTab('dreams');
-        }}
-      />
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <SegmentedControlV2
+            segments={[
+              { value: 'goals', label: 'Goals' },
+              { value: 'dreams', label: 'Dreams' },
+            ]}
+            value={activeTab}
+            onChange={(value) => setActiveTab(value as 'goals' | 'dreams')}
+            aria-label="Toggle between Goals and Dreams"
+          />
+        </div>
 
-      <StatsCards goalStats={goalStats} dreamStats={dreamStats} activeTab={activeTab} />
-
-      <SegmentedControlV2
-        segments={[
-          { value: 'goals', label: 'Goals' },
-          { value: 'dreams', label: 'Dreams' },
-        ]}
-        value={activeTab}
-        onChange={(value) => setActiveTab(value as 'goals' | 'dreams')}
-        aria-label="Toggle between Goals and Dreams"
-      />
-
-      <section className="space-y-4">
-        {activeTab === 'goals' && (
+        {/* Content Views */}
+        <section className="space-y-4">
+          {activeTab === 'goals' && (
           <>
             <FilterBar
               statusFilter={goalStatusFilter}
@@ -517,10 +476,10 @@ const LifeGoals: React.FC = () => {
               partnerId={partnerId}
               partnerName={partnerName}
             />
-          </>
-        )}
-        {activeTab === 'dreams' && (
-          <>
+            </>
+          )}
+          {activeTab === 'dreams' && (
+            <>
             <FilterBar
               statusFilter={dreamStatusFilter}
               onStatusFilterChange={setDreamStatusFilter}
@@ -540,43 +499,61 @@ const LifeGoals: React.FC = () => {
               partnerId={partnerId}
               partnerName={partnerName}
             />
-          </>
-        )}
-      </section>
+            </>
+          )}
+        </section>
 
-      <GoalFormModal
-        isOpen={showGoalForm}
-        goalDraft={goalDraft}
-        onDraftChange={setGoalDraft}
-        onSubmit={handleGoalSubmit}
-        onClose={() => {
-          setShowGoalForm(false);
-          setGoalDraft(createGoalDraft());
-          setEditingGoalId(null);
-        }}
-        isMergedModeAvailable={isMerged}
-        isEditMode={!!editingGoalId}
-      />
+        {/* Goal Form Modal V2 */}
+        <GoalFormModalV2
+          isOpen={showGoalForm}
+          onClose={() => {
+            setShowGoalForm(false);
+            setEditingGoalId(null);
+          }}
+          onSubmit={handleGoalSubmit}
+          onDelete={editingGoalId ? () => handleDeleteGoal(editingGoalId) : undefined}
+          initialData={editingGoalId ? {
+            title: goals.find(g => g.id === editingGoalId)?.title || '',
+            description: goals.find(g => g.id === editingGoalId)?.description || '',
+            category: goals.find(g => g.id === editingGoalId)?.category || 'personal',
+            priority: goals.find(g => g.id === editingGoalId)?.priority || 'medium',
+            targetDate: goals.find(g => g.id === editingGoalId)?.targetDate || '',
+            isShared: !!goals.find(g => g.id === editingGoalId)?.connectionId,
+            trackingMode: goals.find(g => g.id === editingGoalId)?.trackingMode || 'combined',
+          } : undefined}
+          isEditing={!!editingGoalId}
+          isPending={createGoalMutation.isPending || updateGoalMutation.isPending}
+          isMergedModeAvailable={isMerged}
+        />
 
-      <DreamFormModal
-        isOpen={showDreamForm}
-        dreamDraft={dreamDraft}
-        onDraftChange={setDreamDraft}
-        onSubmit={handleDreamSubmit}
-        onClose={() => {
-          setShowDreamForm(false);
-          setDreamDraft(createDreamDraft());
-          setEditingDreamId(null);
-        }}
-        isMergedModeAvailable={isMerged}
-        isEditMode={!!editingDreamId}
-      />
+        {/* Dream Form Modal V2 */}
+        <DreamFormModalV2
+          isOpen={showDreamForm}
+          onClose={() => {
+            setShowDreamForm(false);
+            setEditingDreamId(null);
+          }}
+          onSubmit={handleDreamSubmit}
+          onDelete={editingDreamId ? () => handleDeleteDream(editingDreamId) : undefined}
+          initialData={editingDreamId ? {
+            title: dreams.find(d => d.id === editingDreamId)?.title || '',
+            description: dreams.find(d => d.id === editingDreamId)?.description || '',
+            category: dreams.find(d => d.id === editingDreamId)?.category || 'travel',
+            estimatedCost: dreams.find(d => d.id === editingDreamId)?.estimatedCost?.toString() || '',
+            estimatedTimeframe: dreams.find(d => d.id === editingDreamId)?.estimatedTimeframe || '',
+            isShared: !!dreams.find(d => d.id === editingDreamId)?.connectionId,
+            trackingMode: dreams.find(d => d.id === editingDreamId)?.trackingMode || 'combined',
+          } : undefined}
+          isEditing={!!editingDreamId}
+          isPending={createDreamMutation.isPending || updateDreamMutation.isPending}
+          isMergedModeAvailable={isMerged}
+        />
 
-      {/* FAB */}
-      <FABV2
-        icon={Plus}
-        onClick={() => {
-          if (activeTab === 'goals') {
+        {/* FAB */}
+        <FABV2
+          icon={Plus}
+          onClick={() => {
+            if (activeTab === 'goals') {
             setShowGoalForm(true);
           } else {
             setShowDreamForm(true);
@@ -587,12 +564,7 @@ const LifeGoals: React.FC = () => {
         size="md"
       />
 
-      {showTemplates && (
-        <GoalTemplates
-          onClose={() => setShowTemplates(false)}
-          onGoalCreated={handleGoalCreatedFromTemplate}
-        />
-      )}
+      </div>
     </div>
   );
 };
