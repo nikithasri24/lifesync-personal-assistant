@@ -4,10 +4,11 @@
  */
 
 import React from 'react';
-import { Gift } from 'lucide-react';
+import { Gift, Check } from 'lucide-react';
 import type { AchievementReward } from '../types';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { OwnerBadge } from '@/components/common/OwnerBadge';
+import { useUpdateAchievementReward } from '../hooks/useAchievementRewardsQuery';
 
 interface ChallengeCardProps {
   challenge: AchievementReward;
@@ -25,14 +26,19 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
   partnerName = 'Partner',
 }) => {
   const colors = useThemeColors();
+  const { mutate: updateChallenge, isPending: isClaiming } = useUpdateAchievementReward();
 
   const progress = challenge.target_value
     ? Math.min((challenge.current_progress / challenge.target_value) * 100, 100)
     : 0;
 
-  // Consider challenge completed if status is 'completed' OR progress reached 100%
-  const isCompleted = challenge.status === 'completed' || progress >= 100;
+  // Consider challenge completed if progress reached 100%
+  const isProgressComplete = progress >= 100;
+  // Consider reward claimed if status is 'completed' with completed_at set
+  const isClaimed = challenge.status === 'completed' && challenge.completed_at !== null;
   const isExpired = challenge.status === 'expired';
+  // Show reward if claimed OR progress is complete
+  const isCompleted = isClaimed || isProgressComplete;
 
   const getRewardIcon = () => {
     if (challenge.hide_reward && !isCompleted) {
@@ -57,6 +63,17 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
       return 'Mystery Reward (unlocks when complete)';
     }
     return challenge.reward_description || 'Reward awaits!';
+  };
+
+  const handleClaimReward = (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    // Mark challenge as completed with timestamp
+    updateChallenge({
+      id: challenge.id,
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    });
   };
 
   return (
@@ -116,7 +133,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
       </div>
 
       {/* Progress Bar */}
-      {!isCompleted && !isExpired && (
+      {!isProgressComplete && !isExpired && (
         <div className="mb-3">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-medium" style={{ color: colors.text.secondary }}>
@@ -166,19 +183,35 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
         </div>
       </div>
 
-      {isCompleted && (
-        <button
-          className="w-full mt-3 px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
-          style={{
-            background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
-        >
-          Claim Reward 🎉
-        </button>
+      {/* Claim/Claimed Button - only show when progress is complete */}
+      {isProgressComplete && !isExpired && (
+        <>
+          {isClaimed ? (
+            <button
+              className="w-full mt-3 px-4 py-2 rounded-lg font-semibold text-white transition-colors cursor-default"
+              style={{
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              }}
+              disabled
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Check className="w-5 h-5" />
+                <span>Claimed</span>
+              </div>
+            </button>
+          ) : (
+            <button
+              className="w-full mt-3 px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
+              style={{
+                background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+              }}
+              onClick={handleClaimReward}
+              disabled={isClaiming}
+            >
+              {isClaiming ? 'Claiming...' : 'Claim Reward 🎉'}
+            </button>
+          )}
+        </>
       )}
     </div>
   );
