@@ -478,7 +478,7 @@ const VisaCalculator: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
@@ -490,7 +490,7 @@ const VisaCalculator: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Visa-Free Travel Calculator</h1>
