@@ -49,10 +49,10 @@ export const StreakIndicatorV2: React.FC<StreakIndicatorV2Props> = ({
         className={`inline-flex items-center rounded-xl font-bold ${styles.container}`}
         style={{
           background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(245, 124, 0, 0.15) 100%)',
-          color: '#F57C00',
+          color: colors.warning,
         }}
       >
-        <Flame className={styles.icon} fill="#F57C00" />
+        <Flame className={styles.icon} fill={colors.warning} />
         <span>{currentStreak} day{currentStreak !== 1 ? 's' : ''}</span>
       </div>
 
@@ -66,7 +66,7 @@ export const StreakIndicatorV2: React.FC<StreakIndicatorV2Props> = ({
       )}
 
       {isMilestone && (
-        <span className="text-xs animate-pulse" style={{ color: '#F57C00' }}>
+        <span className="text-xs animate-pulse" style={{ color: colors.warning }}>
           🎉
         </span>
       )}

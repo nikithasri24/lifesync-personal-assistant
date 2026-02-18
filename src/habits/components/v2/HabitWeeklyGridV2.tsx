@@ -5,6 +5,7 @@
 
 import React, { useMemo } from 'react';
 import type { HabitData, HabitEntryData } from '../../../services/types';
+import { useThemeColors } from '../../../hooks/useThemeColors';
 
 export interface HabitWeeklyGridV2Props {
   habits: HabitData[];
@@ -49,6 +50,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
   onToggleEntry,
   selectedDate = new Date(),
 }) => {
+  const colors = useThemeColors();
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
 
   // Create a map of habit completions by date
@@ -102,7 +104,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
               style={{
                 fontSize: '11px',
                 fontWeight: 700,
-                color: day.isToday ? '#C18B5E' : '#9B8B7A',
+                color: day.isToday ? colors.primary : colors.text.secondary,
                 marginBottom: '6px',
                 textTransform: 'uppercase',
               }}
@@ -132,7 +134,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
                 style={{
                   fontSize: '16px',
                   fontWeight: 600,
-                  color: '#5C4A3A',
+                  color: colors.text.primary,
                   marginBottom: '8px',
                 }}
               >
@@ -161,24 +163,24 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
             <div
               key={habit.id}
               style={{
-                background: 'white',
+                background: colors.bg.white,
                 borderRadius: '12px',
                 padding: '12px',
                 marginBottom: '12px',
-                boxShadow: '0 2px 6px rgba(139, 111, 71, 0.06)',
+                boxShadow: `0 2px 6px ${colors.shadow.light}`,
               }}
             >
               <div
                 style={{
                   fontSize: '14px',
                   fontWeight: 600,
-                  color: '#5C4A3A',
+                  color: colors.text.primary,
                   marginBottom: '8px',
                 }}
               >
                 {getEmoji()} {habit.name}
                 {habit.target_value && habit.target_value > 1 && (
-                  <span style={{ color: '#9B8B7A', fontWeight: 400 }}>
+                  <span style={{ color: colors.text.secondary, fontWeight: 400 }}>
                     {' '}({habit.target_value}x/{habit.frequency === 'weekly' ? 'week' : habit.frequency === 'monthly' ? 'month' : 'day'})
                   </span>
                 )}
@@ -202,8 +204,8 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
                         height: '32px',
                         borderRadius: '8px',
                         background: isChecked
-                          ? 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)'
-                          : '#F5F0EA',
+                          ? `linear-gradient(135deg, ${colors.success} 0%, ${colors.successDark} 100%)`
+                          : colors.border.light,
                         border: 'none',
                         display: 'flex',
                         alignItems: 'center',
@@ -230,17 +232,17 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
       <div
         style={{
           marginTop: '24px',
-          background: 'white',
+          background: colors.bg.white,
           borderRadius: '16px',
           padding: '20px',
-          boxShadow: '0 2px 8px rgba(139, 111, 71, 0.08)',
+          boxShadow: `0 2px 8px ${colors.shadow.medium}`,
         }}
       >
         <div
           style={{
             fontSize: '16px',
             fontWeight: 700,
-            color: '#5C4A3A',
+            color: colors.text.primary,
             marginBottom: '16px',
             textAlign: 'center',
           }}
@@ -266,7 +268,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
             >
               {stats.completionPercentage}%
             </div>
-            <div style={{ fontSize: '11px', color: '#9B8B7A', marginTop: '4px' }}>
+            <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
               Completion
             </div>
           </div>
@@ -275,14 +277,14 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
               style={{
                 fontSize: '24px',
                 fontWeight: 700,
-                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+                background: colors.gradient.primary,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
             >
               {stats.totalCompleted}
             </div>
-            <div style={{ fontSize: '11px', color: '#9B8B7A', marginTop: '4px' }}>
+            <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
               Total Checks
             </div>
           </div>
@@ -291,14 +293,14 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
               style={{
                 fontSize: '24px',
                 fontWeight: 700,
-                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+                background: colors.gradient.primary,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
             >
               {stats.perfectDays}
             </div>
-            <div style={{ fontSize: '11px', color: '#9B8B7A', marginTop: '4px' }}>
+            <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
               Perfect Days
             </div>
           </div>

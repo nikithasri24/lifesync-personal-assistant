@@ -4,9 +4,9 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import type { HabitData, HabitEntryData } from '../../../services/types';
 import type { MergedConnectionResult } from '../../../shared/api/SharedDataProvider';
+import { useThemeColors } from '../../../hooks/useThemeColors';
 
 export interface HabitCardV2Props {
   habit: HabitData;
@@ -37,6 +37,8 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
   currentUserId,
   partnerName = 'Partner',
 }) => {
+  const colors = useThemeColors();
+
   // Get frequency display text
   const getFrequencyText = () => {
     if (habit.frequency === 'daily') return 'Daily';
@@ -64,12 +66,8 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
   const ownerName = isOwner ? 'You' : partnerName;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.2 }}
-      className="relative mb-3"
+    <div
+      className="relative mb-3 transition-all duration-200 animate-fadeInUp"
       style={{
         background: hasReachedTarget
           ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.03) 0%, rgba(56, 142, 60, 0.03) 100%)'
@@ -102,10 +100,10 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
       {/* Header: Name/Category and Check Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
         <div style={{ flex: 1 }} onClick={onEdit}>
-          <div style={{ fontSize: '16px', fontWeight: 600, color: '#5C4A3A', marginBottom: '4px' }}>
+          <div style={{ fontSize: '16px', fontWeight: 600, color: colors.text.primary, marginBottom: '4px' }}>
             {habit.name}
           </div>
-          <div style={{ fontSize: '12px', color: '#9B8B7A' }}>
+          <div style={{ fontSize: '12px', color: colors.text.secondary }}>
             {getCategoryEmoji()} {habit.category} • {getFrequencyText()}
           </div>
         </div>
@@ -123,7 +121,7 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
             background: hasReachedTarget
               ? 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)'
               : 'white',
-            border: `3px solid ${hasReachedTarget ? '#4CAF50' : '#E8DCC8'}`,
+            border: `3px solid ${hasReachedTarget ? colors.success : colors.border.light}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -131,7 +129,7 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
             cursor: 'pointer',
             transition: 'all 0.2s',
             flexShrink: 0,
-            color: hasReachedTarget ? 'white' : '#E8DCC8',
+            color: hasReachedTarget ? 'white' : colors.border.light,
           }}
           aria-label={hasReachedTarget ? 'Mark incomplete' : 'Mark complete'}
         >
@@ -141,8 +139,8 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
 
       {/* Progress Section (for multi-target habits) */}
       {targetCount > 1 && (
-        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #F5F0EA' }}>
-          <div style={{ fontSize: '12px', color: '#6B5847', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${colors.border.light}` }}>
+          <div style={{ fontSize: '12px', color: colors.text.tertiary, marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
             <span>
               {habit.frequency === 'weekly' ? 'Weekly' : habit.frequency === 'monthly' ? 'Monthly' : 'Today\'s'} Progress
             </span>
@@ -150,7 +148,7 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
           </div>
           <div
             style={{
-              background: '#F5F0EA',
+              background: colors.border.light,
               height: '8px',
               borderRadius: '4px',
               overflow: 'hidden',
@@ -178,7 +176,7 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
             alignItems: 'center',
             gap: '4px',
             background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(245, 124, 0, 0.15) 100%)',
-            color: '#F57C00',
+            color: colors.warning,
             padding: '4px 10px',
             borderRadius: '12px',
             fontSize: '12px',
@@ -189,7 +187,7 @@ export const HabitCardV2: React.FC<HabitCardV2Props> = ({
           🔥 {currentStreak} day streak
         </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 

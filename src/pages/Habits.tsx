@@ -17,6 +17,7 @@ import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { useModalState } from '../hooks/useModalState';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
 import {
   useHabits,
   useHabitEntries,
@@ -59,7 +60,7 @@ const getWeekBoundaries = (date: Date = new Date()): { start: string; end: strin
   };
 };
 
-const Habits: React.FC = () => {
+const HabitsContent: React.FC = () => {
   // React Query hooks
   const { data: apiHabits = [], isLoading: habitsLoading, error: habitsError } = useHabits({ isActive: true });
   const { data: apiEntries = [], isLoading: entriesLoading } = useHabitEntries();
@@ -524,6 +525,14 @@ const Habits: React.FC = () => {
         />
       </div>
     </div>
+  );
+};
+
+const Habits: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="Habits">
+      <HabitsContent />
+    </FeatureErrorBoundary>
   );
 };
 
