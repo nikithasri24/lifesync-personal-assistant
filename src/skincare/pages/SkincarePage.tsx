@@ -213,30 +213,38 @@ const SelfCarePage: React.FC = () => {
       </div>
 
       {/* View Toggle */}
-      <div
-        style={{
-          background: 'rgba(92, 74, 58, 0.1)',
-          borderRadius: '12px',
-          padding: '4px',
-          margin: '16px 20px',
-        }}
-      >
-        <SegmentedControl
-          segments={viewSegments}
-          value={view}
-          onChange={(value) => setView(value as ViewType)}
-        />
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem' }}>
+        <div
+          style={{
+            background: 'rgba(92, 74, 58, 0.1)',
+            borderRadius: '12px',
+            padding: '4px',
+            marginBottom: '16px',
+          }}
+        >
+          <SegmentedControl
+            segments={viewSegments}
+            value={view}
+            onChange={(value) => setView(value as ViewType)}
+          />
+        </div>
       </div>
 
       {/* Content */}
-      {view === 'routine' && <WeeklyRoutineTable />}
+      {view === 'routine' && (
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <WeeklyRoutineTable />
+        </div>
+      )}
 
       {view === 'schedule' && (
-        <CalendarView items={allItems.filter(i => i.isActive)} getCategoryInfo={getCategoryInfo} />
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <CalendarView items={allItems.filter(i => i.isActive)} getCategoryInfo={getCategoryInfo} />
+        </div>
       )}
 
       {view === 'products' && (
-        <div className="px-6 pb-6">
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
           {/* Add Product Button */}
           <button
             onClick={handleAddProduct}
@@ -290,7 +298,7 @@ const SelfCarePage: React.FC = () => {
       )}
 
       {view === 'setup' && (
-        <div className="px-6 pb-6">
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
           {/* Add Category Button */}
           <button
             onClick={() => setShowCategoryModal(true)}
