@@ -104,7 +104,7 @@ export function WeekView({
       </div>
 
       {/* Meal Grid */}
-      <div className="px-6 overflow-x-auto">
+      <div className="px-6">
         <div
           style={{
             width: '373px', // Fixed width: 4 columns × 72px + 3 gaps × 8px + padding
