@@ -3,6 +3,7 @@ import React, { type ReactElement, useEffect, useMemo, useState, useCallback, Su
 import { logger } from '../services/logger';
 import { createPortal } from 'react-dom';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
+import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
 import { ChefHat, Plus, Save, Heart, Search, X } from 'lucide-react';
 import DatePickerPopover from '../components/DatePickerPopover';
 import ErrorState from '../components/ErrorState';
@@ -98,11 +99,11 @@ const cleanupOldDrafts = (): void => {
       logger.debug('MealPlanning', `Cleaned up ${keysToRemove.length} old meal drafts`);
     }
   } catch (error) {
-    logger.error('MealPlanning', 'Failed to cleanup old drafts:', { error: error instanceof Error ? error.message : String(error) });
+    logger.error('MealPlanning', error as Error, { context: 'Failed to cleanup old drafts' });
   }
 };
 
-const MealPlanning: React.FC = () => {
+const MealPlanningContent: React.FC = () => {
   // Theme colors
   const colors = useThemeColors();
 
@@ -158,29 +159,14 @@ const MealPlanning: React.FC = () => {
   const handleDeleteRecipe = useCallback(async (recipeId: string) => {
     logger.debug('MealPlanning', 'Attempting to delete recipe', { recipeId });
 
-    // Find recipe to get name for confirmation dialog
-    const recipeToDelete = recipes.find(r => r.id === recipeId);
-    const recipeName = recipeToDelete?.name || 'this recipe';
-
-    // Confirm before deletion to prevent accidental data loss
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${recipeName}"?`
-    );
-
-    if (!confirmed) {
-      logger.debug('MealPlanning', 'Recipe deletion cancelled by user', { recipeId });
-      return;
-    }
-
     try {
-      logger.info('MealPlanning', 'Deleting recipe', { recipeId, recipeName });
       await deleteRecipeMutation.mutateAsync(recipeId);
-      showToast('Recipe deleted successfully', 'success');
+      showToast('Recipe deleted successfully! 🗑️', 'success');
     } catch (error) {
-      logger.error('MealPlanning', error instanceof Error ? error : new Error(String(error)), { context: 'deleteRecipe', recipeId });
+      logger.error('MealPlanning', error as Error, { context: 'deleteRecipe', recipeId });
       showToast('Failed to delete recipe. Please try again.', 'error');
     }
-  }, [recipes, deleteRecipeMutation, showToast]);
+  }, [deleteRecipeMutation, showToast]);
 
   if (recipesError || mealPlansError) {
     return (
@@ -225,7 +211,7 @@ const MealPlanning: React.FC = () => {
       }).then(() => {
         showToast('Meal plan created for this week', 'success');
       }).catch((error) => {
-        logger.error('MealPlanning', 'Failed to create meal plan', { error });
+        logger.error('MealPlanning', error as Error, { context: 'Failed to create meal plan' });
         showToast('Failed to create meal plan', 'error');
       });
     }
@@ -362,7 +348,6 @@ const MealPlanning: React.FC = () => {
         <div className="mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-3 mb-4" style={{ color: colors.text.primary }}>
             <span className="text-4xl">🍽️</span>
-            Meal Planning
           </h1>
         </div>
 
@@ -494,6 +479,15 @@ const MealPlanning: React.FC = () => {
         />
       </div>
     </div>
+  );
+};
+
+// Wrap with error boundary for graceful error handling
+const MealPlanning: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="Meal Planning">
+      <MealPlanningContent />
+    </FeatureErrorBoundary>
   );
 };
 

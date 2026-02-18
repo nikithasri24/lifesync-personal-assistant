@@ -117,7 +117,7 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, isMerged = fa
         });
       }
     } catch (err) {
-      logger.error('MealItem', 'Failed to log meal', { error: err });
+      logger.error('MealItem', err as Error, { context: 'Failed to log meal' });
     } finally {
       setIsLogging(false);
     }
@@ -160,21 +160,12 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, isMerged = fa
   };
 
   const handleDelete = async () => {
-    // Confirm before deletion to prevent accidental data loss
-    const confirmed = window.confirm(
-      `Are you sure you want to remove "${mealName}" from your meal plan?`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
     // Use command pattern for undo support
     try {
       const command = new DeletePlannedMealCommand(meal, meal.mealPlanId);
       await executeCommand(command);
     } catch (error) {
-      logger.error('MealItem', 'Failed to delete meal', { error });
+      logger.error('MealItem', error as Error, { context: 'Failed to delete meal' });
     }
   };
 
@@ -198,7 +189,7 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, isMerged = fa
         await executeCommand(command);
       }
     } catch (error) {
-      logger.error('MealItem', 'Failed to undo log', { error });
+      logger.error('MealItem', error as Error, { context: 'Failed to undo log' });
     }
   };
 
