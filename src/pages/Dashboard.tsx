@@ -3,10 +3,10 @@
  * Matches dashboard-design-spec.html with centered 900px layout
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTasks, useUpdateTask } from '@/hooks/useTasksQuery';
-import { useHabits, useCreateHabitEntry } from '@/hooks/useHabitsQuery';
+import { useHabits, useCreateHabitEntry, useHabitEntries } from '@/hooks/useHabitsQuery';
 import { useNotes } from '@/hooks/useNotesQuery';
 import { useJournalEntries } from '@/hooks/useJournalQuery';
 import { useThemeColors } from '@/hooks/useThemeColors';
@@ -27,15 +27,17 @@ export default function Dashboard() {
   // Data fetching
   const tasksQuery = useTasks();
   const habitsQuery = useHabits({ isActive: true });
+  const habitEntriesQuery = useHabitEntries();
   const notesQuery = useNotes();
   const journalQuery = useJournalEntries();
 
   const tasks: Task[] = (tasksQuery as { data: Task[] }).data ?? [];
   const habits: Habit[] = (habitsQuery as unknown as { data: Habit[] }).data ?? [];
+  const habitEntries = habitEntriesQuery.data ?? [];
   const notes: Note[] = (notesQuery as { data: Note[] }).data ?? [];
   const journalEntries: JournalEntry[] = (journalQuery as { data: JournalEntry[] }).data ?? [];
 
-  const isLoading = tasksQuery.isLoading || habitsQuery.isLoading || notesQuery.isLoading || journalQuery.isLoading;
+  const isLoading = tasksQuery.isLoading || habitsQuery.isLoading || habitEntriesQuery.isLoading || notesQuery.isLoading || journalQuery.isLoading;
 
   // Task modals
   const modals = useTaskModals();
@@ -55,8 +57,37 @@ export default function Dashboard() {
     t.due_date && t.due_date.startsWith(today) && t.status !== 'done'
   ).slice(0, 5);
 
-  // Filter today's habits
-  const todayHabits = habits.slice(0, 5);
+  // Filter today's habits - only show incomplete habits
+  const todayHabits = useMemo(() => {
+    return habits
+      .map((habit) => {
+        const habitEntriesForHabit = habitEntries.filter(entry => entry.habit_id === habit.id);
+        const targetCount = habit.target_value ?? 1;
+        const todayCompletions = habitEntriesForHabit.filter(
+          entry => entry.date === today
+        ).length;
+        const isComplete = todayCompletions >= targetCount;
+
+        return {
+          id: habit.id,
+          name: habit.name,
+          description: habit.description,
+          color: habit.color || '#10B981',
+          streak: habit.streak_count,
+          todayCompletions,
+          targetCount,
+          isComplete,
+        };
+      })
+      .filter(habit => !habit.isComplete) // Only show incomplete habits
+      .slice(0, 5);
+  }, [habits, habitEntries, today]);
+
+  // Get raw incomplete habits for briefing (just Habit type)
+  const incompleteHabitsForBriefing = useMemo(() => {
+    const incompleteIds = new Set(todayHabits.map(h => h.id));
+    return habits.filter(h => incompleteIds.has(h.id!));
+  }, [habits, todayHabits]);
 
   // Recent notes
   const recentNotes = notes.slice(0, 2);
@@ -204,7 +235,7 @@ export default function Dashboard() {
             </div>
 
             {/* Morning Briefing */}
-            <BriefingCardV2 tasks={todayTasks} habits={todayHabits} />
+            <BriefingCardV2 tasks={todayTasks} habits={incompleteHabitsForBriefing} />
 
             {/* Quick Actions */}
             <QuickActionsV2 onAddTask={modals.openQuickAdd} />
