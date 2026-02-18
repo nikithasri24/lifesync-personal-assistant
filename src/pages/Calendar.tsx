@@ -3,7 +3,7 @@
  * Mobile-first design with month/week/day views
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, addDays, subDays, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
 import { useTasks } from '@/hooks/useTasksQuery';
 import { useCalendarEvents } from '@/hooks/useCalendarQuery';
@@ -81,9 +81,20 @@ const formatEventTime = (event: { start_date: string; start_time?: string | null
 const CalendarContent = () => {
   const colors = useThemeColors();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState<ViewType>('month');
+
+  // Persist view to localStorage, default to 'day'
+  const [currentView, setCurrentView] = useState<ViewType>(() => {
+    const saved = localStorage.getItem('calendar_view');
+    return (saved as ViewType) || 'day';
+  });
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDateTime, setSelectedDateTime] = useState<Date | undefined>(undefined);
+
+  // Save view to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('calendar_view', currentView);
+  }, [currentView]);
 
   // Data fetching
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();

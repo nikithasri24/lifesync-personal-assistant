@@ -92,6 +92,7 @@ function App(): React.ReactElement {
             <Route path="/" element={<RouteErrorBoundary feature="Dashboard"><Dashboard /></RouteErrorBoundary>} />
             <Route path="/assistant" element={<RouteErrorBoundary feature="Assistant"><Assistant /></RouteErrorBoundary>} />
             <Route path="/calendar" element={<RouteErrorBoundary feature="Calendar"><Calendar /></RouteErrorBoundary>} />
+            <Route path="/scheduler" element={<Navigate to="/calendar" replace />} />
             <Route path="/focus" element={<RouteErrorBoundary feature="Focus"><Focus /></RouteErrorBoundary>} />
 
             {/* Productivity Routes */}
