@@ -44,7 +44,7 @@ const navigation = [
   { name: 'Habits', icon: Target, view: 'habits' as const, path: '/habits', section: 'productivity' },
   { name: 'Tasks', icon: Target, view: 'todos' as const, path: '/todos', section: 'productivity' },
   { name: 'Notes', icon: FileText, view: 'notes' as const, path: '/notes', section: 'productivity' },
-  { name: 'Projects', icon: FolderOpen, view: 'projects' as const, path: '/projects', section: 'productivity' },
+  // { name: 'Projects', icon: FolderOpen, view: 'projects' as const, path: '/projects', section: 'productivity' },
   { name: 'Journal', icon: BookOpen, view: 'journal' as const, path: '/journal', section: 'wellbeing' },
   { name: 'Self Care', icon: Sparkles, view: 'self-care' as const, path: '/self-care', section: 'wellbeing' },
   { name: 'Travel', icon: MapPin, view: 'travel' as const, path: '/travel', section: 'personal' },
