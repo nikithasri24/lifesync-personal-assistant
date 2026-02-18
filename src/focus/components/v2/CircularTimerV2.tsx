@@ -1,11 +1,10 @@
 /**
  * CircularTimerV2 Component
- * Large circular timer with animated progress ring
+ * Large circular timer with terracotta gradient ring
  * States: Ready, Active (animated), Paused, Complete
  */
 
 import React from 'react';
-import { ProgressRingV2 } from '@/components/v2';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
 export interface CircularTimerV2Props {
@@ -32,25 +31,6 @@ export const CircularTimerV2: React.FC<CircularTimerV2Props> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Calculate progress percentage
-  const progress = totalSeconds > 0 ? ((totalSeconds - seconds) / totalSeconds) * 100 : 0;
-
-  // Determine color based on state
-  const getStateColor = () => {
-    switch (state) {
-      case 'ready':
-        return colors.text.tertiary; // Gray
-      case 'active':
-        return '#D4A574'; // Terracotta (animated)
-      case 'paused':
-        return '#F59E0B'; // Orange
-      case 'complete':
-        return '#22C55E'; // Green
-      default:
-        return colors.text.tertiary;
-    }
-  };
-
   const getStateLabel = () => {
     if (label) return label;
     switch (state) {
@@ -69,15 +49,23 @@ export const CircularTimerV2: React.FC<CircularTimerV2Props> = ({
 
   return (
     <div className="flex justify-center items-center py-8">
-      <div className="relative" style={{ width: size, height: size }}>
-        {/* Progress Ring */}
-        <ProgressRingV2
-          progress={progress}
-          size={size}
-          strokeWidth={10}
-          color={getStateColor()}
-          animated={state === 'active'}
-          showPercentage={false}
+      {/* Outer Ring - Terracotta Gradient */}
+      <div
+        className="rounded-full flex items-center justify-center"
+        style={{
+          width: size,
+          height: size,
+          background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+          boxShadow: '0 8px 24px rgba(212, 165, 116, 0.3)',
+        }}
+      >
+        {/* Inner White Circle */}
+        <div
+          className="rounded-full bg-white flex flex-col items-center justify-center"
+          style={{
+            width: size - 20,
+            height: size - 20,
+          }}
         >
           {/* Timer Display */}
           <div className="flex flex-col items-center justify-center animate-fadeIn">
@@ -94,7 +82,7 @@ export const CircularTimerV2: React.FC<CircularTimerV2Props> = ({
               {getStateLabel()}
             </div>
           </div>
-        </ProgressRingV2>
+        </div>
       </div>
     </div>
   );
