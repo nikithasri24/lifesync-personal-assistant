@@ -117,48 +117,53 @@ export default function AssistantV2() {
         className="flex-1 overflow-y-auto px-4 py-4 pb-32"
         style={{ backgroundColor: '#F9FAFB' }}
       >
-        <div className="flex flex-col gap-3">
-          {/* Empty State */}
-          {messages.length === 0 && !isThinking && (
-            <EmptyConversationStateV2 onSuggestionClick={handleSuggestionClick} />
-          )}
+        {/* Centered container for messages on desktop */}
+        <div className="max-w-2xl mx-auto">
+          <div className="flex flex-col gap-3">
+            {/* Empty State */}
+            {messages.length === 0 && !isThinking && (
+              <EmptyConversationStateV2 onSuggestionClick={handleSuggestionClick} />
+            )}
 
-          {/* Timestamp (show at start if messages exist) */}
-          {messages.length > 0 && (
-            <div className="text-center text-xs text-gray-400 py-2">
-              {new Date(messages[0].timestamp).toLocaleString('en-US', {
-                weekday: 'long',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-              })}
-            </div>
-          )}
+            {/* Timestamp (show at start if messages exist) */}
+            {messages.length > 0 && (
+              <div className="text-center text-xs text-gray-400 py-2">
+                {new Date(messages[0].timestamp).toLocaleString('en-US', {
+                  weekday: 'long',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                })}
+              </div>
+            )}
 
-          {/* Message List */}
-          {messages.map((message, index) => (
-            <ChatMessageV2
-              key={index}
-              message={message}
-              showAvatar
-            />
-          ))}
+            {/* Message List */}
+            {messages.map((message, index) => (
+              <ChatMessageV2
+                key={index}
+                message={message}
+                showAvatar
+              />
+            ))}
 
-          {/* Typing Indicator */}
-          {isThinking && <TypingIndicatorV2 />}
+            {/* Typing Indicator */}
+            {isThinking && <TypingIndicatorV2 />}
 
-          {/* Auto-scroll anchor */}
-          <div ref={messagesEndRef} />
+            {/* Auto-scroll anchor */}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
 
       {/* Fixed Input Area - positioned above tab bar on mobile, accounts for sidebar on desktop */}
       <div className="fixed bottom-16 lg:bottom-0 left-0 lg:left-80 right-0 z-10">
-        <ConversationInputV2
-          onSendMessage={handleSendMessage}
-          disabled={isThinking || sendMessage.isPending}
-          placeholder="Ask me anything..."
-        />
+        <div className="max-w-2xl mx-auto">
+          <ConversationInputV2
+            onSendMessage={handleSendMessage}
+            disabled={isThinking || sendMessage.isPending}
+            placeholder="Ask me anything..."
+          />
+        </div>
       </div>
     </div>
   );
