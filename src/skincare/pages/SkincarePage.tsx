@@ -13,7 +13,6 @@ import React from 'react';
 import { Sparkles, Package, Calendar, Settings, Plus, Pencil } from 'lucide-react';
 import { logger } from '@/services/logger';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import ProductFormModal from '../components/ProductFormModal';
 import WeeklyRoutineTable from '../components/WeeklyRoutineTable';
 import { CalendarView } from '../components/CalendarView';
 import CategoryFormModal from '../components/CategoryFormModal';

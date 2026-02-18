@@ -1,16 +1,14 @@
 /**
  * Modal Components
  * Barrel export for all shopping modal components
+ * Note: Form modals (Add/Edit Item, Add Pantry Item, Add Store) have been migrated to V2
  */
 
-export { AddItemModal } from './AddItemModal';
-export { EditItemModal } from './EditItemModal';
 export { BarcodeScannerModal } from './BarcodeScannerModal';
 export { ReceiptScanningModal } from './ReceiptScanningModal';
-export { AddPantryItemModal } from './AddPantryItemModal';
 export { ReplenishModal } from './ReplenishModal';
 export { StoreSuggestionsModal } from './StoreSuggestionsModal';
-export { AddStoreModal } from './AddStoreModal';
 export { StoreShoppingListModal } from './StoreShoppingListModal';
 export { PantryItemDetailsModal } from './PantryItemDetailsModal';
 export { AddToPantryPrompt } from './AddToPantryPrompt';
+export { AddItemChoiceModal } from './AddItemChoiceModal';

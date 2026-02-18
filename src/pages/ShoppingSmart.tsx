@@ -33,7 +33,6 @@ import {
   useReceiptHandler,
 } from '../shopping/hooks';
 import { useStoresQuery, useCreateStore } from '../hooks/useStoresQuery';
-import { AddStoreModal } from '../shopping/components/modals/AddStoreModal';
 import { StoreShoppingListModal } from '../shopping/components/modals/StoreShoppingListModal';
 import { PantryItemDetailsModal } from '../shopping/components/modals/PantryItemDetailsModal';
 import { AddToPantryPrompt } from '../shopping/components/modals/AddToPantryPrompt';
