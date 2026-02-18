@@ -119,12 +119,12 @@ export const MonthViewV2: React.FC<MonthViewV2Props> = ({
 
               {/* Event dots */}
               <div className="flex flex-wrap gap-0.5 justify-center">
-                {/* Events - Purple/Terracotta */}
+                {/* Events - Terracotta */}
                 {dayEvents.slice(0, 3).map((event, idx) => (
                   <div
                     key={`event-${idx}`}
-                    className="w-1 h-1 rounded-full"
-                    style={{ backgroundColor: '#A855F7' }} // Purple
+                    className="rounded-full"
+                    style={{ backgroundColor: '#D4A574', width: '4px', height: '4px' }}
                     title={event.title}
                   />
                 ))}
@@ -133,8 +133,8 @@ export const MonthViewV2: React.FC<MonthViewV2Props> = ({
                 {dayTasks.slice(0, 3).map((task, idx) => (
                   <div
                     key={`task-${idx}`}
-                    className="w-1 h-1 rounded-full"
-                    style={{ backgroundColor: '#3B82F6' }} // Blue
+                    className="rounded-full"
+                    style={{ backgroundColor: '#3B82F6', width: '4px', height: '4px' }}
                     title={task.title}
                   />
                 ))}

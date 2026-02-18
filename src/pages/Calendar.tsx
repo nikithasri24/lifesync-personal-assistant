@@ -1,20 +1,18 @@
 /**
  * Calendar Page
- * Schedule events, tasks, and time blocks
+ * Schedule events, tasks, and time blocks with centered 900px layout
  */
 
 import React, { useEffect } from 'react';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { useThemeColors } from '@/hooks/useThemeColors';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { format } from 'date-fns';
 import { useCalendarTabState, type CalendarTabView } from '@/calendar/hooks/useCalendarTabState';
 import { useCalendarState } from '@/calendar/hooks/useCalendarState';
+import { CalendarPageHeaderV2 } from '@/calendar/components/v2/CalendarPageHeaderV2';
 
 // Import the main calendar view
 const CalendarMainView = React.lazy(() => import('./CalendarMainView'));
 
 const Calendar: React.FC = () => {
-  const colors = useThemeColors();
   const { activeTab, setActiveTab } = useCalendarTabState();
   const calendarState = useCalendarState();
 
@@ -23,54 +21,80 @@ const Calendar: React.FC = () => {
     calendarState.setView(activeTab as 'week' | 'month' | 'day');
   }, [activeTab]);
 
-  return (
-    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }} data-testid="calendar-container">
-      {/* Header with Tabs */}
-      <div className="sticky top-0 z-50" style={{ backgroundColor: colors.bg.primary }}>
-        <div className="px-6 pt-4 pb-3">
-          <div className="flex items-center gap-2 mb-4">
-            <CalendarIcon size={24} style={{ color: colors.accent.start }} />
-            <h1 className="text-2xl font-bold" style={{ color: colors.text.primary }}>
-              Calendar
-            </h1>
-          </div>
+  // Format current month/date for display
+  const getCurrentDisplay = () => {
+    if (activeTab === 'month') {
+      return format(calendarState.currentDate, 'MMMM yyyy');
+    } else if (activeTab === 'day') {
+      return format(calendarState.currentDate, 'EEEE, MMM d');
+    } else {
+      return format(calendarState.currentDate, 'MMMM yyyy');
+    }
+  };
 
-          {/* Tab Navigation */}
-          <SegmentedControl
-            segments={[
-              { value: 'week', label: 'Week' },
-              { value: 'month', label: 'Month' },
-              { value: 'day', label: 'Day' },
-              { value: 'agenda', label: 'Agenda' },
-            ]}
-            value={activeTab}
-            onChange={(value) => setActiveTab(value as CalendarTabView)}
-          />
+  const handlePrevious = () => {
+    if (activeTab === 'month') {
+      calendarState.goToPrevMonth();
+    } else if (activeTab === 'week') {
+      calendarState.goToPrevWeek();
+    } else {
+      calendarState.goToPrevDay();
+    }
+  };
+
+  const handleNext = () => {
+    if (activeTab === 'month') {
+      calendarState.goToNextMonth();
+    } else if (activeTab === 'week') {
+      calendarState.goToNextWeek();
+    } else {
+      calendarState.goToNextDay();
+    }
+  };
+
+  const handleToday = () => {
+    calendarState.goToToday();
+  };
+
+  return (
+    <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh' }} data-testid="calendar-container">
+      {/* Centered container like Together/Dashboard */}
+      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        {/* Header with terracotta gradient */}
+        <CalendarPageHeaderV2
+          currentView={activeTab === 'agenda' ? 'month' : activeTab as 'month' | 'week' | 'day'}
+          onViewChange={(view) => setActiveTab(view)}
+          currentMonth={getCurrentDisplay()}
+          onPrevious={handlePrevious}
+          onNext={handleNext}
+          onToday={handleToday}
+        />
+
+        {/* Calendar Content */}
+        <div className="px-6 py-4 pb-32">
+          <React.Suspense
+            fallback={
+              <div className="text-center py-12 text-gray-500">
+                Loading calendar...
+              </div>
+            }
+          >
+            {activeTab === 'agenda' ? (
+              <div className="py-12 text-center">
+                <div className="text-6xl mb-4">📋</div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-900">
+                  Agenda View Coming Soon
+                </h3>
+                <p className="text-sm text-gray-600">
+                  See your schedule in a list format
+                </p>
+              </div>
+            ) : (
+              <CalendarMainView />
+            )}
+          </React.Suspense>
         </div>
       </div>
-
-      {/* Calendar Content */}
-      <React.Suspense
-        fallback={
-          <div className="text-center py-12" style={{ color: colors.text.tertiary }}>
-            Loading calendar...
-          </div>
-        }
-      >
-        {activeTab === 'agenda' ? (
-          <div className="px-6 py-12 text-center">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
-              Agenda View Coming Soon
-            </h3>
-            <p className="text-sm" style={{ color: colors.text.tertiary }}>
-              See your schedule in a list format
-            </p>
-          </div>
-        ) : (
-          <CalendarMainView />
-        )}
-      </React.Suspense>
     </div>
   );
 };
