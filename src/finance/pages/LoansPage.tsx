@@ -195,48 +195,72 @@ const LoansPage: React.FC = () => {
         </div>
       )}
 
-      {/* Loans Grid */}
-      {loans.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">💰</div>
-          <h3 className="text-lg font-semibold text-primary mb-2">No loans yet</h3>
-          <p className="text-primary opacity-60 mb-4">
-            Start tracking your loans to monitor payments and payoff progress
-          </p>
-          <button
-            onClick={handleAddLoan}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+        {/* Empty State */}
+        {!isLoading && !error && loans.length === 0 && (
+          <div
+            className="p-8 rounded-xl border-2 border-dashed text-center"
+            style={{ borderColor: colors.border.medium }}
           >
-            <Plus className="h-5 w-5" />
-            Add Your First Loan
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {loans.map((loan) => (
-            <LoanCard
-              key={loan.id}
-              loan={loan}
-              onEdit={handleEditLoan}
-              onAddPayment={handleAddPayment}
-              currentUserId={user?.id}
-              partnerName={partnerName}
-            />
-          ))}
-        </div>
-      )}
+            <div className="text-4xl mb-3">🏠</div>
+            <p className="font-medium mb-2" style={{ color: colors.text.primary }}>
+              No loans yet
+            </p>
+            <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
+              Start tracking your loans to monitor payments
+            </p>
+            <button
+              onClick={handleAddLoan}
+              className="px-4 py-2 rounded-lg font-semibold text-white"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
+            >
+              Add First Loan
+            </button>
+          </div>
+        )}
 
-      {/* Loan Editor Modal */}
-      {isEditorOpen && (
-        <LoanEditor
-          loan={selectedLoan || undefined}
-          onSave={handleSaveLoan}
-          onCancel={() => {
-            setIsEditorOpen(false);
-            setSelectedLoan(null);
-          }}
-        />
-      )}
+        {/* Loans Grid */}
+        {!isLoading && !error && loans.length > 0 && (
+          <div className="grid grid-cols-1 gap-4">
+            {loans.map((loan) => (
+              <LoanCardV2
+                key={loan.id}
+                loan={{
+                  id: loan.id,
+                  name: loan.name,
+                  principalAmount: loan.principalAmount,
+                  currentBalance: loan.currentBalance,
+                  interestRate: loan.interestRate,
+                  monthlyPayment: loan.monthlyPayment,
+                  nextPaymentDate: loan.nextPaymentDate,
+                  loanType: loan.loanType,
+                }}
+                onClick={() => handleEditLoan(loan)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Loan Form Modal */}
+      <LoanFormModalV2
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onSave={handleSaveLoan}
+        initialData={selectedLoan ? {
+          name: selectedLoan.name,
+          loanType: selectedLoan.loanType || 'personal',
+          principalAmount: selectedLoan.principalAmount,
+          currentBalance: selectedLoan.currentBalance,
+          interestRate: selectedLoan.interestRate,
+          monthlyPayment: selectedLoan.monthlyPayment,
+          nextPaymentDate: selectedLoan.nextPaymentDate,
+          loanTerm: selectedLoan.loanTerm,
+          notes: selectedLoan.notes,
+        } : undefined}
+        isPending={upsertLoanMutation.isPending}
+      />
 
       {/* Payment Recording Modal */}
       {isPaymentModalOpen && selectedLoan && (
