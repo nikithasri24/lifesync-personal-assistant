@@ -128,7 +128,13 @@
       "Bash(TOGETHER_TASKS_5-6_COMPLETE.md:*)",
       "Bash(CHECKLIST_TASKS_5-6_UPDATE.md:*)",
       "Bash(git status:*)",
-      "Bash(/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/v2/index.ts:*)"
+      "Bash(/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/v2/index.ts:*)",
+      "Bash(/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/meals/components/v2/WeekNavigatorV2.tsx:*)",
+      "Bash(/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/meals/components/v2/MealCardV2.tsx:*)",
+      "Bash(/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/meals/components/v2/GroceryListV2.tsx:*)",
+      "Bash(/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/meals/components/v2/FilterBarV2.tsx:*)",
+      "Bash(/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/meals/components/v2/ImportRecipeModalV2.tsx:*)",
+      "Bash(/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/meals/components/v2/index.ts:*)"
     ],
     "deny": [],
     "ask": []
