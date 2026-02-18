@@ -58,42 +58,39 @@ const Calendar: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh' }} data-testid="calendar-container">
-      {/* Centered container like Together/Dashboard */}
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        {/* Header with terracotta gradient */}
-        <CalendarPageHeaderV2
-          currentView={activeTab === 'agenda' ? 'month' : activeTab as 'month' | 'week' | 'day'}
-          onViewChange={(view) => setActiveTab(view)}
-          currentMonth={getCurrentDisplay()}
-          onPrevious={handlePrevious}
-          onNext={handleNext}
-          onToday={handleToday}
-        />
+      {/* Header with terracotta gradient */}
+      <CalendarPageHeaderV2
+        currentView={activeTab === 'agenda' ? 'month' : activeTab as 'month' | 'week' | 'day'}
+        onViewChange={(view) => setActiveTab(view)}
+        currentMonth={getCurrentDisplay()}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
+        onToday={handleToday}
+      />
 
-        {/* Calendar Content */}
-        <div className="px-6 py-4 pb-32">
-          <React.Suspense
-            fallback={
-              <div className="text-center py-12 text-gray-500">
-                Loading calendar...
-              </div>
-            }
-          >
-            {activeTab === 'agenda' ? (
-              <div className="py-12 text-center">
-                <div className="text-6xl mb-4">📋</div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900">
-                  Agenda View Coming Soon
-                </h3>
-                <p className="text-sm text-gray-600">
-                  See your schedule in a list format
-                </p>
-              </div>
-            ) : (
-              <CalendarMainView />
-            )}
-          </React.Suspense>
-        </div>
+      {/* Calendar Content - Full width for grid visibility */}
+      <div className="pb-32">
+        <React.Suspense
+          fallback={
+            <div className="text-center py-12 text-gray-500">
+              Loading calendar...
+            </div>
+          }
+        >
+          {activeTab === 'agenda' ? (
+            <div className="py-12 text-center px-6">
+              <div className="text-6xl mb-4">📋</div>
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">
+                Agenda View Coming Soon
+              </h3>
+              <p className="text-sm text-gray-600">
+                See your schedule in a list format
+              </p>
+            </div>
+          ) : (
+            <CalendarMainView />
+          )}
+        </React.Suspense>
       </div>
     </div>
   );
