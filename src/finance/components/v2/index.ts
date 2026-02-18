@@ -12,3 +12,6 @@ export { TransactionItemV2 } from './TransactionItemV2';
 export { BudgetCardV2 } from './BudgetCardV2';
 export { GoalCardV2 } from './GoalCardV2';
 export { LoanCardV2 } from './LoanCardV2';
+
+// Modals (Together Pattern)
+export { AccountFormModalV2, type AccountFormData } from './AccountFormModalV2';
