@@ -2,9 +2,9 @@
 
 ## Session Summary
 
-Successfully migrated **11 modals** to FormModalV2 in this extended session!
+Successfully migrated **14 modals** to FormModalV2 in this extended session!
 
-**Total Impact:** 1,039 lines eliminated (27% average reduction)
+**Total Impact:** 1,369 lines eliminated (26% average reduction)
 
 ---
 
@@ -89,15 +89,39 @@ Successfully migrated **11 modals** to FormModalV2 in this extended session!
 - **Form Fields:** 5 fields (name, type, address, phone, website)
 - **Commit:** `feat: Migrate AddStoreModalV2 to use FormModalV2`
 
+### 12. ImportRecipeModalV2 (Meals)
+- **Before:** 143 lines
+- **After:** 90 lines
+- **Reduction:** 53 lines (37%)
+- **Form Fields:** 1 field (URL) + informational content
+- **Special Features:** URL validation
+- **Commit:** `feat: Migrate ImportRecipeModalV2 to use FormModalV2`
+
+### 13. MealFormModalV2 (Meals)
+- **Before:** 296 lines
+- **After:** 230 lines
+- **Reduction:** 66 lines (22%)
+- **Form Fields:** 5 fields (mode, recipeId, customName, servings, notes)
+- **Special Features:** Conditional fields based on mode (recipe vs custom)
+- **Commit:** `feat: Migrate MealFormModalV2 to use FormModalV2`
+
+### 14. RecipeFormModalV2 (Meals)
+- **Before:** 550 lines
+- **After:** 430 lines
+- **Reduction:** 120 lines (22%)
+- **Form Fields:** 18+ fields including dynamic arrays
+- **Special Features:** Dynamic ingredients array, dynamic instructions array, create/edit modes
+- **Commit:** `feat: Migrate RecipeFormModalV2 to use FormModalV2`
+
 ---
 
 ## 📊 Cumulative Impact
 
 | Metric | Before | After | Savings |
 |--------|--------|-------|---------|
-| **Total Lines** | 3,896 | 2,857 | 1,039 (27%) |
-| **Average per Modal** | 354 | 260 | 94 (27%) |
-| **Boilerplate Eliminated** | ~1,300 lines | 0 | 1,300 (100%) |
+| **Total Lines** | 4,885 | 3,516 | 1,369 (28%) |
+| **Average per Modal** | 349 | 251 | 98 (28%) |
+| **Boilerplate Eliminated** | ~1,700 lines | 0 | 1,700 (100%) |
 
 ---
 
@@ -146,9 +170,10 @@ Per modal, we consistently eliminated:
 - [x] AddPantryItemModalV2 (278 lines) ✅ COMPLETE
 - [x] AddStoreModalV2 (229 lines) ✅ COMPLETE
 
-### Meals Modals
-- [ ] MealModal
-- [ ] MealPlanModal
+### Meals Modals - ✅ ALL COMPLETE (3/3)
+- [x] ImportRecipeModalV2 (143 lines) ✅ COMPLETE
+- [x] MealFormModalV2 (296 lines) ✅ COMPLETE
+- [x] RecipeFormModalV2 (550 lines) ✅ COMPLETE
 
 ### Notes Modals
 - [ ] NoteModal
