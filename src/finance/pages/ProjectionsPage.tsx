@@ -24,12 +24,15 @@ import { formatCurrency } from '../utils/currency';
 import { ProjectionSettings } from '../components/projections/ProjectionSettings';
 import { GoalProjectionsCard } from '../components/projections/GoalProjectionsCard';
 import { RetirementPlanningCard } from '../components/projections/RetirementPlanningCard';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 // Lazy load chart components to defer loading Recharts
 const NetWorthChart = lazy(() => import('../components/ProjectionCharts').then(module => ({ default: module.NetWorthChart })));
 const CompoundInterestChart = lazy(() => import('../components/ProjectionCharts').then(module => ({ default: module.CompoundInterestChart })));
 
 const ProjectionsPage: React.FC = () => {
+  const colors = useThemeColors();
+
   // Use React Query hooks for data fetching
   const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
   const { data: transactions = [], isLoading: transactionsLoading } = useTransactionsQuery({ limit: 1000 });
@@ -77,14 +80,18 @@ const ProjectionsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-primary mb-2">Financial Projections</h2>
-        <p className="text-sm text-primary opacity-70">
-          Visualize your financial future based on current trajectory and assumptions
-        </p>
-      </div>
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">📈</span>
+            Financial Projections
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
+            Visualize your financial future based on current trajectory and assumptions
+          </p>
+        </div>
 
       <ProjectionSettings
         projectionYears={projectionYears}
@@ -193,13 +200,14 @@ const ProjectionsPage: React.FC = () => {
         yearsToFIInterpretation={yearsToFI.interpretation}
       />
 
-      {/* Assumptions Note */}
-      <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
-        <p className="text-xs text-amber-800">
-          <strong>Note:</strong> These projections are estimates based on your current financial situation and assumptions.
-          Actual results may vary due to market conditions, life changes, and other factors.
-          Adjust the settings above to see how different scenarios affect your projections.
-        </p>
+        {/* Assumptions Note */}
+        <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+          <p className="text-xs text-amber-800">
+            <strong>Note:</strong> These projections are estimates based on your current financial situation and assumptions.
+            Actual results may vary due to market conditions, life changes, and other factors.
+            Adjust the settings above to see how different scenarios affect your projections.
+          </p>
+        </div>
       </div>
     </div>
   );

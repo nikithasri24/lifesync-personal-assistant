@@ -24,6 +24,7 @@ import {
   BudgetCalculator,
   RealReturnCalculator,
 } from '../components/calculators';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 type CalculatorType =
   | 'debtPayoff'
@@ -36,6 +37,7 @@ type CalculatorType =
   | 'realReturn';
 
 const CalculatorsPage: React.FC = () => {
+  const colors = useThemeColors();
   const [activeCalculator, setActiveCalculator] = React.useState<CalculatorType>('compoundInterest');
 
   const calculators = [
@@ -50,14 +52,18 @@ const CalculatorsPage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-primary mb-2">Financial Calculators</h2>
-        <p className="text-sm text-primary opacity-70">
-          Interactive tools to help you make informed financial decisions
-        </p>
-      </div>
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">🧮</span>
+            Financial Calculators
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
+            Interactive tools to help you make informed financial decisions
+          </p>
+        </div>
 
       {/* Calculator Selection */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -88,16 +94,17 @@ const CalculatorsPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Active Calculator */}
-      <div className="rounded-2xl bg-primary/30 backdrop-blur-sm shadow-sm ring-1 border-primary/20 p-6">
-        {activeCalculator === 'compoundInterest' && <CompoundInterestCalculator />}
-        {activeCalculator === 'debtPayoff' && <DebtPayoffCalculator />}
-        {activeCalculator === 'retirement' && <RetirementCalculator />}
-        {activeCalculator === 'goalSavings' && <GoalSavingsCalculator />}
-        {activeCalculator === 'ruleOf72' && <RuleOf72Calculator />}
-        {activeCalculator === 'taxEstimator' && <TaxEstimatorCalculator />}
-        {activeCalculator === 'budget' && <BudgetCalculator />}
-        {activeCalculator === 'realReturn' && <RealReturnCalculator />}
+        {/* Active Calculator */}
+        <div className="rounded-2xl bg-primary/30 backdrop-blur-sm shadow-sm ring-1 border-primary/20 p-6">
+          {activeCalculator === 'compoundInterest' && <CompoundInterestCalculator />}
+          {activeCalculator === 'debtPayoff' && <DebtPayoffCalculator />}
+          {activeCalculator === 'retirement' && <RetirementCalculator />}
+          {activeCalculator === 'goalSavings' && <GoalSavingsCalculator />}
+          {activeCalculator === 'ruleOf72' && <RuleOf72Calculator />}
+          {activeCalculator === 'taxEstimator' && <TaxEstimatorCalculator />}
+          {activeCalculator === 'budget' && <BudgetCalculator />}
+          {activeCalculator === 'realReturn' && <RealReturnCalculator />}
+        </div>
       </div>
     </div>
   );
