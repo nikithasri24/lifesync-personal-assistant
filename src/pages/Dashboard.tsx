@@ -93,7 +93,7 @@ export default function Dashboard() {
       await createHabitEntryMutation.mutateAsync({
         habit_id: habitId,
         date: today,
-        completed: true,
+        value: 1,
       });
       // Track completed habits for animation
       setCompletedHabits(prev => new Set(prev).add(habitId));
