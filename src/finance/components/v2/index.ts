@@ -15,3 +15,9 @@ export { LoanCardV2 } from './LoanCardV2';
 
 // Modals (Together Pattern)
 export { AccountFormModalV2, type AccountFormData } from './AccountFormModalV2';
+export { TransactionFormModalV2, type TransactionFormData } from './TransactionFormModalV2';
+export { BudgetFormModalV2, type BudgetFormData } from './BudgetFormModalV2';
+export { GoalFormModalV2, type GoalFormData } from './GoalFormModalV2';
+export { LoanFormModalV2, type LoanFormData } from './LoanFormModalV2';
+export { CreditCardFormModalV2, type CreditCardFormData } from './CreditCardFormModalV2';
+export { InsuranceFormModalV2, type InsuranceFormData } from './InsuranceFormModalV2';
