@@ -11,7 +11,7 @@
  * - Modal visibility and editing state
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -75,14 +75,36 @@ const Habits: React.FC = () => {
   const createEntryMutation = useCreateHabitEntry();
   const deleteEntriesForDateMutation = useDeleteHabitEntriesForDate();
 
+  // Load saved view mode from localStorage
+  const loadViewMode = (): 'today' | 'weekly' => {
+    try {
+      const saved = localStorage.getItem('habits_view_mode');
+      if (saved === 'today' || saved === 'weekly') {
+        return saved;
+      }
+    } catch (error) {
+      logger.error('Habits', error as Error, { context: 'Failed to load view mode' });
+    }
+    return 'today';
+  };
+
   // UI State - using useModalState
   const modals = useModalState({
     showForm: false,
     editingHabitId: null as string | null,
     ownerFilter: 'all' as OwnerFilterValue,
-    viewMode: 'today' as 'today' | 'weekly',
+    viewMode: loadViewMode() as 'today' | 'weekly',
     selectedDate: new Date() as Date,
   });
+
+  // Save view mode to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('habits_view_mode', modals.state.viewMode);
+    } catch (error) {
+      logger.error('Habits', error as Error, { context: 'Failed to save view mode' });
+    }
+  }, [modals.state.viewMode]);
 
   const selectedDateKey = modals.state.selectedDate.toISOString().split('T')[0];
   const todayKey = new Date().toISOString().split('T')[0];
