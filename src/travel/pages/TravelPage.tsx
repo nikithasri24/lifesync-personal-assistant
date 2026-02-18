@@ -15,6 +15,7 @@ import { usStates } from '../data/geographicFeatures';
 import { logger } from '@/services/logger';
 import { useCurrentUserId, useMergedConnection, usePartnerName } from '@/hooks/useOwnerInfo';
 import { useToast } from '@/hooks/useToast';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import TripEditor from '../components/TripEditor';
 import ConfirmDialog from '../../components/DebtPayoffCalculator/ConfirmDialog';
 import { TravelStatsBarV2, TripCardV2, TripFormModalV2, LocationCardV2 } from '../components/v2';
@@ -22,6 +23,7 @@ import { TravelStatsBarV2, TripCardV2, TripFormModalV2, LocationCardV2 } from '.
 type LocationTypeFilter = 'all' | 'countries' | 'states' | 'parks' | 'islands';
 
 const TravelPage: React.FC = () => {
+  const colors = useThemeColors();
   const [loading, setLoading] = React.useState(true);
   const [visitedLocations, setVisitedLocations] = React.useState<CategorizedLocation[]>([]);
   const [trips, setTrips] = React.useState<CategorizedTrip[]>([]);
@@ -489,151 +491,216 @@ const TravelPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#CD9D6F] border-t-transparent mx-auto mb-4" />
-          <p className="text-gray-600">Loading travel data...</p>
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <div className="space-y-6">
+            {/* Header Skeleton */}
+            <div className="h-12 bg-gray-200 rounded-xl animate-pulse" style={{ maxWidth: '300px' }} />
+
+            {/* Stats Bar Skeleton */}
+            <div className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+
+            {/* Location Cards Skeleton */}
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />
+              ))}
+            </div>
+
+            {/* Map Skeleton */}
+            <div className="h-96 bg-gray-200 rounded-xl animate-pulse" />
+
+            {/* Trips Skeleton */}
+            <div className="space-y-4">
+              <div className="h-8 bg-gray-200 rounded-xl animate-pulse" style={{ maxWidth: '200px' }} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-48 bg-gray-200 rounded-xl animate-pulse" />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Category Filter Tabs */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1 py-3 overflow-x-auto">
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      {/* Centered container following CLAUDE.md pattern */}
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Page Header */}
+        <h1 className="text-3xl font-bold flex items-center gap-3 mb-6" style={{ color: colors.text.primary }}>
+          <span className="text-4xl">✈️</span>
+          Travel
+        </h1>
+
+        {/* Category Filter Tabs */}
+        <div className="mb-6 p-1 rounded-xl flex gap-1" style={{ backgroundColor: colors.bg.secondary }}>
+          <div className="flex space-x-1 overflow-x-auto w-full">
             <button
               onClick={() => setCategoryFilter('all')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
-                categoryFilter === 'all'
-                  ? 'bg-[#F5EBE0] text-[#8B6F47]'
-                  : 'text-gray-600 hover:bg-gray-100'
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
+                categoryFilter === 'all' ? 'bg-white shadow-sm' : ''
               }`}
+              style={{
+                color: categoryFilter === 'all' ? colors.accent.end : colors.text.secondary,
+              }}
             >
-              All Travels ({categoryCounts.all})
+              All ({categoryCounts.all})
             </button>
             <button
               onClick={() => setCategoryFilter('mine')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
-                categoryFilter === 'mine'
-                  ? 'bg-[#F5EBE0] text-[#8B6F47]'
-                  : 'text-gray-600 hover:bg-gray-100'
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
+                categoryFilter === 'mine' ? 'bg-white shadow-sm' : ''
               }`}
+              style={{
+                color: categoryFilter === 'mine' ? colors.accent.end : colors.text.secondary,
+              }}
             >
-              My Travels ({categoryCounts.mine})
+              Mine ({categoryCounts.mine})
             </button>
             <button
               onClick={() => setCategoryFilter('partner')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
-                categoryFilter === 'partner'
-                  ? 'bg-purple-100 text-purple-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
+                categoryFilter === 'partner' ? 'bg-white shadow-sm' : ''
               }`}
+              style={{
+                color: categoryFilter === 'partner' ? colors.accent.end : colors.text.secondary,
+              }}
             >
-              {partnerName ? `${partnerName}'s Travels` : "Partner's Travels"} ({categoryCounts.partner})
+              Partner ({categoryCounts.partner})
             </button>
             <button
               onClick={() => setCategoryFilter('both')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
-                categoryFilter === 'both'
-                  ? 'bg-pink-100 text-pink-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
+                categoryFilter === 'both' ? 'bg-white shadow-sm' : ''
               }`}
+              style={{
+                color: categoryFilter === 'both' ? colors.accent.end : colors.text.secondary,
+              }}
             >
-              Our Travels ({categoryCounts.both})
+              Both ({categoryCounts.both})
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Location Type Filters and Settings */}
-      <div className="bg-gray-50 border-b border-gray-200 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Location Type Filters and Settings */}
+        <div className="mb-6 p-4 rounded-xl" style={{ backgroundColor: colors.bg.white, borderColor: colors.border.light }}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Location Type Filter Buttons */}
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setLocationTypeFilter('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   locationTypeFilter === 'all'
-                    ? 'bg-[#C18B5E] text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    ? 'text-white'
+                    : 'border hover:bg-gray-50'
                 }`}
+                style={{
+                  background: locationTypeFilter === 'all' ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' : 'white',
+                  color: locationTypeFilter === 'all' ? 'white' : colors.text.primary,
+                  borderColor: colors.border.medium,
+                }}
               >
                 All Locations
               </button>
               <button
                 onClick={() => setLocationTypeFilter('countries')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   locationTypeFilter === 'countries'
-                    ? 'bg-[#C18B5E] text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    ? 'text-white'
+                    : 'border hover:bg-gray-50'
                 }`}
+                style={{
+                  background: locationTypeFilter === 'countries' ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' : 'white',
+                  color: locationTypeFilter === 'countries' ? 'white' : colors.text.primary,
+                  borderColor: colors.border.medium,
+                }}
               >
-                Countries Only
+                Countries
               </button>
               <button
                 onClick={() => setLocationTypeFilter('states')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   locationTypeFilter === 'states'
-                    ? 'bg-[#C18B5E] text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    ? 'text-white'
+                    : 'border hover:bg-gray-50'
                 }`}
+                style={{
+                  background: locationTypeFilter === 'states' ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' : 'white',
+                  color: locationTypeFilter === 'states' ? 'white' : colors.text.primary,
+                  borderColor: colors.border.medium,
+                }}
               >
-                States Only
+                States
               </button>
               <button
                 onClick={() => setLocationTypeFilter('parks')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   locationTypeFilter === 'parks'
-                    ? 'bg-[#C18B5E] text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    ? 'text-white'
+                    : 'border hover:bg-gray-50'
                 }`}
+                style={{
+                  background: locationTypeFilter === 'parks' ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' : 'white',
+                  color: locationTypeFilter === 'parks' ? 'white' : colors.text.primary,
+                  borderColor: colors.border.medium,
+                }}
               >
-                Parks Only
+                Parks
               </button>
               <button
                 onClick={() => setLocationTypeFilter('islands')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   locationTypeFilter === 'islands'
-                    ? 'bg-[#C18B5E] text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    ? 'text-white'
+                    : 'border hover:bg-gray-50'
                 }`}
+                style={{
+                  background: locationTypeFilter === 'islands' ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' : 'white',
+                  color: locationTypeFilter === 'islands' ? 'white' : colors.text.primary,
+                  borderColor: colors.border.medium,
+                }}
               >
-                Islands Only
+                Islands
               </button>
             </div>
 
             {/* States Count as Countries Toggle */}
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+              <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+                style={{
+                  backgroundColor: colors.bg.white,
+                  borderColor: colors.border.medium,
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={statesCountAsCountries}
                   onChange={(e) => setStatesCountAsCountries(e.target.checked)}
-                  className="h-4 w-4 text-[#C18B5E] rounded focus:ring-[#CD9D6F]"
+                  className="h-4 w-4 text-terracotta-400 rounded focus:ring-terracotta-300"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium" style={{ color: colors.text.primary }}>
                   States count as country visits
                 </span>
               </label>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Travel Stats */}
-      <TravelStatsBarV2
-        countriesVisited={travelStats.countries}
-        statesVisited={travelStats.states}
-        parksVisited={travelStats.parks}
-        islandsVisited={travelStats.islands}
-      />
+        {/* Travel Stats */}
+        <div className="mb-6">
+          <TravelStatsBarV2
+            countriesVisited={travelStats.countries}
+            statesVisited={travelStats.states}
+            parksVisited={travelStats.parks}
+            islandsVisited={travelStats.islands}
+          />
+        </div>
 
-      {/* Location Stats Cards */}
-      <div className="grid grid-cols-2 gap-3" style={{ padding: '0 20px 16px' }}>
+        {/* Location Stats Cards */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
         <LocationCardV2
           icon="🌐"
           title="Countries"
@@ -664,9 +731,9 @@ const TravelPage: React.FC = () => {
         />
       </div>
 
-      {/* Map */}
-      <div className="h-[60vh]">
-        <LeafletTravelMapV2
+        {/* Map */}
+        <div className="h-[60vh] mb-6 rounded-xl overflow-hidden" style={{ borderColor: colors.border.light }}>
+          <LeafletTravelMapV2
           visitedCountries={visitedCountriesMap}
           onCountryClick={handleCountryClick}
           visitedStates={visitedStatesMap}
@@ -679,37 +746,48 @@ const TravelPage: React.FC = () => {
           visitedStatesCategories={visitedStatesCategories}
           visitedParksCategories={visitedParksCategories}
           visitedIslandsCategories={visitedIslandsCategories}
-        />
-      </div>
-
-      {/* Trips Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Your Trips</h2>
-          <button
-            onClick={handleCreateTrip}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-lg font-medium transition-colors"
-          >
-            <Plus className="h-5 w-5" />
-            Add Trip
-          </button>
+          />
         </div>
 
-        {trips.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No trips yet</h3>
-            <p className="text-gray-600 mb-4">Start planning your next adventure!</p>
+        {/* Trips Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold" style={{ color: colors.text.primary }}>Your Trips</h2>
             <button
               onClick={handleCreateTrip}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-lg font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-3 text-white rounded-xl font-semibold transition-opacity hover:opacity-90"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
             >
               <Plus className="h-5 w-5" />
-              Plan Your First Trip
+              Add Trip
             </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {trips.length === 0 ? (
+            <div className="rounded-xl border-2 border-dashed p-12 text-center"
+              style={{
+                backgroundColor: colors.bg.white,
+                borderColor: colors.border.medium,
+              }}
+            >
+              <Calendar className="h-12 w-12 mx-auto mb-4" style={{ color: colors.text.secondary }} />
+              <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>No trips yet</h3>
+              <p className="mb-4" style={{ color: colors.text.secondary }}>Start planning your next adventure!</p>
+              <button
+                onClick={handleCreateTrip}
+                className="inline-flex items-center gap-2 px-4 py-3 text-white rounded-xl font-semibold transition-opacity hover:opacity-90"
+                style={{
+                  background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+                }}
+              >
+                <Plus className="h-5 w-5" />
+                Plan Your First Trip
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {trips.map((trip) => {
               const isOwnTrip = trip.userId === currentUserId;
               const ownerDisplayName = trip.tripCategory === 'mine' ? 'Me' : (trip.tripCategory === 'partner' ? (partnerName || 'Partner') : 'Both');
@@ -734,14 +812,14 @@ const TravelPage: React.FC = () => {
                   }}
                 />
               );
-            })}
-          </div>
-        )}
-      </div>
+              })}
+            </div>
+          )}
+        </div>
 
-      {/* Location Lists */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Track Your Locations</h2>
+        {/* Location Lists */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-6" style={{ color: colors.text.primary }}>Track Your Locations</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Countries List */}
@@ -795,6 +873,7 @@ const TravelPage: React.FC = () => {
             currentUserId={currentUserId || undefined}
             partnerId={partnerId}
           />
+          </div>
         </div>
       </div>
 
@@ -877,37 +956,59 @@ function AllLocationsListCard<T>({
     return visitedLocations.find(loc => getVisitedKey(loc) === itemKey);
   };
 
-  const getCategoryColor = (category: LocationVisitCategory) => {
+  const getCategoryStyle = (category: LocationVisitCategory) => {
     switch (category) {
       case 'mine':
-        return 'bg-[#F5EBE0] border-[#E8D9CE] text-[#8B6F47]';
+        return {
+          backgroundColor: '#F5EBE0',
+          borderColor: '#E8D9CE',
+          color: '#8B6F47',
+        };
       case 'partner':
-        return 'bg-purple-100 border-purple-300 text-purple-900';
+        return {
+          backgroundColor: '#F3E8FF',
+          borderColor: '#D8B4FE',
+          color: '#7E22CE',
+        };
       case 'both':
-        return 'bg-pink-100 border-pink-300 text-pink-900';
+        return {
+          backgroundColor: '#FCE7F3',
+          borderColor: '#FBCFE8',
+          color: '#BE185D',
+        };
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-700';
+        return {
+          backgroundColor: '#F9FAFB',
+          borderColor: '#E5E7EB',
+          color: '#374151',
+        };
     }
   };
 
   const getCategoryBadge = (category: LocationVisitCategory) => {
     switch (category) {
       case 'mine':
-        return <span className="text-xs text-[#C18B5E] font-medium">Me</span>;
+        return <span className="text-xs font-medium" style={{ color: '#C18B5E' }}>Me</span>;
       case 'partner':
-        return <span className="text-xs text-purple-600 font-medium">Partner</span>;
+        return <span className="text-xs font-medium" style={{ color: '#7E22CE' }}>Partner</span>;
       case 'both':
-        return <span className="text-xs text-pink-600 font-medium">Both</span>;
+        return <span className="text-xs font-medium" style={{ color: '#BE185D' }}>Both</span>;
       default:
         return null;
     }
   };
 
   const visitedCount = visitedLocations.length;
+  const colors = useThemeColors();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-3">
+    <div className="rounded-xl shadow-sm border p-4"
+      style={{
+        backgroundColor: colors.bg.white,
+        borderColor: colors.border.light,
+      }}
+    >
+      <h3 className="text-lg font-semibold mb-3" style={{ color: colors.text.primary }}>
         {title} ({visitedCount}/{allItems.length})
       </h3>
 
@@ -917,27 +1018,35 @@ function AllLocationsListCard<T>({
         placeholder={`Search ${title.toLowerCase()}...`}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full px-3 py-2 mb-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CD9D6F]"
+        className="w-full px-3 py-2 mb-3 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300"
+        style={{
+          borderColor: colors.border.medium,
+        }}
       />
 
       {/* List */}
       <div className="space-y-1 max-h-96 overflow-y-auto">
         {filteredItems.length === 0 ? (
-          <p className="text-sm text-gray-500 italic">No matches found</p>
+          <p className="text-sm italic" style={{ color: colors.text.secondary }}>No matches found</p>
         ) : (
           filteredItems.map((item) => {
             const visitedLocation = isVisited(item);
             const visited = !!visitedLocation;
             const itemKey = getItemKey(item);
+            const categoryStyle = visited ? getCategoryStyle(visitedLocation.visitCategory) : null;
 
             return (
               <div
                 key={itemKey}
-                className={`group flex items-center gap-2 p-2 rounded border hover:shadow-sm transition-shadow ${
-                  visited
-                    ? getCategoryColor(visitedLocation.visitCategory)
-                    : 'bg-white border-gray-200 hover:bg-gray-50'
-                }`}
+                className="group flex items-center gap-2 p-2 rounded-lg border hover:shadow-sm transition-shadow"
+                style={
+                  visited && categoryStyle
+                    ? categoryStyle
+                    : {
+                        backgroundColor: colors.bg.white,
+                        borderColor: colors.border.light,
+                      }
+                }
                 onContextMenu={(e) => {
                   if (!visited && partnerId && currentUserId) {
                     e.preventDefault();
@@ -963,7 +1072,7 @@ function AllLocationsListCard<T>({
                       }
                     }
                   }}
-                  className="h-4 w-4 text-[#C18B5E] rounded focus:ring-[#CD9D6F] cursor-pointer"
+                  className="h-4 w-4 text-terracotta-400 rounded focus:ring-terracotta-300 cursor-pointer"
                 />
 
                 {/* Name */}
@@ -980,7 +1089,8 @@ function AllLocationsListCard<T>({
                       e.stopPropagation();
                       onToggle(item);
                     }}
-                    className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="flex-shrink-0 p-1 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ color: colors.text.secondary }}
                     aria-label={`Remove ${getItemName(item)}`}
                   >
                     <X size={16} />
@@ -1010,8 +1120,13 @@ function AllLocationsListCard<T>({
 
           {/* Menu */}
           <div
-            className="fixed z-50 bg-white shadow-lg rounded-lg border border-gray-200 py-1 min-w-[160px]"
-            style={{ left: contextMenu.x, top: contextMenu.y }}
+            className="fixed z-50 shadow-lg rounded-xl border py-1 min-w-[160px]"
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y,
+              backgroundColor: colors.bg.white,
+              borderColor: colors.border.light,
+            }}
           >
             <button
               onClick={() => {
@@ -1021,9 +1136,10 @@ function AllLocationsListCard<T>({
                   setContextMenu(null);
                 }
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-[#F9F3ED] text-[#8B6F47] font-medium flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-terracotta-50 font-medium flex items-center gap-2"
+              style={{ color: '#8B6F47' }}
             >
-              <span className="w-3 h-3 rounded-full bg-[#CD9D6F]"></span>
+              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#CD9D6F' }}></span>
               Me Only
             </button>
             <button
@@ -1034,9 +1150,10 @@ function AllLocationsListCard<T>({
                   setContextMenu(null);
                 }
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-purple-50 text-purple-700 font-medium flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-purple-50 font-medium flex items-center gap-2"
+              style={{ color: '#7E22CE' }}
             >
-              <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#A855F7' }}></span>
               Partner Only
             </button>
             <button
@@ -1047,9 +1164,10 @@ function AllLocationsListCard<T>({
                   setContextMenu(null);
                 }
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-pink-50 text-pink-700 font-medium flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-pink-50 font-medium flex items-center gap-2"
+              style={{ color: '#BE185D' }}
             >
-              <span className="w-3 h-3 rounded-full bg-pink-500"></span>
+              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#EC4899' }}></span>
               Both of Us
             </button>
           </div>
