@@ -5,10 +5,9 @@
 
 import React, { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
-import { LoanCard } from '../components/loans/LoanCard';
-import { LoanEditor } from '../components/loans/LoanEditor';
+import { LoanCardV2, LoanFormModalV2, type LoanFormData } from '@/finance/components/v2';
 import { LoanPaymentModal } from '../components/loans/LoanPaymentModal';
-import type { Loan, LoanInput, LoanPaymentInput } from '../types';
+import type { Loan, LoanPaymentInput } from '../types';
 import {
   useLoansQuery,
   useUpsertLoanMutation,
@@ -17,13 +16,15 @@ import {
   useFinanceMergedConnectionQuery,
 } from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
-import { calculateInterestPaidToDate, calculatePrincipalPaidToDate } from '../utils/loanCalculations';
+import { calculateInterestPaidToDate } from '../utils/loanCalculations';
 import { logger } from '../../services/logger';
 import { useAuth } from '@/hooks/useAuth';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 const LoansPage: React.FC = () => {
+  const colors = useThemeColors();
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   // Auth and merged connection
@@ -43,32 +44,40 @@ const LoansPage: React.FC = () => {
 
   const handleAddLoan = () => {
     setSelectedLoan(null);
-    setIsEditorOpen(true);
+    setShowModal(true);
   };
 
   const handleEditLoan = (loan: Loan) => {
     setSelectedLoan(loan);
-    setIsEditorOpen(true);
+    setShowModal(true);
   };
 
-  const handleSaveLoan = async (loanInput: LoanInput) => {
+  const handleSaveLoan = async (formData: LoanFormData) => {
     try {
-      await upsertLoanMutation.mutateAsync(loanInput);
-      setIsEditorOpen(false);
+      await upsertLoanMutation.mutateAsync({
+        id: selectedLoan?.id,
+        name: formData.name,
+        loanType: formData.loanType,
+        principalAmount: formData.principalAmount,
+        currentBalance: formData.currentBalance,
+        interestRate: formData.interestRate,
+        monthlyPayment: formData.monthlyPayment,
+        nextPaymentDate: formData.nextPaymentDate,
+        loanTerm: formData.loanTerm,
+        notes: formData.notes,
+        userId: selectedLoan?.userId || user?.id,
+      });
+      setShowModal(false);
       setSelectedLoan(null);
     } catch (error) {
-      logger.error('LoansPage', error instanceof Error ? error : new Error(String(error)), { context: 'handleSaveLoan', loanInput });
+      logger.error('LoansPage', error instanceof Error ? error : new Error(String(error)), { context: 'handleSaveLoan', formData });
+      throw error; // Let modal handle error display
     }
   };
 
-  const handleDeleteLoan = async (loanId: string) => {
-    if (!confirm('Are you sure you want to delete this loan?')) return;
-
-    try {
-      await deleteLoanMutation.mutateAsync(loanId);
-    } catch (error) {
-      logger.error('LoansPage', error instanceof Error ? error : new Error(String(error)), { context: 'handleDeleteLoan', loanId });
-    }
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedLoan(null);
   };
 
   const handleAddPayment = (loan: Loan) => {
@@ -113,38 +122,53 @@ const LoansPage: React.FC = () => {
     return sum + Math.max(dbInterestPaid, calculatedInterestPaid);
   }, 0);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-500 mb-2">Error loading loans</p>
-          <p className="text-sm text-primary opacity-60">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-primary">💳 Loan Tracker</h1>
-        <button
-          onClick={handleAddLoan}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
-        >
-          <Plus className="h-5 w-5" />
-          Add Loan
-        </button>
-      </div>
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">🏠</span>
+            Loans
+          </h1>
+          <button
+            onClick={handleAddLoan}
+            className="px-4 py-3 rounded-xl font-semibold text-white transition-opacity flex items-center gap-2"
+            style={{
+              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            }}
+            aria-label="Add loan"
+          >
+            <Plus className="w-5 h-5" />
+            Add Loan
+          </button>
+        </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="p-5 rounded-xl border animate-pulse"
+                style={{
+                  backgroundColor: colors.bg.white,
+                  borderColor: colors.border.light,
+                }}
+              >
+                <div className="h-32 bg-gray-200 rounded" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12">
+            <p className="text-red-500 mb-2">Error loading loans</p>
+            <p className="text-sm" style={{ color: colors.text.secondary }}>{error.message}</p>
+          </div>
+        )}
 
       {/* Summary Cards */}
       {activeLoans.length > 0 && (

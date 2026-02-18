@@ -19,6 +19,7 @@ import {
   type TimerPreset,
 } from '../focus/components/v2';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
 
 type TimerState = 'ready' | 'active' | 'paused' | 'complete';
 
@@ -29,7 +30,7 @@ const PRESETS: TimerPreset[] = [
   { id: 'long-break', name: 'Long Break', emoji: '🌟', minutes: 15 },
 ];
 
-const Focus: React.FC = () => {
+const FocusContent: React.FC = () => {
   const colors = useThemeColors();
 
   const [seconds, setSeconds] = useState(25 * 60);
@@ -39,7 +40,7 @@ const Focus: React.FC = () => {
   const sessionIdRef = useRef<string | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
-  const { activeSession: _activeSession } = useActiveFocusSession();
+  const { activeSession: _activeSession, isLoading } = useActiveFocusSession();
   const createSession = useCreateFocusSession();
   const updateSession = useUpdateFocusSession();
 
@@ -171,55 +172,119 @@ const Focus: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
-      {/* All content centered with max width */}
-      <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
+      {/* All content centered with max width - CLAUDE.md pattern */}
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
         {/* Header with Terracotta Gradient */}
         <div
           style={{
             background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
             padding: '60px 1.5rem 20px',
             color: 'white',
+            marginLeft: '-1.5rem',
+            marginRight: '-1.5rem',
+            marginTop: '-1.5rem',
             marginBottom: '16px',
             borderRadius: '0 0 16px 16px',
             textAlign: 'center',
           }}
         >
           <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-            ⏱️ Focus
+            ⏱️
           </h1>
           <div style={{ fontSize: '14px', opacity: 0.9 }}>
             {getSubtitle()}
           </div>
         </div>
 
-        {/* Content */}
-        <div style={{ padding: '0 1.5rem' }}>
-          {/* Circular Timer */}
-          <CircularTimerV2
-            seconds={seconds}
-            totalSeconds={totalSeconds}
-            state={timerState}
-            size={240}
-          />
+        {/* Loading Skeleton */}
+        {isLoading ? (
+          <div className="animate-pulse">
+            {/* Timer Skeleton */}
+            <div className="flex justify-center items-center py-8">
+              <div
+                className="rounded-full flex items-center justify-center"
+                style={{
+                  width: 240,
+                  height: 240,
+                  backgroundColor: colors.border.medium,
+                }}
+              />
+            </div>
 
-          {/* Timer Controls */}
-          <TimerControlsV2
-            isActive={timerState === 'active'}
-            isPaused={timerState === 'paused'}
-            onPlayPause={() => void handlePlayPause()}
-            onReset={() => void handleReset()}
-            disabled={createSession.isPending || updateSession.isPending}
-          />
+            {/* Controls Skeleton */}
+            <div className="flex items-center justify-center gap-4 mt-8">
+              <div
+                className="w-16 h-16 rounded-full"
+                style={{ backgroundColor: colors.border.medium }}
+              />
+              <div
+                className="w-20 h-20 rounded-full"
+                style={{ backgroundColor: colors.border.medium }}
+              />
+              <div
+                className="w-16 h-16 rounded-full"
+                style={{ backgroundColor: colors.border.medium }}
+              />
+            </div>
 
-          {/* Preset Grid */}
-          <PresetGridV2
-            activePresetId={activePreset}
-            onSelectPreset={handleSelectPreset}
-            presets={PRESETS}
-          />
-        </div>
+            {/* Presets Skeleton */}
+            <div className="mt-8">
+              <div
+                className="h-4 w-24 mx-auto rounded mb-3"
+                style={{ backgroundColor: colors.border.medium }}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="p-4 rounded-xl"
+                    style={{
+                      backgroundColor: colors.border.medium,
+                      height: '100px',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Circular Timer */}
+            <CircularTimerV2
+              seconds={seconds}
+              totalSeconds={totalSeconds}
+              state={timerState}
+              size={240}
+            />
+
+            {/* Timer Controls */}
+            <TimerControlsV2
+              isActive={timerState === 'active'}
+              isPaused={timerState === 'paused'}
+              onPlayPause={() => void handlePlayPause()}
+              onReset={() => void handleReset()}
+              disabled={createSession.isPending || updateSession.isPending}
+            />
+
+            {/* Preset Grid */}
+            <PresetGridV2
+              activePresetId={activePreset}
+              onSelectPreset={handleSelectPreset}
+              presets={PRESETS}
+            />
+          </>
+        )}
       </div>
     </div>
+  );
+};
+
+// Wrap with error boundary for graceful error handling
+const Focus: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="Focus">
+      <FocusContent />
+    </FeatureErrorBoundary>
   );
 };
 

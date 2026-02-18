@@ -60,11 +60,12 @@ export const PresetGridV2: React.FC<PresetGridV2Props> = ({
               "
               style={{
                 backgroundColor: isActive ? '#FEF3E8' : colors.bg.card,
-                border: `2px solid ${isActive ? '#D4A574' : colors.border.light}`,
+                border: `2px solid ${isActive ? colors.accent.end : colors.border.light}`,
                 boxShadow: isActive
                   ? '0 4px 12px rgba(212, 165, 116, 0.2)'
                   : '0 2px 8px rgba(0, 0, 0, 0.05)',
               }}
+              aria-label={`Set timer to ${preset.name} - ${preset.minutes} ${preset.minutes === 1 ? 'minute' : 'minutes'}`}
             >
               <div className="text-2xl mb-1">{preset.emoji}</div>
               <div

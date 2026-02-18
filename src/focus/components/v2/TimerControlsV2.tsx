@@ -61,7 +61,7 @@ export const TimerControlsV2: React.FC<TimerControlsV2Props> = ({
         "
         style={{
           backgroundColor: colors.bg.card,
-          color: '#D4A574',
+          color: colors.accent.end,
         }}
         aria-label="Reset timer"
       >
@@ -107,7 +107,7 @@ export const TimerControlsV2: React.FC<TimerControlsV2Props> = ({
           "
           style={{
             backgroundColor: colors.bg.card,
-            color: '#D4A574',
+            color: colors.accent.end,
           }}
           aria-label="Settings"
         >
