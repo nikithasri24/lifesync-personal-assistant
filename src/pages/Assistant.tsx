@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useThemeColors } from '@/hooks/useThemeColors';
 import { useConversations, useCreateConversation, useSendMessage } from '@/hooks/useConversationsQuery';
 import { AssistantHeaderV2 } from '@/assistant/components/v2/AssistantHeaderV2';
 import { ChatMessageV2 } from '@/assistant/components/v2/ChatMessageV2';
@@ -16,7 +15,6 @@ import type { ConversationMessage } from '@/types/infrastructure';
 import { logger } from '@/services/logger';
 
 export default function AssistantV2() {
-  const colors = useThemeColors();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -110,19 +108,31 @@ export default function AssistantV2() {
   };
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: colors.bg.primary }}
-    >
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
       <AssistantHeaderV2 onNewChat={handleNewChat} />
 
-      {/* Messages Area */}
-      <div className="px-4 py-4 pb-32">
-        <div className="max-w-3xl mx-auto flex flex-col gap-3">
+      {/* Messages Area - Full width with specific background */}
+      <div
+        className="flex-1 overflow-y-auto px-4 py-4 pb-32"
+        style={{ backgroundColor: '#F9FAFB' }}
+      >
+        <div className="flex flex-col gap-3">
           {/* Empty State */}
           {messages.length === 0 && !isThinking && (
             <EmptyConversationStateV2 onSuggestionClick={handleSuggestionClick} />
+          )}
+
+          {/* Timestamp (show at start if messages exist) */}
+          {messages.length > 0 && (
+            <div className="text-center text-xs text-gray-400 py-2">
+              {new Date(messages[0].timestamp).toLocaleString('en-US', {
+                weekday: 'long',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              })}
+            </div>
           )}
 
           {/* Message List */}

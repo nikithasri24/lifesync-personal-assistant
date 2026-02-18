@@ -4,7 +4,6 @@
  */
 
 import React from 'react';
-import { useThemeColors } from '@/hooks/useThemeColors';
 import type { ConversationMessage } from '@/types/infrastructure';
 
 interface ChatMessageV2Props {
@@ -16,9 +15,8 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
   message,
   showAvatar = true,
 }) => {
-  const colors = useThemeColors();
   const isUser = message.role === 'user';
-  const userInitials = 'U'; // Would come from auth in real app
+  const userInitials = 'S'; // Would come from auth in real app
 
   return (
     <div
@@ -31,8 +29,8 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
           style={{
-            backgroundColor: isUser ? colors.accent.primary : colors.bg.secondary,
-            color: isUser ? 'white' : colors.text.secondary,
+            backgroundColor: isUser ? '#D4A574' : '#E5E7EB',
+            color: isUser ? 'white' : '#6B7280',
             fontSize: isUser ? '0.875rem' : '1rem',
             fontWeight: isUser ? 600 : 400,
           }}
@@ -47,8 +45,8 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
           isUser ? 'rounded-br-sm' : 'rounded-bl-sm'
         }`}
         style={{
-          backgroundColor: isUser ? colors.accent.primary : colors.bg.card,
-          color: isUser ? 'white' : colors.text.primary,
+          backgroundColor: isUser ? '#D4A574' : 'white',
+          color: isUser ? 'white' : '#1F2937',
           boxShadow: isUser ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
         }}
       >
