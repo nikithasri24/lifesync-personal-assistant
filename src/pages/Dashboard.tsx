@@ -7,15 +7,18 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTasks, useUpdateTask } from '@/hooks/useTasksQuery';
 import { useHabits, useCreateHabitEntry, useHabitEntries } from '@/hooks/useHabitsQuery';
-import { useNotes } from '@/hooks/useNotesQuery';
-import { useJournalEntries } from '@/hooks/useJournalQuery';
+import { useNotes, useCreateNote } from '@/hooks/useNotesQuery';
+import { useJournalEntries, useCreateJournalEntry } from '@/hooks/useJournalQuery';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useToast } from '@/hooks/useToast';
+import { useModalState } from '@/hooks/useModalState';
 import { DashboardHeaderV2 } from '@/dashboard/components/v2/DashboardHeaderV2';
 import { QuickActionsV2 } from '@/dashboard/components/v2/QuickActionsV2';
 import { BriefingCardV2 } from '@/dashboard/components/v2/BriefingCardV2';
 import { TodayTasksSectionV2, TodayHabitsSectionV2, RecentNotesSectionV2 } from '@/dashboard/components/v2';
 import { QuickAddModalV2 } from '@/dashboard/components/v2/QuickAddModalV2';
+import { NoteFormModalV2 } from '@/notes/components/v2/NoteFormModalV2';
+import { JournalEntryModalV2 } from '@/journal/components/v2/JournalEntryModalV2';
 import { useTaskModals } from '@/todos/hooks/useTaskModals';
 import type { Task, Habit, Note, JournalEntry } from '@/types';
 import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
@@ -43,9 +46,17 @@ function DashboardContent() {
   // Task modals
   const modals = useTaskModals();
 
+  // Additional modals for note and journal
+  const quickModals = useModalState({
+    showNote: false,
+    showJournal: false,
+  });
+
   // Mutations
   const updateTaskMutation = useUpdateTask();
   const createHabitEntryMutation = useCreateHabitEntry();
+  const createNoteMutation = useCreateNote();
+  const createJournalMutation = useCreateJournalEntry();
 
   // Completion tracking
   const [completingTask, setCompletingTask] = useState<string | null>(null);
@@ -134,6 +145,44 @@ function DashboardContent() {
       showToast('Failed to complete habit', 'error');
     } finally {
       setCompletingHabit(null);
+    }
+  };
+
+  // Note creation handler
+  const handleCreateNote = async (data: {
+    title: string;
+    content: string;
+    tags: string[];
+    noteType: string;
+  }) => {
+    try {
+      await createNoteMutation.mutateAsync({
+        title: data.title,
+        content: data.content,
+        tags: data.tags,
+        noteType: data.noteType as 'text' | 'list' | 'meeting' | 'idea',
+      });
+      quickModals.close('showNote');
+      showToast('Note created! 📝', 'success');
+    } catch (error) {
+      showToast('Failed to create note', 'error');
+    }
+  };
+
+  // Journal entry creation handler
+  const handleCreateJournal = async (data: {
+    title: string;
+    content: string;
+  }) => {
+    try {
+      await createJournalMutation.mutateAsync({
+        title: data.title,
+        content: data.content,
+      });
+      quickModals.close('showJournal');
+      showToast('Journal entry created! 📔', 'success');
+    } catch (error) {
+      showToast('Failed to create journal entry', 'error');
     }
   };
 
@@ -239,7 +288,12 @@ function DashboardContent() {
             <BriefingCardV2 tasks={todayTasks} habits={incompleteHabitsForBriefing} />
 
             {/* Quick Actions */}
-            <QuickActionsV2 onAddTask={modals.openQuickAdd} />
+            <QuickActionsV2
+              onAddTask={modals.openQuickAdd}
+              onAddNote={() => quickModals.open('showNote')}
+              onAddJournal={() => quickModals.open('showJournal')}
+              onStartFocus={() => navigate('/focus')}
+            />
 
             {/* Today's Tasks */}
             <TodayTasksSectionV2
@@ -275,6 +329,22 @@ function DashboardContent() {
         onClose={modals.closeQuickAdd}
         value={modals.quickAddText}
         onChange={modals.setQuickAddText}
+      />
+
+      {/* Note Creation Modal */}
+      <NoteFormModalV2
+        isOpen={quickModals.state.showNote}
+        onClose={() => quickModals.close('showNote')}
+        onSubmit={handleCreateNote}
+        isPending={createNoteMutation.isPending}
+      />
+
+      {/* Journal Entry Modal */}
+      <JournalEntryModalV2
+        isOpen={quickModals.state.showJournal}
+        onClose={() => quickModals.close('showJournal')}
+        onSubmit={handleCreateJournal}
+        isPending={createJournalMutation.isPending}
       />
     </div>
   );

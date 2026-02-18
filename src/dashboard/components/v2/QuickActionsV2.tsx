@@ -9,17 +9,25 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface QuickActionsV2Props {
   onAddTask?: () => void;
+  onAddNote?: () => void;
+  onAddJournal?: () => void;
+  onStartFocus?: () => void;
 }
 
-export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({ onAddTask }) => {
+export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
+  onAddTask,
+  onAddNote,
+  onAddJournal,
+  onStartFocus
+}) => {
   const colors = useThemeColors();
   const navigate = useNavigate();
 
   const actions = [
     { icon: '➕', label: 'Add Task', onClick: onAddTask || (() => navigate('/todos')), primary: true },
-    { icon: '📝', label: 'New Note', onClick: () => navigate('/notes'), primary: false },
-    { icon: '📔', label: 'Journal', onClick: () => navigate('/journal'), primary: false },
-    { icon: '⏱️', label: 'Focus', onClick: () => navigate('/focus'), primary: false },
+    { icon: '📝', label: 'New Note', onClick: onAddNote || (() => navigate('/notes')), primary: false },
+    { icon: '📔', label: 'Journal', onClick: onAddJournal || (() => navigate('/journal')), primary: false },
+    { icon: '⏱️', label: 'Focus', onClick: onStartFocus || (() => navigate('/focus')), primary: false },
   ];
 
   return (
@@ -30,8 +38,8 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({ onAddTask }) => 
           onClick={action.onClick}
           className={`rounded-xl p-4 flex flex-col items-center gap-2 transition-all ${
             action.primary
-              ? 'shadow-md hover:shadow-lg'
-              : 'border hover:border-terracotta-300 hover:bg-gray-50'
+              ? 'shadow-md hover:shadow-lg hover:scale-105'
+              : 'border-2 shadow-sm hover:shadow-md hover:scale-105'
           }`}
           style={{
             backgroundColor: action.primary
@@ -40,7 +48,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({ onAddTask }) => 
             background: action.primary
               ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)'
               : undefined,
-            borderColor: action.primary ? undefined : colors.border.light,
+            borderColor: action.primary ? undefined : colors.border.medium,
           }}
           aria-label={action.label}
         >
