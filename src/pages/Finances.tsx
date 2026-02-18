@@ -31,24 +31,7 @@ const Finances: React.FC = () => {
 
   return (
     <FeatureErrorBoundary feature="Finances">
-      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
-        {/* Header with Terracotta Gradient */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-            padding: '60px 20px 20px',
-            color: 'white',
-            marginBottom: '16px',
-          }}
-        >
-          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-            💰
-          </h1>
-          <div style={{ fontSize: '14px', opacity: 0.9 }}>
-            Track income, expenses & wealth
-          </div>
-        </div>
-
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh', paddingTop: '1rem' }}>
         {/* Tab Navigation - Scrollable */}
         <div
           style={{
