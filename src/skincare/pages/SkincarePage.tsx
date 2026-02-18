@@ -195,56 +195,59 @@ const SelfCarePage: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
-      {/* Header with Terracotta Gradient */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-          padding: '60px 20px 20px',
-          color: 'white',
-          marginBottom: '16px',
-        }}
-      >
-        <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-          ✨ Self Care
-        </h1>
-        <div style={{ fontSize: '14px', opacity: 0.9 }}>
-          Skincare routines, products & personal care
-        </div>
-      </div>
-
-      {/* View Toggle */}
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem' }}>
+      {/* All content centered with max width */}
+      <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
+        {/* Header with Terracotta Gradient */}
         <div
           style={{
-            background: 'rgba(92, 74, 58, 0.1)',
-            borderRadius: '12px',
-            padding: '4px',
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            padding: '60px 1.5rem 20px',
+            color: 'white',
             marginBottom: '16px',
+            borderRadius: '0 0 16px 16px',
           }}
         >
-          <SegmentedControl
-            segments={viewSegments}
-            value={view}
-            onChange={(value) => setView(value as ViewType)}
-          />
+          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
+            ✨ Self Care
+          </h1>
+          <div style={{ fontSize: '14px', opacity: 0.9 }}>
+            Skincare routines, products & personal care
+          </div>
         </div>
-      </div>
 
-      {/* Content */}
-      {view === 'routine' && (
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
-          <WeeklyRoutineTable />
+        {/* View Toggle */}
+        <div style={{ padding: '0 1.5rem' }}>
+          <div
+            style={{
+              background: 'rgba(92, 74, 58, 0.1)',
+              borderRadius: '12px',
+              padding: '4px',
+              marginBottom: '16px',
+            }}
+          >
+            <SegmentedControl
+              segments={viewSegments}
+              value={view}
+              onChange={(value) => setView(value as ViewType)}
+            />
+          </div>
         </div>
-      )}
 
-      {view === 'schedule' && (
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
-          <CalendarView items={allItems.filter(i => i.isActive)} getCategoryInfo={getCategoryInfo} />
-        </div>
-      )}
+        {/* Content */}
+        {view === 'routine' && (
+          <div style={{ padding: '0 1.5rem' }}>
+            <WeeklyRoutineTable />
+          </div>
+        )}
 
-      {view === 'products' && (
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {view === 'schedule' && (
+          <div style={{ padding: '0 1.5rem' }}>
+            <CalendarView items={allItems.filter(i => i.isActive)} getCategoryInfo={getCategoryInfo} />
+          </div>
+        )}
+
+        {view === 'products' && (
+          <div style={{ padding: '0 1.5rem' }}>
           {/* Add Product Button */}
           <button
             onClick={handleAddProduct}
@@ -297,8 +300,8 @@ const SelfCarePage: React.FC = () => {
         </div>
       )}
 
-      {view === 'setup' && (
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {view === 'setup' && (
+          <div style={{ padding: '0 1.5rem' }}>
           {/* Add Category Button */}
           <button
             onClick={() => setShowCategoryModal(true)}
@@ -347,9 +350,11 @@ const SelfCarePage: React.FC = () => {
               />
             );
           })}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
+      {/* Modals */}
       {/* Product Form Modal */}
       <ProductFormModalV2
         isOpen={showProductModal}
