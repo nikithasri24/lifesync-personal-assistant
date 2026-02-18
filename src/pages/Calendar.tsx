@@ -178,14 +178,24 @@ export default function Calendar() {
       {/* Weekday Headers */}
       {currentView === 'month' && (
         <div
-          className="grid grid-cols-7 bg-white border-b"
-          style={{ borderColor: '#E5E7EB' }}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            backgroundColor: 'white',
+            borderBottom: '1px solid #E5E7EB',
+          }}
         >
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
             <div
               key={day}
-              className="py-3 text-center text-xs font-semibold uppercase"
-              style={{ color: '#6B7280' }}
+              style={{
+                padding: '12px 4px',
+                textAlign: 'center',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#6B7280',
+                textTransform: 'uppercase',
+              }}
             >
               {day}
             </div>
@@ -198,7 +208,13 @@ export default function Calendar() {
         {/* Month View */}
         {currentView === 'month' && (
           <div
-            className="grid grid-cols-7 gap-px p-px bg-gray-200"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(7, 1fr)',
+              gap: '1px',
+              padding: '1px',
+              backgroundColor: '#E5E7EB',
+            }}
           >
             {monthDays.map((day, index) => {
               const { tasks: dayTasks, events: dayEvents } = getEventsForDay(day);
@@ -208,18 +224,29 @@ export default function Calendar() {
               return (
                 <div
                   key={index}
-                  className="bg-white min-h-[70px] p-1 relative"
                   style={{
                     backgroundColor: isTodayDate ? '#FEF3E8' : isCurrentMonth ? 'white' : '#F9FAFB',
                     opacity: isCurrentMonth ? 1 : 0.5,
+                    minHeight: '70px',
+                    padding: '4px',
+                    position: 'relative',
                   }}
                 >
                   {/* Day Number */}
-                  <div className="text-xs font-semibold mb-1 text-center">
+                  <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '4px', textAlign: 'center' }}>
                     {isTodayDate ? (
                       <div
-                        className="w-6 h-6 rounded-full mx-auto flex items-center justify-center"
-                        style={{ backgroundColor: '#D4A574', color: 'white' }}
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          margin: '0 auto',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: '#D4A574',
+                          color: 'white',
+                        }}
                       >
                         {format(day, 'd')}
                       </div>
@@ -231,21 +258,31 @@ export default function Calendar() {
                   </div>
 
                   {/* Event Dots */}
-                  <div className="flex flex-wrap gap-0.5 justify-center">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px', justifyContent: 'center' }}>
                     {/* Events - Terracotta */}
                     {dayEvents.slice(0, 3).map((_, idx) => (
                       <div
                         key={`event-${idx}`}
-                        className="rounded-full"
-                        style={{ backgroundColor: '#D4A574', width: '4px', height: '4px' }}
+                        style={{
+                          borderRadius: '50%',
+                          backgroundColor: '#D4A574',
+                          width: '4px',
+                          height: '4px',
+                          display: 'inline-block',
+                        }}
                       />
                     ))}
                     {/* Tasks - Blue */}
                     {dayTasks.slice(0, 3).map((_, idx) => (
                       <div
                         key={`task-${idx}`}
-                        className="rounded-full"
-                        style={{ backgroundColor: '#3B82F6', width: '4px', height: '4px' }}
+                        style={{
+                          borderRadius: '50%',
+                          backgroundColor: '#3B82F6',
+                          width: '4px',
+                          height: '4px',
+                          display: 'inline-block',
+                        }}
                       />
                     ))}
                   </div>
