@@ -189,7 +189,7 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
 
         {/* Message Content */}
         <div
-          className="overflow-y-auto px-6 pb-6"
+          className="overflow-y-auto px-6 pb-12"
           style={{ maxHeight: 'calc(90vh - 220px)' }}
         >
           <div
@@ -200,7 +200,7 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
             }}
           >
             {message.message_body.split('\n').map((paragraph, i) => (
-              <p key={i} className="mb-4">
+              <p key={i} className="mb-4 last:mb-0">
                 {paragraph}
               </p>
             ))}
