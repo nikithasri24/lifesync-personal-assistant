@@ -121,7 +121,7 @@ export function NutritionDashboard(): React.ReactElement {
 
       {/* Weekly Chart */}
       <WeeklyChartV2
-        weeklyData={[
+        weekData={[
           { day: 'Mon', calories: 1800 },
           { day: 'Tue', calories: 2100 },
           { day: 'Wed', calories: 1950 },
@@ -130,7 +130,7 @@ export function NutritionDashboard(): React.ReactElement {
           { day: 'Sat', calories: 2200 },
           { day: 'Sun', calories: totals.calories },
         ]}
-        goal={goal?.calories_target || 2000}
+        maxCalories={goal?.calories_target || 2000}
       />
 
       {/* Goal Settings Modal */}
