@@ -5,7 +5,71 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/services/logger';
 import { AuthenticationError, DatabaseError, NotFoundError } from '@/lib/errors';
-import type { BucketListDestination, BucketListDestinationInput, CategorizedBucketListDestination, BucketListCategory_Ownership } from '../types';
+import type { BucketListDestination, BucketListDestinationRow, BucketListDestinationInput, CategorizedBucketListDestination, BucketListCategory_Ownership } from '../types';
+
+/**
+ * Convert database row (snake_case) to application type (camelCase)
+ */
+function rowToDestination(row: BucketListDestinationRow): BucketListDestination {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    connectionId: row.connection_id,
+    sharedWith: row.shared_with,
+    name: row.name,
+    description: row.description,
+    countryCode: row.country_code,
+    countryName: row.country_name,
+    cityName: row.city_name,
+    regionName: row.region_name,
+    priority: row.priority,
+    category: row.category,
+    estimatedBudget: row.estimated_budget,
+    currency: row.currency,
+    targetYear: row.target_year,
+    targetSeason: row.target_season,
+    isVisited: row.is_visited,
+    visitedDate: row.visited_date,
+    notes: row.notes,
+    inspirationUrl: row.inspiration_url,
+    tags: row.tags,
+    mustDo: row.must_do,
+    mustEat: row.must_eat,
+    mustSee: row.must_see,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Convert application input (camelCase) to database format (snake_case)
+ */
+function inputToRow(input: Partial<BucketListDestinationInput>): Partial<BucketListDestinationRow> {
+  return {
+    connection_id: input.connectionId,
+    shared_with: input.sharedWith,
+    name: input.name,
+    description: input.description,
+    country_code: input.countryCode,
+    country_name: input.countryName,
+    city_name: input.cityName,
+    region_name: input.regionName,
+    priority: input.priority,
+    category: input.category,
+    estimated_budget: input.estimatedBudget,
+    currency: input.currency,
+    target_year: input.targetYear,
+    target_season: input.targetSeason,
+    is_visited: input.isVisited,
+    visited_date: input.visitedDate,
+    notes: input.notes,
+    inspiration_url: input.inspirationUrl,
+    tags: input.tags,
+    must_do: input.mustDo,
+    must_eat: input.mustEat,
+    must_see: input.mustSee,
+  };
+}
 
 /**
  * Helper function to categorize bucket list destination by ownership
@@ -36,9 +100,9 @@ export async function listBucketListDestinations(): Promise<CategorizedBucketLis
   const { data, error } = await supabase
     .from('travel_bucket_list')
     .select('*')
-    .or(`userId.eq.${user.id},sharedWith.cs.{${user.id}}`)
+    .or(`user_id.eq.${user.id},shared_with.cs.{${user.id}}`)
     .order('priority', { ascending: false })
-    .order('createdAt', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error) {
     logger.error('Travel', 'Failed to list bucket list destinations', { error });
@@ -55,10 +119,13 @@ export async function listBucketListDestinations(): Promise<CategorizedBucketLis
 
   const partnerId = connectionData?.partnerId || null;
 
-  return (data || []).map(dest => ({
-    ...dest,
-    ownershipCategory: categorizeBucketListDestination(dest, user.id, partnerId),
-  }));
+  return (data || []).map((row: BucketListDestinationRow) => {
+    const dest = rowToDestination(row);
+    return {
+      ...dest,
+      ownershipCategory: categorizeBucketListDestination(dest, user.id, partnerId),
+    };
+  });
 }
 
 /**
@@ -83,7 +150,7 @@ export async function getBucketListDestination(id: string): Promise<BucketListDe
     throw new NotFoundError('Bucket list destination', id);
   }
 
-  return data;
+  return rowToDestination(data as BucketListDestinationRow);
 }
 
 /**
@@ -96,12 +163,14 @@ export async function createBucketListDestination(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new AuthenticationError('Not authenticated');
 
+  const rowData = inputToRow(input);
+
   const { data, error } = await supabase
     .from('travel_bucket_list')
     .insert({
-      ...input,
-      userId: user.id,
-      sharedWith: sharedWith || [],
+      ...rowData,
+      user_id: user.id,
+      shared_with: sharedWith || [],
     })
     .select()
     .single();
@@ -112,7 +181,7 @@ export async function createBucketListDestination(
   }
 
   logger.info('Travel', 'Bucket list destination created', { id: data.id });
-  return data;
+  return rowToDestination(data as BucketListDestinationRow);
 }
 
 /**
@@ -125,9 +194,11 @@ export async function updateBucketListDestination(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new AuthenticationError('Not authenticated');
 
+  const rowUpdates = inputToRow(updates);
+
   const { data, error } = await supabase
     .from('travel_bucket_list')
-    .update(updates)
+    .update(rowUpdates)
     .eq('id', id)
     .select()
     .single();
@@ -142,7 +213,7 @@ export async function updateBucketListDestination(
   }
 
   logger.info('Travel', 'Bucket list destination updated', { id });
-  return data;
+  return rowToDestination(data as BucketListDestinationRow);
 }
 
 /**
@@ -172,7 +243,7 @@ export async function markDestinationAsVisited(id: string): Promise<BucketListDe
   return updateBucketListDestination(id, {
     isVisited: true,
     visitedDate: new Date().toISOString(),
-  });
+  } as any);
 }
 
 /**
@@ -182,5 +253,5 @@ export async function markDestinationAsNotVisited(id: string): Promise<BucketLis
   return updateBucketListDestination(id, {
     isVisited: false,
     visitedDate: undefined,
-  });
+  } as any);
 }

@@ -139,16 +139,57 @@ export type TripInput = Omit<Trip, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 export type BucketListPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type BucketListCategory = 'beach' | 'mountain' | 'city' | 'cultural' | 'adventure' | 'relaxation' | 'food' | 'wildlife' | 'other';
 
+// Database row type (snake_case as stored in Supabase)
+export type BucketListDestinationRow = {
+  id: string;
+  user_id: string;
+  connection_id?: string | null;
+  shared_with?: string[];
+
+  // Destination details
+  name: string;
+  description?: string;
+  country_code?: string;
+  country_name?: string;
+  city_name?: string;
+  region_name?: string;
+
+  // Bucket list metadata
+  priority: BucketListPriority;
+  category: BucketListCategory;
+  estimated_budget?: number;
+  currency?: string;
+  target_year?: number;
+  target_season?: string;
+
+  // Planning
+  is_visited: boolean;
+  visited_date?: string;
+  notes?: string;
+  inspiration_url?: string;
+  tags?: string[];
+
+  // Wishlist items
+  must_do?: string[];
+  must_eat?: string[];
+  must_see?: string[];
+
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+};
+
+// Application type (camelCase for TypeScript)
 export type BucketListDestination = {
   id: string;
   userId: string;
   connectionId?: string | null;
-  sharedWith?: string[]; // Array of user IDs who can see/edit this
+  sharedWith?: string[];
 
   // Destination details
-  name: string; // e.g., "Santorini, Greece" or "Northern Lights in Iceland"
+  name: string;
   description?: string;
-  countryCode?: string; // ISO 3166-1 alpha-2
+  countryCode?: string;
   countryName?: string;
   cityName?: string;
   regionName?: string;
@@ -157,22 +198,23 @@ export type BucketListDestination = {
   priority: BucketListPriority;
   category: BucketListCategory;
   estimatedBudget?: number;
-  currency?: string; // ISO 4217
-  targetYear?: number; // Year hoping to visit
-  targetSeason?: string; // e.g., 'summer', 'winter', 'spring', 'fall'
+  currency?: string;
+  targetYear?: number;
+  targetSeason?: string;
 
   // Planning
   isVisited: boolean;
-  visitedDate?: string; // ISO date when marked as visited
+  visitedDate?: string;
   notes?: string;
-  inspirationUrl?: string; // Link to blog, video, etc.
+  inspirationUrl?: string;
   tags?: string[];
 
-  // Wishlist items for this destination
-  mustDo?: string[]; // Activities/experiences (e.g., ["Sunset at Oia", "Wine tasting"])
-  mustEat?: string[]; // Foods to try
-  mustSee?: string[]; // Places to visit
+  // Wishlist items
+  mustDo?: string[];
+  mustEat?: string[];
+  mustSee?: string[];
 
+  // Timestamps
   createdAt: string;
   updatedAt: string;
 };
