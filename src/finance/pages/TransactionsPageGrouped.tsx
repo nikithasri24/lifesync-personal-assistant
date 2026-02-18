@@ -28,8 +28,10 @@ import { formatCurrency } from '../utils/currency';
 import useFinanceFilters from '../store/useFinanceFilters';
 import { getFinanceAPI } from '../data';
 import { useAuth } from '@/hooks/useAuth';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 const TransactionsPageGrouped: React.FC = () => {
+  const colors = useThemeColors();
   const [showQuickAdd, setShowQuickAdd] = React.useState(false);
   const [showTemplateManager, setShowTemplateManager] = React.useState(false);
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
@@ -159,7 +161,20 @@ const TransactionsPageGrouped: React.FC = () => {
   const budgetSummary = useBudgetSummary(groupedTransactions);
 
   return (
-    <div className="space-y-4">
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">💸</span>
+            Transactions
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
+            Track and categorize all your income and expenses
+          </p>
+        </div>
+
+        <div className="space-y-4">
       <Card title="💸 Transactions">
         <div className="space-y-3">
           <FiltersBar onApply={() => loadData()} onReset={() => filters.reset()} />
@@ -317,6 +332,8 @@ const TransactionsPageGrouped: React.FC = () => {
           }}
         />
       )}
+        </div>
+      </div>
     </div>
   );
 };
