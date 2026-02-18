@@ -1,51 +1,65 @@
 /**
  * TaskCardV2 Component
- * Minimal task card with terracotta theme
+ * Enhanced task card with all features
  * Features:
  * - 32px circular checkbox with terracotta gradient
  * - Task title
  * - Priority badge
+ * - Status badge
+ * - Project badge
  * - Due date with clock icon
+ * - Subtask count
+ * - Recurring indicator
+ * - Owner badge (merged mode)
  * - Colored left border based on priority
  * - Hover animation
  */
 
 import React from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, Repeat, User } from 'lucide-react';
 import { format, isToday, isPast, isTomorrow } from 'date-fns';
 import { CheckboxV2 } from '../../../components/v2/CheckboxV2';
 import { PriorityBadgeV2 } from './PriorityBadgeV2';
+import { StatusBadgeV2 } from './StatusBadgeV2';
+import { ProjectBadgeV2 } from './ProjectBadgeV2';
 import { useThemeColors } from '../../../hooks/useThemeColors';
-import type { Task, TaskPriority } from '../../../types/task';
+import type { TaskData, ProjectData } from '../../../services/types';
 
 export interface TaskCardV2Props {
-  task: Task;
+  task: TaskData;
   onToggleStatus: (taskId: string) => void;
   onTaskClick?: (taskId: string) => void;
   isUpdating?: boolean;
+  project?: ProjectData;
+  subtaskCount?: number;
+  ownerName?: string; // For merged mode
+  isSelectionMode?: boolean; // For multi-select mode
+  isSelected?: boolean; // Whether this task is selected
+  onSelect?: (taskId: string) => void; // Callback for selection toggle
   className?: string;
 }
 
-const priorityBorderColors: Record<TaskPriority, string> = {
-  urgent: '#F44336',
-  high: '#FF9800',
-  medium: '#FFC107',
-  low: '#4CAF50',
+const priorityBorderColors: Record<NonNullable<TaskData['priority']>, string> = {
+  urgent: '#EF4444',
+  important: '#F59E0B',
+  high: '#F97316',
+  medium: '#3B82F6',
+  low: '#6B7280',
 };
 
-const formatDueDate = (dueDate: Date | undefined): string | null => {
+const formatDueDate = (dueDate: string | null | undefined): { text: string; isOverdue: boolean } | null => {
   if (!dueDate) return null;
 
-  const date = dueDate;
+  const date = new Date(dueDate);
 
   if (isToday(date)) {
-    return 'Due today';
+    return { text: 'Due today', isOverdue: false };
   } else if (isTomorrow(date)) {
-    return 'Due tomorrow';
+    return { text: 'Due tomorrow', isOverdue: false };
   } else if (isPast(date)) {
-    return `Overdue ${format(date, 'MMM d')}`;
+    return { text: `Overdue ${format(date, 'MMM d')}`, isOverdue: true };
   } else {
-    return `Due ${format(date, 'MMM d')}`;
+    return { text: `Due ${format(date, 'MMM d')}`, isOverdue: false };
   }
 };
 
@@ -54,67 +68,134 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
   onToggleStatus,
   onTaskClick,
   isUpdating = false,
+  project,
+  subtaskCount = 0,
+  ownerName,
+  isSelectionMode = false,
+  isSelected = false,
+  onSelect,
   className = '',
 }) => {
   const colors = useThemeColors();
   const isCompleted = task.status === 'done';
   const borderColor = priorityBorderColors[task.priority || 'medium'];
-  const dueDateText = formatDueDate(task.dueDate);
+  const dueDateInfo = formatDueDate(task.due_date);
+  const isRecurring = task.recurrence_pattern && task.recurrence_pattern !== 'none';
 
   return (
     <div
       className={`
-        rounded-xl p-3 flex items-start gap-3
+        rounded-xl p-4 flex items-start gap-3
         transition-all duration-200
         hover:shadow-md hover:scale-[1.01]
         ${className}
       `}
       style={{
-        backgroundColor: colors.bg.white,
-        borderLeft: `3px solid ${borderColor}`,
-        boxShadow: '0 1px 4px rgba(139, 111, 71, 0.06)',
+        backgroundColor: isSelected ? 'rgba(212, 165, 116, 0.1)' : colors.bg.white,
+        borderLeft: `4px solid ${borderColor}`,
+        boxShadow: isSelected ? '0 2px 8px rgba(193, 139, 94, 0.3)' : '0 1px 4px rgba(139, 111, 71, 0.06)',
         opacity: isCompleted ? 0.6 : 1,
       }}
     >
-      {/* Checkbox */}
-      <CheckboxV2
-        checked={isCompleted}
-        onChange={() => onToggleStatus(task.id)}
-        disabled={isUpdating}
-        size="md"
-      />
+      {/* Checkbox - Selection mode or Complete mode */}
+      {isSelectionMode ? (
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onSelect?.(task.id || '')}
+          className="w-5 h-5 text-terracotta-400 rounded focus:ring-terracotta-300 cursor-pointer"
+          style={{ marginTop: '2px' }}
+        />
+      ) : (
+        <CheckboxV2
+          checked={isCompleted}
+          onChange={() => onToggleStatus(task.id || '')}
+          disabled={isUpdating}
+          size="md"
+        />
+      )}
 
       {/* Task Content */}
       <div
         className="flex-1 min-w-0 cursor-pointer"
-        onClick={() => onTaskClick?.(task.id)}
+        onClick={() => onTaskClick?.(task.id || '')}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
-            onTaskClick?.(task.id);
+            onTaskClick?.(task.id || '');
           }
         }}
       >
-        {/* Title */}
-        <div
-          className={`text-sm font-medium mb-1 ${isCompleted ? 'line-through' : ''}`}
-          style={{ color: isCompleted ? colors.text.tertiary : colors.text.primary }}
-        >
-          {task.title}
+        {/* Title Row */}
+        <div className="flex items-start gap-2 mb-2">
+          <div
+            className={`text-base font-medium flex-1 ${isCompleted ? 'line-through' : ''}`}
+            style={{ color: isCompleted ? colors.text.tertiary : colors.text.primary }}
+          >
+            {task.title}
+          </div>
+          {task.starred && (
+            <span className="text-base">⭐</span>
+          )}
         </div>
 
         {/* Meta Information */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status Badge */}
+          {task.status && task.status !== 'todo' && (
+            <StatusBadgeV2 status={task.status} size="sm" />
+          )}
+
           {/* Priority Badge */}
           {task.priority && (
             <PriorityBadgeV2 priority={task.priority} size="sm" />
           )}
 
-          {/* Tags */}
-          {task.tags.length > 0 && (
+          {/* Project Badge */}
+          {project && (
+            <ProjectBadgeV2
+              projectName={project.name}
+              projectColor={project.color || undefined}
+              size="sm"
+            />
+          )}
+
+          {/* Due Date */}
+          {dueDateInfo && (
             <span
-              className="px-2 py-0.5 rounded-lg font-semibold"
+              className="flex items-center gap-1 text-xs"
+              style={{ color: dueDateInfo.isOverdue ? '#EF4444' : colors.text.tertiary }}
+            >
+              <Clock className="w-3 h-3" />
+              {dueDateInfo.text}
+            </span>
+          )}
+
+          {/* Subtask Count */}
+          {subtaskCount > 0 && (
+            <span
+              className="text-xs flex items-center gap-1"
+              style={{ color: colors.text.tertiary }}
+            >
+              📋 {subtaskCount}
+            </span>
+          )}
+
+          {/* Recurring Indicator */}
+          {isRecurring && (
+            <span
+              className="flex items-center gap-1 text-xs"
+              style={{ color: colors.text.tertiary }}
+            >
+              <Repeat className="w-3 h-3" />
+            </span>
+          )}
+
+          {/* Tags */}
+          {task.tags && task.tags.length > 0 && (
+            <span
+              className="px-2 py-0.5 rounded-lg font-semibold text-xs"
               style={{
                 backgroundColor: colors.badge.bg,
                 color: colors.badge.text,
@@ -124,21 +205,24 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
             </span>
           )}
 
-          {/* Due Date */}
-          {dueDateText && (
-            <span
-              className="flex items-center gap-1"
-              style={{ color: colors.text.tertiary }}
-            >
-              <Clock className="w-3 h-3" />
-              {dueDateText}
+          {/* Time Estimate */}
+          {task.estimated_time && (
+            <span className="text-xs" style={{ color: colors.text.tertiary }}>
+              ⏱️ {task.estimated_time}m
             </span>
           )}
 
-          {/* Time Estimate */}
-          {task.estimatedTime && (
-            <span style={{ color: colors.text.tertiary }}>
-              ⏱️ {task.estimatedTime}m
+          {/* Owner Badge (Merged Mode) */}
+          {ownerName && (
+            <span
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg font-semibold text-xs"
+              style={{
+                backgroundColor: colors.badge.bg,
+                color: colors.badge.text,
+              }}
+            >
+              <User className="w-3 h-3" />
+              {ownerName}
             </span>
           )}
         </div>

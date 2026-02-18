@@ -1,12 +1,14 @@
 /**
  * QuickAddModalV2 Component
- * Modal for quickly adding tasks with terracotta theme
+ * Modal for quickly adding tasks - Together pattern with auto-save
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
-import { gradients } from '../../../styles/colors';
+import { logger } from '../../../services/logger';
+
+const STORAGE_KEY = 'tasks_quickadd_draft';
 
 export interface QuickAddModalV2Props {
   isOpen: boolean;
@@ -16,7 +18,6 @@ export interface QuickAddModalV2Props {
   onClose: () => void;
   isLoading?: boolean;
   isError?: boolean;
-  className?: string;
 }
 
 export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
@@ -27,12 +28,18 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
   onClose,
   isLoading = false,
   isError = false,
-  className = '',
 }) => {
   const colors = useThemeColors();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Handle escape key
+  // Auto-save to localStorage
+  useEffect(() => {
+    if (value) {
+      localStorage.setItem(STORAGE_KEY, value);
+    }
+  }, [value]);
+
+  // ESC key support
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -42,121 +49,109 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
 
     if (isOpen) {
       window.addEventListener('keydown', handleKeyDown);
-      // Focus input when modal opens
       setTimeout(() => inputRef.current?.focus(), 100);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  // Backdrop click handler
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!value.trim()) return;
+
     onSubmit();
+    localStorage.removeItem(STORAGE_KEY);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <>
-      {/* Backdrop */}
+    <div
+      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backdropFilter: 'blur(4px)',
+        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+      }}
+      onClick={handleBackdropClick}
+    >
       <div
-        className="fixed inset-0 bg-black/40 z-40 transition-opacity"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col"
+        style={{ maxHeight: '90vh', maxWidth: '600px' }}
+      >
+        {/* Mobile drag handle */}
+        <div className="lg:hidden pt-2 flex-shrink-0">
+          <div className="w-9 h-1 rounded-full mx-auto bg-gray-300" />
+        </div>
 
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-        <div
-          className={`
-            w-full max-w-md mx-4 mb-4 sm:mb-0
-            rounded-2xl shadow-2xl
-            ${className}
-          `}
-          style={{ backgroundColor: colors.bg.white }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: colors.border.light }}>
-            <h2
-              className="text-lg font-bold"
-              style={{
-                background: gradients.text,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              Add Task
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105"
-              style={{ backgroundColor: colors.badge.bg }}
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" style={{ color: colors.badge.text }} />
-            </button>
-          </div>
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 flex-shrink-0">
+          <h2 className="text-2xl font-bold text-gray-900">Quick Add Task</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-5">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="overflow-y-auto p-6 flex-1">
             <input
               ref={inputRef}
               type="text"
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder="What needs to be done?"
-              disabled={isLoading}
-              className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-all"
-              style={{
-                borderColor: colors.border.medium,
-                backgroundColor: colors.bg.secondary,
-                color: colors.text.primary,
-              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+              autoFocus
             />
-
-            <p className="text-xs mt-2" style={{ color: colors.text.tertiary }}>
-              Try natural language like "Call mom today" or "Review PR #urgent"
+            <p className="text-xs mt-2 text-gray-500">
+              Press Enter to add, or use the full form for more options
             </p>
-
-            {/* Error Message */}
             {isError && (
               <p className="text-xs text-red-600 mt-2">
                 Failed to create task. Please try again.
               </p>
             )}
+          </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3 mt-5">
-              <button
-                type="submit"
-                disabled={isLoading || !value.trim()}
-                className="flex-1 py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-50"
-                style={{
-                  background: gradients.primary,
-                  boxShadow: '0 4px 12px rgba(212, 165, 116, 0.3)',
-                }}
-              >
-                {isLoading ? 'Adding...' : 'Add Task'}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isLoading}
-                className="px-5 py-3 rounded-xl font-semibold transition-all"
-                style={{
-                  backgroundColor: colors.bg.secondary,
-                  color: colors.text.secondary,
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-gray-200 flex gap-3 flex-shrink-0 bg-white">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading || !value.trim()}
+              className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
+            >
+              {isLoading ? 'Adding...' : 'Add Task'}
+            </button>
+          </div>
+        </form>
       </div>
-    </>
+    </div>
   );
 };
 
 export default QuickAddModalV2;
+

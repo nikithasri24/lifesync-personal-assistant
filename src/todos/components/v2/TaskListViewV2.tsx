@@ -7,13 +7,17 @@
 import React from 'react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import { TaskCardV2 } from './TaskCardV2';
-import type { Task } from '../../types';
+import type { Task, Project } from '../../types';
 
 export interface TaskListViewV2Props {
   tasks: Task[];
+  projects?: Project[];
   onToggleStatus: (taskId: string) => void;
   onTaskClick?: (taskId: string) => void;
   isUpdating?: boolean;
+  isSelectionMode?: boolean;
+  selectedTaskIds?: Set<string>;
+  onSelectTask?: (taskId: string) => void;
   className?: string;
 }
 
@@ -53,9 +57,13 @@ const statusSections: StatusSection[] = [
 
 export const TaskListViewV2: React.FC<TaskListViewV2Props> = ({
   tasks,
+  projects = [],
   onToggleStatus,
   onTaskClick,
   isUpdating = false,
+  isSelectionMode = false,
+  selectedTaskIds = new Set(),
+  onSelectTask,
   className = '',
 }) => {
   const colors = useThemeColors();
@@ -95,15 +103,22 @@ export const TaskListViewV2: React.FC<TaskListViewV2Props> = ({
 
             {/* Task Cards */}
             <div className="space-y-2 px-5">
-              {section.tasks.map((task) => (
-                <TaskCardV2
-                  key={task.id}
-                  task={task}
-                  onToggleStatus={onToggleStatus}
-                  onTaskClick={onTaskClick}
-                  isUpdating={isUpdating}
-                />
-              ))}
+              {section.tasks.map((task) => {
+                const project = projects.find(p => p.id === task.projectId);
+                return (
+                  <TaskCardV2
+                    key={task.id}
+                    task={task}
+                    onToggleStatus={onToggleStatus}
+                    onTaskClick={onTaskClick}
+                    isUpdating={isUpdating}
+                    project={project}
+                    isSelectionMode={isSelectionMode}
+                    isSelected={selectedTaskIds.has(task.id || '')}
+                    onSelect={onSelectTask}
+                  />
+                );
+              })}
             </div>
           </div>
         );

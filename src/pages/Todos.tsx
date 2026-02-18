@@ -1,8 +1,14 @@
 /**
- * Tasks Component - Migrated to React Query
+ * Tasks Component - V2 Implementation with Centered Layout
  *
- * Before: Used hybrid approach with useAppStore + useApiTasks
- * After: Uses React Query hooks for all server state
+ * Fully migrated to V2 components following Together tab pattern with:
+ * - Centered layout (900px max-width)
+ * - Simple header (no gradient)
+ * - ViewSelectorV2 for all 6 views
+ * - FilterBarV2 with pill-style filters
+ * - TaskFormModalV2 for full editing
+ * - QuickAddModalV2 for quick add
+ * - All modals follow Together pattern
  *
  * Server State (React Query):
  * - Tasks data loading and caching
@@ -10,51 +16,46 @@
  * - Create/Update/Delete mutations
  *
  * Client State (Custom Hooks):
- * - UI state (current view, search, filters) - useTaskFilters
- * - Form state (quick add, editing) - useTaskModals, useTaskEditing
- * - Ephemeral state (expanded tasks, pomodoro timer) - useTaskExpansion, usePomodoro
+ * - UI state (current view, search, filters)
+ * - Form state (quick add, editing)
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
-import { format } from 'date-fns';
-import { Plus } from 'lucide-react';
+import { Plus, CheckSquare, Trash2, X } from 'lucide-react';
 import { useApiHealth } from '../hooks/useApiHealth';
 import {
   useTasks,
   useProjects,
   useCreateTask,
   useUpdateTask,
+  usePermanentlyDeleteTask,
   useMergedTasksConnectionQuery,
 } from '../hooks/useTasksQuery';
 import type { TaskData } from '../services/types';
 import { OwnerFilter, type OwnerFilterValue } from '../components/common/OwnerFilter';
 import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
 import { useThemeColors } from '../hooks/useThemeColors';
-
-// Import all custom hooks
-import {
-  useTaskModals,
-  useTaskExpansion,
-  usePomodoro,
-  useTaskFilters,
-  useTaskEditing,
-} from '../todos/hooks';
-
-// Import all components
-import {
-  Sidebar,
-  Header,
-  TaskListView,
-  KanbanView,
-  MatrixView,
-} from '../todos/components';
-import { TodosLoadingState } from '../todos/components/layout/TodosLoadingState';
-import { TodosErrorState } from '../todos/components/layout/TodosErrorState';
+import { useToast } from '../hooks/useToast';
+import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
 
 // Import V2 components
 import { FABV2 } from '../components/v2/FABV2';
-import { SegmentedControlV2, type Segment } from '../components/v2/SegmentedControlV2';
-import { TasksHeaderV2, TaskListViewV2, QuickAddModalV2 } from '../todos/components/v2';
+import {
+  TasksHeaderV2,
+  ViewSelectorV2,
+  FilterBarV2,
+  TaskFormModalV2,
+  QuickAddModalV2,
+  TaskListViewV2,
+  type TaskView,
+  type PriorityFilter,
+  type StatusFilter,
+} from '../todos/components/v2';
+
+// Import legacy views (Kanban and Matrix not yet V2)
+import { KanbanView, MatrixView } from '../todos/components';
+import { TodosLoadingState } from '../todos/components/layout/TodosLoadingState';
+import { TodosErrorState } from '../todos/components/layout/TodosErrorState';
 
 // Import utilities
 import { transformApiTasks, transformApiProjects } from '../todos/utils';
@@ -67,11 +68,12 @@ import {
   getInboxTasks,
 } from '../todos/services/taskHelpers';
 
-export default function Todos(): React.ReactElement {
+const TodosContent: React.FC = () => {
   // ============================================================================
   // Theme and UI
   // ============================================================================
   const colors = useThemeColors();
+  const { showToast } = useToast();
 
   // ============================================================================
   // React Query Hooks - Server State Management
@@ -81,6 +83,7 @@ export default function Todos(): React.ReactElement {
 
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
+  const deleteTaskMutation = usePermanentlyDeleteTask();
 
   // Enhanced API health monitoring
   const apiHealth = useApiHealth(15000); // Check every 15 seconds
@@ -94,7 +97,12 @@ export default function Todos(): React.ReactElement {
   // ============================================================================
   // Data Transformation - API to Local Format
   // ============================================================================
-  const allTasks = useMemo(() => transformApiTasks(apiTasks), [apiTasks]);
+  const allTasks = useMemo(() => {
+    console.log('Raw API tasks:', apiTasks.length, apiTasks);
+    const transformed = transformApiTasks(apiTasks);
+    console.log('Transformed tasks:', transformed.length, transformed);
+    return transformed;
+  }, [apiTasks]);
   const projects = useMemo(() => transformApiProjects(apiProjects), [apiProjects]);
 
   // Apply owner filter if in merged mode
@@ -112,75 +120,33 @@ export default function Todos(): React.ReactElement {
   }, [allTasks, ownerFilter, currentUserId, mergedConnection]);
 
   // ============================================================================
-  // Custom Hooks - Client State Management
+  // View State
   // ============================================================================
-
-  // Modal and form visibility states
-  const modals = useTaskModals();
-
-  // Task expansion and subtask drafts
-  const expansion = useTaskExpansion();
-
-  // Pomodoro timer
-  const pomodoro = usePomodoro();
-
-  // View, search, and filter states
-  const filters = useTaskFilters();
-
-  // Task editing business logic
-  const editing = useTaskEditing(
-    {
-      createTaskMutation: {
-        mutate: (data: Partial<TaskData>, options?: { onSuccess?: () => void }) => {
-          void createTaskMutation.mutate(data as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>, options);
-        },
-        isPending: createTaskMutation.isPending
-      },
-      updateTaskMutation: {
-        mutate: (data: { id: string; updates: Partial<TaskData> }) => {
-          void updateTaskMutation.mutate(data);
-        },
-        isPending: updateTaskMutation.isPending
-      }
-    },
-    {
-      quickAddText: modals.quickAddText,
-      setQuickAddText: modals.setQuickAddText,
-      closeQuickAdd: modals.closeQuickAdd,
-      editTaskText: modals.editTaskText,
-      setEditTaskText: modals.setEditTaskText,
-      editingTask: modals.editingTask,
-      setEditingTask: modals.setEditingTask,
-      openTaskEdit: modals.openTaskEdit,
-      closeTaskEdit: modals.closeTaskEdit,
-    },
-    {
-      subtaskDrafts: expansion.subtaskDrafts,
-      setSubtaskDraft: expansion.setSubtaskDraft,
-      clearSubtaskDraft: expansion.clearSubtaskDraft,
-      getSubtaskDraft: expansion.getSubtaskDraft,
-      setActiveSubtaskForm: modals.setActiveSubtaskForm,
-    },
-    apiTasks,
-    projects
-  );
+  const [activeView, setActiveView] = useState<TaskView>('today');
 
   // ============================================================================
-  // Smart Scheduling Handler
+  // Filter State
   // ============================================================================
+  const [showFilters, setShowFilters] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showStarredOnly, setShowStarredOnly] = useState(false);
 
-  const handleScheduleTask = useCallback((taskId: string, start: Date, end: Date) => {
-    const dateStr = format(start, 'yyyy-MM-dd');
-    updateTaskMutation.mutate({
-      id: taskId,
-      updates: {
-        due_date: dateStr,
-        scheduled_start: start.toISOString(),
-        scheduled_end: end.toISOString(),
-        status: 'scheduled' as const,
-      },
-    });
-  }, [updateTaskMutation]);
+  // ============================================================================
+  // Modal State
+  // ============================================================================
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddText, setQuickAddText] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+
+  // ============================================================================
+  // Selection State (for bulk operations)
+  // ============================================================================
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
 
   // ============================================================================
   // Computed Values - Filtered and View-Specific Tasks
@@ -190,20 +156,177 @@ export default function Todos(): React.ReactElement {
   const viewTasks = useMemo(() => {
     let baseTasks = tasks;
 
-    // Apply view-specific filtering
-    if (filters.currentView === 'today') {
+    console.log('Filtering tasks for view:', activeView, 'Total tasks:', tasks.length);
+
+    // Apply view-specific filtering first
+    if (activeView === 'today') {
       baseTasks = getTodayTasks(tasks);
-    } else if (filters.currentView === 'inbox') {
+      console.log('Today tasks:', baseTasks.length);
+    } else if (activeView === 'inbox') {
       baseTasks = getInboxTasks(tasks);
-    } else if (filters.currentView === 'upcoming') {
+      console.log('Inbox tasks:', baseTasks.length);
+    } else if (activeView === 'upcoming') {
       baseTasks = getUpcomingTasks(tasks);
-    } else if (filters.selectedProject !== 'all') {
-      baseTasks = tasks.filter(t => t.projectId === filters.selectedProject && t.status !== 'done');
+      console.log('Upcoming tasks:', baseTasks.length);
     }
 
-    // Apply filters and search
-    return applyFilters(baseTasks, filters.filters, filters.searchQuery);
-  }, [tasks, filters.currentView, filters.selectedProject, filters.filters, filters.searchQuery]);
+    // Apply filters (priority, status, project, search, starred)
+    const filters = {
+      priority: priorityFilter,
+      status: statusFilter,
+      project: projectFilter,
+      starred: showStarredOnly,
+    };
+
+    const filtered = applyFilters(baseTasks, filters, searchQuery);
+    console.log('After filters applied:', filtered.length, 'tasks');
+    console.log('Active filters:', { priorityFilter, statusFilter, projectFilter, showStarredOnly, searchQuery });
+
+    return filtered;
+  }, [tasks, activeView, priorityFilter, statusFilter, projectFilter, searchQuery, showStarredOnly]);
+
+  // ============================================================================
+  // Task Handlers
+  // ============================================================================
+
+  const handleQuickAddSubmit = useCallback(() => {
+    if (!quickAddText.trim()) return;
+
+    // Set due date based on current view
+    const today = new Date().toISOString().split('T')[0];
+    const dueDate = activeView === 'today' ? today : null;
+
+    console.log('Creating task:', {
+      title: quickAddText.trim(),
+      activeView,
+      dueDate,
+      today
+    });
+
+    createTaskMutation.mutate(
+      {
+        title: quickAddText.trim(),
+        status: 'todo',
+        priority: 'medium',
+        category: 'personal',
+        due_date: dueDate,
+      } as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>,
+      {
+        onSuccess: (newTask) => {
+          console.log('Task created:', newTask);
+          showToast('Task created successfully! ✅', 'success');
+          setShowQuickAdd(false);
+          setQuickAddText('');
+        },
+        onError: (error) => {
+          console.error('Task creation failed:', error);
+          showToast(`Failed to create task: ${error.message}`, 'error');
+        },
+      }
+    );
+  }, [quickAddText, activeView, createTaskMutation, showToast]);
+
+  const handleTaskClick = useCallback((taskId: string) => {
+    setEditingTaskId(taskId);
+    setShowEditModal(true);
+  }, []);
+
+  const handleEditSubmit = useCallback((data: Partial<TaskData>) => {
+    if (!editingTaskId) return;
+
+    updateTaskMutation.mutate(
+      { id: editingTaskId, updates: data },
+      {
+        onSuccess: () => {
+          showToast('Task updated successfully! ✅', 'success');
+          setShowEditModal(false);
+          setEditingTaskId(null);
+        },
+        onError: (error) => {
+          showToast(`Failed to update task: ${error.message}`, 'error');
+        },
+      }
+    );
+  }, [editingTaskId, updateTaskMutation]);
+
+  const handleDeleteTask = useCallback(() => {
+    if (!editingTaskId) return;
+
+    deleteTaskMutation.mutate(editingTaskId, {
+      onSuccess: () => {
+        showToast('Task permanently deleted! 🗑️', 'success');
+        setShowEditModal(false);
+        setEditingTaskId(null);
+      },
+      onError: (error) => {
+        showToast(`Failed to delete task: ${error.message}`, 'error');
+      },
+    });
+  }, [editingTaskId, deleteTaskMutation, showToast]);
+
+  const handleToggleStatus = useCallback((taskId: string) => {
+    const task = apiTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const newStatus = task.status === 'done' ? 'todo' : 'done';
+
+    updateTaskMutation.mutate(
+      { id: taskId, updates: { status: newStatus } },
+      {
+        onSuccess: () => {
+          showToast(newStatus === 'done' ? 'Task completed! 🎉' : 'Task reopened! 🔄', 'success');
+        },
+        onError: (error) => {
+          showToast(`Failed to update task: ${error.message}`, 'error');
+        },
+      }
+    );
+  }, [apiTasks, updateTaskMutation, showToast]);
+
+  const handleSelectTask = useCallback((taskId: string) => {
+    setSelectedTaskIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    const allTaskIds = viewTasks.map(t => t.id || '').filter(Boolean);
+    setSelectedTaskIds(new Set(allTaskIds));
+  }, [viewTasks]);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedTaskIds(new Set());
+  }, []);
+
+  const handleBulkDelete = useCallback(() => {
+    if (selectedTaskIds.size === 0) return;
+
+    const count = selectedTaskIds.size;
+    const confirmed = window.confirm(`Are you sure you want to delete ${count} task${count > 1 ? 's' : ''}?`);
+
+    if (!confirmed) return;
+
+    // Delete all selected tasks
+    const deletePromises = Array.from(selectedTaskIds).map(taskId =>
+      deleteTaskMutation.mutateAsync(taskId)
+    );
+
+    Promise.all(deletePromises)
+      .then(() => {
+        showToast(`${count} task${count > 1 ? 's' : ''} deleted successfully! 🗑️`, 'success');
+        setSelectedTaskIds(new Set());
+        setIsSelectionMode(false);
+      })
+      .catch((error) => {
+        showToast(`Failed to delete tasks: ${error.message}`, 'error');
+      });
+  }, [selectedTaskIds, deleteTaskMutation, showToast]);
 
   // ============================================================================
   // Loading and Error States
@@ -218,15 +341,9 @@ export default function Todos(): React.ReactElement {
   }
 
   // ============================================================================
-  // View Segments Configuration
+  // Get editing task data
   // ============================================================================
-  const viewSegments: Segment<'list' | 'kanban' | 'matrix'>[] = [
-    { value: 'list', label: 'List' },
-    { value: 'kanban', label: 'Kanban' },
-    { value: 'matrix', label: 'Matrix' },
-  ];
-
-  const [activeView, setActiveView] = useState<'list' | 'kanban' | 'matrix'>('list');
+  const editingTask = editingTaskId ? apiTasks.find(t => t.id === editingTaskId) : undefined;
 
   // ============================================================================
   // Computed Values
@@ -239,86 +356,207 @@ export default function Todos(): React.ReactElement {
   // ============================================================================
 
   return (
-    <div
-      className="h-screen flex flex-col"
-      style={{ backgroundColor: colors.bg.primary }}
-    >
-      {/* V2 Header */}
-      <TasksHeaderV2
-        title="Tasks"
-        subtitle={`${taskCount} tasks${completedCount > 0 ? ` • ${completedCount} completed` : ''}`}
-        onSearchClick={modals.toggleFilters}
-        onFilterClick={modals.toggleFilters}
-      />
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <TasksHeaderV2 />
 
-      {/* Owner Filter - Show only in merged mode */}
-      {mergedConnection && (
-        <div className="px-5 py-3" style={{ backgroundColor: colors.bg.white, borderBottom: `1px solid ${colors.border.light}` }}>
-          <OwnerFilter
-            value={ownerFilter}
-            onChange={setOwnerFilter}
-            partnerName={partnerName}
-          />
-        </div>
-      )}
+        {/* Owner Filter - Show only in merged mode */}
+        {mergedConnection && (
+          <div className="mb-4">
+            <OwnerFilter
+              value={ownerFilter}
+              onChange={setOwnerFilter}
+              partnerName={partnerName}
+            />
+          </div>
+        )}
 
-      {/* V2 Segmented Control for Views */}
-      <div className="px-5 py-3">
-        <SegmentedControlV2
-          segments={viewSegments}
-          value={activeView}
+        {/* View Selector */}
+        <ViewSelectorV2
+          activeView={activeView}
           onChange={setActiveView}
-          aria-label="Task view selector"
         />
-      </div>
 
-      {/* Content Area - View-Specific Rendering */}
-      <div
-        className="flex-1 overflow-y-auto"
-        style={{ backgroundColor: colors.bg.primary }}
-      >
-        {activeView === 'kanban' ? (
-          <KanbanView
-            tasks={tasks}
-            projects={projects}
-            selectedProject={filters.selectedProject}
-            onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
-            isUpdating={updateTaskMutation.isPending}
-          />
-        ) : activeView === 'matrix' ? (
-          <MatrixView
-            tasks={tasks}
-            projects={projects}
-            selectedProject={filters.selectedProject}
-            onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
-            isUpdating={updateTaskMutation.isPending}
-          />
-        ) : (
-          <TaskListViewV2
-            tasks={viewTasks}
-            onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
-            isUpdating={updateTaskMutation.isPending}
+        {/* Action Buttons - Filter & Selection Mode */}
+        <div className="mb-4 flex gap-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-4 py-2 rounded-xl font-semibold text-sm transition-all"
+            style={{
+              background: showFilters
+                ? 'linear-gradient(135deg, rgba(212, 165, 116, 0.3) 0%, rgba(193, 139, 94, 0.3) 100%)'
+                : colors.bg.secondary,
+              borderWidth: '2px',
+              borderStyle: 'solid',
+              borderColor: showFilters ? '#C18B5E' : 'transparent',
+              color: showFilters ? '#C18B5E' : colors.text.secondary,
+            }}
+          >
+            {showFilters ? '🔍 Hide Filters' : '🔍 Show Filters'}
+          </button>
+
+          <button
+            onClick={() => {
+              setIsSelectionMode(!isSelectionMode);
+              setSelectedTaskIds(new Set());
+            }}
+            className="px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
+            style={{
+              background: isSelectionMode
+                ? 'linear-gradient(135deg, rgba(212, 165, 116, 0.3) 0%, rgba(193, 139, 94, 0.3) 100%)'
+                : colors.bg.secondary,
+              borderWidth: '2px',
+              borderStyle: 'solid',
+              borderColor: isSelectionMode ? '#C18B5E' : 'transparent',
+              color: isSelectionMode ? '#C18B5E' : colors.text.secondary,
+            }}
+          >
+            <CheckSquare className="w-4 h-4" />
+            {isSelectionMode ? 'Cancel Selection' : 'Select Tasks'}
+          </button>
+        </div>
+
+        {/* Bulk Action Bar - Show when tasks are selected */}
+        {isSelectionMode && selectedTaskIds.size > 0 && (
+          <div
+            className="mb-4 p-4 rounded-xl flex items-center justify-between"
+            style={{
+              background: 'linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%)',
+              border: '2px solid #C18B5E',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="font-semibold" style={{ color: colors.text.primary }}>
+                {selectedTaskIds.size} task{selectedTaskIds.size > 1 ? 's' : ''} selected
+              </span>
+              <button
+                onClick={handleSelectAll}
+                className="text-sm px-3 py-1 rounded-lg hover:bg-white/50 transition-colors"
+                style={{ color: '#C18B5E' }}
+              >
+                Select All ({taskCount})
+              </button>
+              <button
+                onClick={handleDeselectAll}
+                className="text-sm px-3 py-1 rounded-lg hover:bg-white/50 transition-colors"
+                style={{ color: '#C18B5E' }}
+              >
+                Deselect All
+              </button>
+            </div>
+            <button
+              onClick={handleBulkDelete}
+              className="px-4 py-2 rounded-xl font-semibold text-white transition-all flex items-center gap-2 hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' }}
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Selected
+            </button>
+          </div>
+        )}
+
+        {/* Filter Bar - Conditional */}
+        {showFilters && (
+          <FilterBarV2
+            priorityFilter={priorityFilter}
+            onPriorityFilterChange={setPriorityFilter}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            projectFilter={projectFilter}
+            onProjectFilterChange={setProjectFilter}
+            projects={projects.map(p => ({ id: p.id, name: p.name, color: p.color }))}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            showStarredOnly={showStarredOnly}
+            onToggleStarred={() => setShowStarredOnly(!showStarredOnly)}
           />
         )}
+
+        {/* Task Count Summary */}
+        <div className="mb-4 text-sm" style={{ color: colors.text.secondary }}>
+          {taskCount} task{taskCount !== 1 ? 's' : ''}
+          {completedCount > 0 && ` • ${completedCount} completed`}
+        </div>
+
+        {/* Content Area - View-Specific Rendering */}
+        <div>
+          {activeView === 'kanban' ? (
+            <KanbanView
+              tasks={viewTasks}
+              projects={projects}
+              selectedProject={projectFilter}
+              onToggleStatus={handleToggleStatus}
+              isUpdating={updateTaskMutation.isPending}
+            />
+          ) : activeView === 'matrix' ? (
+            <MatrixView
+              tasks={viewTasks}
+              projects={projects}
+              selectedProject={projectFilter}
+              onToggleStatus={handleToggleStatus}
+              isUpdating={updateTaskMutation.isPending}
+            />
+          ) : (
+            <TaskListViewV2
+              tasks={viewTasks}
+              projects={projects}
+              onTaskClick={handleTaskClick}
+              onToggleStatus={handleToggleStatus}
+              isUpdating={updateTaskMutation.isPending}
+              isSelectionMode={isSelectionMode}
+              selectedTaskIds={selectedTaskIds}
+              onSelectTask={handleSelectTask}
+            />
+          )}
+        </div>
+
+        {/* V2 FAB for Quick Add */}
+        <FABV2
+          icon={Plus}
+          onClick={() => setShowQuickAdd(true)}
+          position="bottom-right"
+        />
+
+        {/* Quick Add Modal */}
+        <QuickAddModalV2
+          isOpen={showQuickAdd}
+          value={quickAddText}
+          onChange={setQuickAddText}
+          onClose={() => {
+            setShowQuickAdd(false);
+            setQuickAddText('');
+          }}
+          onSubmit={handleQuickAddSubmit}
+          isLoading={createTaskMutation.isPending}
+          isError={createTaskMutation.isError}
+        />
+
+        {/* Full Edit Modal */}
+        <TaskFormModalV2
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingTaskId(null);
+          }}
+          onSubmit={handleEditSubmit}
+          onDelete={handleDeleteTask}
+          initialData={editingTask}
+          projects={projects}
+          isEditing={!!editingTaskId}
+          isPending={updateTaskMutation.isPending || deleteTaskMutation.isPending}
+        />
       </div>
-
-      {/* V2 FAB for Quick Add */}
-      <FABV2
-        icon={Plus}
-        onClick={modals.openQuickAdd}
-        position="bottom-right"
-      />
-
-      {/* Quick Add Modal */}
-      <QuickAddModalV2
-        isOpen={modals.showQuickAdd}
-        value={modals.quickAddText}
-        onChange={modals.setQuickAddText}
-        onSubmit={() => void editing.quickAddTask()}
-        onClose={modals.closeQuickAdd}
-        isLoading={createTaskMutation.isPending}
-        isError={createTaskMutation.isError}
-      />
     </div>
   );
-}
+};
+
+const Todos: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="Tasks">
+      <TodosContent />
+    </FeatureErrorBoundary>
+  );
+};
+
+export default Todos;

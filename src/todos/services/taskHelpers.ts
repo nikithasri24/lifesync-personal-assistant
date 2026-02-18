@@ -8,10 +8,14 @@ import type { Task, Project } from '../types';
  * Get tasks due today
  */
 export function getTodayTasks(tasks: Task[]): Task[] {
-  return tasks.filter(task => {
+  const filtered = tasks.filter(task => {
     const targetDate = task.scheduledStart ?? task.dueDate;
-    return targetDate ? isToday(targetDate) && task.status !== 'done' : false;
+    const result = targetDate ? isToday(targetDate) && task.status !== 'done' : false;
+    console.log('getTodayTasks:', task.title, 'targetDate:', targetDate, 'isToday:', targetDate ? isToday(targetDate) : false, 'included:', result);
+    return result;
   });
+  console.log('getTodayTasks: filtered', filtered.length, 'from', tasks.length, 'total tasks');
+  return filtered;
 }
 
 /**
@@ -29,7 +33,9 @@ export function getUpcomingTasks(tasks: Task[]): Task[] {
  * Get all inbox tasks
  */
 export function getInboxTasks(tasks: Task[]): Task[] {
-  return tasks.filter(task => task.status !== 'done');
+  const filtered = tasks.filter(task => task.status !== 'done');
+  console.log('getInboxTasks: filtered', filtered.length, 'from', tasks.length, 'total tasks');
+  return filtered;
 }
 
 /**
