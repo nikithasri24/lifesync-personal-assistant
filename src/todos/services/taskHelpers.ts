@@ -58,19 +58,84 @@ export function getMainTasks(taskList: Task[]): Task[] {
  * Examples:
  * - "Buy milk #groceries @tomorrow p1"
  * - "Call mom @today p2 ^Personal"
+ * - "Dentist appointment at 3:30pm"
+ * - "Meeting @ 10"
  */
 export function parseQuickAdd(text: string, projects: Project[]): {
   title: string;
   tags: string[];
   priority: 'low' | 'medium' | 'high' | 'urgent';
   dueDate: Date | null;
+  dueTime: string | null;
   projectId: string | null;
 } {
   let title = text;
   const tags: string[] = [];
   let priority: 'low' | 'medium' | 'high' | 'urgent' = 'medium';
   let dueDate: Date | null = null;
+  let dueTime: string | null = null;
   let projectId: string | null = null;
+
+  // Extract time patterns: "at 5:30pm", "@ 6", "at 3", etc.
+  const timePatterns = [
+    // "at 5:30pm", "at 5:30 pm", "at 5:30"
+    /\bat\s+(\d{1,2}):(\d{2})\s*(am|pm)?/i,
+    // "at 6pm", "at 6 pm", "at 6"
+    /\bat\s+(\d{1,2})\s*(am|pm)?/i,
+    // "@ 5:30pm", "@ 5:30", "@ 5:30 pm"
+    /@\s*(\d{1,2}):(\d{2})\s*(am|pm)?/i,
+    // "@ 6pm", "@ 6 pm", "@ 6"
+    /@\s*(\d{1,2})\s*(am|pm)?/i,
+  ];
+
+  for (const pattern of timePatterns) {
+    const timeMatch = text.match(pattern);
+    if (timeMatch) {
+      let hours: number;
+      let minutes = 0;
+      let period: string | undefined;
+
+      if (timeMatch[2] && !isNaN(parseInt(timeMatch[2]))) {
+        // Has minutes (e.g., "5:30")
+        hours = parseInt(timeMatch[1]);
+        minutes = parseInt(timeMatch[2]);
+        period = timeMatch[3]?.toLowerCase();
+      } else {
+        // Just hour (e.g., "6pm" or "6")
+        hours = parseInt(timeMatch[1]);
+        period = timeMatch[2]?.toLowerCase();
+      }
+
+      // Convert to 24-hour format
+      if (period === 'pm' && hours < 12) {
+        hours += 12;
+      } else if (period === 'am' && hours === 12) {
+        hours = 0;
+      } else if (!period) {
+        // No AM/PM specified - use smart defaults
+        // 1-7 likely PM (afternoon/evening)
+        // 8-11 could be AM or PM, default to PM if >= 5, else AM
+        // 12 is noon
+        if (hours >= 1 && hours <= 7) {
+          hours += 12; // Assume PM for 1-7
+        } else if (hours >= 8 && hours <= 11) {
+          // Keep as-is (AM) for 8-11
+        }
+      }
+
+      // Format time as HH:MM for input[type="time"]
+      dueTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+      // Set due date to today if not already set
+      if (!dueDate) {
+        dueDate = new Date();
+      }
+
+      // Remove time from title
+      title = title.replace(timeMatch[0], '').trim();
+      break; // Only match first time pattern
+    }
+  }
 
   // Extract tags (#tag)
   const tagMatches = text.match(/#(\w+)/g);
@@ -117,6 +182,7 @@ export function parseQuickAdd(text: string, projects: Project[]): {
     tags,
     priority,
     dueDate,
+    dueTime,
     projectId
   };
 }

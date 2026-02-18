@@ -44,6 +44,17 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
     }
   }, [isOpen]);
 
+  // Auto-detect time from text input
+  useEffect(() => {
+    if (value) {
+      const parsed = parseQuickAdd(value, []);
+      if (parsed.dueTime) {
+        setDueTime(parsed.dueTime);
+        setShowSchedule(true); // Auto-show schedule section if time detected
+      }
+    }
+  }, [value]);
+
   // ESC key closes modal
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -65,14 +76,24 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
 
     const parsed = parseQuickAdd(value, []);
 
+    // Use parsed time if available, otherwise use manual input
+    const timeToUse = parsed.dueTime || dueTime;
+    const dateToUse = parsed.dueDate || new Date(dueDate);
+
     // Build due_date with time if specified
     let finalDueDate: string;
-    if (dueTime) {
+    if (timeToUse) {
       // Combine date and time
-      finalDueDate = `${dueDate}T${dueTime}:00`;
+      const dateStr = dateToUse instanceof Date
+        ? dateToUse.toISOString().split('T')[0]
+        : dueDate;
+      finalDueDate = `${dateStr}T${timeToUse}:00`;
     } else {
       // Just date, set to start of day
-      finalDueDate = `${dueDate}T00:00:00`;
+      const dateStr = dateToUse instanceof Date
+        ? dateToUse.toISOString().split('T')[0]
+        : dueDate;
+      finalDueDate = `${dateStr}T00:00:00`;
     }
 
     createTaskMutation.mutate(
@@ -93,7 +114,7 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
           onChange('');
           onClose();
           if (showToast) {
-            const timeMsg = dueTime ? ` at ${dueTime}` : '';
+            const timeMsg = timeToUse ? ` at ${timeToUse}` : '';
             showToast(`Task "${newTask.title}" scheduled${timeMsg}! 📅`, 'success');
           }
         },
