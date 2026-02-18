@@ -18,13 +18,19 @@ const getWeekDays = (selectedDate: Date = new Date()): Array<{ date: string; day
   const today = new Date();
   const todayKey = today.toISOString().split('T')[0];
 
-  const currentDay = selectedDate.getDay();
+  // Find Monday of the week containing selectedDate
+  const current = new Date(selectedDate);
+  const currentDay = current.getDay();
   const diff = currentDay === 0 ? -6 : 1 - currentDay; // Adjust to Monday
+
+  // Set to Monday of the week
+  const monday = new Date(current);
+  monday.setDate(current.getDate() + diff);
 
   const days = [];
   for (let i = 0; i < 7; i++) {
-    const date = new Date(selectedDate);
-    date.setDate(selectedDate.getDate() + diff + i);
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
     const dateKey = date.toISOString().split('T')[0];
 
     days.push({
@@ -189,7 +195,7 @@ export const HabitWeeklyGridV2: React.FC<HabitWeeklyGridV2Props> = ({
 
                   return (
                     <button
-                      key={day.date}
+                      key={`${habit.id}-${day.date}`}
                       onClick={() => onToggleEntry(habit.id, day.date)}
                       style={{
                         width: '32px',

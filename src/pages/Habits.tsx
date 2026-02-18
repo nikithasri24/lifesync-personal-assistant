@@ -252,23 +252,49 @@ const Habits: React.FC = () => {
   // Toggle completion (for today view - respects selected date)
   const handleToggleComplete = (habitId: string): void => {
     const habit = apiHabits.find(h => h.id === habitId);
-    if (!habit) return;
+    if (!habit) {
+      logger.warn('Habits', 'Habit not found', { habitId });
+      return;
+    }
 
     const habitWithStats = habitsWithStats.find(h => h.habit.id === habitId);
-    if (!habitWithStats) return;
+    if (!habitWithStats) {
+      logger.warn('Habits', 'Habit stats not found', { habitId });
+      return;
+    }
+
+    // Log all entries for this habit to debug
+    const entriesForHabit = apiEntries.filter(e => e.habit_id === habitId);
+    logger.debug('Habits', 'Toggle complete called', {
+      habitId,
+      habitName: habit.name,
+      selectedDateKey,
+      hasReachedTarget: habitWithStats.hasReachedTarget,
+      todayCompletions: habitWithStats.todayCompletions,
+      targetCount: habitWithStats.targetCount,
+      totalEntriesForHabit: entriesForHabit.length,
+      entriesForHabit: entriesForHabit.map(e => ({ id: e.id, date: e.date, value: e.value })),
+    });
 
     if (habitWithStats.hasReachedTarget) {
       // Unmark complete
+      logger.debug('Habits', 'Deleting entries for date', { habitId, date: selectedDateKey });
       deleteEntriesForDateMutation.mutate(
         { habitId, date: selectedDateKey },
         {
           onSuccess: () => {
+            logger.info('Habits', 'Entries deleted successfully', { habitId, date: selectedDateKey });
             showToast('Marked incomplete', 'success');
+          },
+          onError: (error) => {
+            logger.error('Habits', error, { context: 'Failed to delete entries', habitId, date: selectedDateKey });
+            showToast('Could not uncheck the habit. Please try again.', 'error');
           },
         }
       );
     } else {
       // Mark complete
+      logger.debug('Habits', 'Creating entry for date', { habitId, date: selectedDateKey, value: 1 });
       createEntryMutation.mutate(
         {
           habit_id: habitId,
@@ -277,10 +303,11 @@ const Habits: React.FC = () => {
         },
         {
           onSuccess: () => {
+            logger.info('Habits', 'Entry created successfully', { habitId, date: selectedDateKey });
             showToast('Marked complete! ✅', 'success');
           },
           onError: (error) => {
-            logger.error('Habits', error);
+            logger.error('Habits', error, { context: 'Failed to create entry' });
             showToast('Could not record the completion. Please try again.', 'error');
           },
         }

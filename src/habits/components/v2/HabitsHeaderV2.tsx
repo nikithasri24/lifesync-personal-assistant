@@ -244,7 +244,12 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
           }}
         >
           <button
-            onClick={() => onViewModeChange('today')}
+            onClick={() => {
+              onViewModeChange('today');
+              if (onDateChange) {
+                onDateChange(new Date()); // Jump to today
+              }
+            }}
             style={{
               flex: 1,
               padding: '8px 16px',
@@ -262,7 +267,12 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
             📅 Today
           </button>
           <button
-            onClick={() => onViewModeChange('weekly')}
+            onClick={() => {
+              onViewModeChange('weekly');
+              if (onDateChange) {
+                onDateChange(new Date()); // Jump to this week
+              }
+            }}
             style={{
               flex: 1,
               padding: '8px 16px',
@@ -295,6 +305,7 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
           marginRight: '-1.5rem',
           paddingLeft: '1.5rem',
           paddingRight: '1.5rem',
+          gap: '8px',
         }}
       >
         <button
@@ -320,25 +331,19 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
         >
           ‹
         </button>
-        <button
-          onClick={handleToday}
-          style={{
-            fontSize: '16px',
-            fontWeight: 600,
-            color: '#5C4A3A',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            transition: 'background 0.2s',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212, 165, 116, 0.1)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-          aria-label="Go to today"
-        >
-          {getDateLabel()}
-        </button>
+
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span
+            style={{
+              fontSize: '16px',
+              fontWeight: 600,
+              color: '#5C4A3A',
+            }}
+          >
+            {getDateLabel()}
+          </span>
+        </div>
+
         <button
           onClick={handleNext}
           style={{
