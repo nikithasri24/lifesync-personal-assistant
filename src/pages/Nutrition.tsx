@@ -21,21 +21,23 @@ const Nutrition: React.FC = () => {
         <div
           style={{
             background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-            padding: '60px 20px 20px',
+            padding: '60px 0 20px',
             color: 'white',
             marginBottom: '16px',
           }}
         >
-          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-            🍽️ Nutrition
-          </h1>
-          <div style={{ fontSize: '14px', opacity: 0.9 }}>
-            Track your meals & macros
+          <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem' }}>
+            <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
+              🍽️ Nutrition
+            </h1>
+            <div style={{ fontSize: '14px', opacity: 0.9 }}>
+              Track your meals & macros
+            </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="px-6 pb-6">
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem 5rem' }}>
           <NutritionTracker />
         </div>
       </div>
