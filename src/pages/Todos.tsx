@@ -97,12 +97,7 @@ const TodosContent: React.FC = () => {
   // ============================================================================
   // Data Transformation - API to Local Format
   // ============================================================================
-  const allTasks = useMemo(() => {
-    console.log('Raw API tasks:', apiTasks.length, apiTasks);
-    const transformed = transformApiTasks(apiTasks);
-    console.log('Transformed tasks:', transformed.length, transformed);
-    return transformed;
-  }, [apiTasks]);
+  const allTasks = useMemo(() => transformApiTasks(apiTasks), [apiTasks]);
   const projects = useMemo(() => transformApiProjects(apiProjects), [apiProjects]);
 
   // Apply owner filter if in merged mode
@@ -156,18 +151,13 @@ const TodosContent: React.FC = () => {
   const viewTasks = useMemo(() => {
     let baseTasks = tasks;
 
-    console.log('Filtering tasks for view:', activeView, 'Total tasks:', tasks.length);
-
     // Apply view-specific filtering first
     if (activeView === 'today') {
       baseTasks = getTodayTasks(tasks);
-      console.log('Today tasks:', baseTasks.length);
     } else if (activeView === 'inbox') {
       baseTasks = getInboxTasks(tasks);
-      console.log('Inbox tasks:', baseTasks.length);
     } else if (activeView === 'upcoming') {
       baseTasks = getUpcomingTasks(tasks);
-      console.log('Upcoming tasks:', baseTasks.length);
     }
 
     // Apply filters (priority, status, project, search, starred)
@@ -178,11 +168,7 @@ const TodosContent: React.FC = () => {
       starred: showStarredOnly,
     };
 
-    const filtered = applyFilters(baseTasks, filters, searchQuery);
-    console.log('After filters applied:', filtered.length, 'tasks');
-    console.log('Active filters:', { priorityFilter, statusFilter, projectFilter, showStarredOnly, searchQuery });
-
-    return filtered;
+    return applyFilters(baseTasks, filters, searchQuery);
   }, [tasks, activeView, priorityFilter, statusFilter, projectFilter, searchQuery, showStarredOnly]);
 
   // ============================================================================
@@ -196,13 +182,6 @@ const TodosContent: React.FC = () => {
     const today = new Date().toISOString().split('T')[0];
     const dueDate = activeView === 'today' ? today : null;
 
-    console.log('Creating task:', {
-      title: quickAddText.trim(),
-      activeView,
-      dueDate,
-      today
-    });
-
     createTaskMutation.mutate(
       {
         title: quickAddText.trim(),
@@ -212,14 +191,12 @@ const TodosContent: React.FC = () => {
         due_date: dueDate,
       } as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>,
       {
-        onSuccess: (newTask) => {
-          console.log('Task created:', newTask);
+        onSuccess: () => {
           showToast('Task created successfully! ✅', 'success');
           setShowQuickAdd(false);
           setQuickAddText('');
         },
         onError: (error) => {
-          console.error('Task creation failed:', error);
           showToast(`Failed to create task: ${error.message}`, 'error');
         },
       }
