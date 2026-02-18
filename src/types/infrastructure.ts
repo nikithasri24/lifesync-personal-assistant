@@ -124,6 +124,10 @@ export interface ConversationMessage {
     arguments: Record<string, unknown>;
     result?: unknown;
   }[];
+  // UI enhancements
+  contextBadge?: string; // e.g., "Task Created", "Meal Planned"
+  suggestions?: string[]; // Quick action suggestions
+  metadata?: Record<string, unknown>; // Additional message metadata
 }
 
 export interface Conversation {

@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface EmptyConversationStateV2Props {
   onSuggestionClick: (text: string) => void;
@@ -20,18 +21,20 @@ const STARTER_PROMPTS = [
 export const EmptyConversationStateV2: React.FC<EmptyConversationStateV2Props> = ({
   onSuggestionClick,
 }) => {
+  const colors = useThemeColors();
+
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
       {/* Icon */}
       <div className="text-6xl mb-4">🤖</div>
 
       {/* Title */}
-      <h2 className="text-xl font-bold mb-2" style={{ color: '#1F2937' }}>
+      <h2 className="text-xl font-bold mb-2" style={{ color: colors.text.primary }}>
         How can I help you?
       </h2>
 
       {/* Subtitle */}
-      <p className="text-sm mb-6 max-w-md leading-relaxed" style={{ color: '#6B7280' }}>
+      <p className="text-sm mb-6 max-w-md leading-relaxed" style={{ color: colors.text.secondary }}>
         I can help you manage tasks, plan meals, track habits, and answer
         questions about your data.
       </p>
@@ -42,19 +45,11 @@ export const EmptyConversationStateV2: React.FC<EmptyConversationStateV2Props> =
           <button
             key={prompt}
             onClick={() => onSuggestionClick(prompt)}
-            className="px-4 py-3 rounded-xl text-left text-sm transition-all"
+            className="px-4 py-3 rounded-xl text-left text-sm transition-all border hover:border-terracotta-400 hover:bg-terracotta-50"
             style={{
-              backgroundColor: 'white',
-              color: '#374151',
-              border: '1px solid #E5E7EB',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#D4A574';
-              e.currentTarget.style.backgroundColor = '#FEF3E8';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#E5E7EB';
-              e.currentTarget.style.backgroundColor = 'white';
+              backgroundColor: colors.bg.white,
+              color: colors.text.primary,
+              borderColor: colors.border.light,
             }}
           >
             {prompt}

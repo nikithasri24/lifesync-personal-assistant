@@ -11,16 +11,18 @@ import { ChatMessageV2 } from '@/assistant/components/v2/ChatMessageV2';
 import { TypingIndicatorV2 } from '@/assistant/components/v2/TypingIndicatorV2';
 import { EmptyConversationStateV2 } from '@/assistant/components/v2/EmptyConversationStateV2';
 import { ConversationInputV2 } from '@/assistant/components/v2/ConversationInputV2';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import type { ConversationMessage } from '@/types/infrastructure';
 import { logger } from '@/services/logger';
 
 export default function AssistantV2() {
+  const colors = useThemeColors();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // React Query hooks
-  const { data: conversations = [] } = useConversations({ limit: 10 });
+  const { data: conversations = [], isLoading: conversationsLoading } = useConversations({ limit: 10 });
   const createConversation = useCreateConversation();
   const sendMessage = useSendMessage();
 
@@ -82,12 +84,15 @@ export default function AssistantV2() {
       // Simulate AI thinking
       setIsThinking(true);
 
-      // Simulate AI response (replace with actual AI call)
+      // TODO: Replace with actual AI backend integration (OpenAI, Anthropic, etc.)
+      // This is a simulated response for demonstration purposes
       setTimeout(async () => {
         const aiMessage: ConversationMessage = {
           role: 'assistant',
           content: 'This is a simulated AI response. Integrate with your AI backend here.',
           timestamp: new Date().toISOString(),
+          // Example: contextBadge: 'Task Created',
+          // Example: suggestions: ['View all tasks', 'Create another task', 'Set a reminder'],
         };
 
         await sendMessage.mutateAsync({
@@ -108,60 +113,79 @@ export default function AssistantV2() {
   };
 
   return (
-    <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh' }}>
-      {/* Centered container like Together module */}
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      {/* Centered container following CLAUDE.md pattern */}
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
         {/* Header */}
         <AssistantHeaderV2 onNewChat={handleNewChat} />
 
-        {/* Messages Area - Centered content */}
-        <div className="px-6 py-4 pb-32" style={{ minHeight: 'calc(100vh - 60px)' }}>
-          <div className="flex flex-col gap-3" style={{ minHeight: messages.length === 0 ? 'calc(100vh - 200px)' : 'auto' }}>
-            {/* Empty State - Vertically centered */}
-            {messages.length === 0 && !isThinking && (
-              <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 200px)' }}>
-                <EmptyConversationStateV2 onSuggestionClick={handleSuggestionClick} />
-              </div>
-            )}
+        {/* Messages Area */}
+        <div className="mt-4" style={{ minHeight: 'calc(100vh - 180px)' }}>
+          {/* Loading State */}
+          {conversationsLoading && (
+            <div className="flex flex-col gap-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="p-5 rounded-xl animate-pulse"
+                  style={{ backgroundColor: colors.bg.white }}
+                >
+                  <div className="h-16 bg-gray-200 rounded" />
+                </div>
+              ))}
+            </div>
+          )}
 
-            {/* Timestamp (show at start if messages exist) */}
-            {messages.length > 0 && (
-              <div className="text-center text-xs text-gray-400 py-2">
-                {new Date(messages[0].timestamp).toLocaleString('en-US', {
-                  weekday: 'long',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true,
-                })}
-              </div>
-            )}
+          {/* Messages */}
+          {!conversationsLoading && (
+            <div className="flex flex-col gap-3">
+              {/* Empty State - Vertically centered */}
+              {messages.length === 0 && !isThinking && (
+                <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 250px)' }}>
+                  <EmptyConversationStateV2 onSuggestionClick={handleSuggestionClick} />
+                </div>
+              )}
 
-            {/* Message List */}
-            {messages.map((message, index) => (
-              <ChatMessageV2
-                key={index}
-                message={message}
-                showAvatar
-              />
-            ))}
+              {/* Timestamp (show at start if messages exist) */}
+              {messages.length > 0 && (
+                <div className="text-center text-xs py-2" style={{ color: colors.text.tertiary }}>
+                  {new Date(messages[0].timestamp).toLocaleString('en-US', {
+                    weekday: 'long',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </div>
+              )}
 
-            {/* Typing Indicator */}
-            {isThinking && <TypingIndicatorV2 />}
+              {/* Message List */}
+              {messages.map((message, index) => (
+                <ChatMessageV2
+                  key={index}
+                  message={message}
+                  showAvatar
+                  onSuggestionClick={handleSuggestionClick}
+                />
+              ))}
 
-            {/* Auto-scroll anchor */}
-            <div ref={messagesEndRef} />
-          </div>
+              {/* Typing Indicator */}
+              {isThinking && <TypingIndicatorV2 />}
+
+              {/* Auto-scroll anchor */}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Fixed Input Area - positioned above tab bar on mobile, accounts for sidebar on desktop */}
-        <div className="fixed bottom-16 lg:bottom-0 left-0 lg:left-80 right-0 z-10">
-          <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem' }}>
-            <ConversationInputV2
-              onSendMessage={handleSendMessage}
-              disabled={isThinking || sendMessage.isPending}
-              placeholder="Ask me anything..."
-            />
-          </div>
+      {/* Fixed Input Area */}
+      <div className="fixed bottom-16 lg:bottom-4 left-0 right-0 z-10" style={{ paddingLeft: 'calc(max(0px, (100vw - 900px) / 2))', paddingRight: 'calc(max(0px, (100vw - 900px) / 2))' }}>
+        <div className="px-6">
+          <ConversationInputV2
+            onSendMessage={handleSendMessage}
+            disabled={isThinking || sendMessage.isPending}
+            placeholder="Ask me anything..."
+          />
         </div>
       </div>
     </div>

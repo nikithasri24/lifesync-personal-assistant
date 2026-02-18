@@ -4,6 +4,7 @@
  */
 
 import React, { useState, KeyboardEvent } from 'react';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface ConversationInputV2Props {
   onSendMessage: (message: string) => void;
@@ -18,7 +19,9 @@ export const ConversationInputV2: React.FC<ConversationInputV2Props> = ({
   disabled = false,
   placeholder = 'Ask me anything...',
 }) => {
+  const colors = useThemeColors();
   const [input, setInput] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleSend = () => {
     if (input.trim() && !disabled) {
@@ -34,12 +37,14 @@ export const ConversationInputV2: React.FC<ConversationInputV2Props> = ({
     }
   };
 
+  const hasInput = input.trim().length > 0;
+
   return (
     <div
-      className="flex-shrink-0 px-4 py-3 border-t"
+      className="flex-shrink-0 px-4 py-3 rounded-xl border"
       style={{
-        backgroundColor: 'white',
-        borderColor: '#E5E7EB',
+        backgroundColor: colors.bg.white,
+        borderColor: colors.border.light,
       }}
     >
       <div className="flex gap-2 items-end">
@@ -48,22 +53,16 @@ export const ConversationInputV2: React.FC<ConversationInputV2Props> = ({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyPress}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="flex-1 px-4 py-2.5 rounded-[20px] text-sm resize-none max-h-24 overflow-y-auto focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+          className="flex-1 px-4 py-2.5 rounded-[20px] text-sm resize-none max-h-24 overflow-y-auto focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed transition-all border focus:border-terracotta-400"
           style={{
-            backgroundColor: '#F3F4F6',
-            border: '1px solid #E5E7EB',
-            color: '#1F2937',
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = '#D4A574';
-            e.target.style.backgroundColor = 'white';
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = '#E5E7EB';
-            e.target.style.backgroundColor = '#F3F4F6';
+            backgroundColor: isFocused ? colors.bg.white : colors.bg.secondary,
+            borderColor: isFocused ? colors.accent.start : colors.border.light,
+            color: colors.text.primary,
           }}
         />
 
@@ -73,16 +72,10 @@ export const ConversationInputV2: React.FC<ConversationInputV2Props> = ({
           <button
             onClick={onVoiceInput}
             disabled={disabled}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all text-lg"
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all text-lg hover:bg-gray-300"
             style={{
-              backgroundColor: '#F3F4F6',
-              color: '#6B7280',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#E5E7EB';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#F3F4F6';
+              backgroundColor: colors.bg.secondary,
+              color: colors.text.secondary,
             }}
             aria-label="Voice input"
           >
@@ -92,21 +85,11 @@ export const ConversationInputV2: React.FC<ConversationInputV2Props> = ({
           {/* Send Button */}
           <button
             onClick={handleSend}
-            disabled={disabled || !input.trim()}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+            disabled={disabled || !hasInput}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg hover:bg-terracotta-600"
             style={{
-              backgroundColor: input.trim() && !disabled ? '#D4A574' : '#E5E7EB',
-              color: input.trim() && !disabled ? 'white' : '#9CA3AF',
-            }}
-            onMouseEnter={(e) => {
-              if (input.trim() && !disabled) {
-                e.currentTarget.style.backgroundColor = '#C18B5E';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (input.trim() && !disabled) {
-                e.currentTarget.style.backgroundColor = '#D4A574';
-              }
+              backgroundColor: hasInput && !disabled ? colors.accent.start : colors.bg.secondary,
+              color: hasInput && !disabled ? 'white' : colors.text.tertiary,
             }}
             aria-label="Send message"
           >

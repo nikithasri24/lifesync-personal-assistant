@@ -12,7 +12,7 @@ interface AssistantHeaderV2Props {
 export const AssistantHeaderV2: React.FC<AssistantHeaderV2Props> = ({ onNewChat }) => {
   return (
     <div
-      className="sticky top-0 z-10 px-5 py-4"
+      className="rounded-xl px-5 py-4 mb-6"
       style={{
         background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
       }}
@@ -23,16 +23,9 @@ export const AssistantHeaderV2: React.FC<AssistantHeaderV2Props> = ({ onNewChat 
         </h1>
         <button
           onClick={onNewChat}
-          className="w-9 h-9 rounded-lg flex items-center justify-center transition-all text-xl font-normal"
+          className="w-9 h-9 rounded-lg flex items-center justify-center transition-all text-xl font-normal text-white hover:bg-white/30"
           style={{
             backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            color: 'white',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
           }}
           aria-label="Start new chat"
         >
