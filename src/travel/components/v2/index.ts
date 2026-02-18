@@ -9,3 +9,5 @@ export { VisaFormModalV2 } from './VisaFormModalV2';
 export { TripCardV2 } from './TripCardV2';
 export { LocationCardV2 } from './LocationCardV2';
 export { VisaItemCardV2 } from './VisaItemCardV2';
+export { BucketListDestinationCardV2 } from './BucketListDestinationCardV2';
+export { BucketListFormModalV2 } from './BucketListFormModalV2';

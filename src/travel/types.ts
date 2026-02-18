@@ -134,3 +134,55 @@ export type CategorizedTrip = Trip & {
 
 // Input type for creating/updating trips
 export type TripInput = Omit<Trip, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
+
+// Bucket List - Dream destinations to visit
+export type BucketListPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type BucketListCategory = 'beach' | 'mountain' | 'city' | 'cultural' | 'adventure' | 'relaxation' | 'food' | 'wildlife' | 'other';
+
+export type BucketListDestination = {
+  id: string;
+  userId: string;
+  connectionId?: string | null;
+  sharedWith?: string[]; // Array of user IDs who can see/edit this
+
+  // Destination details
+  name: string; // e.g., "Santorini, Greece" or "Northern Lights in Iceland"
+  description?: string;
+  countryCode?: string; // ISO 3166-1 alpha-2
+  countryName?: string;
+  cityName?: string;
+  regionName?: string;
+
+  // Bucket list metadata
+  priority: BucketListPriority;
+  category: BucketListCategory;
+  estimatedBudget?: number;
+  currency?: string; // ISO 4217
+  targetYear?: number; // Year hoping to visit
+  targetSeason?: string; // e.g., 'summer', 'winter', 'spring', 'fall'
+
+  // Planning
+  isVisited: boolean;
+  visitedDate?: string; // ISO date when marked as visited
+  notes?: string;
+  inspirationUrl?: string; // Link to blog, video, etc.
+  tags?: string[];
+
+  // Wishlist items for this destination
+  mustDo?: string[]; // Activities/experiences (e.g., ["Sunset at Oia", "Wine tasting"])
+  mustEat?: string[]; // Foods to try
+  mustSee?: string[]; // Places to visit
+
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Helper type to categorize bucket list by ownership
+export type BucketListCategory_Ownership = 'mine' | 'partner' | 'shared';
+
+export type CategorizedBucketListDestination = BucketListDestination & {
+  ownershipCategory: BucketListCategory_Ownership;
+};
+
+// Input type for creating/updating bucket list destinations
+export type BucketListDestinationInput = Omit<BucketListDestination, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;

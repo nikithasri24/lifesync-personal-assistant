@@ -13,6 +13,7 @@ import { useTravelState, type TravelTabView } from '@/travel/hooks/useTravelStat
 // Lazy load page components
 const TravelMapPage = React.lazy(() => import('../travel/pages/TravelPage'));
 const VisaPage = React.lazy(() => import('../travel/pages/VisaPage'));
+const BucketListPage = React.lazy(() => import('../travel/pages/BucketListPage'));
 
 const Travel: React.FC = () => {
   const colors = useThemeColors();
@@ -76,17 +77,7 @@ const Travel: React.FC = () => {
               >
                 {activeTab === 'map' && <TravelMapPage />}
                 {activeTab === 'visa' && <VisaPage />}
-                {activeTab === 'bucketlist' && (
-                  <div className="py-12 text-center">
-                    <div className="text-6xl mb-4">🗺️</div>
-                    <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
-                      Bucket List Coming Soon
-                    </h3>
-                    <p className="text-sm" style={{ color: colors.text.tertiary }}>
-                      Create and track your dream destinations
-                    </p>
-                  </div>
-                )}
+                {activeTab === 'bucketlist' && <BucketListPage />}
               </React.Suspense>
             </div>
           </div>
