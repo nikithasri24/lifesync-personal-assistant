@@ -4,7 +4,6 @@
  */
 
 import React from 'react';
-import { Plus } from 'lucide-react';
 
 interface AssistantHeaderV2Props {
   onNewChat: () => void;
@@ -24,7 +23,7 @@ export const AssistantHeaderV2: React.FC<AssistantHeaderV2Props> = ({ onNewChat 
         </h1>
         <button
           onClick={onNewChat}
-          className="w-9 h-9 rounded-lg flex items-center justify-center transition-all"
+          className="w-9 h-9 rounded-lg flex items-center justify-center transition-all text-xl font-normal"
           style={{
             backgroundColor: 'rgba(255, 255, 255, 0.2)',
             color: 'white',
@@ -37,7 +36,7 @@ export const AssistantHeaderV2: React.FC<AssistantHeaderV2Props> = ({ onNewChat 
           }}
           aria-label="Start new chat"
         >
-          <Plus className="w-5 h-5" strokeWidth={2.5} />
+          +
         </button>
       </div>
     </div>

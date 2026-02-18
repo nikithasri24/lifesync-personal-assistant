@@ -4,7 +4,6 @@
  */
 
 import React, { useState, KeyboardEvent } from 'react';
-import { Send, Mic } from 'lucide-react';
 
 interface ConversationInputV2Props {
   onSendMessage: (message: string) => void;
@@ -71,32 +70,30 @@ export const ConversationInputV2: React.FC<ConversationInputV2Props> = ({
         {/* Action Buttons */}
         <div className="flex gap-2">
           {/* Voice Input Button */}
-          {onVoiceInput && (
-            <button
-              onClick={onVoiceInput}
-              disabled={disabled}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
-              style={{
-                backgroundColor: '#F3F4F6',
-                color: '#6B7280',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#E5E7EB';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#F3F4F6';
-              }}
-              aria-label="Voice input"
-            >
-              <Mic className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={onVoiceInput}
+            disabled={disabled}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all text-lg"
+            style={{
+              backgroundColor: '#F3F4F6',
+              color: '#6B7280',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#E5E7EB';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#F3F4F6';
+            }}
+            aria-label="Voice input"
+          >
+            🎤
+          </button>
 
           {/* Send Button */}
           <button
             onClick={handleSend}
             disabled={disabled || !input.trim()}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
             style={{
               backgroundColor: input.trim() && !disabled ? '#D4A574' : '#E5E7EB',
               color: input.trim() && !disabled ? 'white' : '#9CA3AF',
@@ -113,7 +110,7 @@ export const ConversationInputV2: React.FC<ConversationInputV2Props> = ({
             }}
             aria-label="Send message"
           >
-            <Send className="w-4 h-4" />
+            →
           </button>
         </div>
       </div>
