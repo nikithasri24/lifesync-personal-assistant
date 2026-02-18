@@ -3,8 +3,8 @@
  * Partner connections, invitations, and activity feed
  */
 
-import React, { useMemo } from 'react';
-import { Users, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useSharedState } from '@/shared/hooks/useSharedState';
@@ -20,10 +20,12 @@ import {
 } from '@/hooks/useConnectionsQuery';
 import { StatsGrid } from '@/shared/components/StatsGrid';
 import { PartnerView, InvitesView, ActivityView } from '@/shared/components/views';
+import { InvitePartnerModalV2 } from '@/shared/components/v2';
 
 export const Shared: React.FC = () => {
   const colors = useThemeColors();
   const { activeTab, setActiveTab } = useSharedState();
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   // Real data from React Query hooks
   const { data: connections = [], isLoading: connectionsLoading } = usePartnerConnections();
@@ -59,36 +61,31 @@ export const Shared: React.FC = () => {
   };
 
   const handleInvitePartner = () => {
-    // TODO: Open invite modal
-    console.log('Invite partner clicked');
+    setShowInviteModal(true);
   };
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }} data-testid="shared-container">
-      {/* Header */}
-      <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '5rem' }}>
+        {/* Header with Gradient */}
         <div
-          className="px-6 pt-4 pb-3"
+          className="px-5 py-6 mb-4"
           style={{
             background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            color: 'white',
           }}
         >
-          <div className="flex items-center gap-2 mb-2 text-white">
-            <Users size={28} />
-            <h1 className="text-3xl font-extrabold">Shared</h1>
-          </div>
-          <div className="text-sm opacity-90 text-white">
-            Collaborate with family & friends
-          </div>
+          <h1 className="text-3xl font-bold mb-2">👥 Shared</h1>
+          <p className="text-sm opacity-90">Collaborate with family & friends</p>
         </div>
 
         {/* Stats Grid */}
-        <div className="mt-0">
+        <div className="px-0">
           <StatsGrid stats={stats} />
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-5">
+        <div className="px-5 mb-4">
           <SegmentedControl
             segments={[
               { value: 'partner', label: 'Partner' },
@@ -103,31 +100,31 @@ export const Shared: React.FC = () => {
             onChange={(value) => setActiveTab(value as 'partner' | 'invites' | 'activity')}
           />
         </div>
-      </div>
 
-      {/* Tab Content */}
-      <div className="pt-5">
-        {activeTab === 'partner' && (
-          <PartnerView connections={connections} isLoading={connectionsLoading} />
-        )}
+        {/* Tab Content */}
+        <div>
+          {activeTab === 'partner' && (
+            <PartnerView connections={connections} isLoading={connectionsLoading} />
+          )}
 
-        {activeTab === 'invites' && (
-          <InvitesView
-            invitations={invitations}
-            isLoading={invitationsLoading}
-            onAccept={handleAcceptInvite}
-            onDecline={handleDeclineInvite}
-            onCancel={handleCancelInvite}
-          />
-        )}
+          {activeTab === 'invites' && (
+            <InvitesView
+              invitations={invitations}
+              isLoading={invitationsLoading}
+              onAccept={handleAcceptInvite}
+              onDecline={handleDeclineInvite}
+              onCancel={handleCancelInvite}
+            />
+          )}
 
-        {activeTab === 'activity' && (
-          <ActivityView
-            activities={activities}
-            isLoading={activitiesLoading}
-            currentUserId={currentUserId}
-          />
-        )}
+          {activeTab === 'activity' && (
+            <ActivityView
+              activities={activities}
+              isLoading={activitiesLoading}
+              currentUserId={currentUserId}
+            />
+          )}
+        </div>
       </div>
 
       {/* FAB - Only show on empty states or invites tab */}
@@ -149,6 +146,9 @@ export const Shared: React.FC = () => {
           <Plus className="w-8 h-8" strokeWidth={2.5} />
         </button>
       )}
+
+      {/* Invite Partner Modal */}
+      <InvitePartnerModalV2 isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} />
     </div>
   );
 };
