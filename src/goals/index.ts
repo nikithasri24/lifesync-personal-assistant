@@ -11,4 +11,3 @@ export * from './types/lifeGoals';
 // TODO: Re-export components when they are implemented
 // export { default as GoalCheckins } from './components/GoalCheckins';
 // export { default as GoalMilestones } from './components/GoalMilestones';
-export { default as GoalTemplates } from './components/GoalTemplates';

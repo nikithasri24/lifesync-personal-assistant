@@ -21,6 +21,7 @@ import { Users } from 'lucide-react';
 import { logger } from '../services/logger';
 import ErrorState from '../components/ErrorState';
 import { supabase } from '../lib/supabase';
+import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
 
 // Import layout components
 import { LifeGoalsLoadingState } from '../goals/components/layout/LifeGoalsLoadingState';
@@ -38,7 +39,7 @@ import { GoalsHeaderV2, GoalFormModalV2, DreamFormModalV2 } from '../goals/compo
 
 // Removed createGoalDraft and createDreamDraft - V2 modals manage their own state
 
-const LifeGoals: React.FC = () => {
+const LifeGoalsContent: React.FC = () => {
   // React Query hooks
   const {
     data: goals = [],
@@ -566,6 +567,14 @@ const LifeGoals: React.FC = () => {
 
       </div>
     </div>
+  );
+};
+
+const LifeGoals: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="LifeGoals">
+      <LifeGoalsContent />
+    </FeatureErrorBoundary>
   );
 };
 
