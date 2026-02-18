@@ -1,11 +1,16 @@
 /**
- * AccountFormModalV2 Component
- * Create/edit financial accounts with Together pattern
- * Auto-save, ESC key, backdrop support
+ * AccountFormModalV2 Component - MIGRATED to use FormModalV2
+ * Create/edit financial accounts
+ *
+ * MIGRATION COMPLETE:
+ * - Reduced from 313 lines to ~235 lines (25% reduction)
+ * - Removed all boilerplate (ESC key, backdrop, auto-save, modal structure)
+ * - Form state managed by FormModalV2
+ * - Conditional credit card fields based on account type
  */
 
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import React from 'react';
+import { FormModalV2 } from '@/components/v2';
 
 interface AccountFormModalV2Props {
   isOpen: boolean;
@@ -25,7 +30,14 @@ export interface AccountFormData {
   notes?: string;
 }
 
-const STORAGE_KEY = 'finance_account_modal_draft';
+interface AccountFormState {
+  name: string;
+  type: string;
+  balance: string;
+  creditLimit: string;
+  apr: string;
+  notes: string;
+}
 
 const ACCOUNT_TYPES = [
   { value: 'checking', label: 'Checking', emoji: '💳' },
@@ -46,143 +58,56 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
   initialData,
   isPending = false,
 }) => {
-  // Load saved draft from localStorage
-  const loadDraft = () => {
-    if (initialData) return null; // Don't load draft when editing
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (error) {
-      console.error('Failed to load draft:', error);
-    }
-    return null;
+  const defaultFormData: AccountFormState = {
+    name: '',
+    type: 'checking',
+    balance: '0',
+    creditLimit: '',
+    apr: '',
+    notes: '',
   };
 
-  const savedDraft = loadDraft();
-
-  // Form state - restore from localStorage if available
-  const [name, setName] = useState(savedDraft?.name || initialData?.name || '');
-  const [type, setType] = useState(savedDraft?.type || initialData?.type || 'checking');
-  const [balance, setBalance] = useState(
-    savedDraft?.balance?.toString() || initialData?.balance?.toString() || '0'
-  );
-  const [creditLimit, setCreditLimit] = useState(
-    savedDraft?.creditLimit?.toString() || initialData?.creditLimit?.toString() || ''
-  );
-  const [apr, setApr] = useState(savedDraft?.apr?.toString() || initialData?.apr?.toString() || '');
-  const [notes, setNotes] = useState(savedDraft?.notes || initialData?.notes || '');
-
-  // Auto-save draft to localStorage whenever form changes
-  useEffect(() => {
-    if (!initialData) {
-      // Only auto-save for new accounts, not when editing
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          name,
-          type,
-          balance: parseFloat(balance) || 0,
-          creditLimit: creditLimit ? parseFloat(creditLimit) : undefined,
-          apr: apr ? parseFloat(apr) : undefined,
-          notes,
-        })
-      );
-    }
-  }, [name, type, balance, creditLimit, apr, notes, initialData]);
-
-  // Keyboard navigation - ESC to close
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!name.trim()) {
-      alert('Please enter an account name');
-      return;
-    }
-
-    const formData: AccountFormData = {
-      name: name.trim(),
-      type,
-      balance: parseFloat(balance) || 0,
-      creditLimit: creditLimit ? parseFloat(creditLimit) : undefined,
-      apr: apr ? parseFloat(apr) : undefined,
-      notes: notes.trim() || undefined,
-    };
-
-    await onSave(formData);
-
-    // Clear draft after successful save
-    if (!initialData) {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-
-    onClose();
-  };
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  const isCreditCard = type === 'credit';
+  const initialFormData: AccountFormState | undefined = initialData ? {
+    name: initialData.name || '',
+    type: initialData.type || 'checking',
+    balance: initialData.balance?.toString() || '0',
+    creditLimit: initialData.creditLimit?.toString() || '',
+    apr: initialData.apr?.toString() || '',
+    notes: initialData.notes || '',
+  } : undefined;
 
   return (
-    <div
-      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
-      style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        backdropFilter: 'blur(4px)',
-        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-        height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+    <FormModalV2<AccountFormState>
+      isOpen={isOpen}
+      onClose={onClose}
+      title={initialData ? 'Edit Account' : 'Add Account'}
+      defaultData={defaultFormData}
+      initialData={initialFormData}
+      draftKey={initialData ? undefined : 'finance_account_modal_draft'}
+      isPending={isPending}
+      submitText={initialData ? 'Save Changes' : 'Add Account'}
+      isEditing={!!initialData}
+      onSubmit={async (formData) => {
+        const accountData: AccountFormData = {
+          name: formData.name.trim(),
+          type: formData.type,
+          balance: parseFloat(formData.balance) || 0,
+          creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
+          apr: formData.apr ? parseFloat(formData.apr) : undefined,
+          notes: formData.notes.trim() || undefined,
+        };
+        await onSave(accountData);
       }}
-      onClick={handleBackdropClick}
+      validate={(formData) => {
+        if (!formData.name.trim()) return 'Please enter an account name';
+        return null;
+      }}
     >
-      <div
-        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col"
-        style={{ maxHeight: '90vh', maxWidth: '600px' }}
-      >
-        {/* Mobile Drag Handle */}
-        <div className="lg:hidden pt-2 flex-shrink-0">
-          <div className="w-9 h-1 rounded-full mx-auto bg-gray-300" />
-        </div>
+      {(formState, setFormState) => {
+        const isCreditCard = formState.type === 'credit';
 
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 flex-shrink-0">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {initialData ? 'Edit Account' : 'Add Account'}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-
-        {/* Scrollable Content */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div
-            className="overflow-y-auto p-6 space-y-5 flex-1"
-            style={{ maxHeight: 'calc(90vh - 140px)' }}
-          >
+        return (
+          <>
             {/* Account Name */}
             <div>
               <label htmlFor="account-name" className="block text-sm font-semibold text-gray-900 mb-2">
@@ -191,8 +116,8 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
               <input
                 id="account-name"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={formState.name}
+                onChange={(e) => setFormState({ ...formState, name: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 placeholder="e.g., Chase Checking, Savings Account"
                 required
@@ -206,8 +131,8 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
               </label>
               <select
                 id="account-type"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
+                value={formState.type}
+                onChange={(e) => setFormState({ ...formState, type: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
               >
                 {ACCOUNT_TYPES.map((accountType) => (
@@ -227,8 +152,8 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
                 id="balance"
                 type="number"
                 step="0.01"
-                value={balance}
-                onChange={(e) => setBalance(e.target.value)}
+                value={formState.balance}
+                onChange={(e) => setFormState({ ...formState, balance: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 placeholder="0.00"
               />
@@ -245,8 +170,8 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
                     id="credit-limit"
                     type="number"
                     step="0.01"
-                    value={creditLimit}
-                    onChange={(e) => setCreditLimit(e.target.value)}
+                    value={formState.creditLimit}
+                    onChange={(e) => setFormState({ ...formState, creditLimit: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                     placeholder="0.00"
                   />
@@ -260,8 +185,8 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
                     id="apr"
                     type="number"
                     step="0.01"
-                    value={apr}
-                    onChange={(e) => setApr(e.target.value)}
+                    value={formState.apr}
+                    onChange={(e) => setFormState({ ...formState, apr: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                     placeholder="0.00"
                   />
@@ -277,36 +202,15 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
               <textarea
                 id="notes"
                 rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                value={formState.notes}
+                onChange={(e) => setFormState({ ...formState, notes: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
                 placeholder="Add notes or details about this account..."
               />
             </div>
-          </div>
-
-          {/* Modal Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex gap-3 flex-shrink-0 bg-white">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
-              style={{
-                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-              }}
-            >
-              {isPending ? 'Saving...' : initialData ? 'Save Changes' : 'Add Account'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </>
+        );
+      }}
+    </FormModalV2>
   );
 };
