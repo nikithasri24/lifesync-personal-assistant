@@ -7,8 +7,21 @@ import React, { useState } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, addDays, subDays, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
 import { useTasks } from '@/hooks/useTasksQuery';
 import { useCalendarEvents } from '@/hooks/useCalendarQuery';
+import { AddEventModal } from '@/calendar/components/AddEventModal';
 
 type ViewType = 'month' | 'week' | 'day';
+
+// Helper function to get event colors based on type
+const getEventColors = (type: 'event' | 'meeting' | 'reminder' | 'birthday' | 'holiday') => {
+  const colorMap = {
+    event: { bg: '#E0E7FF', border: '#4F46E5' }, // Indigo
+    meeting: { bg: '#DBEAFE', border: '#3B82F6' }, // Blue
+    reminder: { bg: '#FEF3C7', border: '#F59E0B' }, // Amber
+    birthday: { bg: '#FCE7F3', border: '#EC4899' }, // Pink
+    holiday: { bg: '#D1FAE5', border: '#10B981' }, // Green
+  };
+  return colorMap[type] || colorMap.event;
+};
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -306,32 +319,197 @@ export default function Calendar() {
         {/* Day View */}
         {currentView === 'day' && (
           <div className="bg-white">
-            {generateDayHours().map(({ hour, label }) => (
-              <div
-                key={hour}
-                className="flex border-b min-h-[60px]"
-                style={{ borderColor: '#E5E7EB' }}
-              >
-                {/* Hour Label */}
-                <div
-                  className="w-16 p-2 text-xs border-r flex-shrink-0"
-                  style={{ color: '#6B7280', borderColor: '#E5E7EB' }}
-                >
-                  {label}
-                </div>
+            {/* All-day Events Section */}
+            {(() => {
+              const { events: dayEvents } = getEventsForDay(currentDate);
+              const allDayEvents = dayEvents.filter(e => e.all_day);
 
-                {/* Hour Content */}
-                <div className="flex-1 p-1 relative">
-                  {/* Events/tasks would be rendered here */}
+              return allDayEvents.length > 0 ? (
+                <div
+                  className="border-b p-3"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}
+                >
+                  <div className="text-xs font-semibold text-gray-500 mb-2">ALL DAY</div>
+                  <div className="space-y-2">
+                    {allDayEvents.map((event, idx) => {
+                      const eventColors = getEventColors(event.type);
+                      return (
+                        <div
+                          key={`allday-${event.id || idx}`}
+                          style={{
+                            backgroundColor: eventColors.bg,
+                            borderLeft: `3px solid ${eventColors.border}`,
+                            padding: '6px 8px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, color: '#1F2937' }}>
+                            {event.title}
+                          </div>
+                          {event.location && (
+                            <div style={{ color: '#6B7280', fontSize: '11px', marginTop: '2px' }}>
+                              📍 {event.location}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ) : null;
+            })()}
+
+            {/* Hourly Schedule */}
+            {generateDayHours().map(({ hour, label }) => {
+              const { tasks: dayTasks, events: dayEvents } = getEventsForDay(currentDate);
+
+              // Filter events for this hour
+              const timeSlotEvents = dayEvents.filter(e => {
+                if (e.all_day) return false; // All-day events shown separately
+                const eventHour = new Date(e.start_date).getHours();
+                return eventHour === hour;
+              });
+
+              // Filter tasks for this hour
+              const timeSlotTasks = dayTasks.filter(t => {
+                if (!t.due_date) return false;
+                const taskHour = new Date(t.due_date).getHours();
+                return taskHour === hour;
+              });
+
+              return (
+                <div
+                  key={hour}
+                  className="flex border-b min-h-[60px]"
+                  style={{ borderColor: '#E5E7EB' }}
+                >
+                  {/* Hour Label */}
+                  <div
+                    className="w-16 p-2 text-xs border-r flex-shrink-0"
+                    style={{ color: '#6B7280', borderColor: '#E5E7EB' }}
+                  >
+                    {label}
+                  </div>
+
+                  {/* Hour Content */}
+                  <div className="flex-1 p-1 relative">
+                    {/* Events */}
+                    {timeSlotEvents.map((event, idx) => {
+                      const eventColors = getEventColors(event.type);
+                      return (
+                        <div
+                          key={`event-${event.id || idx}`}
+                          style={{
+                            backgroundColor: eventColors.bg,
+                            borderLeft: `3px solid ${eventColors.border}`,
+                            padding: '4px',
+                            margin: '2px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, color: '#1F2937' }}>
+                            {format(new Date(event.start_date), 'h:mm a')}
+                            {event.end_date && ` - ${format(new Date(event.end_date), 'h:mm a')}`}
+                          </div>
+                          <div style={{ color: '#374151' }}>{event.title}</div>
+                          {event.location && (
+                            <div style={{ color: '#6B7280', fontSize: '10px', marginTop: '2px' }}>
+                              📍 {event.location}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Tasks */}
+                    {timeSlotTasks.map((task, idx) => (
+                      <div
+                        key={`task-${task.id || idx}`}
+                        style={{
+                          backgroundColor: '#DBEAFE',
+                          borderLeft: '3px solid #3B82F6',
+                          padding: '4px',
+                          margin: '2px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, color: '#1F2937' }}>
+                          {format(new Date(task.due_date!), 'h:mm a')}
+                        </div>
+                        <div style={{ color: '#374151' }}>{task.title}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
         {/* Week View */}
         {currentView === 'week' && (
           <div>
+            {/* All-day Events Section */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '60px repeat(7, 1fr)',
+                backgroundColor: '#F9FAFB',
+                borderBottom: '1px solid #E5E7EB',
+                minHeight: '40px',
+              }}
+            >
+              <div
+                style={{
+                  padding: '8px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#6B7280',
+                  borderRight: '1px solid #E5E7EB',
+                }}
+              >
+                ALL DAY
+              </div>
+              {weekDays.map((day) => {
+                const { events: dayEvents } = getEventsForDay(day);
+                const allDayEvents = dayEvents.filter(e => e.all_day);
+
+                return (
+                  <div
+                    key={`allday-${day.toString()}`}
+                    style={{
+                      borderRight: '1px solid #E5E7EB',
+                      padding: '4px',
+                      backgroundColor: isToday(day) ? '#FEF3E8' : '#F9FAFB',
+                    }}
+                  >
+                    {allDayEvents.map((event, idx) => {
+                      const eventColors = getEventColors(event.type);
+                      return (
+                        <div
+                          key={`allday-event-${event.id || idx}`}
+                          style={{
+                            backgroundColor: eventColors.bg,
+                            borderLeft: `3px solid ${eventColors.border}`,
+                            padding: '4px',
+                            margin: '2px',
+                            borderRadius: '4px',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {event.title}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
             {/* Week day headers */}
             <div
               style={{
@@ -395,13 +573,16 @@ export default function Calendar() {
                   {/* Day columns */}
                   {weekDays.map((day) => {
                     const { tasks: dayTasks, events: dayEvents } = getEventsForDay(day);
+
+                    // Filter events for this hour
                     const timeSlotEvents = dayEvents.filter(e => {
-                      // Simple check if event is in this hour
+                      if (e.all_day) return false; // All-day events shown separately
                       const eventHour = new Date(e.start_date).getHours();
                       return eventHour === hour;
                     });
+
+                    // Filter tasks for this hour
                     const timeSlotTasks = dayTasks.filter(t => {
-                      // For now, just show tasks at their due time if set
                       if (!t.due_date) return false;
                       const taskHour = new Date(t.due_date).getHours();
                       return taskHour === hour;
@@ -418,29 +599,32 @@ export default function Calendar() {
                         }}
                       >
                         {/* Events */}
-                        {timeSlotEvents.map((event, idx) => (
-                          <div
-                            key={`event-${idx}`}
-                            style={{
-                              backgroundColor: '#E0E7FF',
-                              borderLeft: '3px solid #4F46E5',
-                              padding: '4px',
-                              margin: '2px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                            }}
-                          >
-                            <div style={{ fontWeight: 600, color: '#1F2937' }}>
-                              {format(new Date(event.start_date), 'h:mm a')}
+                        {timeSlotEvents.map((event, idx) => {
+                          const eventColors = getEventColors(event.type);
+                          return (
+                            <div
+                              key={`event-${event.id || idx}`}
+                              style={{
+                                backgroundColor: eventColors.bg,
+                                borderLeft: `3px solid ${eventColors.border}`,
+                                padding: '4px',
+                                margin: '2px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                              }}
+                            >
+                              <div style={{ fontWeight: 600, color: '#1F2937' }}>
+                                {format(new Date(event.start_date), 'h:mm a')}
+                              </div>
+                              <div style={{ color: '#374151' }}>{event.title}</div>
                             </div>
-                            <div style={{ color: '#374151' }}>{event.title}</div>
-                          </div>
-                        ))}
+                          );
+                        })}
 
                         {/* Tasks */}
                         {timeSlotTasks.map((task, idx) => (
                           <div
-                            key={`task-${idx}`}
+                            key={`task-${task.id || idx}`}
                             style={{
                               backgroundColor: '#DBEAFE',
                               borderLeft: '3px solid #3B82F6',
@@ -480,58 +664,11 @@ export default function Calendar() {
         </button>
 
         {/* Add Event Modal */}
-        {showAddModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-end lg:items-center justify-center"
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.4)',
-              backdropFilter: 'blur(4px)',
-            }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowAddModal(false);
-              }
-            }}
-          >
-            <div
-              className="bg-white lg:rounded-3xl rounded-t-3xl w-full lg:max-w-md overflow-hidden"
-              style={{ maxHeight: '90vh' }}
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900">Add Event</h2>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Close"
-                >
-                  <span className="text-2xl text-gray-500">×</span>
-                </button>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-6">
-                <div className="text-center py-8 text-gray-500">
-                  <div className="text-6xl mb-4">📅</div>
-                  <p className="text-lg font-semibold mb-2">Event Creation Coming Soon</p>
-                  <p className="text-sm">
-                    Full event creation and management features will be available in the next update.
-                  </p>
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <AddEventModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          initialDate={currentDate}
+        />
       </div>
     </div>
   );

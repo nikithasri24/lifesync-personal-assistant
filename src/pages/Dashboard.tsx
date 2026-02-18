@@ -3,10 +3,10 @@
  * Matches dashboard-design-spec.html with centered 900px layout
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTasks } from '@/hooks/useTasksQuery';
-import { useHabits } from '@/hooks/useHabitsQuery';
+import { useTasks, useUpdateTask } from '@/hooks/useTasksQuery';
+import { useHabits, useCreateHabitEntry } from '@/hooks/useHabitsQuery';
 import { useNotes } from '@/hooks/useNotesQuery';
 import { useJournalEntries } from '@/hooks/useJournalQuery';
 import { useThemeColors } from '@/hooks/useThemeColors';
@@ -16,6 +16,7 @@ import { BriefingCardV2 } from '@/dashboard/components/v2/BriefingCardV2';
 import { TodayTasksSectionV2, TodayHabitsSectionV2, RecentNotesSectionV2 } from '@/dashboard/components/v2';
 import { QuickAddModalV2 } from '@/dashboard/components/v2/QuickAddModalV2';
 import { useTaskModals } from '@/todos/hooks/useTaskModals';
+import { showToast } from '@/services/toast';
 import type { Task, Habit, Note, JournalEntry } from '@/types';
 
 export default function Dashboard() {
@@ -38,6 +39,15 @@ export default function Dashboard() {
   // Task modals
   const modals = useTaskModals();
 
+  // Mutations
+  const updateTaskMutation = useUpdateTask();
+  const createHabitEntryMutation = useCreateHabitEntry();
+
+  // Completion tracking
+  const [completingTask, setCompletingTask] = useState<string | null>(null);
+  const [completingHabit, setCompletingHabit] = useState<string | null>(null);
+  const [completedHabits, setCompletedHabits] = useState<Set<string>>(new Set());
+
   // Filter today's tasks
   const today = new Date().toISOString().split('T')[0];
   const todayTasks = tasks.filter(t =>
@@ -56,6 +66,42 @@ export default function Dashboard() {
     habits: habits.length,
     notes: notes.length,
     journal: journalEntries.length,
+  };
+
+  // Task completion handler
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      setCompletingTask(taskId);
+      await updateTaskMutation.mutateAsync({
+        id: taskId,
+        updates: { status: 'done' },
+      });
+      showToast('Task completed! ✅', 'success');
+    } catch (error) {
+      showToast('Failed to complete task', 'error');
+    } finally {
+      setCompletingTask(null);
+    }
+  };
+
+  // Habit completion handler
+  const handleCompleteHabit = async (habitId: string) => {
+    try {
+      setCompletingHabit(habitId);
+      const today = new Date().toISOString().split('T')[0];
+      await createHabitEntryMutation.mutateAsync({
+        habit_id: habitId,
+        date: today,
+        completed: true,
+      });
+      // Track completed habits for animation
+      setCompletedHabits(prev => new Set(prev).add(habitId));
+      showToast('Habit completed! 🎉', 'success');
+    } catch (error) {
+      showToast('Failed to complete habit', 'error');
+    } finally {
+      setCompletingHabit(null);
+    }
   };
 
   return (
@@ -167,8 +213,8 @@ export default function Dashboard() {
               tasks={todayTasks}
               onViewAll={() => navigate('/todos')}
               onAddTask={modals.openQuickAdd}
-              onComplete={() => {}}
-              completingTask={null}
+              onComplete={handleCompleteTask}
+              completingTask={completingTask}
             />
 
             {/* Today's Habits */}
@@ -176,9 +222,9 @@ export default function Dashboard() {
               habits={todayHabits}
               hasAnyHabits={habits.length > 0}
               onViewAll={() => navigate('/habits')}
-              onComplete={() => {}}
-              completingHabit={null}
-              completedHabits={new Set()}
+              onComplete={handleCompleteHabit}
+              completingHabit={completingHabit}
+              completedHabits={completedHabits}
             />
 
             {/* Recent Notes */}
