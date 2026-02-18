@@ -22,26 +22,40 @@ const Nutrition: React.FC = () => {
         style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}
         data-testid="nutrition-container"
       >
-        {/* Header */}
-        <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
-          <div className="px-6 pt-4 pb-3">
-            <div className="flex items-center gap-2 mb-4">
-              <Utensils size={24} style={{ color: colors.accent.start }} />
-              <h1 className="text-2xl font-bold" style={{ color: colors.text.primary }}>
-                Nutrition
-              </h1>
-            </div>
-
-            {/* Tab Navigation */}
-            <SegmentedControl
-              segments={[
-                { value: 'tracker', label: 'Log Food' },
-                { value: 'dashboard', label: 'Dashboard' },
-              ]}
-              value={activeTab}
-              onChange={(value) => setActiveTab(value as NutritionTabView)}
-            />
+        {/* Header with Terracotta Gradient */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            padding: '60px 20px 20px',
+            color: 'white',
+            marginBottom: '16px',
+          }}
+        >
+          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
+            🍽️ Nutrition
+          </h1>
+          <div style={{ fontSize: '14px', opacity: 0.9 }}>
+            Track your meals & macros
           </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div
+          style={{
+            background: 'rgba(92, 74, 58, 0.1)',
+            borderRadius: '12px',
+            padding: '4px',
+            margin: '16px 20px',
+          }}
+        >
+          <SegmentedControl
+            segments={[
+              { value: 'tracker', label: 'Log Food' },
+              { value: 'dashboard', label: 'Dashboard' },
+            ]}
+            value={activeTab}
+            onChange={(value) => setActiveTab(value as NutritionTabView)}
+          />
         </div>
 
         {/* Tab Content */}
