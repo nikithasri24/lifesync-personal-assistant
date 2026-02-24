@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Star toggle', () => {
   test('stars a task and shows it in Starred', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/todos')
+    await page.waitForLoadState('networkidle')
 
     // Quick add
     const addBtn = page.getByRole('button', { name: /Add task|Add to /i }).first()
@@ -12,6 +13,7 @@ test.describe('Star toggle', () => {
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(title)
     await page.locator('form button[type="submit"]').click()
+    await page.waitForTimeout(1500)
     await page.waitForTimeout(1000)
 
     // Click the task card to open edit modal
@@ -27,7 +29,7 @@ test.describe('Star toggle', () => {
     }
 
     // Save the task
-    await page.getByRole('button', { name: /Save|Update/i }).first().click()
+    await page.getByRole('button', { name: 'Update Task' }).click()
     await page.waitForTimeout(1000)
 
     // Click the Starred filter button to show only starred tasks

@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Complete task flow', () => {
   test('marks a task as completed and appears in Completed view', async ({ page }) => {
-    await page.goto('/')
+    // Navigate to Todos page
+    await page.goto('/todos')
+    await page.waitForLoadState('networkidle')
 
     // Quick add
     const addBtn = page.getByRole('button', { name: /Add task|Add to /i }).first()
@@ -13,6 +15,7 @@ test.describe('Complete task flow', () => {
       .fill(title)
     // Click submit button inside modal (not the FAB)
     await page.locator('form button[type="submit"]').click()
+    await page.waitForTimeout(1500)
 
     // Click the task card to open edit modal
     const taskCard = page.getByText(title).first()
@@ -26,7 +29,7 @@ test.describe('Complete task flow', () => {
     }
 
     // Save the task
-    await page.getByRole('button', { name: /Save|Update/i }).first().click()
+    await page.getByRole('button', { name: 'Update Task' }).click()
     await page.waitForTimeout(1000)
 
     // Filter by Done status to verify
