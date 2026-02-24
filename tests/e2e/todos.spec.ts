@@ -102,7 +102,7 @@ test.describe('Tasks Page', () => {
   test('should delete a task', async ({ page }) => {
     const taskName = `Task to Delete ${Date.now()}`;
 
-    // Switch to Inbox view to see all tasks
+    // Switch to Inbox view to see all tasks (regardless of due date)
     await page.getByRole('button', { name: /Inbox/i }).click();
     await page.waitForTimeout(300);
 
@@ -112,27 +112,26 @@ test.describe('Tasks Page', () => {
     await page.getByPlaceholder('What needs to be done?').fill(taskName);
     await page.getByPlaceholder('What needs to be done?').press('Enter');
 
-    // Wait for modal to close
-    await expect(page.getByText('Quick Add Task')).not.toBeVisible({ timeout: 5000 });
+    // Wait for the quick add modal to close (title is "Quick Add Task")
+    await expect(page.getByRole('heading', { name: 'Quick Add Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
-    // Verify task appears
+    // Verify task appears in the list
     await expect(page.getByText(taskName)).toBeVisible({ timeout: 10000 });
 
-    // Click the task to open edit modal
-    await page.getByText(taskName).click();
+    // Click the task text to open edit modal
+    await page.getByText(taskName).first().click();
     await page.waitForTimeout(500);
 
     // Wait for edit modal to appear
-    await expect(page.getByText('Edit Task')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Edit Task' })).toBeVisible({ timeout: 5000 });
 
-    // Click delete button
-    const deleteButton = page.getByRole('button', { name: 'Delete' }).first();
-    await deleteButton.click();
-    await page.waitForTimeout(500);
+    // Click the Delete button in the modal footer (use .last() to get modal button, not task row buttons)
+    await page.getByRole('button', { name: 'Delete' }).last().click();
+    await page.waitForTimeout(1000);
 
-    // Verify task is gone (modal should close and task should disappear from list)
-    await expect(page.getByText('Edit Task')).not.toBeVisible({ timeout: 5000 });
-    await expect(page.getByText(taskName)).not.toBeVisible({ timeout: 5000 });
+    // Verify modal closed and task is gone from list
+    await expect(page.getByRole('heading', { name: 'Edit Task' })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(taskName)).not.toBeVisible({ timeout: 8000 });
   });
 });
