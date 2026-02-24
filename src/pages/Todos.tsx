@@ -463,24 +463,26 @@ const TodosContent: React.FC = () => {
         <QuickAddModalV2
           isOpen={showQuickAdd}
           onClose={() => setShowQuickAdd(false)}
-          onSubmit={(text) => {
+          onSubmit={async (text) => {
             // Set due date based on current view
             const today = new Date().toISOString().split('T')[0];
             const dueDate = activeView === 'today' ? today : null;
 
-            void createTaskMutation.mutateAsync(
-              {
-                title: text.trim(),
-                status: 'todo',
-                priority: 'medium',
-                category: 'personal',
-                due_date: dueDate,
-              } as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>
-            ).then(() => {
+            try {
+              await createTaskMutation.mutateAsync(
+                {
+                  title: text.trim(),
+                  status: 'todo',
+                  priority: 'medium',
+                  category: 'personal',
+                  due_date: dueDate,
+                } as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>
+              );
               showToast('Task created successfully! ✅', 'success');
-            }).catch((error) => {
-              showToast(`Failed to create task: ${error.message}`, 'error');
-            });
+            } catch (error) {
+              showToast(`Failed to create task: ${(error as Error).message}`, 'error');
+              throw error; // Re-throw to prevent modal from closing on error
+            }
           }}
           isPending={createTaskMutation.isPending}
         />
@@ -506,6 +508,7 @@ const TodosContent: React.FC = () => {
         icon={Plus}
         onClick={() => setShowQuickAdd(true)}
         position="bottom-right"
+        ariaLabel="Add Task"
       />
     </div>
   );

@@ -22,11 +22,12 @@ test.describe('Tasks Page', () => {
     await expect(page.getByText('Upcoming')).toBeVisible();
   });
 
-  // TODO: Task creation failing - QuickAddModalV2 onSubmit handler in Todos.tsx doesn't await mutation
-  //  Modal closes immediately, task creation completes async, React Query doesn't refetch in time
-  //  Fix: Make onSubmit async and properly return the promise from mutateAsync
-  test.skip('should create a new task', async ({ page }) => {
+  test('should create a new task', async ({ page }) => {
     const taskName = `Buy groceries ${Date.now()}`;
+
+    // Switch to Inbox view to see all tasks (regardless of due date)
+    await page.getByRole('button', { name: /Inbox/i }).click();
+    await page.waitForTimeout(300);
 
     // Click FAB button to open quick add modal
     await page.getByLabel('Add Task').click();
@@ -35,27 +36,36 @@ test.describe('Tasks Page', () => {
     // Fill the task name
     await page.getByPlaceholder('What needs to be done?').fill(taskName);
 
-    // Submit using Enter key (more reliable than button click)
+    // Submit using Enter key (submits the form)
     await page.getByPlaceholder('What needs to be done?').press('Enter');
-    await page.waitForTimeout(2000);
 
-    // Verify task was created (wait longer to allow React Query to refetch)
-    await expect(page.getByText(taskName)).toBeVisible({ timeout: 15000 });
+    // Wait for modal to close (indicates mutation completed)
+    await expect(page.getByText('Quick Add Task')).not.toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(500);
+
+    // Verify task was created
+    await expect(page.getByText(taskName)).toBeVisible({ timeout: 10000 });
   });
 
-  // TODO: Same issue as create task test - QuickAddModalV2 integration broken
-  test.skip('should toggle task completion', async ({ page }) => {
+  test('should toggle task completion', async ({ page }) => {
     const taskName = `Toggle Task ${Date.now()}`;
+
+    // Switch to Inbox view to see all tasks
+    await page.getByRole('button', { name: /Inbox/i }).click();
+    await page.waitForTimeout(300);
 
     // Create a task
     await page.getByLabel('Add Task').click();
     await page.waitForTimeout(500);
     await page.getByPlaceholder('What needs to be done?').fill(taskName);
     await page.getByPlaceholder('What needs to be done?').press('Enter');
-    await page.waitForTimeout(2000);
+
+    // Wait for modal to close
+    await expect(page.getByText('Quick Add Task')).not.toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(500);
 
     // Verify task appears
-    await expect(page.getByText(taskName)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(taskName)).toBeVisible({ timeout: 10000 });
 
     // Toggle completion using checkbox or complete button
     const taskRow = page.locator('li, [role="listitem"], div').filter({ hasText: taskName }).first();
@@ -89,39 +99,40 @@ test.describe('Tasks Page', () => {
     await expect(page.locator('main')).toBeVisible();
   });
 
-  // TODO: Same issue as create task test - QuickAddModalV2 integration broken
-  test.skip('should delete a task', async ({ page }) => {
+  test('should delete a task', async ({ page }) => {
     const taskName = `Task to Delete ${Date.now()}`;
+
+    // Switch to Inbox view to see all tasks
+    await page.getByRole('button', { name: /Inbox/i }).click();
+    await page.waitForTimeout(300);
 
     // Create a task
     await page.getByLabel('Add Task').click();
     await page.waitForTimeout(500);
     await page.getByPlaceholder('What needs to be done?').fill(taskName);
     await page.getByPlaceholder('What needs to be done?').press('Enter');
-    await page.waitForTimeout(2000);
+
+    // Wait for modal to close
+    await expect(page.getByText('Quick Add Task')).not.toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(500);
 
     // Verify task appears
-    await expect(page.getByText(taskName)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(taskName)).toBeVisible({ timeout: 10000 });
 
     // Click the task to open edit modal
     await page.getByText(taskName).click();
     await page.waitForTimeout(500);
 
-    // Delete the task from the modal
-    const deleteButton = page.getByRole('button', { name: /Delete|Trash/i });
-    if (await deleteButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await deleteButton.click();
-      await page.waitForTimeout(500);
+    // Wait for edit modal to appear
+    await expect(page.getByText('Edit Task')).toBeVisible({ timeout: 5000 });
 
-      // Confirm if dialog appears
-      const confirmButton = page.getByRole('button', { name: /Confirm|Yes|Delete/i });
-      if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await confirmButton.click();
-        await page.waitForTimeout(500);
-      }
-    }
+    // Click delete button
+    const deleteButton = page.getByRole('button', { name: 'Delete' }).first();
+    await deleteButton.click();
+    await page.waitForTimeout(500);
 
-    // Verify task is gone
+    // Verify task is gone (modal should close and task should disappear from list)
+    await expect(page.getByText('Edit Task')).not.toBeVisible({ timeout: 5000 });
     await expect(page.getByText(taskName)).not.toBeVisible({ timeout: 5000 });
   });
 });
