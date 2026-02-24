@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Star toggle', () => {
   test('stars a task and shows it in Starred', async ({ page }) => {
-    await page.goto('/todos')
+    await page.goto('/')
     await page.waitForLoadState('networkidle')
 
     // Quick add
@@ -14,7 +14,18 @@ test.describe('Star toggle', () => {
       .fill(title)
     await page.locator('form button[type="submit"]').click()
     await page.waitForTimeout(1500)
+
+    // Navigate to Todos page to edit the task
+    await page.goto('/todos')
+    await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1000)
+
+    // Switch to List view to see all tasks
+    const listViewBtn = page.getByRole('button', { name: '📋 List view' })
+    if (await listViewBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await listViewBtn.click()
+      await page.waitForTimeout(500)
+    }
 
     // Click the task card to open edit modal
     const taskCard = page.getByText(title).first()
@@ -22,14 +33,15 @@ test.describe('Star toggle', () => {
     await page.waitForTimeout(500)
 
     // Check the star checkbox in the modal
-    const starCheckbox = page.locator('input[type="checkbox"]').filter({ has: page.locator('text=/Star this task/i') })
+    const starCheckbox = page.locator('input[type="checkbox"][name="starred"]')
       .or(page.getByRole('checkbox', { name: /star/i }))
     if (await starCheckbox.isVisible({ timeout: 2000 }).catch(() => false)) {
       await starCheckbox.check()
+      await page.waitForTimeout(500)
     }
 
-    // Save the task
-    await page.getByRole('button', { name: 'Update Task' }).click()
+    // Save the task using form submit button
+    await page.locator('form button[type="submit"]').click()
     await page.waitForTimeout(1000)
 
     // Click the Starred filter button to show only starred tasks
