@@ -21,7 +21,7 @@ export interface NoteFormModalV2Props {
     content: string;
     tags: string[];
     noteType: NoteType;
-  }) => void;
+  }) => void | Promise<void>;
   onDelete?: () => void;
   initialData?: {
     title: string;
@@ -75,7 +75,7 @@ export const NoteFormModalV2: React.FC<NoteFormModalV2Props> = ({
       showDelete={isEditing && !!onDelete}
       onDelete={onDelete ? async () => { onDelete(); } : undefined}
       onSubmit={async (formData) => {
-        onSubmit({
+        await onSubmit({
           title: formData.title.trim(),
           content: formData.content.trim(),
           tags: formData.tags ? formData.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean) : [],

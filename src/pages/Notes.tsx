@@ -98,16 +98,16 @@ const NotesContent: React.FC = () => {
   }, [filteredNotes]);
 
   // Handle create/update note
-  const handleSubmit = (data: {
+  const handleSubmit = async (data: {
     title: string;
     content: string;
     tags: string[];
     noteType: NoteType;
   }) => {
-    if (modals.state.editingNoteId) {
-      // Update existing note
-      updateMutation.mutate(
-        {
+    try {
+      if (modals.state.editingNoteId) {
+        // Update existing note
+        await updateMutation.mutateAsync({
           id: modals.state.editingNoteId,
           updates: {
             title: data.title,
@@ -115,32 +115,23 @@ const NotesContent: React.FC = () => {
             tags: data.tags,
             noteType: data.noteType,
           },
-        },
-        {
-          onSuccess: () => {
-            showToast('Note updated successfully! ✏️', 'success');
-            modals.close('showForm');
-            modals.set('editingNoteId', null);
-          },
-        }
-      );
-    } else {
-      // Create new note
-      createMutation.mutate(
-        {
+        });
+        showToast('Note updated successfully! ✏️', 'success');
+      } else {
+        // Create new note
+        await createMutation.mutateAsync({
           title: data.title,
           content: data.content,
           tags: data.tags,
           noteType: data.noteType,
-        },
-        {
-          onSuccess: () => {
-            showToast('Note created successfully! 📝', 'success');
-            modals.close('showForm');
-            modals.set('editingNoteId', null);
-          },
-        }
-      );
+        });
+        showToast('Note created successfully! 📝', 'success');
+      }
+      modals.close('showForm');
+      modals.set('editingNoteId', null);
+    } catch (error) {
+      showToast(`Failed to ${modals.state.editingNoteId ? 'update' : 'create'} note: ${(error as Error).message}`, 'error');
+      throw error; // Re-throw to prevent modal from closing on error
     }
   };
 
