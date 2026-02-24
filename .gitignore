@@ -34,3 +34,4 @@ visa_requirements.csv
 *.sw?
 .vercel
 .env*.local
+playwright/.auth/
