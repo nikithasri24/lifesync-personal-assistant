@@ -8,7 +8,7 @@ test.describe('Authentication Flow', () => {
 
   test('should load the application', async ({ page }) => {
     // Check that the page loads
-    await expect(page).toHaveTitle(/LifeSync/);
+    await expect(page).toHaveTitle(/Life Weave|LifeSync/);
   });
 
   test('should handle auth gate for protected routes', async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe('Authentication Flow', () => {
     await expect(page.locator('body')).toBeVisible();
 
     // Navigation should still work
-    const sidebar = page.locator('[data-testid="sidebar"]');
+    const sidebar = page.getByRole('navigation', { name: /Main navigation/i });
     if (await sidebar.isVisible()) {
       await expect(sidebar).toBeVisible();
     }
@@ -44,11 +44,11 @@ test.describe('Authentication Flow', () => {
     await page.waitForTimeout(2000);
 
     // Try to interact with the app
-    const mainContent = page.locator('[data-testid="main-content"]');
+    const mainContent = page.locator('main');
     await expect(mainContent).toBeVisible();
 
     // Should still be functional after potential token refresh
-    const sidebar = page.locator('[data-testid="sidebar"]');
+    const sidebar = page.getByRole('navigation', { name: /Main navigation/i });
     if (await sidebar.isVisible()) {
       await expect(sidebar).toBeVisible();
     }
@@ -100,7 +100,7 @@ test.describe('Authentication Flow', () => {
 
     // Check that data is scoped to user
     // This is verified by the fact that the page loads without errors
-    const mainContent = page.locator('[data-testid="main-content"]');
+    const mainContent = page.locator('main');
     await expect(mainContent).toBeVisible();
   });
 });

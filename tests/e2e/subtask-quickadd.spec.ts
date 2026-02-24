@@ -11,7 +11,7 @@ test.describe('Subtask Quick Add tokens (smoke)', () => {
       .or(page.getByPlaceholder(/What needs to be done\?/i))
     const parentTitle = `Parent E2E ${Date.now()}`
     await quickAdd.fill(parentTitle)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     // Scope to the parent task container
     const parentSection = page.locator('div', { has: page.getByText(parentTitle) }).first()
@@ -19,7 +19,7 @@ test.describe('Subtask Quick Add tokens (smoke)', () => {
     // Fill the subtask quick add
     const subInput = parentSection.getByPlaceholder(/^Add a subtask/)
     await subInput.fill('Write tests #qa @today !high')
-    await parentSection.getByRole('button', { name: /^Add$/ }).click()
+    await parentSection.getByRole('button', { name: 'Add Task' }).click()
 
     // Verify subtask text appears
     await expect(parentSection.getByText('Write tests').first()).toBeVisible()

@@ -11,7 +11,7 @@ test.describe('Bulk delete tasks to Trash', () => {
       await page.getByRole('textbox', { name: /What needs to be done\?/i })
         .or(page.getByPlaceholder(/What needs to be done\?/i))
         .fill(`${name} ${Date.now()}`)
-      await page.getByRole('button', { name: /^Add$/ }).click()
+      await page.locator('form button[type="submit"]').click()
     }
 
     // Enable bulk mode, Select All, Delete selected

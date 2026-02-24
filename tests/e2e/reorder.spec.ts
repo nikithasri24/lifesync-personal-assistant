@@ -16,12 +16,12 @@ test.describe('Task reorder persistence (smoke)', () => {
 
     // Create first task
     await input.fill(t1)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     // Create second task
     await addButton.first().click()
     await input.fill(t2)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     // Ensure both tasks rendered
     const t1Loc = page.getByText(t1).first()

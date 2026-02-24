@@ -2,16 +2,24 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Habits - add a habit', () => {
   test('adds a habit and shows in the list', async ({ page }) => {
-    await page.goto('/')
-    // Navigate to Habits tab; assuming a sidebar or header nav item labeled "Habits"
-    await page.getByText('Habits', { exact: true }).click()
+    const habitName = `Walk ${Date.now()}`
 
-    const input = page.getByPlaceholder('Morning stretch')
-    await input.fill(`Walk ${Date.now()}`)
-    await input.press('Enter')
+    await page.goto('/habits')
+    await page.waitForLoadState('networkidle')
 
-    // Verify the habit appears by name somewhere on the page
-    await expect(page.getByText(/Walk \d+/).first()).toBeVisible()
+    // Open the add habit modal using the FAB
+    await page.getByRole('button', { name: 'Create new habit' }).click()
+    await page.waitForTimeout(500)
+
+    // Fill the habit name field
+    await page.getByLabel('Habit Name').fill(habitName)
+
+    // Submit the form
+    await page.getByRole('button', { name: /Create Habit/i }).click()
+    await page.waitForTimeout(1000)
+
+    // Verify the habit appears in the list
+    await expect(page.getByText(habitName)).toBeVisible({ timeout: 10000 })
   })
 })
 

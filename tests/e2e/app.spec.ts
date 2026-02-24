@@ -13,8 +13,11 @@ test.describe('LifeSync Application', () => {
     // Check that the page title is correct
     await expect(page).toHaveTitle(/Life Weave|LifeSync/)
 
-    // Check that main navigation elements are present
-    await expect(page.getByRole('navigation', { name: /Main navigation/i })).toBeVisible()
+    // Check that navigation is present (desktop sidebar or mobile tab bar)
+    const mainNav = page.getByRole('navigation', { name: /Main navigation/i })
+    const tabNav = page.getByRole('navigation', { name: /Bottom tab navigation/i })
+    const navVisible = await mainNav.isVisible() || await tabNav.isVisible()
+    expect(navVisible).toBeTruthy()
 
     // Check that the dashboard content loads
     await expect(page.locator('main')).toBeVisible()
@@ -40,25 +43,25 @@ test.describe('LifeSync Application', () => {
     }
   })
 
-  test('navigation sidebar works correctly', async ({ page }) => {
-    // Test navigation to different pages
+  test('navigation works correctly', async ({ page }) => {
+    // Test navigation to different pages using semantic links
     const navItems = [
-      { selector: '[data-testid="nav-dashboard"]', expectedUrl: '/' },
-      { selector: '[data-testid="nav-todos"]', expectedUrl: '/todos' },
-      { selector: '[data-testid="nav-habits"]', expectedUrl: '/habits' },
-      { selector: '[data-testid="nav-focus"]', expectedUrl: '/focus' },
-      { selector: '[data-testid="nav-finances"]', expectedUrl: '/finances' },
+      { name: 'Dashboard', path: '/' },
+      { name: 'Tasks', path: '/todos' },
+      { name: 'Habits', path: '/habits' },
+      { name: 'Focus', path: '/focus' },
+      { name: 'Finances', path: '/finances' },
     ]
 
     for (const navItem of navItems) {
-      const navElement = page.locator(navItem.selector).first()
-      
-      if (await navElement.isVisible()) {
-        await navElement.click()
+      // Try to find and click the navigation link by accessible name
+      const navLink = page.getByRole('link', { name: navItem.name })
+
+      if (await navLink.isVisible()) {
+        await navLink.click()
         await page.waitForLoadState('networkidle')
-        
-        // Check that navigation occurred (URL might not change in SPA)
-        // Instead check for page-specific content
+
+        // Check that page content loads
         await expect(page.locator('main')).toBeVisible()
       }
     }
@@ -93,22 +96,33 @@ test.describe('LifeSync Application', () => {
   test('handles network errors gracefully', async ({ page }) => {
     // Simulate offline condition
     await page.context().setOffline(true)
-    
-    // Try to interact with the app
-    await page.reload()
-    
-    // App should show appropriate error handling
-    // This depends on how your app handles offline scenarios
-    await expect(page.locator('body')).toBeVisible()
-    
+
+    // Try to reload - this will fail offline, which is expected
+    await page.reload().catch(() => {
+      // Expected to fail offline
+    })
+
     // Restore online
     await page.context().setOffline(false)
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    // App should recover and show content
+    await expect(page.locator('body')).toBeVisible()
   })
 
   test('has proper accessibility landmarks', async ({ page }) => {
     // Check for main landmarks
     await expect(page.locator('main')).toBeVisible()
-    await expect(page.getByRole('navigation', { name: /Main navigation/i })).toBeVisible()
+
+    // Check for navigation (either sidebar or tab bar visible depending on screen size)
+    const mainNav = page.getByRole('navigation', { name: /Main navigation/i })
+    const tabNav = page.getByRole('navigation', { name: /Bottom tab navigation/i })
+
+    // At least one navigation should be visible
+    const mainNavVisible = await mainNav.isVisible()
+    const tabNavVisible = await tabNav.isVisible()
+    expect(mainNavVisible || tabNavVisible).toBeTruthy()
 
     // Check for proper heading structure
     const h1 = page.locator('h1').first()

@@ -67,13 +67,14 @@ test.describe('Theme and UI Features', () => {
 
   test.describe('Sidebar Navigation', () => {
     test('should have sidebar', async ({ page }) => {
-      const sidebar = page.locator('[data-testid="sidebar"]').or(
-        page.locator('nav, aside').first()
-      );
+      // On desktop: main sidebar navigation is visible
+      // On mobile: bottom tab bar navigation is visible
+      const mainNav = page.getByRole('navigation', { name: /Main navigation/i });
+      const tabNav = page.getByRole('navigation', { name: /Bottom tab navigation/i });
 
-      if (await sidebar.isVisible()) {
-        await expect(sidebar).toBeVisible();
-      }
+      const hasNav = await mainNav.isVisible().catch(() => false) ||
+                     await tabNav.isVisible().catch(() => false);
+      expect(hasNav).toBeTruthy();
     });
 
     test('should toggle sidebar collapse', async ({ page }) => {
@@ -99,7 +100,7 @@ test.describe('Theme and UI Features', () => {
     });
 
     test('should navigate using sidebar links', async ({ page }) => {
-      const sidebar = page.locator('[data-testid="sidebar"]').or(
+      const sidebar = page.getByRole('navigation', { name: /Main navigation/i }).or(
         page.locator('nav').first()
       );
 
@@ -118,7 +119,7 @@ test.describe('Theme and UI Features', () => {
     });
 
     test('should highlight active navigation item', async ({ page }) => {
-      const sidebar = page.locator('[data-testid="sidebar"]');
+      const sidebar = page.getByRole('navigation', { name: /Main navigation/i });
 
       if (await sidebar.isVisible()) {
         // Look for active/selected navigation item
@@ -273,16 +274,15 @@ test.describe('Theme and UI Features', () => {
 
     test('should have semantic HTML landmarks', async ({ page }) => {
       // Check for main landmark
-      const main = page.locator('main');
-      if (await main.isVisible()) {
-        await expect(main).toBeVisible();
-      }
+      await expect(page.locator('main')).toBeVisible();
 
-      // Check for nav landmark
-      const nav = page.locator('nav');
-      if (await nav.isVisible()) {
-        await expect(nav).toBeVisible();
-      }
+      // Check for nav landmark - use specific selector to avoid strict mode violation
+      // There are two navs: Main navigation (desktop sidebar) and Bottom tab navigation (mobile)
+      const mainNav = page.getByRole('navigation', { name: /Main navigation/i });
+      const tabNav = page.getByRole('navigation', { name: /Bottom tab navigation/i });
+      const navVisible = await mainNav.isVisible().catch(() => false) ||
+                         await tabNav.isVisible().catch(() => false);
+      expect(navVisible).toBeTruthy();
     });
 
     test('should support keyboard navigation', async ({ page }) => {

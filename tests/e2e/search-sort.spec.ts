@@ -11,7 +11,7 @@ test.describe('Search and Sort in Tasks', () => {
       await page.getByRole('textbox', { name: /What needs to be done\?/i })
         .or(page.getByPlaceholder(/What needs to be done\?/i))
         .fill(`${name} E2E`)
-      await page.getByRole('button', { name: /^Add$/ }).click()
+      await page.locator('form button[type="submit"]').click()
     }
 
     // Filter by search 'Bravo'

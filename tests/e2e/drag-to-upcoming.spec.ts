@@ -11,7 +11,7 @@ test.describe('Drag task to Upcoming (Next 7 days)', () => {
     await page.getByRole('textbox', { name: /What needs to be done\?/i })
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(title)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     const task = page.getByText(title).first()
     const upcomingNav = page.getByText('Next 7 days', { exact: true })

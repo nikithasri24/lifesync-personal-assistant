@@ -11,7 +11,7 @@ test.describe('Drag task to Today (sidebar)', () => {
     await page.getByRole('textbox', { name: /What needs to be done\?/i })
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(title)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     // Locate the task and the Today sidebar item
     const task = page.getByText(title).first()

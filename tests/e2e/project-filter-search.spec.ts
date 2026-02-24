@@ -4,13 +4,31 @@ test.describe('Project filter combined with search', () => {
   test('filters by project then by search within that project', async ({ page }) => {
     await page.goto('/')
 
-    // Create project
-    const projHeader = page.locator('div:has(> h3:has-text("Projects"))')
-    await projHeader.getByRole('button').first().click()
+    // Create project via the Projects page
+    await page.goto('/projects')
+    await page.waitForLoadState('networkidle')
+
+    const createButton = page.locator('[data-testid="create-project"]').or(
+      page.getByRole('button').filter({ hasText: /new project|add project|create/i }).first()
+    )
+
     const pname = `FilterProj ${Date.now()}`
-    await page.getByPlaceholder('Project name').fill(pname)
-    await page.getByPlaceholder('Project description').fill('desc')
-    await page.getByRole('button', { name: 'Create Project' }).click()
+    if (await createButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await createButton.click()
+      await page.waitForTimeout(500)
+      await page.getByPlaceholder(/Project name|name/i).fill(pname)
+
+      const descInput = page.getByPlaceholder(/description/i)
+      if (await descInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await descInput.fill('desc')
+      }
+
+      await page.getByRole('button', { name: /Create Project|Save|Add/i }).click()
+      await page.waitForTimeout(1000)
+    }
+
+    // Go back to todos
+    await page.goto('/')
 
     // Create two tasks into that project with tokens
     const addBtn = page.getByRole('button', { name: /Add task|Add to /i }).first()
@@ -18,13 +36,13 @@ test.describe('Project filter combined with search', () => {
     await page.getByRole('textbox', { name: /What needs to be done\?/i })
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(`Alpha X #project:"${pname}"`)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     await addBtn.click()
     await page.getByRole('textbox', { name: /What needs to be done\?/i })
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(`Beta Y #project:"${pname}"`)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     // Filter by project then search
     await page.getByText(pname, { exact: true }).first().click()

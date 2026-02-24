@@ -11,7 +11,7 @@ test.describe('Star toggle persistence', () => {
     await page.getByRole('textbox', { name: /What needs to be done\?/i })
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(title)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     const row = page.getByText(title).first()
     const starBtn = row.locator('xpath=ancestor::div[contains(@class,"group")]//button[@title="Star task"]').first()

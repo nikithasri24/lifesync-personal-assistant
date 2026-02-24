@@ -4,13 +4,31 @@ test.describe('Drag task to a Project', () => {
   test('assigns the task to the project when dropped', async ({ page }) => {
     await page.goto('/')
 
-    // Create a project via sidebar Projects modal
-    const projHeader = page.locator('div:has(> h3:has-text("Projects"))')
-    await projHeader.getByRole('button').first().click()
+    // Create a project via the Projects page
+    await page.goto('/projects')
+    await page.waitForLoadState('networkidle')
+
+    const createButton = page.locator('[data-testid="create-project"]').or(
+      page.getByRole('button').filter({ hasText: /new project|add project|create/i }).first()
+    )
+
     const projectName = `Playground ${Date.now()}`
-    await page.getByPlaceholder('Project name').fill(projectName)
-    await page.getByPlaceholder('Project description').fill('E2E Project')
-    await page.getByRole('button', { name: 'Create Project' }).click()
+    if (await createButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await createButton.click()
+      await page.waitForTimeout(500)
+      await page.getByPlaceholder(/Project name|name/i).fill(projectName)
+
+      const descInput = page.getByPlaceholder(/description/i)
+      if (await descInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await descInput.fill('E2E Project')
+      }
+
+      await page.getByRole('button', { name: /Create Project|Save|Add/i }).click()
+      await page.waitForTimeout(1000)
+    }
+
+    // Go back to todos
+    await page.goto('/')
 
     // Quick add a task
     const addBtn = page.getByRole('button', { name: /Add task|Add to /i }).first()
@@ -19,7 +37,7 @@ test.describe('Drag task to a Project', () => {
     await page.getByRole('textbox', { name: /What needs to be done\?/i })
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(title)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     // Drag the task to the project in the sidebar list
     const task = page.getByText(title).first()

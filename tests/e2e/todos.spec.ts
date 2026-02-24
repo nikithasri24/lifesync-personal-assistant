@@ -126,12 +126,16 @@ test.describe('Tasks Page', () => {
     // Wait for edit modal to appear
     await expect(page.getByRole('heading', { name: 'Edit Task' })).toBeVisible({ timeout: 5000 });
 
-    // Click the Delete button in the modal footer (use .last() to get modal button, not task row buttons)
+    // Click the Delete button in the modal footer
     await page.getByRole('button', { name: 'Delete' }).last().click();
     await page.waitForTimeout(1000);
 
-    // Verify modal closed and task is gone from list
+    // Verify modal closed
     await expect(page.getByRole('heading', { name: 'Edit Task' })).not.toBeVisible({ timeout: 5000 });
-    await expect(page.getByText(taskName)).not.toBeVisible({ timeout: 8000 });
+
+    // Wait for toasts (4s duration) to clear, then check the task list
+    // Scope to main to avoid matching text in success toasts
+    await page.waitForTimeout(4500);
+    await expect(page.locator('main').getByText(taskName)).not.toBeVisible({ timeout: 5000 });
   });
 });

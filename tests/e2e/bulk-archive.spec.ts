@@ -11,14 +11,14 @@ test.describe('Bulk archive tasks', () => {
     await page.getByRole('textbox', { name: /What needs to be done\?/i })
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(t1)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     await addBtn.click()
     const t2 = `Bulk T2 ${Date.now()}`
     await page.getByRole('textbox', { name: /What needs to be done\?/i })
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(t2)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     // Enable bulk mode and select all
     await page.getByRole('button', { name: /Bulk selection mode/i }).click()

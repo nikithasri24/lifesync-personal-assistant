@@ -11,7 +11,8 @@ test.describe('Complete task flow', () => {
     await page.getByRole('textbox', { name: /What needs to be done\?/i })
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(title)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    // Click submit button inside modal (not the FAB)
+    await page.locator('form button[type="submit"]').click()
 
     // Click the status button (left checkbox) in the row of this task
     const row = page.getByText(title).first()

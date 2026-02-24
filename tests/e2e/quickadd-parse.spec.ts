@@ -4,12 +4,30 @@ test.describe('Quick Add parsing (project, date, priority, tags)', () => {
   test('creates a task with tokens and shows under the project', async ({ page }) => {
     await page.goto('/')
 
-    // Create a project via the sidebar Projects section
-    const projHeader = page.locator('div:has(> h3:has-text("Projects"))')
-    await projHeader.getByRole('button').first().click()
-    await page.getByPlaceholder('Project name').fill('Acme Website')
-    await page.getByPlaceholder('Project description').fill('E2E Project')
-    await page.getByRole('button', { name: 'Create Project' }).click()
+    // Create a project via the Projects page
+    await page.goto('/projects')
+    await page.waitForLoadState('networkidle')
+
+    const createButton = page.locator('[data-testid="create-project"]').or(
+      page.getByRole('button').filter({ hasText: /new project|add project|create/i }).first()
+    )
+
+    if (await createButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await createButton.click()
+      await page.waitForTimeout(500)
+      await page.getByPlaceholder(/Project name|name/i).fill('Acme Website')
+
+      const descInput = page.getByPlaceholder(/description/i)
+      if (await descInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await descInput.fill('E2E Project')
+      }
+
+      await page.getByRole('button', { name: /Create Project|Save|Add/i }).click()
+      await page.waitForTimeout(1000)
+    }
+
+    // Go back to todos
+    await page.goto('/')
 
     // Quick Add a task with tokens
     const addBtn = page.getByRole('button', { name: /Add task|Add to /i }).first()
@@ -19,7 +37,7 @@ test.describe('Quick Add parsing (project, date, priority, tags)', () => {
     await page.getByRole('textbox', { name: /What needs to be done\?/i })
       .or(page.getByPlaceholder(/What needs to be done\?/i))
       .fill(text)
-    await page.getByRole('button', { name: /^Add$/ }).click()
+    await page.locator('form button[type="submit"]').click()
 
     // Filter by project to ensure it was assigned
     await page.getByText('Acme Website', { exact: true }).first().click()
