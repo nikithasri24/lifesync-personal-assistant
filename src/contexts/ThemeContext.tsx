@@ -17,15 +17,26 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    // Check localStorage first
-    const stored = localStorage.getItem('lifesync-theme') as Theme;
-    if (stored) return stored;
-    
-    // Check system preference
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
+    try {
+      // Migration: Reset to light theme for everyone (v2.0)
+      const migrationKey = 'lifesync-theme-migration-v2';
+      const migrated = localStorage.getItem(migrationKey);
+
+      if (!migrated) {
+        // First time since migration - reset to light theme
+        localStorage.setItem('lifesync-theme', 'light');
+        localStorage.setItem(migrationKey, 'true');
+        return 'light';
+      }
+
+      // Check localStorage for saved preference
+      const stored = localStorage.getItem('lifesync-theme') as Theme;
+      if (stored === 'light' || stored === 'dark') return stored;
+    } catch {
+      // ignore storage errors
     }
-    
+
+    // Default to light theme
     return 'light';
   });
 

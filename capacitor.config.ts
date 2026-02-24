@@ -2,16 +2,20 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.lifesync.app',
-  appName: 'LifeSync',
+  appName: 'Life Weave',
   webDir: 'dist',
 
   // Server configuration for development
-  server: {
-    // Enable cleartext traffic for local development (Android)
-    androidScheme: 'https',
-    // iOS equivalent
-    iosScheme: 'capacitor',
-  },
+  // Commented out for VPN/production builds - uncomment for local dev with live reload
+  // server: {
+  //   // Point to local dev server for live reload
+  //   url: 'http://192.168.1.240:5173',
+  //   cleartext: true,
+  //   // Enable cleartext traffic for local development (Android)
+  //   androidScheme: 'https',
+  //   // iOS equivalent
+  //   iosScheme: 'capacitor',
+  // },
 
   // Plugin configurations
   plugins: {

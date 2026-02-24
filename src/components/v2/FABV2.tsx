@@ -20,6 +20,7 @@ export interface FABV2Props {
   icon: LucideIcon;
   onClick: () => void;
   label?: string;
+  ariaLabel?: string; // For icon-only buttons - sets aria-label without showing text
   position?: 'bottom-right' | 'bottom-left' | 'bottom-center';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
@@ -54,6 +55,7 @@ export const FABV2: React.FC<FABV2Props> = ({
   icon: Icon,
   onClick,
   label,
+  ariaLabel,
   position = 'bottom-right',
   size = 'md',
   disabled = false,
@@ -88,7 +90,7 @@ export const FABV2: React.FC<FABV2Props> = ({
         // Includes safe area inset for devices with notches/home indicators
         bottom: 'calc(5rem + 1.5rem + env(safe-area-inset-bottom, 0px))',
       }}
-      aria-label={label || 'Floating action button'}
+      aria-label={ariaLabel || label || 'Floating action button'}
     >
       <Icon className={styles.icon} />
       {label && <span className={styles.text}>{label}</span>}

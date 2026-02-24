@@ -94,11 +94,11 @@ export function useHabit(id: string | null): UseQueryResult<HabitData, Error> {
 /**
  * Create a new habit
  */
-export function useCreateHabit(): UseMutationResult<HabitData, Error, Omit<HabitData, 'id' | 'created_at' | 'updated_at'>> {
+export function useCreateHabit(): UseMutationResult<HabitData, Error, Omit<HabitData, 'id' | 'user_id' | 'created_at' | 'updated_at'>> {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: Omit<HabitData, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (input: Omit<HabitData, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
       logger.debug('Habits', 'Creating habit', { name: input.name, category: input.category });
       const result = await createHabit(input);
       return result;

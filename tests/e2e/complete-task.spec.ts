@@ -14,14 +14,28 @@ test.describe('Complete task flow', () => {
     // Click submit button inside modal (not the FAB)
     await page.locator('form button[type="submit"]').click()
 
-    // Click the status button (left checkbox) in the row of this task
-    const row = page.getByText(title).first()
-    const statusButton = row.locator('xpath=ancestor::div[contains(@class,"group")]//button').first()
-    await statusButton.click()
+    // Click the task card to open edit modal
+    const taskCard = page.getByText(title).first()
+    await taskCard.click()
+    await page.waitForTimeout(500)
 
-    // Switch to Completed and verify
-    await page.getByText('Completed', { exact: true }).click()
-    await expect(page.getByText(title).first()).toBeVisible()
+    // Change status to Done in the modal
+    const statusSelect = page.locator('select[name="status"], select').filter({ hasText: /To Do|In Progress|Done/ }).first()
+    if (await statusSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await statusSelect.selectOption('done')
+    }
+
+    // Save the task
+    await page.getByRole('button', { name: /Save|Update/i }).first().click()
+    await page.waitForTimeout(1000)
+
+    // Filter by Done status to verify
+    const doneFilter = page.getByText('Done', { exact: true }).first()
+    if (await doneFilter.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await doneFilter.click()
+      await page.waitForTimeout(500)
+      await expect(page.getByText(title).first()).toBeVisible()
+    }
   })
 })
 

@@ -27,10 +27,7 @@ export async function upsertPushSubscription(
     async () => {
       const { error } = await supabase
         .from('push_subscriptions')
-        .upsert({
-          ...subscription,
-          updated_at: new Date().toISOString(),
-        });
+        .upsert(subscription);
 
       if (error) throw error;
     },

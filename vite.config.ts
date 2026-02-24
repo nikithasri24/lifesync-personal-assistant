@@ -30,9 +30,9 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     hmr: {
-      // Fix WebSocket connection issues
+      // Fix WebSocket connection issues for iPhone
       clientPort: 5173,
-      host: 'localhost',
+      host: '192.168.1.240',
     },
     proxy: {
       '/api': {

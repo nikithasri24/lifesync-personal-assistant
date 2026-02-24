@@ -37,6 +37,15 @@ const TogetherContent: React.FC = () => {
   const { data: partnerLink, isLoading: linkLoading } = usePartnerLink();
 
   // Set up real-time subscriptions for partner updates
+  useEffect(() => {
+    console.log('[Together] Realtime params:', {
+      userId: user?.id,
+      partnerId: partnerLink?.partner_id,
+      partnerLinkStatus: partnerLink?.status,
+      linkLoading
+    });
+  }, [user?.id, partnerLink?.partner_id, partnerLink?.status, linkLoading]);
+
   useTogetherRealtime(user?.id, partnerLink?.partner_id);
 
   const tabs: { key: TabView; label: string }[] = [

@@ -24,7 +24,7 @@ interface NoteRow {
   user_id: string;
   title: string | null;
   content: string;
-  tags: string[];
+  tags: string[] | null;
   category: string | null;
   note_type: string;
   created_at: string;
@@ -39,10 +39,10 @@ interface ListItemRow {
   notes: string | null;
   completed: boolean;
   completed_at: string | null;
-  tags: string[];
+  tags: string[] | null;
   due_date: string | null;
   url: string | null;
-  sort_order: number;
+  sort_order: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -160,7 +160,7 @@ function mapDbToListItem(row: ListItemRow): ListItem {
     tags: row.tags ?? [],
     dueDate: row.due_date ? new Date(row.due_date) : undefined,
     url: row.url ?? undefined,
-    sortOrder: row.sort_order,
+    sortOrder: row.sort_order ?? 0,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };

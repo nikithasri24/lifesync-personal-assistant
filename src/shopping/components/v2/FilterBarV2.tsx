@@ -23,8 +23,6 @@ export interface FilterBarV2Props {
   stores: Store[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  showPurchasedOnly: boolean;
-  onTogglePurchased: () => void;
   className?: string;
 }
 
@@ -38,8 +36,6 @@ export const FilterBarV2: React.FC<FilterBarV2Props> = ({
   stores,
   searchQuery,
   onSearchChange,
-  showPurchasedOnly,
-  onTogglePurchased,
   className = '',
 }) => {
   const colors = useThemeColors();
@@ -84,26 +80,6 @@ export const FilterBarV2: React.FC<FilterBarV2Props> = ({
           placeholder="Search items..."
           className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
         />
-      </div>
-
-      {/* Quick Filters */}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={onTogglePurchased}
-          className="px-4 py-2 rounded-full text-sm font-semibold transition-all"
-          style={{
-            background: showPurchasedOnly
-              ? 'linear-gradient(135deg, rgba(212, 165, 116, 0.3) 0%, rgba(193, 139, 94, 0.3) 100%)'
-              : colors.bg.secondary,
-            borderWidth: '2px',
-            borderStyle: 'solid',
-            borderColor: showPurchasedOnly ? '#C18B5E' : 'transparent',
-            color: showPurchasedOnly ? '#C18B5E' : colors.text.secondary,
-          }}
-          aria-label={showPurchasedOnly ? 'Show all items' : 'Show purchased items only'}
-        >
-          ✅ Purchased Only
-        </button>
       </div>
 
       {/* Category Filter Pills */}

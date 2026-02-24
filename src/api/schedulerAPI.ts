@@ -49,7 +49,7 @@ export async function createScheduleBlock(data: ScheduleBlockInput): Promise<Sch
     throw error;
   }
 
-  return result;
+  return result as ScheduleBlock;
 }
 
 /**
@@ -70,7 +70,7 @@ export async function updateScheduleBlock(id: string, updates: Partial<ScheduleB
     throw error;
   }
 
-  return data;
+  return data as ScheduleBlock;
 }
 
 /**
@@ -112,5 +112,5 @@ export async function getScheduleBlocks(startDate: string, endDate: string): Pro
     throw error;
   }
 
-  return data || [];
+  return (data || []) as ScheduleBlock[];
 }

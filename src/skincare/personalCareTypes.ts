@@ -39,11 +39,11 @@ export type PersonalCareCategory = {
 
   name: string;
   frequencyType: FrequencyType;
-  icon: string;
+  icon: string | null;
   color?: string;
 
-  isActive: boolean;
-  sortOrder: number;
+  isActive: boolean | null;
+  sortOrder: number | null;
 
   createdAt: string;
   updatedAt: string;

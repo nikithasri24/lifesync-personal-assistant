@@ -18,7 +18,7 @@ export interface TaskData {
   id?: string;
   user_id?: string;
   title: string;
-  description?: string;
+  description?: string | null;
   project_id?: string | null;
   status?: 'todo' | 'done' | 'waiting' | 'scheduled' | 'in_progress';
   priority?: 'low' | 'medium' | 'high' | 'urgent' | 'important';

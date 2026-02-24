@@ -67,7 +67,6 @@ function ShoppingSmartContent(): ReactElement {
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
   const [storeFilter, setStoreFilter] = useState<StoreFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showPurchasedOnly, setShowPurchasedOnly] = useState(false);
 
   // Form state management using consolidated hook
   const newItemForm = useItemForm();
@@ -215,12 +214,9 @@ function ShoppingSmartContent(): ReactElement {
       return false;
     }
 
-    // Purchased filter
-    if (showPurchasedOnly && !item.purchased) {
+    // Hide purchased items in list view
+    if (activeView === 'list' && item.purchased) {
       return false;
-    }
-    if (!showPurchasedOnly && activeView === 'list' && item.purchased) {
-      return false; // Hide purchased in list view when not filtering
     }
 
     // Category filter
@@ -300,8 +296,6 @@ function ShoppingSmartContent(): ReactElement {
             stores={stores}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            showPurchasedOnly={showPurchasedOnly}
-            onTogglePurchased={() => setShowPurchasedOnly(!showPurchasedOnly)}
           />
         )}
 

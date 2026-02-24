@@ -20,7 +20,12 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
   const style = typeStyles[toast.type ?? 'info'] ?? typeStyles.info;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4 sm:px-0">
+    <div
+      className="pointer-events-none fixed inset-x-0 z-[100] flex justify-center px-4 sm:px-0"
+      style={{
+        top: 'max(env(safe-area-inset-top, 0px) + 1rem, 4.5rem)',
+      }}
+    >
       <div
         className={`pointer-events-auto flex max-w-md flex-col gap-2 rounded-lg px-4 py-3 shadow-lg sm:min-w-[320px] !text-white ${style}`}
       >

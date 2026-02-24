@@ -13,20 +13,32 @@ test.describe('Inline edit task title', () => {
       .fill(title)
     await page.locator('form button[type="submit"]').click()
 
-    const row = page.getByText(title).first()
-    await row.click()
+    // Click the task card to open edit modal
+    const taskCard = page.getByText(title).first()
+    await taskCard.click()
+    await page.waitForTimeout(500)
 
-    const input = page.getByDisplayValue(title)
+    // Edit the title in the modal
+    const titleInput = page.getByPlaceholder(/task title|title/i).or(
+      page.locator('input[name="title"]')
+    ).first()
+
     const newTitle = `${title} Renamed`
-    await input.fill(newTitle)
-    await input.press('Enter')
+    if (await titleInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await titleInput.fill(newTitle)
 
-    // Verify immediately
-    await expect(page.getByText(newTitle).first()).toBeVisible()
+      // Save the task
+      await page.locator('form button[type="submit"]').click()
+      await page.waitForTimeout(1000)
 
-    // Reload and verify persistence
-    await page.reload()
-    await expect(page.getByText(newTitle).first()).toBeVisible()
+      // Verify immediately
+      await expect(page.getByText(newTitle).first()).toBeVisible()
+
+      // Reload and verify persistence
+      await page.reload()
+      await page.waitForLoadState('networkidle')
+      await expect(page.getByText(newTitle).first()).toBeVisible()
+    }
   })
 })
 

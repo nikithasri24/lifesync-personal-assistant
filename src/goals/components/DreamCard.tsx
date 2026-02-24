@@ -93,21 +93,21 @@ export function DreamCard({
         <div className="text-5xl">
           {getEmoji()}
         </div>
-        <div className="absolute top-3 right-3">
-          <BadgeV2 variant={statusVariant} size="sm">
-            {statusLabel}
-          </BadgeV2>
-        </div>
       </div>
 
       {/* Content Section */}
       <div className="dream-content p-4">
-        <h3
-          className="dream-title text-base font-semibold mb-2"
-          style={{ color: colors.text.primary }}
-        >
-          {dream.title}
-        </h3>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3
+            className="dream-title text-base font-semibold flex-1"
+            style={{ color: colors.text.primary }}
+          >
+            {dream.title}
+          </h3>
+          <BadgeV2 variant={statusVariant} size="sm">
+            {statusLabel}
+          </BadgeV2>
+        </div>
 
         {dream.description && (
           <p

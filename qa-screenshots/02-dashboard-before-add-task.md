@@ -1,0 +1,277 @@
+- generic [ref=e114]:
+  - generic [ref=e115]:
+    - complementary [ref=e116]:
+      - generic [ref=e117]:
+        - generic [ref=e136]:
+          - generic [ref=e137]: life weave
+          - generic [ref=e139]: Skillful Living
+        - button "Collapse sidebar" [ref=e140]:
+          - img [ref=e141]
+      - navigation "Main navigation" [ref=e144]:
+        - generic [ref=e145]:
+          - generic [ref=e146]:
+            - heading "Main" [level=3] [ref=e147]
+            - list [ref=e148]:
+              - listitem [ref=e149]:
+                - link "Dashboard" [ref=e150] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e151]
+                  - generic [ref=e154]: Dashboard
+                  - img [ref=e155]
+              - listitem [ref=e157]:
+                - link "AI Assistant" [ref=e158] [cursor=pointer]:
+                  - /url: /assistant
+                  - img [ref=e159]
+                  - generic [ref=e161]: AI Assistant
+              - listitem [ref=e162]:
+                - link "Calendar" [ref=e163] [cursor=pointer]:
+                  - /url: /calendar
+                  - img [ref=e164]
+                  - generic [ref=e166]: Calendar
+              - listitem [ref=e167]:
+                - link "Focus" [ref=e168] [cursor=pointer]:
+                  - /url: /focus
+                  - img [ref=e169]
+                  - generic [ref=e172]: Focus
+          - generic [ref=e173]:
+            - heading "Productivity" [level=3] [ref=e174]
+            - list [ref=e175]:
+              - listitem [ref=e176]:
+                - link "Habits" [ref=e177] [cursor=pointer]:
+                  - /url: /habits
+                  - img [ref=e178]
+                  - generic [ref=e181]: Habits
+              - listitem [ref=e182]:
+                - link "Tasks" [ref=e183] [cursor=pointer]:
+                  - /url: /todos
+                  - img [ref=e184]
+                  - generic [ref=e188]: Tasks
+              - listitem [ref=e189]:
+                - link "Notes" [ref=e190] [cursor=pointer]:
+                  - /url: /notes
+                  - img [ref=e191]
+                  - generic [ref=e194]: Notes
+          - generic [ref=e195]:
+            - heading "Wellbeing" [level=3] [ref=e196]
+            - list [ref=e197]:
+              - listitem [ref=e198]:
+                - link "Journal" [ref=e199] [cursor=pointer]:
+                  - /url: /journal
+                  - img [ref=e200]
+                  - generic [ref=e202]: Journal
+              - listitem [ref=e203]:
+                - link "Self Care" [ref=e204] [cursor=pointer]:
+                  - /url: /self-care
+                  - img [ref=e205]
+                  - generic [ref=e208]: Self Care
+              - listitem [ref=e209]:
+                - link "Nutrition" [ref=e210] [cursor=pointer]:
+                  - /url: /nutrition
+                  - img [ref=e211]
+                  - generic [ref=e214]: Nutrition
+          - generic [ref=e215]:
+            - heading "Personal" [level=3] [ref=e216]
+            - list [ref=e217]:
+              - listitem [ref=e218]:
+                - link "Travel" [ref=e219] [cursor=pointer]:
+                  - /url: /travel
+                  - img [ref=e220]
+                  - generic [ref=e223]: Travel
+              - listitem [ref=e224]:
+                - link "Visa Calculator" [ref=e225] [cursor=pointer]:
+                  - /url: /travel/visa
+                  - img [ref=e226]
+                  - generic [ref=e228]: Visa Calculator
+              - listitem [ref=e229]:
+                - link "Finances" [ref=e230] [cursor=pointer]:
+                  - /url: /finances
+                  - img [ref=e231]
+                  - generic [ref=e233]: Finances
+              - listitem [ref=e234]:
+                - link "Shopping" [ref=e235] [cursor=pointer]:
+                  - /url: /shopping
+                  - img [ref=e236]
+                  - generic [ref=e240]: Shopping
+              - listitem [ref=e241]:
+                - link "Meals" [ref=e242] [cursor=pointer]:
+                  - /url: /meals
+                  - img [ref=e243]
+                  - generic [ref=e245]: Meals
+              - listitem [ref=e246]:
+                - link "Goals" [ref=e247] [cursor=pointer]:
+                  - /url: /goals
+                  - img [ref=e248]
+                  - generic [ref=e254]: Goals
+              - listitem [ref=e255]:
+                - link "Shared" [ref=e256] [cursor=pointer]:
+                  - /url: /shared
+                  - img [ref=e257]
+                  - generic [ref=e262]: Shared
+              - listitem [ref=e263]:
+                - link "Together" [ref=e264] [cursor=pointer]:
+                  - /url: /together
+                  - img [ref=e265]
+                  - generic [ref=e267]: Together
+      - 'button "Switch theme. Current: Light" [ref=e269]':
+        - img [ref=e272]
+        - generic [ref=e278]: Light Mode
+    - generic [ref=e279]:
+      - banner [ref=e280]:
+        - generic [ref=e281]:
+          - generic [ref=e283]:
+            - heading "Dashboard" [level=2] [ref=e284]
+            - paragraph [ref=e285]: Your productivity overview
+          - generic [ref=e286]:
+            - button "Notifications" [ref=e287]:
+              - img [ref=e288]
+            - button "Switch to Voice Mode" [ref=e292]:
+              - img [ref=e294]
+            - button "Voice" [ref=e299]:
+              - img [ref=e300]
+              - text: Voice
+      - main "dashboard page" [ref=e302]:
+        - heading "dashboard page" [level=1] [ref=e303]
+        - generic [ref=e304]:
+          - generic [ref=e306]:
+            - generic [ref=e307]:
+              - heading "🌤️ Good afternoon, Nikitha.lisi!" [level=1] [ref=e308]:
+                - generic [ref=e309]: 🌤️
+                - text: Good afternoon, Nikitha.lisi!
+              - paragraph [ref=e310]: Wednesday, February 18, 2026
+            - generic [ref=e311]:
+              - generic [ref=e312]:
+                - generic [ref=e313]: "2"
+                - generic [ref=e314]: Tasks Today
+              - generic [ref=e315]:
+                - generic [ref=e316]: "5"
+                - generic [ref=e317]: Habits
+              - generic [ref=e318]:
+                - generic [ref=e319]: "5"
+                - generic [ref=e320]: Notes
+              - generic [ref=e321]:
+                - generic [ref=e322]: "16"
+                - generic [ref=e323]: Journal Entries
+            - generic [ref=e324]:
+              - generic [ref=e326]: 🌤️ Afternoon Briefing
+              - list [ref=e327]:
+                - listitem [ref=e328]:
+                  - generic [ref=e329]: •
+                  - text: You have 2 tasks scheduled for today
+                - listitem [ref=e330]:
+                  - generic [ref=e331]: •
+                  - text: 5 habits ready to complete
+            - generic [ref=e332]:
+              - button "Add Task" [ref=e333]:
+                - generic [ref=e334]: ➕
+                - generic [ref=e335]: Add Task
+              - button "New Note" [ref=e336]:
+                - generic [ref=e337]: 📝
+                - generic [ref=e338]: New Note
+              - button "Journal" [ref=e339]:
+                - generic [ref=e340]: 📔
+                - generic [ref=e341]: Journal
+              - button "Focus" [ref=e342]:
+                - generic [ref=e343]: ⏱️
+                - generic [ref=e344]: Focus
+            - generic [ref=e345]:
+              - generic [ref=e346]:
+                - generic [ref=e347]:
+                  - img [ref=e349]
+                  - heading "Today's Tasks" [level=3] [ref=e353]
+                - button "View all" [ref=e354]:
+                  - generic [ref=e355]: View all
+                  - img [ref=e356]
+              - generic [ref=e358]:
+                - generic [ref=e359]:
+                  - button [ref=e360]:
+                    - img [ref=e361]
+                  - generic [ref=e363]:
+                    - paragraph [ref=e364]: hair wash
+                    - generic [ref=e365]:
+                      - img [ref=e366]
+                      - paragraph [ref=e369]: Due Feb 18
+                  - generic [ref=e370]: medium
+                - generic [ref=e371]:
+                  - button [ref=e372]:
+                    - img [ref=e373]
+                  - generic [ref=e375]:
+                    - paragraph [ref=e376]: Eyebrows appointment .
+                    - generic [ref=e377]:
+                      - img [ref=e378]
+                      - paragraph [ref=e381]: Due Feb 18
+                  - generic [ref=e382]: medium
+            - generic [ref=e383]:
+              - generic [ref=e384]:
+                - generic [ref=e385]:
+                  - img [ref=e387]
+                  - heading "Today's Habits" [level=3] [ref=e392]
+                - button "View all" [ref=e393]:
+                  - generic [ref=e394]: View all
+                  - img [ref=e395]
+              - generic [ref=e397]:
+                - generic [ref=e398]:
+                  - generic [ref=e402]:
+                    - paragraph [ref=e403]: Workout 1
+                    - generic [ref=e404]: 0/1 today
+                    - generic [ref=e405]:
+                      - img [ref=e406]
+                      - text: "1"
+                  - button [ref=e408]:
+                    - img [ref=e409]
+                - generic [ref=e411]:
+                  - generic [ref=e415]:
+                    - paragraph [ref=e416]: Morning Yoga
+                    - generic [ref=e417]: 0/1 today
+                    - generic [ref=e418]:
+                      - img [ref=e419]
+                      - text: "1"
+                  - button [ref=e421]:
+                    - img [ref=e422]
+                - generic [ref=e424]:
+                  - generic [ref=e428]:
+                    - paragraph [ref=e429]: Water Plants
+                    - generic [ref=e430]: 0/1 today
+                    - generic [ref=e431]:
+                      - img [ref=e432]
+                      - text: "1"
+                  - button [ref=e434]:
+                    - img [ref=e435]
+                - generic [ref=e437]:
+                  - generic [ref=e441]:
+                    - paragraph [ref=e442]: Vit C
+                    - generic [ref=e443]: 0/1 today
+                    - generic [ref=e444]:
+                      - img [ref=e445]
+                      - text: "1"
+                  - button [ref=e447]:
+                    - img [ref=e448]
+                - generic [ref=e450]:
+                  - generic [ref=e454]:
+                    - paragraph [ref=e455]: B12
+                    - generic [ref=e456]: 0/1 today
+                    - generic [ref=e457]:
+                      - img [ref=e458]
+                      - text: "1"
+                  - button [ref=e460]:
+                    - img [ref=e461]
+            - generic [ref=e463]:
+              - generic [ref=e464]:
+                - generic [ref=e465]:
+                  - img [ref=e467]
+                  - heading "Recent Notes" [level=3] [ref=e471]
+                - button "View all" [ref=e472]:
+                  - generic [ref=e473]: View all
+                  - img [ref=e474]
+              - generic [ref=e476]:
+                - generic [ref=e477] [cursor=pointer]:
+                  - heading "Coffee shops for working" [level=4] [ref=e478]
+                  - paragraph [ref=e479]: Dec 28, 2025
+                - generic [ref=e480] [cursor=pointer]:
+                  - heading "Current goal" [level=4] [ref=e481]
+                  - paragraph [ref=e482]: Dec 27, 2025
+          - button "Quick capture" [ref=e483]:
+            - img [ref=e484]
+  - generic [ref=e14]:
+    - img [ref=e16]
+    - button "Open Tanstack query devtools" [ref=e64] [cursor=pointer]:
+      - img [ref=e65]

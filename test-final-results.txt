@@ -1,0 +1,549 @@
+
+> life-weave@1.0.0 test:e2e
+> playwright test tests/e2e/dashboard tests/e2e/tasks tests/e2e/navigation tests/e2e/habits --project=chromium
+
+
+Running 48 tests using 4 workers
+
+[1A[2K[1/48] [chromium] › tests/e2e/dashboard/add-task-modal-bug.spec.ts:91:8 › Dashboard Add Task Modal - Bug Fix › modal closes via backdrop click @p0
+[1A[2K[2/48] [chromium] › tests/e2e/dashboard/add-task-modal-bug.spec.ts:23:3 › Dashboard Add Task Modal - Bug Fix › modal renders all required form fields @critical @bug-qa-1
+[1A[2K[3/48] [chromium] › tests/e2e/dashboard/add-task-modal-bug.spec.ts:54:3 › Dashboard Add Task Modal - Bug Fix › can create task from dashboard modal @critical @bug-qa-1
+[1A[2K[4/48] [chromium] › tests/e2e/dashboard/add-task-modal-bug.spec.ts:78:3 › Dashboard Add Task Modal - Bug Fix › modal closes via ESC key @p0
+[1A[2K[5/48] [chromium] › tests/e2e/dashboard/add-task-modal-bug.spec.ts:112:3 › Dashboard Add Task Modal - Bug Fix › modal closes via Cancel button @p0
+[1A[2K[6/48] [chromium] › tests/e2e/dashboard/add-task-modal-bug.spec.ts:126:3 › Dashboard Add Task Modal - Bug Fix › modal closes via X button @p0
+[1A[2K[7/48] [chromium] › tests/e2e/dashboard.spec.ts:8:3 › LifeSync Dashboard › should display the main navigation
+[1A[2K[8/48] [chromium] › tests/e2e/dashboard.spec.ts:18:3 › LifeSync Dashboard › should show welcome message
+[1A[2K[9/48] [chromium] › tests/e2e/dashboard.spec.ts:22:3 › LifeSync Dashboard › should display stats cards
+[1A[2K[10/48] [chromium] › tests/e2e/dashboard.spec.ts:28:3 › LifeSync Dashboard › should navigate between sections
+[1A[2K  1) [chromium] › tests/e2e/dashboard.spec.ts:8:3 › LifeSync Dashboard › should display the main navigation 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m failed
+
+    Locator:  getByText('Dashboard')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Dashboard')[22m
+
+
+       8 |   test('should display the main navigation', async ({ page }) => {
+       9 |     await expect(page.getByText('LifeSync')).toBeVisible();
+    > 10 |     await expect(page.getByText('Dashboard')).toBeVisible();
+         |                                               ^
+      11 |     await expect(page.getByText('Habits')).toBeVisible();
+      12 |     await expect(page.getByText('Tasks')).toBeVisible();
+      13 |     await expect(page.getByText('Notes')).toBeVisible();
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/dashboard.spec.ts:10:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/dashboard-LifeSync-Dashboa-00f54-display-the-main-navigation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/dashboard-LifeSync-Dashboa-00f54-display-the-main-navigation-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/dashboard-LifeSync-Dashboa-00f54-display-the-main-navigation-chromium/error-context.md
+
+
+[1A[2K  2) [chromium] › tests/e2e/dashboard.spec.ts:18:3 › LifeSync Dashboard › should show welcome message 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m failed
+
+    Locator:  getByText('Welcome back!')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Welcome back!')[22m
+
+
+      17 |
+      18 |   test('should show welcome message', async ({ page }) => {
+    > 19 |     await expect(page.getByText('Welcome back!')).toBeVisible();
+         |                                                   ^
+      20 |   });
+      21 |
+      22 |   test('should display stats cards', async ({ page }) => {
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/dashboard.spec.ts:19:51
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/dashboard-LifeSync-Dashboard-should-show-welcome-message-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/dashboard-LifeSync-Dashboard-should-show-welcome-message-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/dashboard-LifeSync-Dashboard-should-show-welcome-message-chromium/error-context.md
+
+
+[1A[2K[11/48] [chromium] › tests/e2e/dashboard.spec.ts:54:3 › LifeSync Dashboard › should collapse and expand sidebar
+[1A[2K[12/48] [chromium] › tests/e2e/habits/habit-operations.spec.ts:25:3 › Habit Operations › can create a new habit via FAB @critical @smoke
+[1A[2K  3) [chromium] › tests/e2e/dashboard.spec.ts:22:3 › LifeSync Dashboard › should display stats cards 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m failed
+
+    Locator:  getByText('Today\'s Tasks')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Today\'s Tasks')[22m
+
+
+      21 |
+      22 |   test('should display stats cards', async ({ page }) => {
+    > 23 |     await expect(page.getByText("Today's Tasks")).toBeVisible();
+         |                                                   ^
+      24 |     await expect(page.getByText('Pending Habits')).toBeVisible();
+      25 |     await expect(page.getByText('Total Notes')).toBeVisible();
+      26 |   });
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/dashboard.spec.ts:23:51
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/dashboard-LifeSync-Dashboard-should-display-stats-cards-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/dashboard-LifeSync-Dashboard-should-display-stats-cards-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/dashboard-LifeSync-Dashboard-should-display-stats-cards-chromium/error-context.md
+
+
+[1A[2K[13/48] [chromium] › tests/e2e/habits/habit-operations.spec.ts:78:3 › Habit Operations › can mark habit as complete @critical @smoke
+[1A[2K  4) [chromium] › tests/e2e/dashboard.spec.ts:54:3 › LifeSync Dashboard › should collapse and expand sidebar 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mnot[2m.[22mtoBeVisible[2m()[22m failed
+
+    Locator:  getByText('LifeSync')
+    Expected: not visible
+    Received: visible
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "not toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('LifeSync')[22m
+    [2m    9 × locator resolved to <h1 class="text-3xl font-bold mb-2">LifeSync</h1>[22m
+    [2m      - unexpected value "visible"[22m
+
+
+      60 |     
+      61 |     // Check if sidebar is collapsed (LifeSync title should not be visible)
+    > 62 |     await expect(page.getByText('LifeSync')).not.toBeVisible();
+         |                                                  ^
+      63 |     
+      64 |     // Click to expand
+      65 |     await menuButton.click();
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/dashboard.spec.ts:62:50
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/dashboard-LifeSync-Dashboa-bfa42-collapse-and-expand-sidebar-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/dashboard-LifeSync-Dashboa-bfa42-collapse-and-expand-sidebar-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/dashboard-LifeSync-Dashboa-bfa42-collapse-and-expand-sidebar-chromium/error-context.md
+
+
+[1A[2K[14/48] [chromium] › tests/e2e/habits/habit-operations.spec.ts:113:3 › Habit Operations › can open edit modal by clicking habit card @critical
+[1A[2K  5) [chromium] › tests/e2e/habits/habit-operations.spec.ts:78:3 › Habit Operations › can mark habit as complete @critical @smoke 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m failed
+
+    Locator:  getByText('Habit to Complete 1771911088622')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Habit to Complete 1771911088622')[22m
+
+
+      93 |     // Wait for habit to appear
+      94 |     await page.waitForTimeout(2000);
+    > 95 |     await expect(page.getByText(habitName)).toBeVisible();
+         |                                             ^
+      96 |
+      97 |     // Find the habit card and its complete button
+      98 |     const habitCard = page.locator('div', { hasText: habitName }).first();
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits/habit-operations.spec.ts:95:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/habits-habit-operations-Ha-cd100--as-complete-critical-smoke-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/habits-habit-operations-Ha-cd100--as-complete-critical-smoke-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/habits-habit-operations-Ha-cd100--as-complete-critical-smoke-chromium/error-context.md
+
+
+[1A[2K[15/48] [chromium] › tests/e2e/habits/habit-operations.spec.ts:150:3 › Habit Operations › habit displays category and frequency @p0
+[1A[2K  6) [chromium] › tests/e2e/habits/habit-operations.spec.ts:113:3 › Habit Operations › can open edit modal by clicking habit card @critical 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m failed
+
+    Locator:  getByText('Habit to Edit 1771911095905')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Habit to Edit 1771911095905')[22m
+
+
+      126 |     // Wait for habit to appear
+      127 |     await page.waitForTimeout(2000);
+    > 128 |     await expect(page.getByText(habitName)).toBeVisible();
+          |                                             ^
+      129 |
+      130 |     // Click on the habit name to open edit modal
+      131 |     const habitNameElement = page.getByText(habitName);
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits/habit-operations.spec.ts:128:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/habits-habit-operations-Ha-7fabe-licking-habit-card-critical-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/habits-habit-operations-Ha-7fabe-licking-habit-card-critical-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/habits-habit-operations-Ha-7fabe-licking-habit-card-critical-chromium/error-context.md
+
+
+[1A[2K[16/48] [chromium] › tests/e2e/habits/habit-operations.spec.ts:182:3 › Habit Operations › can switch between Today and Weekly views @p0
+[1A[2K  7) [chromium] › tests/e2e/habits/habit-operations.spec.ts:25:3 › Habit Operations › can create a new habit via FAB @critical @smoke 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m failed
+
+    Locator:  getByText('E2E Test Habit 1771911087993')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  10000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByText('E2E Test Habit 1771911087993')[22m
+
+
+      73 |
+      74 |     // Habit should appear in the list
+    > 75 |     await expect(page.getByText(habitName)).toBeVisible({ timeout: 10000 });
+         |                                             ^
+      76 |   });
+      77 |
+      78 |   test('can mark habit as complete @critical @smoke', async ({ page }) => {
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits/habit-operations.spec.ts:75:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/habits-habit-operations-Ha-cc002-abit-via-FAB-critical-smoke-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/habits-habit-operations-Ha-cc002-abit-via-FAB-critical-smoke-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/habits-habit-operations-Ha-cc002-abit-via-FAB-critical-smoke-chromium/error-context.md
+
+
+[1A[2K[17/48] [chromium] › tests/e2e/habits/habit-operations.spec.ts:206:3 › Habit Operations › habit shows progress bar for multi-target habits @p1
+[1A[2K  8) [chromium] › tests/e2e/habits/habit-operations.spec.ts:150:3 › Habit Operations › habit displays category and frequency @p0 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m failed
+
+    Locator:  getByText('Category Test 1771911100904')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Category Test 1771911100904')[22m
+
+
+      167 |     // Wait for habit to appear
+      168 |     await page.waitForTimeout(2000);
+    > 169 |     await expect(page.getByText(habitName)).toBeVisible();
+          |                                             ^
+      170 |
+      171 |     // Find the habit card
+      172 |     const habitCard = page.locator('div', { hasText: habitName }).first();
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits/habit-operations.spec.ts:169:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/habits-habit-operations-Ha-10341-s-category-and-frequency-p0-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/habits-habit-operations-Ha-10341-s-category-and-frequency-p0-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/habits-habit-operations-Ha-10341-s-category-and-frequency-p0-chromium/error-context.md
+
+
+[1A[2K[18/48] [chromium] › tests/e2e/habits/habit-operations.spec.ts:236:3 › Habit Operations › FAB button is visible and accessible @critical
+[1A[2K[19/48] [chromium] › tests/e2e/habits/habit-operations.spec.ts:251:3 › Habit Operations › page heading displays correctly @p1
+[1A[2K  9) [chromium] › tests/e2e/dashboard.spec.ts:28:3 › LifeSync Dashboard › should navigate between sections 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByText('Habits')[22m
+
+
+      28 |   test('should navigate between sections', async ({ page }) => {
+      29 |     // Navigate to Habits
+    > 30 |     await page.getByText('Habits').click();
+         |                                    ^
+      31 |     await expect(page.getByText('Build consistent daily routines')).toBeVisible();
+      32 |
+      33 |     // Navigate to Tasks
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/dashboard.spec.ts:30:36
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/dashboard-LifeSync-Dashboa-28da6-d-navigate-between-sections-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/dashboard-LifeSync-Dashboa-28da6-d-navigate-between-sections-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/dashboard-LifeSync-Dashboa-28da6-d-navigate-between-sections-chromium/error-context.md
+
+
+[1A[2K[20/48] [chromium] › tests/e2e/habits/habit-operations.spec.ts:257:3 › Habit Operations › empty state shows when no habits exist @p1
+[1A[2K[21/48] [chromium] › tests/e2e/habits-add.spec.ts:4:3 › Habits - add a habit › adds a habit and shows in the list
+[1A[2K[22/48] [chromium] › tests/e2e/habits.spec.ts:4:3 › Habits E2E › add, complete, edit, reset, delete
+[1A[2K[23/48] [chromium] › tests/e2e/habits.spec.ts:124:3 › Habits E2E › frequency labels and reset streak
+[1A[2K  10) [chromium] › tests/e2e/habits/habit-operations.spec.ts:206:3 › Habit Operations › habit shows progress bar for multi-target habits @p1 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m failed
+
+    Locator:  getByText('Multi Target 1771911109271')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Multi Target 1771911109271')[22m
+
+
+      222 |     // Wait for habit to appear
+      223 |     await page.waitForTimeout(2000);
+    > 224 |     await expect(page.getByText(habitName)).toBeVisible();
+          |                                             ^
+      225 |
+      226 |     // Find the habit card
+      227 |     const habitCard = page.locator('div', { hasText: habitName }).first();
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits/habit-operations.spec.ts:224:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/habits-habit-operations-Ha-6ac61--for-multi-target-habits-p1-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/habits-habit-operations-Ha-6ac61--for-multi-target-habits-p1-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/habits-habit-operations-Ha-6ac61--for-multi-target-habits-p1-chromium/error-context.md
+
+
+[1A[2K[24/48] [chromium] › tests/e2e/habits.spec.ts:159:3 › Habits E2E › custom frequency with target > 1 progresses correctly
+[1A[2K  11) [chromium] › tests/e2e/habits.spec.ts:4:3 › Habits E2E › add, complete, edit, reset, delete ──
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.count: Target page, context or browser has been closed
+
+      10 |       // Some sidebars use links/spans
+      11 |       const maybeNav = page.getByText('Habits', { exact: true })
+    > 12 |       if (await maybeNav.count()) await maybeNav.first().click()
+         |                          ^
+      13 |     })
+      14 |
+      15 |     // Ensure page has loaded
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits.spec.ts:12:26
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits.spec.ts:9:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/habits-Habits-E2E-add-complete-edit-reset-delete-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/habits-Habits-E2E-add-complete-edit-reset-delete-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/habits-Habits-E2E-add-complete-edit-reset-delete-chromium/error-context.md
+
+
+[1A[2K  12) [chromium] › tests/e2e/habits-add.spec.ts:4:3 › Habits - add a habit › adds a habit and shows in the list 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByText('Habits', { exact: true })[22m
+
+
+       5 |     await page.goto('/')
+       6 |     // Navigate to Habits tab; assuming a sidebar or header nav item labeled "Habits"
+    >  7 |     await page.getByText('Habits', { exact: true }).click()
+         |                                                     ^
+       8 |
+       9 |     const input = page.getByPlaceholder('Morning stretch')
+      10 |     await input.fill(`Walk ${Date.now()}`)
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits-add.spec.ts:7:53
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/habits-add-Habits---add-a--c501f-habit-and-shows-in-the-list-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/habits-add-Habits---add-a--c501f-habit-and-shows-in-the-list-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/habits-add-Habits---add-a--c501f-habit-and-shows-in-the-list-chromium/error-context.md
+
+
+[1A[2K[25/48] [chromium] › tests/e2e/habits.spec.ts:194:3 › Habits E2E › weekly/monthly multi-target complete then reset today
+[1A[2K[26/48] [chromium] › tests/e2e/navigation/navigation.spec.ts:22:3 › Navigation › can navigate from Dashboard to Tasks @critical @smoke
+[1A[2K  13) [chromium] › tests/e2e/habits.spec.ts:124:3 › Habits E2E › frequency labels and reset streak ─
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.count: Target page, context or browser has been closed
+
+      126 |     await page.getByRole('button', { name: 'Habits' }).click({ trial: true }).catch(async () => {
+      127 |       const maybeNav = page.getByText('Habits', { exact: true })
+    > 128 |       if (await maybeNav.count()) await maybeNav.first().click()
+          |                          ^
+      129 |     })
+      130 |     await expect(page.getByRole('heading', { name: 'Habit tracker' })).toBeVisible()
+      131 |
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits.spec.ts:128:26
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits.spec.ts:126:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/habits-Habits-E2E-frequency-labels-and-reset-streak-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/habits-Habits-E2E-frequency-labels-and-reset-streak-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/habits-Habits-E2E-frequency-labels-and-reset-streak-chromium/error-context.md
+
+
+[1A[2K[27/48] [chromium] › tests/e2e/navigation/navigation.spec.ts:39:3 › Navigation › can navigate from Tasks to Habits @critical
+[1A[2K  14) [chromium] › tests/e2e/habits.spec.ts:159:3 › Habits E2E › custom frequency with target > 1 progresses correctly 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.count: Target page, context or browser has been closed
+
+      161 |     await page.getByRole('button', { name: 'Habits' }).click({ trial: true }).catch(async () => {
+      162 |       const maybeNav = page.getByText('Habits', { exact: true })
+    > 163 |       if (await maybeNav.count()) await maybeNav.first().click()
+          |                          ^
+      164 |     })
+      165 |     await expect(page.getByRole('heading', { name: 'Habit tracker' })).toBeVisible()
+      166 |
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits.spec.ts:163:26
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits.spec.ts:161:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/habits-Habits-E2E-custom-f-257a0-rget-1-progresses-correctly-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/habits-Habits-E2E-custom-f-257a0-rget-1-progresses-correctly-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/habits-Habits-E2E-custom-f-257a0-rget-1-progresses-correctly-chromium/error-context.md
+
+
+[1A[2K[28/48] [chromium] › tests/e2e/navigation/navigation.spec.ts:53:3 › Navigation › can navigate to all main sections @critical
+[1A[2K[29/48] [chromium] › tests/e2e/navigation/navigation.spec.ts:78:3 › Navigation › can navigate to all Productivity sections @p0
+[1A[2K[30/48] [chromium] › tests/e2e/navigation/navigation.spec.ts:98:3 › Navigation › can navigate to all Personal sections @p0
+[1A[2K[31/48] [chromium] › tests/e2e/navigation/navigation.spec.ts:119:3 › Navigation › sidebar is visible on desktop @p1
+[1A[2K[32/48] [chromium] › tests/e2e/navigation/navigation.spec.ts:131:3 › Navigation › can return to Dashboard from any page @p0
+[1A[2K[33/48] [chromium] › tests/e2e/navigation/navigation.spec.ts:145:3 › Navigation › URL changes persist after navigation @p1
+[1A[2K[34/48] [chromium] › tests/e2e/navigation/navigation.spec.ts:164:3 › Navigation › navigation links have correct icons @p1
+[1A[2K[35/48] [chromium] › tests/e2e/tasks/fab-visibility.spec.ts:22:3 › Tasks Page FAB Visibility › FAB is visible in viewport @critical @bug-qa-2
+[1A[2K[36/48] [chromium] › tests/e2e/tasks/fab-visibility.spec.ts:34:3 › Tasks Page FAB Visibility › FAB is clickable without JavaScript workarounds @critical @bug-qa-2
+[1A[2K[37/48] [chromium] › tests/e2e/tasks/fab-visibility.spec.ts:45:3 › Tasks Page FAB Visibility › FAB remains visible when scrolling @p0
+[1A[2K[38/48] [chromium] › tests/e2e/tasks/fab-visibility.spec.ts:63:3 › Tasks Page FAB Visibility › FAB is positioned in bottom area and within viewport @p1
+[1A[2K  15) [chromium] › tests/e2e/habits.spec.ts:194:3 › Habits E2E › weekly/monthly multi-target complete then reset today 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.count: Target page, context or browser has been closed
+
+      196 |     await page.getByRole('button', { name: 'Habits' }).click({ trial: true }).catch(async () => {
+      197 |       const maybeNav = page.getByText('Habits', { exact: true })
+    > 198 |       if (await maybeNav.count()) await maybeNav.first().click()
+          |                          ^
+      199 |     })
+      200 |     await expect(page.getByRole('heading', { name: 'Habit tracker' })).toBeVisible()
+      201 |
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits.spec.ts:198:26
+        at /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/tests/e2e/habits.spec.ts:196:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/habits-Habits-E2E-weekly-m-4ec28-t-complete-then-reset-today-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/habits-Habits-E2E-weekly-m-4ec28-t-complete-then-reset-today-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/habits-Habits-E2E-weekly-m-4ec28-t-complete-then-reset-today-chromium/error-context.md
+
+
+[1A[2K[39/48] [chromium] › tests/e2e/tasks/fab-visibility.spec.ts:89:3 › Tasks Page FAB Visibility › FAB opens task creation modal @critical
+[1A[2K[40/48] [chromium] › tests/e2e/tasks/fab-visibility.spec.ts:113:3 › Tasks Page FAB Visibility › FAB has proper z-index layering @p1
+[1A[2K[41/48] [chromium] › tests/e2e/tasks/task-operations.spec.ts:24:3 › Task Operations › can create a new task via FAB @critical @smoke
+[1A[2K[42/48] [chromium] › tests/e2e/tasks/task-operations.spec.ts:50:3 › Task Operations › can complete a task using checkbox @critical @smoke
+[1A[2K[43/48] [chromium] › tests/e2e/tasks/task-operations.spec.ts:83:3 › Task Operations › can open edit modal by clicking task card @critical
+[1A[2K[44/48] [chromium] › tests/e2e/tasks/task-operations.spec.ts:119:3 › Task Operations › task appears with priority badge @p0
+[1A[2K[45/48] [chromium] › tests/e2e/tasks/task-operations.spec.ts:145:3 › Task Operations › can navigate between Today and Inbox views @p0
+[1A[2K[46/48] [chromium] › tests/e2e/tasks/task-operations.spec.ts:163:3 › Task Operations › can navigate between List and Kanban views @p1
+[1A[2K[47/48] [chromium] › tests/e2e/tasks/task-operations.spec.ts:182:3 › Task Operations › Show Filters button opens filter panel @p1
+[1A[2K[48/48] [chromium] › tests/e2e/tasks/task-operations.spec.ts:194:3 › Task Operations › task count updates correctly after operations @p0
+[1A[2K  15 failed
+    [chromium] › tests/e2e/dashboard.spec.ts:8:3 › LifeSync Dashboard › should display the main navigation 
+    [chromium] › tests/e2e/dashboard.spec.ts:18:3 › LifeSync Dashboard › should show welcome message 
+    [chromium] › tests/e2e/dashboard.spec.ts:22:3 › LifeSync Dashboard › should display stats cards 
+    [chromium] › tests/e2e/dashboard.spec.ts:28:3 › LifeSync Dashboard › should navigate between sections 
+    [chromium] › tests/e2e/dashboard.spec.ts:54:3 › LifeSync Dashboard › should collapse and expand sidebar 
+    [chromium] › tests/e2e/habits/habit-operations.spec.ts:25:3 › Habit Operations › can create a new habit via FAB @critical @smoke 
+    [chromium] › tests/e2e/habits/habit-operations.spec.ts:78:3 › Habit Operations › can mark habit as complete @critical @smoke 
+    [chromium] › tests/e2e/habits/habit-operations.spec.ts:113:3 › Habit Operations › can open edit modal by clicking habit card @critical 
+    [chromium] › tests/e2e/habits/habit-operations.spec.ts:150:3 › Habit Operations › habit displays category and frequency @p0 
+    [chromium] › tests/e2e/habits/habit-operations.spec.ts:206:3 › Habit Operations › habit shows progress bar for multi-target habits @p1 
+    [chromium] › tests/e2e/habits-add.spec.ts:4:3 › Habits - add a habit › adds a habit and shows in the list 
+    [chromium] › tests/e2e/habits.spec.ts:4:3 › Habits E2E › add, complete, edit, reset, delete ────
+    [chromium] › tests/e2e/habits.spec.ts:124:3 › Habits E2E › frequency labels and reset streak ───
+    [chromium] › tests/e2e/habits.spec.ts:159:3 › Habits E2E › custom frequency with target > 1 progresses correctly 
+    [chromium] › tests/e2e/habits.spec.ts:194:3 › Habits E2E › weekly/monthly multi-target complete then reset today 
+  1 skipped
+  32 passed (2.1m)
+
+[36m  Serving HTML report at http://localhost:51361. Press Ctrl+C to quit.[39m

@@ -120,6 +120,7 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
             onChange('');
             const timeMsg = timeToUse ? ` at ${timeToUse}` : '';
             showToast(`Task "${newTask.title}" scheduled${timeMsg}! 📅`, 'success');
+            onClose(); // Close modal after successful task creation
             resolve();
           },
           onError: (error) => {

@@ -5,13 +5,14 @@
 
 import { supabase } from '../lib/supabase';
 import { apiCall, requireAuth } from './apiWrapper';
+import type { Json } from '../types/database.types';
 
 export interface NotificationQueueItem {
   id?: string;
   user_id: string;
   type: string;
   priority: 'low' | 'normal' | 'high';
-  payload: Record<string, unknown>;
+  payload: Json;
   scheduled_for: string;
   status?: 'pending' | 'sent' | 'cancelled';
   sent_at?: string;

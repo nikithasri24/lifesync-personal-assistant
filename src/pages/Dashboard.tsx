@@ -189,7 +189,13 @@ function DashboardContent() {
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
       {/* Centered container following CLAUDE.md pattern */}
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+      <div style={{
+        maxWidth: '900px',
+        margin: '0 auto',
+        padding: '1.5rem',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)'
+      }}>
         {/* Header with terracotta gradient */}
         <DashboardHeaderV2 />
 

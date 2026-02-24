@@ -26,21 +26,24 @@ export type GoalType = 'lose' | 'maintain' | 'gain';
 
 export interface FoodItem {
   id: string;
-  user_id?: string;
+  user_id?: string | null;
   name: string;
-  brand?: string;
-  serving_size: string;
+  brand?: string | null;
+  serving_size: number;
   serving_unit: string;
   calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
-  fiber_g?: number;
-  sugar_g?: number;
-  sodium_mg?: number;
-  is_custom: boolean;
-  barcode?: string;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  fiber_g?: number | null;
+  sugar_g?: number | null;
+  sodium_mg?: number | null;
+  is_verified?: boolean | null;
+  category?: string | null;
+  barcode?: string | null;
+  image_url?: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface FoodLogEntry {
@@ -156,7 +159,7 @@ export async function searchFoods(query: string): Promise<FoodItem[]> {
  * Create a custom food item
  */
 export async function createFoodItem(
-  input: Omit<FoodItem, 'id' | 'user_id' | 'is_custom' | 'created_at'>
+  input: Omit<FoodItem, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 ): Promise<FoodItem> {
   return apiCall(
     async () => {
@@ -167,7 +170,6 @@ export async function createFoodItem(
         .insert({
           user_id: user.id,
           ...input,
-          is_custom: true,
         })
         .select()
         .single();

@@ -6,14 +6,25 @@ const validThemes: Theme[] = ['light', 'dark', 'system'];
 
 function readStoredTheme(): Theme {
   try {
+    // Migration: Reset to light theme for everyone (v2.0)
+    const migrationKey = 'lifesync-theme-migration-v2';
+    const migrated = localStorage.getItem(migrationKey);
+
+    if (!migrated) {
+      // First time since migration - reset to light theme
+      localStorage.setItem('lifesync-theme', 'light');
+      localStorage.setItem(migrationKey, 'true');
+      return 'light';
+    }
+
     const saved = localStorage.getItem('lifesync-theme');
     if (validThemes.includes(saved as Theme)) {
       return saved as Theme;
     }
   } catch {
-    // ignore – fall back to system
+    // ignore – fall back to light
   }
-  return 'system';
+  return 'light';
 }
 
 function detectSystemTheme(): 'light' | 'dark' {

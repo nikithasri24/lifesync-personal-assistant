@@ -8,6 +8,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { MealPlanData, PlannedMealData, RecipeData, PantryItemData, MealBacklogData, MealTrackingData, Paginated } from '../services/types';
+import type { Json } from '../types/database.types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
 import { logger } from '../services/logger';
@@ -473,7 +474,7 @@ export async function updateMealPlan(
       // Update the plan (RLS will also verify access)
       const result = await supabase
         .from('meal_plans')
-        .update(updates)
+        .update(updates as { meal_columns?: Json | null })
         .eq('id', id)
         .select('*, planned_meals(*)')
         .single();

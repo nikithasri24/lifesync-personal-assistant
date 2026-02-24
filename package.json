@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:skip-typecheck": "vite build",
     "typecheck": "tsc -b --pretty false",
     "types:generate": "npx supabase gen types typescript --project-id rfwaiijodrowakcpayoa > src/types/database.types.ts",
     "lint": "eslint . --max-warnings 0",
@@ -14,6 +15,15 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
+    "test:e2e:mobile": "playwright test --project='Mobile Safari' --project='Mobile Chrome'",
+    "test:e2e:ios": "playwright test --project='Mobile Safari'",
+    "test:e2e:android": "playwright test --project='Mobile Chrome'",
+    "test:e2e:tablet": "playwright test --project='Tablet'",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ui": "playwright test --ui",
+    "test:visual": "playwright test tests/e2e/visual/",
+    "test:visual:update": "playwright test tests/e2e/visual/ --update-snapshots",
     "test:coverage": "vitest --coverage",
     "test:coverage:watch": "vitest --coverage --watch",
     "test:coverage:ui": "vitest --coverage --ui",
@@ -25,6 +35,7 @@
     "version": "node scripts/version.js",
     "prepare": "node -e \"if (process.env.NODE_ENV !== 'production' && !process.env.CI && !process.env.VERCEL) { try { require('child_process').execSync('husky install', {stdio:'inherit'}) } catch(e) {} }\"",
     "validate": "npm run typecheck && npm run lint && npm test -- --run",
+    "validate:full": "npm run typecheck && npm run lint && npm test -- --run && npm run test:e2e",
     "api:start": "node server/dist/index.js",
     "start": "concurrently \"npm run api:start\" \"npm run dev\" --names \"API,UI\" --prefix-colors \"blue,magenta\"",
     "cap:sync": "npx cap sync",
@@ -35,7 +46,8 @@
     "cap:build:android": "npm run build && npx cap sync android && npx cap open android",
     "import:visa-data": "npx tsx scripts/import-visa-data.ts",
     "import:visa-to-db": "npx tsx scripts/import-visa-to-supabase.ts",
-    "export:visa-csv": "npx tsx scripts/export-visa-to-csv.ts"
+    "export:visa-csv": "npx tsx scripts/export-visa-to-csv.ts",
+    "create-test-accounts": "npx tsx scripts/create-test-accounts.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",

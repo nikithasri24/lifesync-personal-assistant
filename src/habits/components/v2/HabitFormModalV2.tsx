@@ -16,7 +16,7 @@ import { FormModalV2 } from '@/components/v2';
 export interface HabitFormModalV2Props {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: HabitDraft) => void;
+  onSubmit: (data: HabitDraft) => Promise<void>;
   onDelete?: () => void;
   initialData?: HabitDraft;
   isEditing?: boolean;
@@ -76,7 +76,8 @@ export const HabitFormModalV2: React.FC<HabitFormModalV2Props> = ({
           category: formData.category,
           color: '#D4A574',
         };
-        onSubmit(habitData);
+        await onSubmit(habitData);
+        onClose(); // Close modal after successful submission
       }}
       validate={(formData) => {
         if (!formData.name.trim()) return 'Habit name is required';

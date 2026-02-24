@@ -273,26 +273,30 @@ const DashboardPage: React.FC = () => {
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
-            <span className="text-4xl">🏠</span>
-            Dashboard
-          </h1>
-          <p className="text-sm" style={{ color: colors.text.secondary }}>
-            Overview of your financial health and activity
-          </p>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-3">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
+                <span className="text-4xl">🏠</span>
+                Dashboard
+              </h1>
+              <p className="text-sm" style={{ color: colors.text.secondary }}>
+                Overview of your financial health and activity
+              </p>
+            </div>
+            {/* Owner Filter - integrated in header for merged mode */}
+            {mergedConnection && (
+              <div className="flex-shrink-0">
+                <OwnerFilter
+                  value={filters.ownerFilter}
+                  onChange={filters.setOwnerFilter}
+                  partnerName={partnerName}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-6">
-          {/* Owner Filter - only show in merged mode */}
-          {mergedConnection && (
-            <div className="flex justify-end overflow-x-auto pb-2">
-              <OwnerFilter
-                value={filters.ownerFilter}
-                onChange={filters.setOwnerFilter}
-                partnerName={partnerName}
-              />
-            </div>
-          )}
 
         {/* Metrics Section - Adapts to Owner Filter in Merged Mode */}
         {mergedConnection && user && (
@@ -358,7 +362,31 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {/* Money Flow Visualization - Moved to top */}
+        <Card
+          title="Money Flow Visualization"
+          description="Visual representation of income sources flowing to expense categories"
+        >
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-sm text-slate-500">Loading chart data…</div>
+            </div>
+          ) : metrics.sankeyData.length > 0 ? (
+            <div className="pt-2 w-full">
+              <div className="w-full overflow-x-auto">
+                <div className="min-w-[600px]">
+                  <SankeyChart data={metrics.sankeyData} width={800} height={400} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-sm text-slate-500">No cash flow data for this period</div>
+            </div>
+          )}
+        </Card>
+
+        {/* Month Selector - Full Width */}
         <Card title="Month" actions={
           <select className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={month} onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => setMonth(e.target.value)}>
             {monthsInTx.map((m: string) => (
@@ -371,99 +399,100 @@ const DashboardPage: React.FC = () => {
           <div className="h-2"></div>
         </Card>
 
-      {/* Simple Cash Flow Card for Non-Merged Mode */}
-      {!mergedConnection && (
-        <Card title={`Cash Flow (${month})`}>
-          {loading ? (
-            <div>Loading…</div>
-          ) : (
-            <div className="grid grid-cols-4 gap-2 text-sm">
-              <div className="rounded-lg bg-emerald-50 p-3">
-                <div className="text-emerald-700">Income</div>
-                <div className="text-lg font-semibold">{formatCurrency(income)}</div>
-              </div>
-              <div className="rounded-lg bg-rose-50 p-3">
-                <div className="text-rose-700">Expenses</div>
-                <div className="text-lg font-semibold">{formatCurrency(expense)}</div>
-              </div>
-              <div className="rounded-lg bg-blue-50 p-3">
-                <div className="text-blue-700">Savings</div>
-                <div className="text-lg font-semibold">{formatCurrency(cashflow)}</div>
-                <div className="text-xs text-blue-600 mt-1">
-                  {income > 0 ? `${((cashflow / income) * 100).toFixed(1)}%` : '0%'}
+        {/* Simple Cash Flow Card for Non-Merged Mode */}
+        {!mergedConnection && (
+          <Card title={`Cash Flow (${month})`}>
+            {loading ? (
+              <div>Loading…</div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div className="rounded-lg bg-emerald-50 p-3">
+                  <div className="text-emerald-700 font-medium">Income</div>
+                  <div className="text-lg font-semibold">{formatCurrency(income)}</div>
                 </div>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-slate-700">Net</div>
-                <div className="text-lg font-semibold">{formatCurrency(cashflow)}</div>
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
-
-      <Card
-        title="Accounts Snapshot"
-        className="md:col-span-2"
-        actions={
-          <button
-            onClick={() => {
-              setEditingAccount(undefined);
-              setShowAccountModal(true);
-            }}
-            className="flex items-center gap-1 rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-800 transition-colors"
-            aria-label="Add account"
-          >
-            <Plus size={16} />
-            Add Account
-          </button>
-        }
-      >
-        <div className="space-y-3">
-          {filteredAccounts.length === 0 ? (
-            <div className="text-center py-6 text-slate-500">
-              {filters.ownerFilter === 'all' ? 'No accounts yet. Click "Add Account" to create one.' : 'No accounts for this owner filter.'}
-            </div>
-          ) : (
-            filteredAccounts.map((a) => (
-              <div key={a.id} className="rounded-lg bg-slate-50 px-4 py-3 group hover:bg-slate-100 transition-colors">
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <div className="font-medium text-slate-900">{a.name}</div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="font-semibold text-slate-900">
-                      {formatCurrency(a.liability ? -a.balance : a.balance)}
-                    </div>
-                    <button
-                      onClick={() => {
-                        setEditingAccount(a);
-                        setShowAccountModal(true);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded transition-opacity"
-                      title="Edit account"
-                      aria-label="Edit account"
-                    >
-                      <Pencil size={14} className="text-slate-600" />
-                    </button>
+                <div className="rounded-lg bg-rose-50 p-3">
+                  <div className="text-rose-700 font-medium">Expenses</div>
+                  <div className="text-lg font-semibold">{formatCurrency(expense)}</div>
+                </div>
+                <div className="rounded-lg bg-blue-50 p-3">
+                  <div className="text-blue-700 font-medium">Savings</div>
+                  <div className="text-lg font-semibold">{formatCurrency(cashflow)}</div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    {income > 0 ? `${((cashflow / income) * 100).toFixed(1)}%` : '0%'}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-xs text-slate-500">{a.type}</div>
-                  {mergedConnection && user && (
-                    <OwnerBadge
-                      userId={a.userId}
-                      currentUserId={user.id}
-                      partnerName={partnerName}
-                      size="sm"
-                    />
-                  )}
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <div className="text-slate-700 font-medium">Net</div>
+                  <div className="text-lg font-semibold">{formatCurrency(cashflow)}</div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </Card>
+            )}
+          </Card>
+        )}
 
-      <Card title="Budget Progress (Top 5 Categories)" className="md:col-span-2 xl:col-span-2">
+        {/* Accounts Snapshot - Full Width */}
+        <Card
+          title="Accounts Snapshot"
+          actions={
+            <button
+              onClick={() => {
+                setEditingAccount(undefined);
+                setShowAccountModal(true);
+              }}
+              className="flex items-center gap-1 rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-800 transition-colors"
+              aria-label="Add account"
+            >
+              <Plus size={16} />
+              Add Account
+            </button>
+          }
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filteredAccounts.length === 0 ? (
+              <div className="col-span-full text-center py-6 text-slate-500">
+                {filters.ownerFilter === 'all' ? 'No accounts yet. Click "Add Account" to create one.' : 'No accounts for this owner filter.'}
+              </div>
+            ) : (
+              filteredAccounts.map((a) => (
+                <div key={a.id} className="rounded-lg bg-slate-50 px-4 py-3 group hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="font-medium text-slate-900">{a.name}</div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="font-semibold text-slate-900">
+                        {formatCurrency(a.liability ? -a.balance : a.balance)}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEditingAccount(a);
+                          setShowAccountModal(true);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded transition-opacity"
+                        title="Edit account"
+                        aria-label="Edit account"
+                      >
+                        <Pencil size={14} className="text-slate-600" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-slate-500">{a.type}</div>
+                    {mergedConnection && user && (
+                      <OwnerBadge
+                        userId={a.userId}
+                        currentUserId={user.id}
+                        partnerName={partnerName}
+                        size="sm"
+                      />
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+
+        {/* Budget Progress - Full Width */}
+        <Card title="Budget Progress (Top 5 Categories)">
         <div className="space-y-4">
           {spendByCat.slice(0, 5).map((c) => {
             const percentage = c.budget > 0 ? Math.min(100, (c.total / c.budget) * 100) : 0;
@@ -519,68 +548,47 @@ const DashboardPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* Recent Transactions */}
-      <Card title="Recent Transactions" className="md:col-span-2 xl:col-span-2">
-        <div className="space-y-2">
-          {loading ? (
-            <div className="text-sm text-slate-500">Loading transactions…</div>
-          ) : monthTxns.length === 0 ? (
-            <div className="text-sm text-slate-500 text-center py-6">No transactions this month</div>
-          ) : (
-            monthTxns.slice(0, 8).map((txn) => {
-              const category = categories.find((c) => c.id === txn.categoryId);
-              const isIncome = txn.type === 'credit';
+        {/* Recent Transactions - Full Width */}
+        <Card title="Recent Transactions">
+          <div className="space-y-2">
+            {loading ? (
+              <div className="text-sm text-slate-500">Loading transactions…</div>
+            ) : monthTxns.length === 0 ? (
+              <div className="text-sm text-slate-500 text-center py-6">No transactions this month</div>
+            ) : (
+              monthTxns.slice(0, 8).map((txn) => {
+                const category = categories.find((c) => c.id === txn.categoryId);
+                const isIncome = txn.type === 'credit';
 
-              return (
-                <div key={txn.id} className="py-3 px-3 rounded-lg hover:bg-slate-50 transition-colors">
-                  <div className="flex items-start justify-between gap-3 mb-1">
-                    <span className="font-medium text-slate-900">{txn.description}</span>
-                    <div className={`font-semibold text-sm flex-shrink-0 ${isIncome ? 'text-emerald-600' : 'text-slate-900'}`}>
-                      {isIncome ? '+' : '-'}{formatCurrency(Math.abs(txn.amount))}
+                return (
+                  <div key={txn.id} className="py-3 px-3 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <span className="font-medium text-slate-900">{txn.description}</span>
+                      <div className={`font-semibold text-sm flex-shrink-0 ${isIncome ? 'text-emerald-600' : 'text-slate-900'}`}>
+                        {isIncome ? '+' : '-'}{formatCurrency(Math.abs(txn.amount))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs text-slate-500">
+                        {new Date(txn.dateISO).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {' • '}
+                        {category?.name || 'Uncategorized'}
+                      </div>
+                      {mergedConnection && user && (
+                        <OwnerBadge
+                          userId={txn.userId}
+                          currentUserId={user.id}
+                          partnerName={partnerName}
+                          size="sm"
+                        />
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs text-slate-500">
-                      {new Date(txn.dateISO).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      {' • '}
-                      {category?.name || 'Uncategorized'}
-                    </div>
-                    {mergedConnection && user && (
-                      <OwnerBadge
-                        userId={txn.userId}
-                        currentUserId={user.id}
-                        partnerName={partnerName}
-                        size="sm"
-                      />
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </Card>
-
-      <Card
-        title="Money Flow Visualization"
-        className="md:col-span-2 xl:col-span-3"
-        description="Visual representation of income sources flowing to expense categories"
-      >
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-sm text-slate-500">Loading chart data…</div>
+                );
+              })
+            )}
           </div>
-        ) : metrics.sankeyData.length > 0 ? (
-          <div className="pt-2">
-            <SankeyChart data={metrics.sankeyData} width={800} height={500} />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-sm text-slate-500">No cash flow data for this period</div>
-          </div>
-        )}
-      </Card>
-          </div>
+        </Card>
         </div>
 
         {/* Account Modal */}

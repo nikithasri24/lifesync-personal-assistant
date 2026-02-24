@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { lightColors } from '../styles/colors'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 interface AuthGateProps {
@@ -8,6 +9,8 @@ interface AuthGateProps {
 
 export function AuthGate({ children }: AuthGateProps) {
   const { user, loading, error, signIn, signUp, clearError, isConfigured } = useAuth()
+  // Always use light colors for auth page (common pattern for login/signup pages)
+  const colors = lightColors
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,20 +40,44 @@ export function AuthGate({ children }: AuthGateProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card/80 backdrop-blur shadow-xl p-8">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold text-foreground">LifeSync</h1>
-          <p className="text-muted mt-2">
+    <div
+      className="fixed inset-0 overflow-auto flex items-center justify-center px-4"
+      style={{
+        backgroundColor: colors.bg.primary,
+        minHeight: '100vh',
+        width: '100vw'
+      }}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl border shadow-xl p-8"
+        style={{
+          backgroundColor: colors.bg.white,
+          borderColor: colors.border.light,
+        }}
+      >
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold mb-2" style={{ color: colors.text.primary }}>
+            LifeSync
+          </h1>
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
             {mode === 'signin'
-              ? 'Sign in to access your shared LifeSync workspace.'
-              : 'Create an account to start collaborating in LifeSync.'}
+              ? 'Sign in to access your personal assistant'
+              : 'Create an account to start organizing your life'}
           </p>
         </div>
 
-        <form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
+        {/* Form */}
+        <form className="space-y-5" onSubmit={(e) => void handleSubmit(e)}>
+          {/* Email Field */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground" htmlFor="email">Email</label>
+            <label
+              className="text-sm font-medium"
+              style={{ color: colors.text.primary }}
+              htmlFor="email"
+            >
+              Email
+            </label>
             <input
               id="email"
               type="email"
@@ -61,14 +88,26 @@ export function AuthGate({ children }: AuthGateProps) {
                 if (error) clearError()
                 setEmail(event.target.value)
               }}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+              style={{
+                borderColor: colors.border.medium,
+                backgroundColor: colors.bg.primary,
+                color: colors.text.primary,
+              }}
               placeholder="you@example.com"
               disabled={working || loading}
             />
           </div>
 
+          {/* Password Field */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground" htmlFor="password">Password</label>
+            <label
+              className="text-sm font-medium"
+              style={{ color: colors.text.primary }}
+              htmlFor="password"
+            >
+              Password
+            </label>
             <input
               id="password"
               type="password"
@@ -80,32 +119,51 @@ export function AuthGate({ children }: AuthGateProps) {
                 if (error) clearError()
                 setPassword(event.target.value)
               }}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+              style={{
+                borderColor: colors.border.medium,
+                backgroundColor: colors.bg.primary,
+                color: colors.text.primary,
+              }}
               placeholder="••••••••"
               disabled={working || loading}
             />
           </div>
 
+          {/* Error Message */}
           {error ? (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div
+              className="rounded-xl border px-4 py-3 text-sm"
+              style={{
+                borderColor: 'rgba(220, 38, 38, 0.4)',
+                backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                color: '#dc2626',
+              }}
+            >
               {error}
             </div>
           ) : null}
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={working || loading}
-            className="w-full rounded-lg bg-primary px-3 py-2 text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50"
+            className="w-full px-4 py-3 rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
+            style={{
+              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            }}
           >
             {working || loading ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
           </button>
         </form>
 
+        {/* Toggle Mode */}
         <div className="mt-6 text-center text-sm">
           {mode === 'signin' ? (
             <button
               type="button"
-              className="text-[#E5B88A] hover:text-[#D4A574] hover:underline font-medium"
+              className="font-medium hover:underline transition-colors"
+              style={{ color: colors.accent.start }}
               onClick={() => {
                 clearError()
                 setMode('signup')
@@ -116,7 +174,8 @@ export function AuthGate({ children }: AuthGateProps) {
           ) : (
             <button
               type="button"
-              className="text-[#E5B88A] hover:text-[#D4A574] hover:underline font-medium"
+              className="font-medium hover:underline transition-colors"
+              style={{ color: colors.accent.start }}
               onClick={() => {
                 clearError()
                 setMode('signin')

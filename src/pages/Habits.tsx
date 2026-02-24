@@ -173,14 +173,14 @@ const HabitsContent: React.FC = () => {
   }, [filteredHabits, apiEntries, selectedDateKey, weekBoundaries]);
 
   // Create/Update handler
-  const handleSubmit = (data: HabitDraft): void => {
+  const handleSubmit = async (data: HabitDraft): Promise<void> => {
     const parsedTarget = Number(data.targetValue);
     const normalizedTarget = Number.isFinite(parsedTarget) ? Math.max(1, Math.floor(parsedTarget)) : 1;
 
-    if (modals.state.editingHabitId) {
-      // UPDATE
-      updateHabitMutation.mutate(
-        {
+    try {
+      if (modals.state.editingHabitId) {
+        // UPDATE
+        await updateHabitMutation.mutateAsync({
           id: modals.state.editingHabitId,
           updates: {
             name: data.name.trim(),
@@ -190,23 +190,13 @@ const HabitsContent: React.FC = () => {
             category: data.category,
             color: data.color,
           },
-        },
-        {
-          onSuccess: () => {
-            showToast('Habit updated! ✏️', 'success');
-            modals.close('showForm');
-            modals.set('editingHabitId', null);
-          },
-          onError: (error) => {
-            logger.error('Habits', error);
-            showToast('Saving changes failed. Please try again.', 'error');
-          },
-        }
-      );
-    } else {
-      // CREATE
-      createHabitMutation.mutate(
-        {
+        });
+        showToast('Habit updated! ✏️', 'success');
+        modals.close('showForm');
+        modals.set('editingHabitId', null);
+      } else {
+        // CREATE
+        await createHabitMutation.mutateAsync({
           name: data.name.trim(),
           description: data.description.trim() || undefined,
           frequency: data.frequency,
@@ -218,18 +208,14 @@ const HabitsContent: React.FC = () => {
           best_streak: 0,
           current_progress: 0,
           goal_mode: 'daily-target',
-        },
-        {
-          onSuccess: () => {
-            showToast('Habit created! 💪', 'success');
-            modals.close('showForm');
-          },
-          onError: (error) => {
-            logger.error('Habits', error);
-            showToast('Unable to save the habit right now. Please try again.', 'error');
-          },
-        }
-      );
+        });
+        showToast('Habit created! 💪', 'success');
+        modals.close('showForm');
+      }
+    } catch (error) {
+      logger.error('Habits', error as Error);
+      showToast('Unable to save the habit right now. Please try again.', 'error');
+      throw error; // Re-throw so FormModalV2 knows it failed
     }
   };
 
