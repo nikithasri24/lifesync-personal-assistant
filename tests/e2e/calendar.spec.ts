@@ -17,25 +17,23 @@ test.describe('Calendar Module', () => {
   });
 
   test('should display calendar page', async ({ page }) => {
-    // Check for calendar header or key elements
-    const calendarView = page.locator('[data-testid="calendar-view"]').or(page.locator('.calendar-container'));
-    await expect(calendarView.first()).toBeVisible({ timeout: 10000 });
+    // Check for calendar heading
+    await expect(page.getByRole('heading', { name: /📅 Calendar/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('should have week, month, and day view options', async ({ page }) => {
-    // Look for view toggle buttons
-    const weekViewButton = page.getByRole('button', { name: /week/i }).or(page.getByText('Week', { exact: true }));
-    const monthViewButton = page.getByRole('button', { name: /month/i }).or(page.getByText('Month', { exact: true }));
-    const dayViewButton = page.getByRole('button', { name: /day/i }).or(page.getByText('Day', { exact: true }));
+    // Wait for calendar to load
+    await expect(page.getByRole('heading', { name: /📅 Calendar/i })).toBeVisible({ timeout: 10000 });
 
-    // At least one view should be visible
-    const anyViewVisible = await Promise.race([
-      weekViewButton.first().isVisible().catch(() => false),
-      monthViewButton.first().isVisible().catch(() => false),
-      dayViewButton.first().isVisible().catch(() => false),
-    ]);
+    // Look for view buttons (actual buttons are "View month", "View week", "View day")
+    const weekViewButton = page.getByRole('button', { name: /View week/i });
+    await expect(weekViewButton).toBeVisible();
 
-    expect(anyViewVisible).toBeTruthy();
+    const monthViewButton = page.getByRole('button', { name: /View month/i });
+    await expect(monthViewButton).toBeVisible();
+
+    const dayViewButton = page.getByRole('button', { name: /View day/i });
+    await expect(dayViewButton).toBeVisible();
   });
 
   test('should switch between week and month views', async ({ page }) => {
@@ -154,12 +152,12 @@ test.describe('Calendar Module', () => {
   });
 
   test('should display current date/week indicator', async ({ page }) => {
-    // Look for current date display
-    const dateDisplay = page.locator('[data-testid="current-date"]').or(
-      page.locator('.calendar-header').first()
-    );
+    // Wait for calendar to load
+    await expect(page.getByRole('heading', { name: /📅 Calendar/i })).toBeVisible({ timeout: 10000 });
 
-    await expect(dateDisplay.first()).toBeVisible({ timeout: 10000 });
+    // Look for current date display (shows like "Tuesday, Feb 24")
+    const dateDisplay = page.getByText(/day,.*\d{1,2}/i);
+    await expect(dateDisplay).toBeVisible();
   });
 
   test('should highlight today in calendar', async ({ page }) => {

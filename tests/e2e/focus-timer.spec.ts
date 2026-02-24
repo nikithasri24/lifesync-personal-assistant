@@ -23,100 +23,80 @@ test.describe('Focus Timer', () => {
   });
 
   test('should have timer mode options', async ({ page }) => {
-    // Look for timer mode buttons
-    const pomodoroMode = page.getByRole('button', { name: /pomodoro|25/i }).or(
-      page.getByText(/25.*min/i)
-    );
-    const deepWorkMode = page.getByRole('button', { name: /deep work|45/i }).or(
-      page.getByText(/45.*min/i)
-    );
-    const flowStateMode = page.getByRole('button', { name: /flow|90/i }).or(
-      page.getByText(/90.*min/i)
-    );
+    // Wait for "Quick Start" heading to ensure presets have loaded
+    await expect(page.getByText('Quick Start')).toBeVisible({ timeout: 10000 });
 
-    // At least one mode should be visible
-    const anyModeVisible = await Promise.race([
-      pomodoroMode.first().isVisible().catch(() => false),
-      deepWorkMode.first().isVisible().catch(() => false),
-      flowStateMode.first().isVisible().catch(() => false),
-    ]);
+    // Look for timer mode buttons (actual presets: Pomodoro 25min, Short Break 5min, Deep Work 90min, Long Break 15min)
+    const pomodoroMode = page.getByRole('button', { name: /Set timer to Pomodoro/i });
 
-    expect(anyModeVisible).toBeTruthy();
+    // At least Pomodoro should be visible
+    await expect(pomodoroMode).toBeVisible();
   });
 
   test('should select 25min Pomodoro mode', async ({ page }) => {
-    const pomodoroButton = page.getByRole('button', { name: /pomodoro|25/i }).or(
-      page.getByText(/25.*min/i)
-    );
+    // Wait for presets to load
+    await expect(page.getByText('Quick Start')).toBeVisible({ timeout: 10000 });
 
-    if (await pomodoroButton.first().isVisible()) {
-      await pomodoroButton.first().click();
-      await page.waitForTimeout(500);
+    const pomodoroButton = page.getByRole('button', { name: /Set timer to Pomodoro/i });
+    await expect(pomodoroButton).toBeVisible();
 
-      // Mode should be selected
-      await expect(page.locator('body')).toBeVisible();
-    }
+    await pomodoroButton.click();
+    await page.waitForTimeout(500);
+
+    // Mode should be selected (button should have active styling)
+    await expect(pomodoroButton).toBeVisible();
   });
 
-  test('should select 45min Deep Work mode', async ({ page }) => {
-    const deepWorkButton = page.getByRole('button', { name: /deep work|45/i }).or(
-      page.getByText(/45.*min/i)
-    );
+  test('should select 90min Deep Work mode', async ({ page }) => {
+    // Wait for presets to load
+    await expect(page.getByText('Quick Start')).toBeVisible({ timeout: 10000 });
 
-    if (await deepWorkButton.first().isVisible()) {
-      await deepWorkButton.first().click();
-      await page.waitForTimeout(500);
+    const deepWorkButton = page.getByRole('button', { name: /Set timer to Deep Work/i });
+    await expect(deepWorkButton).toBeVisible();
 
-      // Mode should be selected
-      await expect(page.locator('body')).toBeVisible();
-    }
+    await deepWorkButton.click();
+    await page.waitForTimeout(500);
+
+    // Mode should be selected (button should have active styling)
+    await expect(deepWorkButton).toBeVisible();
   });
 
-  test('should select 90min Flow State mode', async ({ page }) => {
-    const flowStateButton = page.getByRole('button', { name: /flow|90/i }).or(
-      page.getByText(/90.*min/i)
-    );
+  test('should select 5min Short Break mode', async ({ page }) => {
+    // Wait for presets to load
+    await expect(page.getByText('Quick Start')).toBeVisible({ timeout: 10000 });
 
-    if (await flowStateButton.first().isVisible()) {
-      await flowStateButton.first().click();
-      await page.waitForTimeout(500);
+    const shortBreakButton = page.getByRole('button', { name: /Set timer to Short Break/i });
+    await expect(shortBreakButton).toBeVisible();
 
-      // Mode should be selected
-      await expect(page.locator('body')).toBeVisible();
-    }
+    await shortBreakButton.click();
+    await page.waitForTimeout(500);
+
+    // Mode should be selected (button should have active styling)
+    await expect(shortBreakButton).toBeVisible();
   });
 
   test('should have start timer button', async ({ page }) => {
-    // Look for start button
-    const startButton = page.locator('[data-testid="start-timer"]').or(
-      page.getByRole('button', { name: /start|begin/i }).first()
-    );
+    // Wait for presets to load
+    await expect(page.getByText('Quick Start')).toBeVisible({ timeout: 10000 });
 
-    if (await startButton.isVisible()) {
-      await expect(startButton).toBeVisible();
-    }
+    // Look for start timer button
+    const startButton = page.getByRole('button', { name: /start timer/i });
+    await expect(startButton).toBeVisible();
   });
 
   test('should start a focus timer session', async ({ page }) => {
-    // Select a mode first
-    const pomodoroButton = page.getByRole('button', { name: /pomodoro|25/i }).first();
-    if (await pomodoroButton.isVisible()) {
-      await pomodoroButton.click();
-      await page.waitForTimeout(300);
-    }
+    // Wait for presets to load
+    await expect(page.getByText('Quick Start')).toBeVisible({ timeout: 10000 });
 
-    // Start timer
-    const startButton = page.locator('[data-testid="start-timer"]').or(
-      page.getByRole('button', { name: /start/i }).first()
-    );
+    // Pomodoro is selected by default, click start timer
+    const startButton = page.getByRole('button', { name: /start timer/i });
+    await expect(startButton).toBeVisible();
+    await startButton.click();
+    await page.waitForTimeout(1000);
 
-    if (await startButton.isVisible()) {
-      await startButton.click();
-      await page.waitForTimeout(1000);
-
-      // Timer should be running
-      await expect(page.locator('body')).toBeVisible();
-    }
+    // Timer should be running - verify pause button appears
+    const pauseButton = page.getByRole('button', { name: /pause timer/i });
+    await expect(pauseButton).toBeVisible();
   });
 
   test('should pause timer', async ({ page }) => {

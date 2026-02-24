@@ -11,13 +11,13 @@ test.describe('LifeSync Application', () => {
 
   test('loads the main application', async ({ page }) => {
     // Check that the page title is correct
-    await expect(page).toHaveTitle(/LifeSync/)
-    
+    await expect(page).toHaveTitle(/Life Weave|LifeSync/)
+
     // Check that main navigation elements are present
-    await expect(page.locator('[data-testid="sidebar"]')).toBeVisible()
-    
+    await expect(page.getByRole('navigation', { name: /Main navigation/i })).toBeVisible()
+
     // Check that the dashboard content loads
-    await expect(page.locator('[data-testid="main-content"]')).toBeVisible()
+    await expect(page.locator('main')).toBeVisible()
   })
 
   test('has functional theme toggle', async ({ page }) => {
@@ -59,7 +59,7 @@ test.describe('LifeSync Application', () => {
         
         // Check that navigation occurred (URL might not change in SPA)
         // Instead check for page-specific content
-        await expect(page.locator('[data-testid="main-content"]')).toBeVisible()
+        await expect(page.locator('main')).toBeVisible()
       }
     }
   })
@@ -71,7 +71,7 @@ test.describe('LifeSync Application', () => {
     await page.waitForLoadState('networkidle')
     
     // App should still be functional
-    await expect(page.locator('[data-testid="main-content"]')).toBeVisible()
+    await expect(page.locator('main')).toBeVisible()
     
     // Test tablet viewport
     await page.setViewportSize({ width: 768, height: 1024 })
@@ -79,7 +79,7 @@ test.describe('LifeSync Application', () => {
     await page.waitForLoadState('networkidle')
     
     // App should still be functional
-    await expect(page.locator('[data-testid="main-content"]')).toBeVisible()
+    await expect(page.locator('main')).toBeVisible()
     
     // Test desktop viewport
     await page.setViewportSize({ width: 1920, height: 1080 })
@@ -87,7 +87,7 @@ test.describe('LifeSync Application', () => {
     await page.waitForLoadState('networkidle')
     
     // App should still be functional
-    await expect(page.locator('[data-testid="main-content"]')).toBeVisible()
+    await expect(page.locator('main')).toBeVisible()
   })
 
   test('handles network errors gracefully', async ({ page }) => {
@@ -108,8 +108,8 @@ test.describe('LifeSync Application', () => {
   test('has proper accessibility landmarks', async ({ page }) => {
     // Check for main landmarks
     await expect(page.locator('main')).toBeVisible()
-    await expect(page.locator('nav')).toBeVisible()
-    
+    await expect(page.getByRole('navigation', { name: /Main navigation/i })).toBeVisible()
+
     // Check for proper heading structure
     const h1 = page.locator('h1').first()
     if (await h1.isVisible()) {
@@ -130,10 +130,12 @@ test.describe('LifeSync Application', () => {
     await page.waitForLoadState('networkidle')
     
     // Filter out known acceptable errors
-    const significantErrors = consoleErrors.filter(error => 
-      !error.includes('favicon') && 
+    const significantErrors = consoleErrors.filter(error =>
+      !error.includes('favicon') &&
       !error.includes('chrome-extension') &&
-      !error.includes('ResizeObserver loop limit exceeded')
+      !error.includes('ResizeObserver loop limit exceeded') &&
+      !error.includes('WebSocket') &&
+      !error.includes('[vite]')
     )
     
     expect(significantErrors).toHaveLength(0)

@@ -3,23 +3,28 @@ import { test, expect } from '@playwright/test';
 test.describe('Tasks Page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Tasks').click();
+    // Use role selector to avoid mobile nav conflict
+    await page.getByRole('link', { name: 'Tasks' }).click();
   });
 
   test('should display tasks page', async ({ page }) => {
-    await expect(page.getByText('Manage your daily tasks and projects')).toBeVisible();
-    await expect(page.getByText('Add Task')).toBeVisible();
+    // Verify we're on the Tasks page
+    await expect(page.getByText('Organize and track your to-dos')).toBeVisible();
+    await expect(page.getByText('0 tasks')).toBeVisible();
   });
 
   test('should show filters', async ({ page }) => {
-    await expect(page.getByText('All')).toBeVisible();
-    await expect(page.getByText('Active')).toBeVisible();
-    await expect(page.getByText('Completed')).toBeVisible();
+    // Check for Show Filters button
+    await expect(page.getByText('Show Filters')).toBeVisible();
+    // Check for view modes
+    await expect(page.getByText('Today')).toBeVisible();
+    await expect(page.getByText('Inbox')).toBeVisible();
+    await expect(page.getByText('Upcoming')).toBeVisible();
   });
 
   test('should create a new task', async ({ page }) => {
-    // Click Add Task button
-    await page.getByText('Add Task').click();
+    // Click FAB button to add task
+    await page.locator('button[aria-label*="add"], button.fab').first().click();
     
     // Fill out the form
     await page.getByPlaceholder('What needs to be done?').fill('Buy groceries');
@@ -43,7 +48,7 @@ test.describe('Tasks Page', () => {
 
   test('should toggle task completion', async ({ page }) => {
     // First create a task
-    await page.getByText('Add Task').click();
+    await page.locator('button[aria-label*="add"], button.fab').first().click();
     await page.getByPlaceholder('What needs to be done?').fill('Test Task');
     await page.getByText('Create Task').click();
     
@@ -56,7 +61,7 @@ test.describe('Tasks Page', () => {
 
   test('should filter tasks', async ({ page }) => {
     // Create a task first
-    await page.getByText('Add Task').click();
+    await page.locator('button[aria-label*="add"], button.fab').first().click();
     await page.getByPlaceholder('What needs to be done?').fill('Test Task');
     await page.getByText('Create Task').click();
     
@@ -78,7 +83,7 @@ test.describe('Tasks Page', () => {
 
   test('should delete a task', async ({ page }) => {
     // Create a task first
-    await page.getByText('Add Task').click();
+    await page.locator('button[aria-label*="add"], button.fab').first().click();
     await page.getByPlaceholder('What needs to be done?').fill('Task to Delete');
     await page.getByText('Create Task').click();
     
