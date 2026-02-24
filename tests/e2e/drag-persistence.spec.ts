@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Drag-to-group persistence after reload', () => {
+// SKIPPED: Drag and drop functionality not implemented in V2 UI
+// V2 uses modal editing for task status/date changes instead of drag and drop
+test.describe.skip('Drag-to-group persistence after reload', () => {
   test('Waiting For persists after reload', async ({ page }) => {
     await page.goto('/')
     const addBtn = page.getByRole('button', { name: /Add task|Add to /i }).first()

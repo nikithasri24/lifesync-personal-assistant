@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Drag task to Upcoming (Next 7 days)', () => {
+// SKIPPED: Drag and drop functionality not implemented in V2 UI
+// V2 uses modal editing for task status/date changes instead of drag and drop
+test.describe.skip('Drag task to Upcoming (Next 7 days)', () => {
   test('moves task into Upcoming view when dropped', async ({ page }) => {
     await page.goto('/')
 
