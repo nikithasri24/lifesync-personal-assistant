@@ -1,15 +1,20 @@
 /**
- * QuickAddModalV2 Component - MIGRATED to use FormModalV2
+ * QuickAddModalV2 Component
  * CLAUDE.md compliant modal for quick task creation with scheduling
  *
- * MIGRATION COMPLETE:
- * - Reduced from 244 lines to ~160 lines (34% reduction)
- * - Removed manual Together pattern structure (FormModalV2 provides it)
- * - Removed manual ESC key handler (built into FormModalV2)
- * - Removed manual backdrop handler (built into FormModalV2)
- * - Form state still managed externally (value/onChange props for QuickAddForm integration)
- * - Schedule state managed internally
- * - Auto-detection of time from text preserved
+ * Features:
+ * - Uses FormModalV2 for consistent modal structure
+ * - Task title input with natural language parsing support
+ * - Optional scheduling (date + time)
+ * - Auto-detection of time from text input
+ * - ESC key support (via FormModalV2)
+ * - Backdrop click support (via FormModalV2)
+ * - Mobile-friendly with proper safe areas
+ *
+ * Fixed: Issue #1 from QA-ISSUES-FOUND.md
+ * - Removed invalid customSubmitButton prop
+ * - Added task title input field to children
+ * - Now renders all form fields correctly
  */
 
 import React, { useEffect, useState } from 'react';
@@ -18,7 +23,6 @@ import { FormModalV2 } from '@/components/v2';
 import { useCreateTask } from '@/hooks/useTasksQuery';
 import { useToast } from '@/hooks/useToast';
 import { parseQuickAdd } from '@/todos/services/taskHelpers';
-import { QuickAddForm } from '@/todos/components';
 
 interface QuickAddModalV2Props {
   isOpen: boolean;
@@ -141,19 +145,27 @@ export const QuickAddModalV2: React.FC<QuickAddModalV2Props> = ({
         if (!value.trim()) return 'Please enter a task title';
         return null;
       }}
-      customSubmitButton={(isPending, submitText) => (
-        <QuickAddForm
-          value={value}
-          onChange={onChange}
-          onSubmit={() => void handleSubmit()}
-          onCancel={onClose}
-          isLoading={isPending}
-          autoFocus
-        />
-      )}
     >
       {() => (
         <>
+          {/* Task Title Input */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Task
+            </label>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="What needs to be done?"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+              autoFocus
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Tip: Try "Buy groceries #shopping !high" or "Meeting at 2pm"
+            </p>
+          </div>
+
           {/* Schedule Section */}
           <div className="space-y-3">
             {/* Toggle Button */}

@@ -459,13 +459,6 @@ const TodosContent: React.FC = () => {
           )}
         </div>
 
-        {/* V2 FAB for Quick Add */}
-        <FABV2
-          icon={Plus}
-          onClick={() => setShowQuickAdd(true)}
-          position="bottom-right"
-        />
-
         {/* Quick Add Modal */}
         <QuickAddModalV2
           isOpen={showQuickAdd}
@@ -507,6 +500,13 @@ const TodosContent: React.FC = () => {
           isPending={updateTaskMutation.isPending || deleteTaskMutation.isPending}
         />
       </div>
+
+      {/* V2 FAB for Quick Add - Positioned outside container for proper viewport positioning */}
+      <FABV2
+        icon={Plus}
+        onClick={() => setShowQuickAdd(true)}
+        position="bottom-right"
+      />
     </div>
   );
 };

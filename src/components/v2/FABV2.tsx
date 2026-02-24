@@ -2,6 +2,13 @@
  * FABV2 Component
  * Floating Action Button with terracotta gradient
  * iOS-inspired design with smooth animations and shadow
+ *
+ * Fixed: Issue #2 from QA-ISSUES-FOUND.md
+ * - Removed bottom position from className (was causing viewport issues)
+ * - Added dynamic bottom positioning via inline style
+ * - Accounts for mobile navigation bar (5rem) + spacing (1.5rem)
+ * - Includes safe area insets for devices with notches
+ * - Must be rendered outside centered containers for proper viewport positioning
  */
 
 import React from 'react';
@@ -20,9 +27,9 @@ export interface FABV2Props {
 }
 
 const positionStyles = {
-  'bottom-right': 'fixed bottom-6 right-6',
-  'bottom-left': 'fixed bottom-6 left-6',
-  'bottom-center': 'fixed bottom-6 left-1/2 -translate-x-1/2',
+  'bottom-right': 'fixed right-6',
+  'bottom-left': 'fixed left-6',
+  'bottom-center': 'fixed left-1/2 -translate-x-1/2',
 };
 
 const sizeStyles = {
@@ -77,6 +84,9 @@ export const FABV2: React.FC<FABV2Props> = ({
       style={{
         background: gradients.primary,
         boxShadow: disabled ? 'none' : shadows.fab,
+        // Position above mobile navigation bar (5rem = 80px nav height + 1.5rem = 24px spacing)
+        // Includes safe area inset for devices with notches/home indicators
+        bottom: 'calc(5rem + 1.5rem + env(safe-area-inset-bottom, 0px))',
       }}
       aria-label={label || 'Floating action button'}
     >
