@@ -47,122 +47,89 @@ test.describe('Habits E2E', () => {
     await expect(page.getByText(habitName)).not.toBeVisible()
   })
 
-  // Skipping complex tests below - they were written for the old UI with quick-add form
-  // V2 uses modal-based UI and would require complete test rewrite
-  test.skip('frequency labels and reset streak', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Habits' }).click({ trial: true }).catch(async () => {
-      const maybeNav = page.getByText('Habits', { exact: true })
-      if (await maybeNav.count()) await maybeNav.first().click()
-    })
-    await expect(page.getByRole('heading', { name: 'Habit tracker' })).toBeVisible()
+  test('frequency labels display correctly', async ({ page }) => {
+    await page.goto('/habits')
+    await page.waitForLoadState('networkidle')
 
-    // Weekly
-    await page.getByTestId('habit-add-name').fill('Weekly One')
-    await page.getByLabel('Frequency').first().selectOption('weekly')
-    await page.getByTestId('habit-add-submit').click()
-    const weeklyCard = page.locator('article', { hasText: 'Weekly One' }).first()
-    await expect(weeklyCard.getByText(/\s•\s*weekly/i)).toBeVisible()
+    // Ensure page has loaded
+    await expect(page.locator('main')).toBeVisible()
 
-    // Monthly
-    await page.getByTestId('habit-add-name').fill('Monthly One')
-    await page.getByLabel('Frequency').first().selectOption('monthly')
-    await page.getByTestId('habit-add-submit').click()
-    const monthlyCard = page.locator('article', { hasText: 'Monthly One' }).first()
-    await expect(monthlyCard.getByText(/\s•\s*monthly/i)).toBeVisible()
+    // Create Weekly habit
+    await page.getByRole('button', { name: 'Create new habit' }).click()
+    await page.waitForTimeout(500)
 
-    // Reset streak clears progress and streak
-    await page.getByTestId('habit-add-name').fill('Streak Case')
-    await page.getByTestId('habit-add-submit').click()
-    const streakCard = page.locator('article', { hasText: 'Streak Case' }).first()
+    await page.getByLabel('Habit Name').fill(`Weekly ${Date.now()}`)
+    await page.locator('#habit-frequency').selectOption('weekly')
+    await page.getByRole('button', { name: /Create Habit/i }).click()
+    await page.waitForTimeout(1000)
 
-    // Complete once to increment progress
-    await streakCard.getByRole('button', { name: /complete today/i }).click()
-    // Reset streak
-    await streakCard.getByRole('button', { name: /reset streak/i }).click()
-    await expect(streakCard.getByText(/Progress:\s*0/i)).toBeVisible()
-    await expect(streakCard.getByText(/Streak:\s*0/i)).toBeVisible()
+    // Verify weekly habit appears with correct frequency label
+    await expect(page.getByText(/1x per week/i).first()).toBeVisible({ timeout: 10000 })
+
+    // Create Monthly habit
+    await page.getByRole('button', { name: 'Create new habit' }).click()
+    await page.waitForTimeout(500)
+
+    await page.getByLabel('Habit Name').fill(`Monthly ${Date.now()}`)
+    await page.locator('#habit-frequency').selectOption('monthly')
+    await page.getByRole('button', { name: /Create Habit/i }).click()
+    await page.waitForTimeout(1000)
+
+    // Verify monthly habit appears with correct frequency label
+    await expect(page.getByText(/1x per month/i).first()).toBeVisible({ timeout: 10000 })
   })
 
-  test.skip('custom frequency with target > 1 progresses correctly', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Habits' }).click({ trial: true }).catch(async () => {
-      const maybeNav = page.getByText('Habits', { exact: true })
-      if (await maybeNav.count()) await maybeNav.first().click()
-    })
-    await expect(page.getByRole('heading', { name: 'Habit tracker' })).toBeVisible()
+  test('daily habit with multi-target shows progress indicator', async ({ page }) => {
+    await page.goto('/habits')
+    await page.waitForLoadState('networkidle')
 
-    // Add custom frequency habit with target 2
-    await page.getByTestId('habit-add-name').fill('Custom progress')
-    await page.getByLabel('Frequency').first().selectOption('custom')
-    await page.getByLabel('Target count').first().fill('2')
-    await page.getByTestId('habit-add-submit').click()
+    // Create daily habit with target 3
+    await page.getByRole('button', { name: 'Create new habit' }).click()
+    await page.waitForTimeout(500)
 
-    const customCard = page.locator('article', { hasText: 'Custom progress' }).first()
-    await expect(customCard.getByText(/Other\s+•\s*custom/i)).toBeVisible()
-    await expect(customCard.getByText(/Today\s+0\/2/)).toBeVisible()
+    await page.getByLabel('Habit Name').fill(`Water ${Date.now()}`)
+    await page.locator('#habit-frequency').selectOption('daily')
+    await page.locator('#habit-target').fill('3')
+    await page.getByRole('button', { name: /Create Habit/i }).click()
+    await page.waitForTimeout(1000)
 
-    // Complete twice -> Completed today (2/2)
-    const completeBtn = customCard.getByRole('button', { name: /complete today/i })
-    await completeBtn.click()
-    await expect(customCard.getByText(/Today\s+1\/2/)).toBeVisible()
-    await completeBtn.click()
-    await expect(customCard.getByText(/Completed today\s*\(2\/2\)/)).toBeVisible()
+    // Verify habit appears with progress indicator showing 0/3
+    await expect(page.getByText(/0 \/ 3/i).first()).toBeVisible({ timeout: 10000 })
 
-    // Reset today then re-complete to restore Completed today
-    await customCard.getByRole('button', { name: /reset today/i }).click()
-    await expect(customCard.getByText(/Today\s+0\/2/)).toBeVisible()
-    await expect(customCard.getByRole('button', { name: /complete today/i })).toBeEnabled()
-    await customCard.getByRole('button', { name: /complete today/i }).click()
-    await expect(customCard.getByText(/Today\s+1\/2/)).toBeVisible()
-    await customCard.getByRole('button', { name: /complete today/i }).click()
-    await expect(customCard.getByText(/Completed today\s*\(2\/2\)/)).toBeVisible()
+    // Verify complete button is available
+    await expect(page.getByRole('button', { name: /Mark complete/i }).first()).toBeVisible()
   })
 
-  test.skip('weekly/monthly multi-target complete then reset today', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Habits' }).click({ trial: true }).catch(async () => {
-      const maybeNav = page.getByText('Habits', { exact: true })
-      if (await maybeNav.count()) await maybeNav.first().click()
-    })
-    await expect(page.getByRole('heading', { name: 'Habit tracker' })).toBeVisible()
+  test('weekly and monthly multi-target habits show correct labels', async ({ page }) => {
+    await page.goto('/habits')
+    await page.waitForLoadState('networkidle')
 
-    // Weekly 2/day
-    await page.getByTestId('habit-add-name').fill('Weekly MT')
-    await page.getByLabel('Frequency').first().selectOption('weekly')
-    await page.getByLabel('Target count').first().fill('2')
-    await page.getByTestId('habit-add-submit').click()
-    const weeklyCard = page.locator('article', { hasText: 'Weekly MT' }).first()
-    await expect(weeklyCard.getByText(/\s•\s*weekly/i)).toBeVisible()
-    await weeklyCard.getByRole('button', { name: /complete today/i }).click()
-    await expect(weeklyCard.getByText(/Today\s+1\/2/)).toBeVisible()
-    await weeklyCard.getByRole('button', { name: /complete today/i }).click()
-    await expect(weeklyCard.getByText(/Completed today\s*\(2\/2\)/)).toBeVisible()
-    await weeklyCard.getByRole('button', { name: /reset today/i }).click()
-    await expect(weeklyCard.getByText(/Today\s+0\/2/)).toBeVisible()
-    // After reset today, Complete should be re-enabled (like custom case)
-    await expect(weeklyCard.getByRole('button', { name: /complete today/i })).toBeEnabled()
-    // And re-completing should advance progress again
-    await weeklyCard.getByRole('button', { name: /complete today/i }).click()
-    await expect(weeklyCard.getByText(/Today\s+1\/2/)).toBeVisible()
+    // Create weekly habit with target 2
+    await page.getByRole('button', { name: 'Create new habit' }).click()
+    await page.waitForTimeout(500)
 
-    // Monthly 2/day
-    await page.getByTestId('habit-add-name').fill('Monthly MT')
-    await page.getByLabel('Frequency').first().selectOption('monthly')
-    await page.getByLabel('Target count').first().fill('2')
-    await page.getByTestId('habit-add-submit').click()
-    const monthlyCard = page.locator('article', { hasText: 'Monthly MT' }).first()
-    await expect(monthlyCard.getByText(/\s•\s*monthly/i)).toBeVisible()
-    await monthlyCard.getByRole('button', { name: /complete today/i }).click()
-    await expect(monthlyCard.getByText(/Today\s+1\/2/)).toBeVisible()
-    await monthlyCard.getByRole('button', { name: /complete today/i }).click()
-    await expect(monthlyCard.getByText(/Completed today\s*\(2\/2\)/)).toBeVisible()
-    await monthlyCard.getByRole('button', { name: /reset today/i }).click()
-    await expect(monthlyCard.getByText(/Today\s+0\/2/)).toBeVisible()
-    // After reset today, Complete should be re-enabled
-    await expect(monthlyCard.getByRole('button', { name: /complete today/i })).toBeEnabled()
-    // Re-complete should advance progress
-    await monthlyCard.getByRole('button', { name: /complete today/i }).click()
-    await expect(monthlyCard.getByText(/Today\s+1\/2/)).toBeVisible()
+    await page.getByLabel('Habit Name').fill(`Workout ${Date.now()}`)
+    await page.locator('#habit-frequency').selectOption('weekly')
+    await page.locator('#habit-target').fill('2')
+    await page.getByRole('button', { name: /Create Habit/i }).click()
+    await page.waitForTimeout(1000)
+
+    // Verify weekly habit with correct frequency label and progress indicator
+    await expect(page.getByText(/2x per week/i).first()).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText(/0 \/ 2/i).first()).toBeVisible()
+
+    // Create monthly habit with target 3
+    await page.getByRole('button', { name: 'Create new habit' }).click()
+    await page.waitForTimeout(500)
+
+    await page.getByLabel('Habit Name').fill(`Reading ${Date.now()}`)
+    await page.locator('#habit-frequency').selectOption('monthly')
+    await page.locator('#habit-target').fill('3')
+    await page.getByRole('button', { name: /Create Habit/i }).click()
+    await page.waitForTimeout(1000)
+
+    // Verify monthly habit with correct frequency label and progress indicator
+    await expect(page.getByText(/3x per month/i).first()).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText(/0 \/ 3/i).first()).toBeVisible()
   })
 })
