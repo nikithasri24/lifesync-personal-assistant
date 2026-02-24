@@ -8,7 +8,7 @@
  * - Form state managed by FormModalV2 (synced with external formData prop)
  */
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { ShoppingItemForm } from '../../types/forms';
 import type { Store } from '../../types';
@@ -62,13 +62,7 @@ export const AddItemModalV2: React.FC<AddItemModalV2Props> = ({
         return null;
       }}
     >
-      {(formState, setFormState) => {
-        // Sync form state changes back to parent
-        useEffect(() => {
-          onFormChange(formState);
-        }, [formState]);
-
-        return (
+      {(formState, setFormState) => (
           <>
             {/* Item Name */}
             <div>
@@ -78,7 +72,11 @@ export const AddItemModalV2: React.FC<AddItemModalV2Props> = ({
               <input
                 type="text"
                 value={formState.name}
-                onChange={(e) => setFormState({ ...formState, name: e.target.value })}
+                onChange={(e) => {
+                  const newState = { ...formState, name: e.target.value };
+                  setFormState(newState);
+                  onFormChange(newState);
+                }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 placeholder="e.g., Organic Bananas"
                 required
@@ -96,7 +94,11 @@ export const AddItemModalV2: React.FC<AddItemModalV2Props> = ({
                   type="number"
                   min="1"
                   value={formState.quantity}
-                  onChange={(e) => setFormState({ ...formState, quantity: parseInt(e.target.value) || 1 })}
+                  onChange={(e) => {
+                    const newState = { ...formState, quantity: parseInt(e.target.value) || 1 };
+                    setFormState(newState);
+                    onFormChange(newState);
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 />
               </div>
@@ -106,7 +108,11 @@ export const AddItemModalV2: React.FC<AddItemModalV2Props> = ({
                 </label>
                 <select
                   value={formState.unit}
-                  onChange={(e) => setFormState({ ...formState, unit: e.target.value })}
+                  onChange={(e) => {
+                    const newState = { ...formState, unit: e.target.value };
+                    setFormState(newState);
+                    onFormChange(newState);
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 >
                   <option value="pcs">pieces</option>
@@ -130,7 +136,11 @@ export const AddItemModalV2: React.FC<AddItemModalV2Props> = ({
                 </label>
                 <select
                   value={formState.category}
-                  onChange={(e) => setFormState({ ...formState, category: validateCategory(e.target.value) })}
+                  onChange={(e) => {
+                    const newState = { ...formState, category: validateCategory(e.target.value) };
+                    setFormState(newState);
+                    onFormChange(newState);
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 >
                   {Object.entries(CATEGORY_ICONS).map(([category, icon]) => (
@@ -146,7 +156,11 @@ export const AddItemModalV2: React.FC<AddItemModalV2Props> = ({
                 </label>
                 <select
                   value={formState.priority}
-                  onChange={(e) => setFormState({ ...formState, priority: validatePriority(e.target.value) })}
+                  onChange={(e) => {
+                    const newState = { ...formState, priority: validatePriority(e.target.value) };
+                    setFormState(newState);
+                    onFormChange(newState);
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                 >
                   <option value="low">Low</option>
@@ -163,7 +177,11 @@ export const AddItemModalV2: React.FC<AddItemModalV2Props> = ({
               </label>
               <select
                 value={formState.preferredStore}
-                onChange={(e) => setFormState({ ...formState, preferredStore: e.target.value })}
+                onChange={(e) => {
+                  const newState = { ...formState, preferredStore: e.target.value };
+                  setFormState(newState);
+                  onFormChange(newState);
+                }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
               >
                 <option value="">AI will decide</option>
@@ -188,7 +206,11 @@ export const AddItemModalV2: React.FC<AddItemModalV2Props> = ({
                   type="number"
                   step="0.01"
                   value={formState.estimatedPrice}
-                  onChange={(e) => setFormState({ ...formState, estimatedPrice: e.target.value })}
+                  onChange={(e) => {
+                    const newState = { ...formState, estimatedPrice: e.target.value };
+                    setFormState(newState);
+                    onFormChange(newState);
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                   placeholder="$0.00"
                 />
@@ -200,7 +222,11 @@ export const AddItemModalV2: React.FC<AddItemModalV2Props> = ({
                 <input
                   type="text"
                   value={formState.brand}
-                  onChange={(e) => setFormState({ ...formState, brand: e.target.value })}
+                  onChange={(e) => {
+                    const newState = { ...formState, brand: e.target.value };
+                    setFormState(newState);
+                    onFormChange(newState);
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                   placeholder="e.g., Organic Valley"
                 />
@@ -230,15 +256,18 @@ export const AddItemModalV2: React.FC<AddItemModalV2Props> = ({
               </label>
               <textarea
                 value={formState.notes}
-                onChange={(e) => setFormState({ ...formState, notes: e.target.value })}
+                onChange={(e) => {
+                  const newState = { ...formState, notes: e.target.value };
+                  setFormState(newState);
+                  onFormChange(newState);
+                }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
                 placeholder="Any special notes or preferences..."
                 rows={3}
               />
             </div>
           </>
-        );
-      }}
+      )}
     </FormModalV2>
   );
 };
