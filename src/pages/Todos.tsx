@@ -37,6 +37,8 @@ import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useToast } from '../hooks/useToast';
 import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
+import { useUndoRedo } from '../contexts/UndoRedoContext';
+import { useTodosDragDrop } from '../todos/hooks';
 
 // Import V2 components
 import { FABV2 } from '../components/v2/FABV2';
@@ -141,6 +143,21 @@ const TodosContent: React.FC = () => {
   // ============================================================================
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+
+  // ============================================================================
+  // Drag and Drop State
+  // ============================================================================
+  const { executeCommand } = useUndoRedo();
+  const {
+    draggedTask,
+    handleDragStart,
+    handleDragEnd,
+    handleDropOnSection,
+    handleDragOver,
+  } = useTodosDragDrop({
+    updateTaskMutation,
+    executeCommand,
+  });
 
   // ============================================================================
   // Computed Values - Filtered and View-Specific Tasks
@@ -455,6 +472,11 @@ const TodosContent: React.FC = () => {
               isSelectionMode={isSelectionMode}
               selectedTaskIds={selectedTaskIds}
               onSelectTask={handleSelectTask}
+              draggedTask={draggedTask}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDropOnSection={handleDropOnSection}
+              onDragOver={handleDragOver}
             />
           )}
         </div>

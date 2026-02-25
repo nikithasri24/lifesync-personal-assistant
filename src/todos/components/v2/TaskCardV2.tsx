@@ -37,6 +37,11 @@ export interface TaskCardV2Props {
   isSelected?: boolean; // Whether this task is selected
   onSelect?: (taskId: string) => void; // Callback for selection toggle
   className?: string;
+  // Drag and drop props
+  draggable?: boolean;
+  onDragStart?: (task: TaskData, event: React.DragEvent) => void;
+  onDragEnd?: () => void;
+  isDragging?: boolean; // For opacity feedback
 }
 
 const priorityBorderColors: Record<NonNullable<TaskData['priority']>, string> = {
@@ -75,12 +80,25 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
   isSelected = false,
   onSelect,
   className = '',
+  draggable = false,
+  onDragStart,
+  onDragEnd,
+  isDragging = false,
 }) => {
   const colors = useThemeColors();
   const isCompleted = task.status === 'done';
   const borderColor = priorityBorderColors[task.priority || 'medium'];
   const dueDateInfo = formatDueDate(task.due_date);
   const isRecurring = task.recurrence_pattern && task.recurrence_pattern !== 'none';
+
+  const handleDragStart = (e: React.DragEvent) => {
+    if (onDragStart) {
+      onDragStart(task, e);
+    }
+  };
+
+  // Determine if this card should be draggable
+  const isDraggableNow = draggable && !isSelectionMode;
 
   return (
     <div
@@ -94,8 +112,14 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
         backgroundColor: isSelected ? 'rgba(212, 165, 116, 0.1)' : colors.bg.white,
         borderLeft: `4px solid ${borderColor}`,
         boxShadow: isSelected ? '0 2px 8px rgba(193, 139, 94, 0.3)' : '0 1px 4px rgba(139, 111, 71, 0.06)',
-        opacity: isCompleted ? 0.6 : 1,
+        opacity: isDragging ? 0.4 : (isCompleted ? 0.6 : 1),
+        cursor: isDraggableNow ? 'grab' : 'default',
       }}
+      draggable={isDraggableNow ? 'true' : 'false'}
+      onDragStart={handleDragStart}
+      onDragEnd={onDragEnd}
+      data-task-card="true"
+      data-task-id={task.id}
     >
       {/* Checkbox - Selection mode or Complete mode */}
       {isSelectionMode ? (

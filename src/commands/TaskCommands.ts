@@ -156,6 +156,52 @@ export class MoveTaskCommand implements Command {
 }
 
 /**
+ * Change Task Status Command (drag between status sections in V2 UI)
+ */
+export class ChangeTaskStatusCommand implements Command {
+  id: string;
+  description: string;
+  timestamp: number;
+  private taskId: string;
+  private taskTitle: string;
+  private newStatus: Task['status'];
+  private oldStatus: Task['status'];
+
+  constructor(
+    taskId: string,
+    taskTitle: string,
+    newStatus: Task['status'],
+    oldStatus: Task['status']
+  ) {
+    this.id = `change-status-${taskId}-${Date.now()}`;
+    this.description = `Change status: ${taskTitle} → ${newStatus}`;
+    this.timestamp = Date.now();
+    this.taskId = taskId;
+    this.taskTitle = taskTitle;
+    this.newStatus = newStatus;
+    this.oldStatus = oldStatus;
+  }
+
+  async execute(): Promise<void> {
+    logger.debug('Tasks', '[ChangeTaskStatusCommand] Executing', {
+      taskId: this.taskId,
+      newStatus: this.newStatus
+    });
+    await updateTask(this.taskId, { status: this.newStatus });
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  }
+
+  async undo(): Promise<void> {
+    logger.debug('Tasks', '[ChangeTaskStatusCommand] Undoing', {
+      taskId: this.taskId,
+      oldStatus: this.oldStatus
+    });
+    await updateTask(this.taskId, { status: this.oldStatus });
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  }
+}
+
+/**
  * Change Task Category Command (drag between sections)
  */
 export class ChangeTaskCategoryCommand implements Command {
