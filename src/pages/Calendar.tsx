@@ -5,12 +5,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, addDays, subDays, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
-import { useTasks } from '@/hooks/useTasksQuery';
-import { useCalendarEvents } from '@/hooks/useCalendarQuery';
+import { useTasks, useUpdateTask } from '@/hooks/useTasksQuery';
+import { useCalendarEvents, useUpdateCalendarEvent } from '@/hooks/useCalendarQuery';
 import { AddEventModal } from '@/calendar/components/AddEventModal';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
+import { useUndoRedo } from '@/contexts/UndoRedoContext';
+import { useCalendarDragDrop } from '@/calendar/hooks/useCalendarDragDrop';
 import type { CalendarEvent } from '@/services/types';
+import type { Task } from '@/lib/supabase';
 
 type ViewType = 'month' | 'week' | 'day';
 
@@ -100,7 +103,25 @@ const CalendarContent = () => {
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();
   const { data: calendarEvents = [], isLoading: eventsLoading } = useCalendarEvents();
 
+  // Mutations for drag-and-drop
+  const updateTaskMutation = useUpdateTask();
+  const updateEventMutation = useUpdateCalendarEvent();
+  const { executeCommand } = useUndoRedo();
+
   const isLoading = tasksLoading || eventsLoading;
+
+  // Drag and drop support
+  const {
+    draggedTask,
+    handleDragStart,
+    handleDragEnd,
+    handleDrop,
+    handleDragOver,
+  } = useCalendarDragDrop({
+    updateTaskMutation,
+    updateEventMutation,
+    executeCommand,
+  });
 
   // Navigation handlers
   const handlePrevious = () => {
@@ -398,6 +419,9 @@ const CalendarContent = () => {
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isTodayDate = isToday(day);
 
+              // Check if this day is a valid drop target
+              const isDropTarget = draggedTask && isCurrentMonth;
+
               return (
                 <div
                   key={index}
@@ -407,7 +431,11 @@ const CalendarContent = () => {
                     minHeight: '70px',
                     padding: '4px',
                     position: 'relative',
+                    border: isDropTarget ? '2px dashed #D4A574' : 'none',
+                    cursor: isDropTarget ? 'pointer' : 'default',
                   }}
+                  onDrop={(e) => handleDrop(day, e)}
+                  onDragOver={handleDragOver}
                 >
                   {/* Day Number */}
                   <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '4px', textAlign: 'center' }}>
@@ -521,27 +549,35 @@ const CalendarContent = () => {
                           );
                         })}
                         {/* All-day Tasks */}
-                        {allDayTasks.map((task, idx) => (
-                          <div
-                            key={`allday-task-${task.id || idx}`}
-                            style={{
-                              backgroundColor: '#DBEAFE',
-                              borderLeft: '3px solid #3B82F6',
-                              padding: '6px 8px',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                            }}
-                          >
-                            <div style={{ fontWeight: 600, color: colors.text.primary }}>
-                              ✓ {task.title}
-                            </div>
-                            {task.priority && task.priority !== 'medium' && (
-                              <div style={{ color: colors.text.secondary, fontSize: '11px', marginTop: '2px' }}>
-                                {task.priority === 'high' ? '🔴 High' : task.priority === 'low' ? '🟢 Low' : ''}
+                        {allDayTasks.map((task, idx) => {
+                          const isDragging = draggedTask?.id === task.id;
+                          return (
+                            <div
+                              key={`allday-task-${task.id || idx}`}
+                              draggable="true"
+                              onDragStart={(e) => handleDragStart(task as Task, e)}
+                              onDragEnd={handleDragEnd}
+                              style={{
+                                backgroundColor: '#DBEAFE',
+                                borderLeft: '3px solid #3B82F6',
+                                padding: '6px 8px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                cursor: 'grab',
+                                opacity: isDragging ? 0.4 : 1,
+                              }}
+                            >
+                              <div style={{ fontWeight: 600, color: colors.text.primary }}>
+                                ✓ {task.title}
                               </div>
-                            )}
-                          </div>
-                        ))}
+                              {task.priority && task.priority !== 'medium' && (
+                                <div style={{ color: colors.text.secondary, fontSize: '11px', marginTop: '2px' }}>
+                                  {task.priority === 'high' ? '🔴 High' : task.priority === 'low' ? '🟢 Low' : ''}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                 </div>
               ) : null;
@@ -574,6 +610,7 @@ const CalendarContent = () => {
                         className="flex-1 p-1 relative cursor-pointer transition-colors"
                         style={{
                           backgroundColor: colors.bg.white,
+                          border: draggedTask ? '1px dashed #D4A574' : 'none',
                         }}
                         onClick={() => handleTimeSlotClick(currentDate, hour)}
                         title="Click to create event"
@@ -582,6 +619,16 @@ const CalendarContent = () => {
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = colors.bg.white;
+                        }}
+                        onDrop={(e) => {
+                          e.stopPropagation();
+                          const dropDate = new Date(currentDate);
+                          dropDate.setHours(hour, 0, 0, 0);
+                          handleDrop(dropDate, e);
+                        }}
+                        onDragOver={(e) => {
+                          e.stopPropagation();
+                          handleDragOver(e);
                         }}
                       >
                         {/* Events */}
@@ -614,25 +661,36 @@ const CalendarContent = () => {
                         })}
 
                         {/* Tasks */}
-                        {timeSlotTasks.map((task, idx) => (
-                          <div
-                            key={`task-${task.id || idx}`}
-                            style={{
-                              backgroundColor: '#DBEAFE',
-                              borderLeft: '3px solid #3B82F6',
-                              padding: '4px',
-                              margin: '2px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div style={{ fontWeight: 600, color: colors.text.primary }}>
-                              {format(new Date(task.due_date!), 'h:mm a')}
+                        {timeSlotTasks.map((task, idx) => {
+                          const isDragging = draggedTask?.id === task.id;
+                          return (
+                            <div
+                              key={`task-${task.id || idx}`}
+                              draggable="true"
+                              onDragStart={(e) => {
+                                e.stopPropagation();
+                                handleDragStart(task as Task, e);
+                              }}
+                              onDragEnd={handleDragEnd}
+                              style={{
+                                backgroundColor: '#DBEAFE',
+                                borderLeft: '3px solid #3B82F6',
+                                padding: '4px',
+                                margin: '2px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                cursor: 'grab',
+                                opacity: isDragging ? 0.4 : 1,
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div style={{ fontWeight: 600, color: colors.text.primary }}>
+                                {format(new Date(task.due_date!), 'h:mm a')}
+                              </div>
+                              <div style={{ color: colors.text.primary }}>{task.title}</div>
                             </div>
-                            <div style={{ color: colors.text.primary }}>{task.title}</div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
