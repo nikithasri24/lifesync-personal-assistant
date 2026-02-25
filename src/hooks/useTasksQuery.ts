@@ -114,13 +114,8 @@ export function useCreateTask(): UseMutationResult<TaskData, Error, Omit<TaskDat
     onSuccess: (newTask) => {
       logger.info('Tasks', 'Task created successfully', { id: newTask.id, title: newTask.title });
 
-      // Optimistically add to cache for immediate UI response
-      queryClient.setQueryData<TaskData[]>(
-        queryKeys.tasks.lists(),
-        (old) => {
-          return old ? [newTask, ...old] : [newTask];
-        }
-      );
+      // Invalidate ALL task queries to ensure all views (Todos, Calendar, etc.) get updated
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
 
       // Emit event - DataSyncProvider handles cache invalidation
       dataEvents.emit('task:created', { taskId: newTask.id!, task: newTask });
@@ -138,7 +133,7 @@ export function useUpdateTask(): UseMutationResult<
   TaskData,
   Error,
   { id: string; updates: Partial<TaskData> },
-  { previousTasks?: TaskData[]; previousTask?: TaskData; wasCompleted?: boolean }
+  { previousTask?: TaskData; wasCompleted?: boolean }
 > {
   const queryClient = useQueryClient();
 
@@ -153,36 +148,20 @@ export function useUpdateTask(): UseMutationResult<
       logger.debug('Tasks', 'Optimistic update: updating task', { id, updates });
 
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
-      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.lists() });
-      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(id) });
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all });
 
-      // Snapshot the previous values for rollback
-      const previousTasks = queryClient.getQueryData<TaskData[]>(queryKeys.tasks.lists());
+      // Snapshot the previous task for rollback
       const previousTask = queryClient.getQueryData<TaskData>(queryKeys.tasks.detail(id));
 
       // Track if this is a completion (status changing to 'done')
       const wasCompleted = updates.status === 'done' && previousTask?.status !== 'done';
 
-      // Optimistically update task lists
-      queryClient.setQueryData<TaskData[]>(
-        queryKeys.tasks.lists(),
-        (old) => {
-          return old?.map((task) =>
-            task.id === id ? { ...task, ...updates } : task
-          );
-        }
-      );
-
-      // Optimistically update task detail
-      if (previousTask) {
-        queryClient.setQueryData(
-          queryKeys.tasks.detail(id),
-          { ...previousTask, ...updates }
-        );
-      }
+      // Invalidate all task queries - they'll refetch with updated data
+      // This ensures Calendar, Todos, and all other views stay in sync
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
 
       // Return context with previous values for rollback
-      return { previousTasks, previousTask, wasCompleted };
+      return { previousTask, wasCompleted };
     },
     onSuccess: (updatedTask, _variables, context) => {
       logger.info('Tasks', 'Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
@@ -314,15 +293,10 @@ export function useUpdateTask(): UseMutationResult<
       }
     },
     onError: (error: Error, { id }, context) => {
-      logger.error('Tasks', 'Failed to update task - rolling back', { error: error.message, id });
+      logger.error('Tasks', 'Failed to update task - invalidating cache', { error: error.message, id });
 
-      // Rollback to previous state on error
-      if (context?.previousTasks) {
-        queryClient.setQueryData(queryKeys.tasks.lists(), context.previousTasks);
-      }
-      if (context?.previousTask) {
-        queryClient.setQueryData(queryKeys.tasks.detail(id), context.previousTask);
-      }
+      // Invalidate all task queries to refetch fresh data from server
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
     },
   });
 }
