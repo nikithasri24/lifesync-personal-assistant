@@ -42,6 +42,7 @@ export interface TaskCardV2Props {
   onDragStart?: (task: TaskData, event: React.DragEvent) => void;
   onDragEnd?: () => void;
   isDragging?: boolean; // For opacity feedback
+  draggedTaskCount?: number; // Number of tasks being dragged (for multi-select)
 }
 
 const priorityBorderColors: Record<NonNullable<TaskData['priority']>, string> = {
@@ -84,6 +85,7 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
   onDragStart,
   onDragEnd,
   isDragging = false,
+  draggedTaskCount = 0,
 }) => {
   const colors = useThemeColors();
   const isCompleted = task.status === 'done';
@@ -161,6 +163,19 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
           </div>
           {task.starred && (
             <span className="text-base">⭐</span>
+          )}
+          {/* Multi-select drag badge */}
+          {isDragging && draggedTaskCount > 0 && (
+            <div
+              className="px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+                color: 'white',
+              }}
+            >
+              <span>{draggedTaskCount}</span>
+              <span>tasks</span>
+            </div>
           )}
         </div>
 

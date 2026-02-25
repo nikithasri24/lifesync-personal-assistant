@@ -202,6 +202,59 @@ export class ChangeTaskStatusCommand implements Command {
 }
 
 /**
+ * Bulk Change Task Status Command (multi-select drag in V2 UI)
+ */
+export class BulkChangeTaskStatusCommand implements Command {
+  id: string;
+  description: string;
+  timestamp: number;
+  private tasks: Array<{ id: string; title: string; oldStatus: Task['status'] }>;
+  private newStatus: Task['status'];
+
+  constructor(
+    tasks: Array<{ id: string; title: string; oldStatus: Task['status'] }>,
+    newStatus: Task['status']
+  ) {
+    this.id = `bulk-change-status-${Date.now()}`;
+    this.description = `Change status of ${tasks.length} tasks → ${newStatus}`;
+    this.timestamp = Date.now();
+    this.tasks = tasks;
+    this.newStatus = newStatus;
+  }
+
+  async execute(): Promise<void> {
+    logger.debug('Tasks', '[BulkChangeTaskStatusCommand] Executing', {
+      taskCount: this.tasks.length,
+      newStatus: this.newStatus
+    });
+
+    // Update all tasks in parallel
+    await Promise.all(
+      this.tasks.map(task =>
+        updateTask(task.id, { status: this.newStatus })
+      )
+    );
+
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  }
+
+  async undo(): Promise<void> {
+    logger.debug('Tasks', '[BulkChangeTaskStatusCommand] Undoing', {
+      taskCount: this.tasks.length
+    });
+
+    // Restore all tasks to their original status
+    await Promise.all(
+      this.tasks.map(task =>
+        updateTask(task.id, { status: task.oldStatus })
+      )
+    );
+
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  }
+}
+
+/**
  * Change Task Category Command (drag between sections)
  */
 export class ChangeTaskCategoryCommand implements Command {

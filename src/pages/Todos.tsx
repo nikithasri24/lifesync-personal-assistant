@@ -150,6 +150,7 @@ const TodosContent: React.FC = () => {
   const { executeCommand } = useUndoRedo();
   const {
     draggedTask,
+    draggedTaskIds,
     handleDragStart,
     handleDragEnd,
     handleDropOnSection,
@@ -157,6 +158,8 @@ const TodosContent: React.FC = () => {
   } = useTodosDragDrop({
     updateTaskMutation,
     executeCommand,
+    selectedTaskIds,
+    allTasks: tasks,
   });
 
   // ============================================================================
@@ -473,6 +476,7 @@ const TodosContent: React.FC = () => {
               selectedTaskIds={selectedTaskIds}
               onSelectTask={handleSelectTask}
               draggedTask={draggedTask}
+              draggedTaskIds={draggedTaskIds}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               onDropOnSection={handleDropOnSection}

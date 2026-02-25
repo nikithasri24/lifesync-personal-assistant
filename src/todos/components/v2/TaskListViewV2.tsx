@@ -21,6 +21,7 @@ export interface TaskListViewV2Props {
   className?: string;
   // Drag and drop props
   draggedTask?: import('../../services/types').TaskData | null;
+  draggedTaskIds?: Set<string>;
   onDragStart?: (task: import('../../services/types').TaskData, event: React.DragEvent) => void;
   onDragEnd?: () => void;
   onDropOnSection?: (sectionKey: string, event: React.DragEvent) => void;
@@ -72,6 +73,7 @@ export const TaskListViewV2: React.FC<TaskListViewV2Props> = ({
   onSelectTask,
   className = '',
   draggedTask,
+  draggedTaskIds = new Set(),
   onDragStart,
   onDragEnd,
   onDropOnSection,
@@ -132,6 +134,7 @@ export const TaskListViewV2: React.FC<TaskListViewV2Props> = ({
                 {section.tasks.map((task) => {
                   const project = projects.find(p => p.id === task.projectId);
                   const isDragging = draggedTask?.id === task.id;
+                  const draggedTaskCount = draggedTaskIds.size > 1 ? draggedTaskIds.size : 0;
 
                   return (
                     <TaskCardV2
@@ -148,6 +151,7 @@ export const TaskListViewV2: React.FC<TaskListViewV2Props> = ({
                       onDragStart={onDragStart}
                       onDragEnd={onDragEnd}
                       isDragging={isDragging}
+                      draggedTaskCount={draggedTaskCount}
                     />
                   );
                 })}
