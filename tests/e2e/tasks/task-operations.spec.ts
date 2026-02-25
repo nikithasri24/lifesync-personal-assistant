@@ -135,25 +135,6 @@ test.describe('Task Operations', () => {
     await expect(todayButton).toBeVisible();
   });
 
-  test('can navigate between List and Kanban views @p1', async ({ page }) => {
-    // List view button
-    const listButton = page.getByRole('button', { name: /📋.*list/i });
-    await expect(listButton).toBeVisible();
-
-    // Click Kanban view
-    const kanbanButton = page.getByRole('button', { name: /📊.*kanban/i });
-    await kanbanButton.click();
-
-    // Verify Kanban view loads (look for column headers like "To Do", "In Progress", "Done")
-    await expect(page.getByText(/to do/i)).toBeVisible({ timeout: 5000 });
-
-    // Click back to List view
-    await listButton.click();
-
-    // List view should load again
-    await expect(page.getByText(/\d+ tasks?/i)).toBeVisible();
-  });
-
   test('Show Filters button opens filter panel @p1', async ({ page }) => {
     // Find and click the filters button
     const filtersButton = page.getByRole('button', { name: /show filters/i });

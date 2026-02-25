@@ -1,9 +1,8 @@
 /**
  * Todos components barrel export
  *
- * Note: KanbanView and MatrixView are legacy components still in use.
- * V2 versions have not been created yet.
+ * All components have been migrated to V2.
+ * See src/todos/components/v2/ for current implementations.
  */
 
-export { KanbanView } from './KanbanView';
-export { MatrixView } from './MatrixView';
+// No exports - all components are now in v2/

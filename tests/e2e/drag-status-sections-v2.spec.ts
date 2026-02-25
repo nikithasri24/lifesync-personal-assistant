@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
  *
  * Prerequisites:
  * - Drag and drop implementation in TaskListViewV2
- * - List view active (not Kanban or Matrix)
+ * - List view active
  */
 test.describe('V2 Drag between status sections', () => {
   test.beforeEach(async ({ page }) => {

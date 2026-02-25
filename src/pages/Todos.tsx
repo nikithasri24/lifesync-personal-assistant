@@ -54,8 +54,6 @@ import {
   type StatusFilter,
 } from '../todos/components/v2';
 
-// Import legacy views (Kanban and Matrix not yet V2)
-import { KanbanView, MatrixView } from '../todos/components';
 import { TodosLoadingState } from '../todos/components/layout/TodosLoadingState';
 import { TodosErrorState } from '../todos/components/layout/TodosErrorState';
 
@@ -447,43 +445,23 @@ const TodosContent: React.FC = () => {
           {completedCount > 0 && ` • ${completedCount} completed`}
         </div>
 
-        {/* Content Area - View-Specific Rendering */}
-        <div>
-          {activeView === 'kanban' ? (
-            <KanbanView
-              tasks={viewTasks}
-              projects={projects}
-              selectedProject={projectFilter}
-              onToggleStatus={handleToggleStatus}
-              isUpdating={updateTaskMutation.isPending}
-            />
-          ) : activeView === 'matrix' ? (
-            <MatrixView
-              tasks={viewTasks}
-              projects={projects}
-              selectedProject={projectFilter}
-              onToggleStatus={handleToggleStatus}
-              isUpdating={updateTaskMutation.isPending}
-            />
-          ) : (
-            <TaskListViewV2
-              tasks={viewTasks}
-              projects={projects}
-              onTaskClick={handleTaskClick}
-              onToggleStatus={handleToggleStatus}
-              isUpdating={updateTaskMutation.isPending}
-              isSelectionMode={isSelectionMode}
-              selectedTaskIds={selectedTaskIds}
-              onSelectTask={handleSelectTask}
-              draggedTask={draggedTask}
-              draggedTaskIds={draggedTaskIds}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onDropOnSection={handleDropOnSection}
-              onDragOver={handleDragOver}
-            />
-          )}
-        </div>
+        {/* Content Area - List View */}
+        <TaskListViewV2
+          tasks={viewTasks}
+          projects={projects}
+          onTaskClick={handleTaskClick}
+          onToggleStatus={handleToggleStatus}
+          isUpdating={updateTaskMutation.isPending}
+          isSelectionMode={isSelectionMode}
+          selectedTaskIds={selectedTaskIds}
+          onSelectTask={handleSelectTask}
+          draggedTask={draggedTask}
+          draggedTaskIds={draggedTaskIds}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDropOnSection={handleDropOnSection}
+          onDragOver={handleDragOver}
+        />
 
         {/* Quick Add Modal */}
         <QuickAddModalV2
