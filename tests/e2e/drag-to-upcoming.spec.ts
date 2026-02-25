@@ -1,7 +1,14 @@
 import { test, expect } from '@playwright/test'
 
-// SKIPPED: Drag and drop functionality not implemented in V2 UI
-// V2 uses modal editing for task status/date changes instead of drag and drop
+/**
+ * SKIPPED: V1 UI Test - Sidebar Drag Targets Deprecated
+ *
+ * This test is for V1 UI which had "Next 7 days" sidebar item as drag target.
+ * V2 UI doesn't have sidebar drag targets or "Upcoming" view.
+ *
+ * V2 Alternative: Use drag-to-calendar feature (tested in drag-to-calendar-date.spec.ts)
+ * - Drag tasks to calendar dates within next 7 days to schedule them
+ */
 test.describe.skip('Drag task to Upcoming (Next 7 days)', () => {
   test('moves task into Upcoming view when dropped', async ({ page }) => {
     await page.goto('/')

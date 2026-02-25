@@ -1,7 +1,15 @@
 import { test, expect } from '@playwright/test'
 
-// SKIPPED: Drag and drop functionality not implemented in V2 UI
-// V2 uses modal editing for task status/date changes instead of drag and drop
+/**
+ * SKIPPED: V1 UI Test - Sidebar Drag Targets Deprecated
+ *
+ * This test is for V1 UI which had sidebar navigation items as drag targets.
+ * V2 UI doesn't have sidebar drag targets - it uses status sections in List view.
+ *
+ * V2 Equivalent: See drag-status-sections-v2.spec.ts
+ * - Drag between To Do, In Progress, Waiting, Done status sections
+ * - 7 comprehensive tests covering all V2 drag scenarios
+ */
 test.describe.skip('Drag to Waiting/Scheduled/Starred', () => {
   test('drag to Waiting and Scheduled and Starred', async ({ page }) => {
     await page.goto('/')

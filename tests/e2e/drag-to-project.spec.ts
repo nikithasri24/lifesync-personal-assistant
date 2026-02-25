@@ -1,7 +1,13 @@
 import { test, expect } from '@playwright/test'
 
-// SKIPPED: Drag and drop functionality not implemented in V2 UI
-// V2 uses modal editing for task project assignment instead of drag and drop
+/**
+ * SKIPPED: V1 UI Test - Sidebar Drag Targets Deprecated
+ *
+ * This test is for V1 UI which had project sidebar items as drag targets.
+ * V2 UI doesn't have sidebar drag targets - projects are assigned via modal editor.
+ *
+ * V2 Alternative: Use TaskFormModalV2 to assign projects (tested in task-operations.spec.ts)
+ */
 test.describe.skip('Drag task to a Project', () => {
   test('assigns the task to the project when dropped', async ({ page }) => {
     await page.goto('/')

@@ -1,7 +1,15 @@
 import { test, expect } from '@playwright/test'
 
-// SKIPPED: Drag and drop functionality not implemented in V2 UI
-// V2 uses modal editing for task status/date changes instead of drag and drop
+/**
+ * SKIPPED: V1 UI Test - Sidebar Drag Targets Deprecated
+ *
+ * This test is for V1 UI which had "Today" sidebar item as drag target for setting due dates.
+ * V2 UI doesn't have sidebar drag targets.
+ *
+ * V2 Alternative: Use drag-to-calendar feature (tested in drag-to-calendar-date.spec.ts)
+ * - Drag tasks to calendar dates to set due dates
+ * - Supports both month view and day view
+ */
 test.describe.skip('Drag task to Today (sidebar)', () => {
   test('sets due date to today when dropped on Today', async ({ page }) => {
     await page.goto('/')

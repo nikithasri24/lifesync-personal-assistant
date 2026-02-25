@@ -1,7 +1,15 @@
 import { test, expect } from '@playwright/test'
 
-// SKIPPED: Drag and drop functionality not implemented in V2 UI
-// V2 uses modal editing for task status/date changes instead of drag and drop
+/**
+ * SKIPPED: V1 UI Test - Sidebar Drag Targets Deprecated
+ *
+ * This test is for V1 UI which had sidebar navigation items as drag targets.
+ * V2 UI doesn't have sidebar drag targets - it uses status sections in List view.
+ *
+ * V2 Equivalent: Persistence is tested in:
+ * - drag-status-sections-v2.spec.ts: "drag task status persists after page reload"
+ * - drag-multi-select.spec.ts: "multi-select drag persists after reload"
+ */
 test.describe.skip('Drag-to-group persistence after reload', () => {
   test('Waiting For persists after reload', async ({ page }) => {
     await page.goto('/')
