@@ -203,9 +203,9 @@ const CalendarContent = () => {
     const dayTasks = tasks.filter(t => {
       if (!t.due_date || t.status === 'done') return false;
 
-      // Convert UTC date to local date for comparison
-      const taskDate = new Date(t.due_date);
-      const taskDateStr = format(taskDate, 'yyyy-MM-dd');
+      // Extract date string directly to avoid timezone issues
+      // If due_date is "2026-02-25" or "2026-02-25T10:00:00Z", we want "2026-02-25"
+      const taskDateStr = t.due_date.split('T')[0];
 
       return taskDateStr === dateStr;
     });

@@ -5,53 +5,64 @@ import { test, expect } from '@playwright/test';
  * Tests dragging tasks within calendar day view to different time slots
  */
 test.describe('Drag task to calendar date', () => {
-  test.skip('task is draggable in calendar day view', async ({ page }) => {
-    // SKIPPED: This test is flaky due to timing issues with task creation and calendar data loading.
-    // The calendar drag functionality is working (verified manually), but the E2E test
-    // has issues with:
-    // 1. Task creation via QuickAdd not immediately syncing to Calendar
-    // 2. Date format edge cases (midnight vs all-day tasks)
-    // 3. React Query cache invalidation timing
-    //
-    // The other 2 calendar drag tests pass and verify the core functionality.
+  test('task is draggable in calendar day view', async ({ page }) => {
+    // Go to Todos and create a task with today's date
     await page.goto('/todos');
     await page.waitForLoadState('networkidle');
 
-    // Switch to Today view to ensure task gets today's date
+    // Create task via QuickAdd in Today view to ensure due_date is set to today
     const todayViewBtn = page.getByRole('button', { name: /📅.*Today/i });
     await todayViewBtn.click();
     await page.waitForTimeout(500);
 
-    // Create a task with today's date (QuickAdd sets due_date to today when in Today view)
     const addBtn = page.getByRole('button', { name: /Add task/i }).first();
     await addBtn.click();
+
+    // Wait for modal
+    const modalHeading = page.getByRole('heading', { name: /quick add task/i });
+    await expect(modalHeading).toBeVisible();
+
     const title = `Calendar Drag ${Date.now()}`;
     await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
-    await page.locator('form button[type="submit"]').click();
-    await page.waitForTimeout(1000);
+    await page.getByText('Add Task', { exact: true }).click();
 
-    // Go to Calendar view
-    await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    // Wait for modal to close
+    await expect(modalHeading).not.toBeVisible({ timeout: 5000 });
+
+    // Wait longer for React Query mutation and cache invalidation to complete
+    await page.waitForTimeout(3000);
+
+    // Verify task still exists in Todos before going to calendar
+    const inboxViewBtn = page.getByRole('button', { name: /📥.*Inbox/i });
+    await inboxViewBtn.click();
     await page.waitForTimeout(500);
+    await expect(page.getByText(title).first()).toBeVisible({ timeout: 5000 });
+
+    // Navigate to Calendar with force reload to bypass any stale cache
+    await page.goto('/calendar', { waitUntil: 'networkidle' });
+
+    // Force a hard reload to ensure fresh data
+    await page.reload({ waitUntil: 'networkidle' });
+
+    // Give React Query ample time to fetch tasks
+    await page.waitForTimeout(5000);
 
     // Switch to Day view
     const dayViewBtn = page.getByRole('button', { name: /Day/i });
     if (await dayViewBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
       await dayViewBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(2000);
     }
 
-    // Find the task in the calendar (should appear in all-day section)
-    // Note: Calendar prepends "✓ " to task titles in day view
-    const taskCard = page.locator(`div[draggable="true"]`).filter({ hasText: title }).first();
-    await expect(taskCard).toBeVisible({ timeout: 5000 });
+    // Find the task card in calendar - it should be draggable
+    const taskCard = page.locator('[draggable="true"]').filter({ hasText: title }).first();
+    await expect(taskCard).toBeVisible({ timeout: 10000 });
 
     // Verify task is draggable
     const isDraggable = await taskCard.getAttribute('draggable');
     expect(isDraggable).toBe('true');
 
-    // Verify task shows correct title (with checkmark prefix)
+    // Verify task shows correct title
     await expect(taskCard).toContainText(title);
   });
 
