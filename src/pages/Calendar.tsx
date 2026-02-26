@@ -49,6 +49,8 @@ const filterEventsForHour = (events: CalendarEvent[], hour: number): CalendarEve
 const filterTasksForHour = (tasks: any[], hour: number): any[] => {
   return tasks.filter(t => {
     if (!t.due_date) return false;
+    // Date-only strings (no 'T') are all-day tasks, not time-specific
+    if (!t.due_date.includes('T')) return false;
     const taskHour = new Date(t.due_date).getHours();
     return taskHour === hour;
   });
@@ -507,10 +509,15 @@ const CalendarContent = () => {
                   // Tasks without specific times (hour is 0/midnight in local time)
                   const allDayTasks = dayTasks.filter(t => {
                     if (!t.due_date) return false;
+                    // If due_date is date-only (no time component), treat as all-day
+                    // This avoids timezone issues where "2026-02-25" becomes 4 PM in PST
+                    if (!t.due_date.includes('T')) {
+                      return true; // Date-only strings are all-day tasks
+                    }
+                    // For datetime strings, check if time is exactly midnight
                     const taskDate = new Date(t.due_date);
                     const taskHour = taskDate.getHours();
                     const taskMinute = taskDate.getMinutes();
-                    // Consider it all-day if it's exactly midnight (00:00)
                     return taskHour === 0 && taskMinute === 0;
                   });
 
@@ -728,6 +735,12 @@ const CalendarContent = () => {
                     // Tasks without specific times (exactly midnight in local time)
                     const allDayTasks = dayTasks.filter(t => {
                       if (!t.due_date) return false;
+                      // If due_date is date-only (no time component), treat as all-day
+                      // This avoids timezone issues where "2026-02-25" becomes 4 PM in PST
+                      if (!t.due_date.includes('T')) {
+                        return true; // Date-only strings are all-day tasks
+                      }
+                      // For datetime strings, check if time is exactly midnight
                       const taskDate = new Date(t.due_date);
                       const taskHour = taskDate.getHours();
                       const taskMinute = taskDate.getMinutes();
