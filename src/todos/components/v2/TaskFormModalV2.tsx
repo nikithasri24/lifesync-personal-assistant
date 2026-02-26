@@ -11,9 +11,10 @@
  */
 
 import React from 'react';
-import { Calendar, Flag, Folder, Repeat, Link2, Star } from 'lucide-react';
+import { Calendar, Flag, Folder, Repeat, Link2, Star, List, Bell } from 'lucide-react';
 import type { TaskData, ProjectData } from '@/services/types';
 import { FormModalV2 } from '@/components/v2';
+import { DependencySelector } from '@/components/dependencies/DependencySelector';
 
 export interface TaskFormModalV2Props {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export interface TaskFormModalV2Props {
   onDelete?: () => void;
   initialData?: Partial<TaskData>;
   projects: ProjectData[];
+  allTasks?: TaskData[]; // For dependency selection
   isEditing?: boolean;
   isPending?: boolean;
 }
@@ -38,6 +40,11 @@ interface TaskFormData {
   tags: string; // comma-separated
   starred: boolean;
   recurrence_pattern: TaskData['recurrence_pattern'];
+  subtasks: string; // Newline-separated subtask titles
+  dependencies: string[]; // Array of task IDs
+  reminderDate: string;    // Date (YYYY-MM-DD)
+  reminderTime: string;    // Time (HH:mm)
+  reminderEnabled: boolean;
 }
 
 export const TaskFormModalV2: React.FC<TaskFormModalV2Props> = ({
@@ -47,6 +54,7 @@ export const TaskFormModalV2: React.FC<TaskFormModalV2Props> = ({
   onDelete,
   initialData,
   projects,
+  allTasks = [],
   isEditing = false,
   isPending = false,
 }) => {
@@ -63,6 +71,11 @@ export const TaskFormModalV2: React.FC<TaskFormModalV2Props> = ({
     tags: (initialData.tags || []).join(', '),
     starred: initialData.starred || false,
     recurrence_pattern: initialData.recurrence_pattern || 'none',
+    subtasks: (initialData.follow_up_tasks || []).map(st => st.title).join('\n'),
+    dependencies: initialData.depends_on || [],
+    reminderDate: initialData.reminder ? initialData.reminder.split('T')[0] : '',
+    reminderTime: initialData.reminder ? initialData.reminder.split('T')[1]?.substring(0, 5) : '',
+    reminderEnabled: !!initialData.reminder,
   } : undefined;
 
   // Default form data for new tasks
@@ -78,6 +91,11 @@ export const TaskFormModalV2: React.FC<TaskFormModalV2Props> = ({
     tags: '',
     starred: false,
     recurrence_pattern: 'none',
+    subtasks: '',
+    dependencies: [],
+    reminderDate: '',
+    reminderTime: '',
+    reminderEnabled: false,
   };
 
   // Priority options with colors
@@ -144,6 +162,21 @@ export const TaskFormModalV2: React.FC<TaskFormModalV2Props> = ({
           tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
           starred: formData.starred,
           recurrence_pattern: formData.recurrence_pattern,
+          follow_up_tasks: formData.subtasks
+            ? formData.subtasks
+                .split('\n')
+                .map(line => line.trim())
+                .filter(Boolean)
+                .map((title, index) => ({
+                  id: `${Date.now()}-${index}`,
+                  title,
+                  completed: false,
+                }))
+            : [],
+          depends_on: formData.dependencies,
+          reminder: formData.reminderEnabled && formData.reminderDate && formData.reminderTime
+            ? `${formData.reminderDate}T${formData.reminderTime}:00`
+            : null,
         };
 
         await onSubmit(taskData);
@@ -358,6 +391,87 @@ export const TaskFormModalV2: React.FC<TaskFormModalV2Props> = ({
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
             />
             <p className="text-xs mt-1 text-gray-500">Separate tags with commas</p>
+          </div>
+
+          {/* Subtasks */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold mb-2 text-gray-700">
+              <List className="w-4 h-4" />
+              Subtasks (optional)
+            </label>
+            <textarea
+              value={formState.subtasks}
+              onChange={(e) => setFormState({ ...formState, subtasks: e.target.value })}
+              placeholder="Enter subtasks (one per line)"
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
+            />
+            <p className="text-xs mt-1 text-gray-500">
+              Press Enter after each subtask
+            </p>
+          </div>
+
+          {/* Dependencies */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold mb-2 text-gray-700">
+              <Link2 className="w-4 h-4" />
+              Dependencies (optional)
+            </label>
+            <DependencySelector
+              currentTaskId={initialData?.id}
+              selectedDependencies={formState.dependencies}
+              allTasks={allTasks}
+              onChange={(deps) => setFormState({ ...formState, dependencies: deps })}
+            />
+            <p className="text-xs mt-1 text-gray-500">
+              This task will be blocked until selected tasks are completed
+            </p>
+          </div>
+
+          {/* Reminder */}
+          <div>
+            <label className="flex items-center gap-3 mb-2">
+              <input
+                type="checkbox"
+                checked={formState.reminderEnabled}
+                onChange={(e) => setFormState({
+                  ...formState,
+                  reminderEnabled: e.target.checked
+                })}
+                className="w-5 h-5 text-terracotta-400 rounded focus:ring-terracotta-300"
+              />
+              <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <Bell className="w-4 h-4" />
+                Set Reminder
+              </span>
+            </label>
+
+            {formState.reminderEnabled && (
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block text-gray-600">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formState.reminderDate}
+                    onChange={(e) => setFormState({ ...formState, reminderDate: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block text-gray-600">
+                    Time
+                  </label>
+                  <input
+                    type="time"
+                    value={formState.reminderTime}
+                    onChange={(e) => setFormState({ ...formState, reminderTime: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Starred */}

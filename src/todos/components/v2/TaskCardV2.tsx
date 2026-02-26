@@ -16,12 +16,13 @@
  */
 
 import React from 'react';
-import { Clock, Repeat, User } from 'lucide-react';
+import { Clock, Repeat, User, ChevronRight, Bell } from 'lucide-react';
 import { format, isToday, isPast, isTomorrow } from 'date-fns';
 import { CheckboxV2 } from '../../../components/v2/CheckboxV2';
 import { PriorityBadgeV2 } from './PriorityBadgeV2';
 import { StatusBadgeV2 } from './StatusBadgeV2';
 import { ProjectBadgeV2 } from './ProjectBadgeV2';
+import { DependencyIndicator } from '../../../components/dependencies/DependencyIndicator';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { TaskData, ProjectData } from '../../../services/types';
 
@@ -43,6 +44,12 @@ export interface TaskCardV2Props {
   onDragEnd?: () => void;
   isDragging?: boolean; // For opacity feedback
   draggedTaskCount?: number; // Number of tasks being dragged (for multi-select)
+  // Subtask expansion props
+  isExpanded?: boolean;
+  onToggleExpanded?: (id: string) => void;
+  onToggleSubtask?: (taskId: string, subtaskId: string) => void;
+  // Dependency props
+  allTasks?: TaskData[]; // For dependency resolution
 }
 
 const priorityBorderColors: Record<NonNullable<TaskData['priority']>, string> = {
@@ -86,6 +93,10 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
   onDragEnd,
   isDragging = false,
   draggedTaskCount = 0,
+  isExpanded = false,
+  onToggleExpanded,
+  onToggleSubtask,
+  allTasks = [],
 }) => {
   const colors = useThemeColors();
   const isCompleted = task.status === 'done';
@@ -211,14 +222,22 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
             </span>
           )}
 
-          {/* Subtask Count */}
-          {subtaskCount > 0 && (
-            <span
-              className="text-xs flex items-center gap-1"
+          {/* Subtask Count - Now clickable */}
+          {task.follow_up_tasks && task.follow_up_tasks.length > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleExpanded?.(task.id!);
+              }}
+              className="flex items-center gap-1 text-xs hover:opacity-70 transition-opacity"
               style={{ color: colors.text.tertiary }}
+              aria-label={`${isExpanded ? 'Collapse' : 'Expand'} subtasks`}
             >
-              📋 {subtaskCount}
-            </span>
+              <ChevronRight
+                className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+              />
+              📋 {task.follow_up_tasks.filter(st => !st.completed).length}/{task.follow_up_tasks.length}
+            </button>
           )}
 
           {/* Recurring Indicator */}
@@ -229,6 +248,30 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
             >
               <Repeat className="w-3 h-3" />
             </span>
+          )}
+
+          {/* Dependency Indicator */}
+          {task.depends_on && task.depends_on.length > 0 && (
+            <DependencyIndicator
+              task={task}
+              allTasks={allTasks}
+              variant="compact"
+            />
+          )}
+
+          {/* Reminder Indicator */}
+          {task.reminder && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50">
+              <Bell className="w-3 h-3 text-blue-600" />
+              <span className="text-xs text-blue-600">
+                {new Date(task.reminder).toLocaleString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
           )}
 
           {/* Tags */}
@@ -265,6 +308,31 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
             </span>
           )}
         </div>
+
+        {/* Subtask Expansion */}
+        {isExpanded && task.follow_up_tasks && task.follow_up_tasks.length > 0 && (
+          <div className="mt-3 pt-3 space-y-2" style={{ borderTop: `1px solid ${colors.border.light}` }}>
+            {task.follow_up_tasks.map((subtask) => (
+              <div key={subtask.id} className="flex items-center gap-2 pl-4">
+                <input
+                  type="checkbox"
+                  checked={subtask.completed}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onToggleSubtask?.(task.id!, subtask.id);
+                  }}
+                  className="w-4 h-4 text-terracotta-400 rounded cursor-pointer"
+                />
+                <span
+                  className={`text-sm ${subtask.completed ? 'line-through opacity-60' : ''}`}
+                  style={{ color: colors.text.primary }}
+                >
+                  {subtask.title}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -38,7 +38,9 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import { useToast } from '../hooks/useToast';
 import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
 import { useUndoRedo } from '../contexts/UndoRedoContext';
-import { useTodosDragDrop } from '../todos/hooks';
+import { useTodosDragDrop, useTaskExpansion } from '../todos/hooks';
+import { reminderService } from '../services/reminders/ReminderService';
+import { logger } from '../services/logger';
 
 // Import V2 components
 import { FABV2 } from '../components/v2/FABV2';
@@ -161,6 +163,11 @@ const TodosContent: React.FC = () => {
   });
 
   // ============================================================================
+  // Task Expansion State (for subtasks)
+  // ============================================================================
+  const { expandedTasks, toggleTaskExpansion } = useTaskExpansion();
+
+  // ============================================================================
   // Computed Values - Filtered and View-Specific Tasks
   // ============================================================================
 
@@ -197,13 +204,34 @@ const TodosContent: React.FC = () => {
     setShowEditModal(true);
   }, []);
 
-  const handleEditSubmit = useCallback((data: Partial<TaskData>) => {
+  const handleEditSubmit = useCallback(async (data: Partial<TaskData>) => {
     if (!editingTaskId) return;
 
     updateTaskMutation.mutate(
       { id: editingTaskId, updates: data },
       {
-        onSuccess: () => {
+        onSuccess: async (updatedTask) => {
+          // Schedule reminder if set
+          if (updatedTask?.reminder && updatedTask.id && updatedTask.title) {
+            try {
+              await reminderService.scheduleReminder({
+                type: 'task_upcoming',
+                title: 'Task Reminder',
+                body: updatedTask.title,
+                scheduledFor: new Date(updatedTask.reminder),
+                priority: 'normal',
+                entityType: 'task',
+                entityId: updatedTask.id,
+                actions: [
+                  { action: 'open', title: 'View Task' },
+                  { action: 'dismiss', title: 'Dismiss' },
+                ],
+              });
+            } catch (error) {
+              logger.error('Tasks', 'Failed to schedule reminder', { error });
+            }
+          }
+
           showToast('Task updated successfully! ✅', 'success');
           setShowEditModal(false);
           setEditingTaskId(null);
@@ -213,7 +241,7 @@ const TodosContent: React.FC = () => {
         },
       }
     );
-  }, [editingTaskId, updateTaskMutation]);
+  }, [editingTaskId, updateTaskMutation, showToast]);
 
   const handleDeleteTask = useCallback(() => {
     if (!editingTaskId) return;
@@ -248,6 +276,28 @@ const TodosContent: React.FC = () => {
       }
     );
   }, [apiTasks, updateTaskMutation, showToast]);
+
+  const handleToggleSubtask = useCallback(async (taskId: string, subtaskId: string) => {
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task?.follow_up_tasks) return;
+
+    const updatedSubtasks = task.follow_up_tasks.map(st =>
+      st.id === subtaskId ? { ...st, completed: !st.completed } : st
+    );
+
+    updateTaskMutation.mutate(
+      { id: taskId, updates: { follow_up_tasks: updatedSubtasks } },
+      {
+        onSuccess: () => {
+          const subtask = updatedSubtasks.find(st => st.id === subtaskId);
+          showToast(subtask?.completed ? 'Subtask completed! ✅' : 'Subtask reopened! 🔄', 'success');
+        },
+        onError: (error) => {
+          showToast(`Failed to update subtask: ${error.message}`, 'error');
+        },
+      }
+    );
+  }, [allTasks, updateTaskMutation, showToast]);
 
   const handleSelectTask = useCallback((taskId: string) => {
     setSelectedTaskIds(prev => {
@@ -461,6 +511,10 @@ const TodosContent: React.FC = () => {
           onDragEnd={handleDragEnd}
           onDropOnSection={handleDropOnSection}
           onDragOver={handleDragOver}
+          expandedTasks={expandedTasks}
+          onToggleExpanded={toggleTaskExpansion}
+          onToggleSubtask={handleToggleSubtask}
+          allTasks={allTasks}
         />
 
         {/* Quick Add Modal */}
@@ -502,6 +556,7 @@ const TodosContent: React.FC = () => {
           onDelete={handleDeleteTask}
           initialData={editingTask}
           projects={projects}
+          allTasks={allTasks}
           isEditing={!!editingTaskId}
           isPending={updateTaskMutation.isPending || deleteTaskMutation.isPending}
         />

@@ -26,6 +26,12 @@ export interface TaskListViewV2Props {
   onDragEnd?: () => void;
   onDropOnSection?: (sectionKey: string, event: React.DragEvent) => void;
   onDragOver?: (event: React.DragEvent) => void;
+  // Subtask expansion props
+  expandedTasks?: Set<string>;
+  onToggleExpanded?: (taskId: string) => void;
+  onToggleSubtask?: (taskId: string, subtaskId: string) => void;
+  // Dependency props
+  allTasks?: import('../../services/types').TaskData[];
 }
 
 interface StatusSection {
@@ -78,6 +84,10 @@ export const TaskListViewV2: React.FC<TaskListViewV2Props> = ({
   onDragEnd,
   onDropOnSection,
   onDragOver,
+  expandedTasks = new Set(),
+  onToggleExpanded,
+  onToggleSubtask,
+  allTasks = [],
 }) => {
   const colors = useThemeColors();
 
@@ -152,6 +162,10 @@ export const TaskListViewV2: React.FC<TaskListViewV2Props> = ({
                       onDragEnd={onDragEnd}
                       isDragging={isDragging}
                       draggedTaskCount={draggedTaskCount}
+                      isExpanded={expandedTasks.has(task.id || '')}
+                      onToggleExpanded={onToggleExpanded}
+                      onToggleSubtask={onToggleSubtask}
+                      allTasks={allTasks}
                     />
                   );
                 })}
