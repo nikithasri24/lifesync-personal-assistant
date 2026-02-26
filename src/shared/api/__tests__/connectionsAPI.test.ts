@@ -191,6 +191,25 @@ describe('connectionsAPI', () => {
     });
 
     describe('getPendingInvitations', () => {
+      beforeEach(() => {
+        // Mock pending_email_invitations query for all tests
+        const mockEq1 = vi.fn().mockReturnThis();
+        const mockEq2 = vi.fn().mockResolvedValue({
+          data: [],
+          error: null,
+        });
+
+        const mockEmailInvitationsQuery = {
+          select: vi.fn().mockReturnValue({
+            eq: mockEq1.mockReturnValue({
+              eq: mockEq2,
+            }),
+          }),
+        };
+
+        (supabase.from as any).mockReturnValue(mockEmailInvitationsQuery);
+      });
+
       it('should separate sent and received invitations', async () => {
         const mockRpcData = [
           {
@@ -295,11 +314,9 @@ describe('connectionsAPI', () => {
           insert: vi.fn().mockResolvedValue({ error: null }),
         };
 
-        (supabase.rpc as any).mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: mockRpcLookup,
-            error: null,
-          }),
+        (supabase.rpc as any).mockResolvedValue({
+          data: mockRpcLookup,
+          error: null,
         });
 
         (supabase.from as any)
@@ -342,27 +359,36 @@ describe('connectionsAPI', () => {
       });
 
       it('should throw error when user not found', async () => {
-        (supabase.rpc as any).mockReturnValue({
+        (supabase.rpc as any).mockResolvedValue({
+          data: null,
+          error: null,
+        });
+
+        // Mock pending_email_invitations check
+        (supabase.from as any).mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          insert: vi.fn().mockReturnThis(),
           single: vi.fn().mockResolvedValue({
-            data: null,
+            data: { id: 'pending-inv-1', status: 'pending' },
             error: null,
           }),
         });
 
-        await expect(
-          createConnection({
-            receiverEmail: 'nonexistent@example.com',
-            relationship: 'friend',
-          })
-        ).rejects.toThrow('User not found with that email');
+        const result = await createConnection({
+          receiverEmail: 'nonexistent@example.com',
+          relationship: 'friend',
+        });
+
+        // Should create pending email invitation instead of throwing
+        expect(result.status).toBe('pending');
       });
 
       it('should throw error when trying to connect with yourself', async () => {
-        (supabase.rpc as any).mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { user_id: mockUser.id, email: mockUser.email },
-            error: null,
-          }),
+        (supabase.rpc as any).mockResolvedValue({
+          data: { user_id: mockUser.id, email: mockUser.email },
+          error: null,
         });
 
         await expect(
@@ -392,11 +418,9 @@ describe('connectionsAPI', () => {
           insert: vi.fn().mockResolvedValue({ error: null }),
         };
 
-        (supabase.rpc as any).mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: mockRpcLookup,
-            error: null,
-          }),
+        (supabase.rpc as any).mockResolvedValue({
+          data: mockRpcLookup,
+          error: null,
         });
 
         (supabase.from as any)
@@ -719,13 +743,18 @@ describe('connectionsAPI', () => {
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('module_permissions');
-        expect(mockQuery.upsert).toHaveBeenCalledWith({
-          connection_id: 'conn-1',
-          module: 'travel',
-          permission_level: 'view',
-          user_id: mockUser.id,
-          settings: { showHistory: true },
-        });
+        expect(mockQuery.upsert).toHaveBeenCalledWith(
+          {
+            connection_id: 'conn-1',
+            module: 'travel',
+            permission_level: 'view',
+            user_id: mockUser.id,
+            settings: { showHistory: true },
+          },
+          {
+            onConflict: 'connection_id,module,user_id',
+          }
+        );
 
         expect(result.module).toBe('travel');
         expect(result.permissionLevel).toBe('view');
