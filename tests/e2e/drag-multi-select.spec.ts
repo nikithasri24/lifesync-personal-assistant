@@ -9,6 +9,13 @@ test.describe('Multi-select drag', () => {
     await page.goto('/todos');
     await page.waitForLoadState('networkidle');
 
+    // Close mobile sidebar if open (backdrop blocks clicks on mobile)
+    const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
+    if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await backdrop.click();
+      await page.waitForTimeout(300);
+    }
+
     // Switch to List view
     const listViewBtn = page.getByRole('button', { name: /List.*view/i });
     if (await listViewBtn.isVisible({ timeout: 2000 }).catch(() => false)) {

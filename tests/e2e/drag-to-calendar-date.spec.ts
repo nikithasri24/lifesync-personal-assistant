@@ -13,6 +13,13 @@ test.describe('Drag task to calendar date', () => {
     await page.goto('/todos');
     await page.waitForLoadState('networkidle');
 
+    // Close mobile sidebar if open (backdrop blocks clicks on mobile)
+    const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
+    if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await backdrop.click();
+      await page.waitForTimeout(300);
+    }
+
     // Create task via QuickAdd in Today view to ensure due_date is set to today
     const todayViewBtn = page.getByRole('button', { name: /📅.*Today/i });
     await todayViewBtn.click();
