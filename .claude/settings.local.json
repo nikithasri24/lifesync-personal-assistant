@@ -158,7 +158,9 @@
       "Bash(supabase db:*)",
       "Bash(chmod +x:*)",
       "Bash(tail:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(npx playwright:*)",
+      "Bash(grep together:*)"
     ],
     "deny": [],
     "ask": []

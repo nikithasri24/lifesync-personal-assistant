@@ -10,28 +10,41 @@ import { SendPartnerRequestModal } from '../SendPartnerRequestModal';
 
 // Mock FormModalV2
 vi.mock('@/components/v2', () => ({
-  FormModalV2: ({ isOpen, onClose, title, children, validate, onSubmit }: any) => {
+  FormModalV2: ({ isOpen, onClose, title, children, validate, onSubmit, defaultData }: any) => {
     if (!isOpen) return null;
 
-    const [formState, setFormState] = React.useState({
+    const initialFormState = defaultData || {
       partnerEmail: '',
       anniversaryDate: '',
-    });
+    };
+
+    const [formState, setFormState] = React.useState(initialFormState);
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      const error = validate?.(formState);
+
+      const form = e.target as HTMLFormElement;
+      const emailInput = form.querySelector('input[placeholder="partner@example.com"]') as HTMLInputElement;
+      const dateInput = form.querySelector('input[type="date"]') as HTMLInputElement;
+
+      const currentFormState = {
+        ...formState,
+        partnerEmail: emailInput?.value || '',
+        anniversaryDate: dateInput?.value || '',
+      };
+
+      const error = validate?.(currentFormState);
       if (error) {
         alert(error);
         return;
       }
-      await onSubmit(formState);
+      await onSubmit(currentFormState);
     };
 
     return (
       <div data-testid="form-modal">
         <h2>{title}</h2>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           {children(formState, setFormState)}
           <button type="submit">Submit</button>
           <button type="button" onClick={onClose}>Cancel</button>

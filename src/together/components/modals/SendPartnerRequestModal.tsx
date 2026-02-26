@@ -59,10 +59,11 @@ export const SendPartnerRequestModal: React.FC<SendPartnerRequestModalProps> = (
       {(formState, setFormState) => (
         <>
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700">
+            <label htmlFor="partner-email" className="block text-sm font-semibold mb-2 text-gray-700">
               Partner's Email
             </label>
             <input
+              id="partner-email"
               type="email"
               value={formState.partnerEmail}
               onChange={(e) => setFormState({ ...formState, partnerEmail: e.target.value })}
@@ -73,10 +74,11 @@ export const SendPartnerRequestModal: React.FC<SendPartnerRequestModalProps> = (
           </div>
 
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700">
+            <label htmlFor="anniversary-date" className="block text-sm font-semibold mb-2 text-gray-700">
               Anniversary Date (Optional)
             </label>
             <input
+              id="anniversary-date"
               type="date"
               value={formState.anniversaryDate}
               onChange={(e) => setFormState({ ...formState, anniversaryDate: e.target.value })}
