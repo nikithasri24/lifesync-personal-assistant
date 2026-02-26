@@ -9,13 +9,27 @@ Comprehensive testing implementation for the Tasks/Todos feature, including unit
 **Status:** ✅ 95% passing (63/66 tests)
 
 - **TaskCardV2.test.tsx:** 24 tests - rendering, interactions, selection mode, drag-and-drop
-- **TaskListViewV2.test.tsx:** 21 tests - section rendering, grouping, drag zones  
+- **TaskListViewV2.test.tsx:** 21 tests - section rendering, grouping, drag zones
 - **TasksHeaderV2.test.tsx:** 11 tests - header rendering and styling
 - **Commit:** 3ed7143
 
 **Failing tests (3):**
 - Event propagation edge cases in TaskCardV2
 - PriorityBadgeV2 with "important" priority
+
+### Unit Tests for Tasks Hooks
+**Status:** ✅ 100% passing (49/49 tests)
+
+- **useTaskModals.test.ts:** 22 tests - modal state management, quick add, task edit, subtask form, filters
+- **useTodosDragDrop.test.ts:** 12 tests - drag state, single task drag, drop handlers, status mapping
+- **useTasksQuery.test.tsx:** 15 tests - query hooks, mutation hooks, filters, React Query integration
+- **Commit:** TBD (current work)
+
+**Key patterns tested:**
+- Modal state management with useModalState integration
+- Drag-and-drop with Command pattern for undo/redo
+- React Query hooks structure and integration
+- Event handlers and state updates
 
 ### E2E CRUD Tests
 **Status:** ✅ 100% passing (27/27 tests)
@@ -85,12 +99,13 @@ The "Add Task" FAB button opens QuickAddModalV2, which only supports a text inpu
 
 | Category | Tests | Passing | Pass Rate |
 |----------|-------|---------|-----------|
-| Unit Tests | 66 | 63 | 95% |
+| Unit Tests (Components) | 66 | 63 | 95% |
+| Unit Tests (Hooks) | 49 | 49 | 100% |
 | E2E CRUD | 27 | 27 | 100% |
 | E2E Filters | 16 | 9 | 56% |
 | E2E Views | 18 | 13 | 72% |
 | E2E Sorting | 11 | 8 | 73% |
-| **TOTAL** | **138** | **120** | **87%** |
+| **TOTAL** | **187** | **169** | **90%** |
 
 ## Test Coverage
 
@@ -102,27 +117,24 @@ The "Add Task" FAB button opens QuickAddModalV2, which only supports a text inpu
 - Status section organization
 - Visual states and empty states
 - Component rendering and interactions
+- **Hook state management** (modal state, drag state, query/mutation structure)
+- **React Query integration** (tasks and projects queries)
+- **Drag-and-drop handlers** (single task drag, status mapping, Command pattern)
 
 ### What Needs Full Testing ⚠️
-- Priority-based filtering (blocked)
-- Status-based filtering (blocked)
-- Starred filtering (blocked)
-- Date-based view filtering (blocked)
-- Combined filter scenarios (blocked)
+- Priority-based filtering (blocked by QuickAddModalV2 limitation)
+- Status-based filtering (blocked by QuickAddModalV2 limitation)
+- Starred filtering (blocked by QuickAddModalV2 limitation)
+- Date-based view filtering (blocked by QuickAddModalV2 limitation)
+- Combined filter scenarios (blocked by QuickAddModalV2 limitation)
 
 ### Not Yet Tested ❌
-- Task hooks (useTasksQuery, useTodosDragDrop, useTaskModals)
 - Advanced features (recurring tasks, subtasks, dependencies, reminders)
-- Drag-and-drop functionality (8 tests currently skipped)
+- Drag-and-drop functionality (8 E2E tests currently skipped)
 
 ## Next Steps
 
-1. **Hook Testing (Task #11):** Create unit tests for:
-   - useTasksQuery (queries, mutations, caching)
-   - useTodosDragDrop (drag state, drop handlers)
-   - useTaskModals (modal state management)
-
-2. **Advanced Features (Task #14):** Create E2E tests for:
+1. **Advanced Features (Task #14):** Create E2E tests for:
    - Recurring tasks
    - Subtasks/subtask relationships
    - Task dependencies
@@ -140,10 +152,15 @@ The "Add Task" FAB button opens QuickAddModalV2, which only supports a text inpu
 
 ## Files Created
 
-### Unit Tests
+### Unit Tests - Components
 - `src/todos/components/v2/__tests__/TaskCardV2.test.tsx`
 - `src/todos/components/v2/__tests__/TaskListViewV2.test.tsx`
 - `src/todos/components/v2/__tests__/TasksHeaderV2.test.tsx`
+
+### Unit Tests - Hooks
+- `src/todos/hooks/__tests__/useTaskModals.test.ts`
+- `src/todos/hooks/__tests__/useTodosDragDrop.test.ts`
+- `src/hooks/__tests__/useTasksQuery.test.tsx`
 
 ### E2E Tests
 - `tests/e2e/tasks/task-crud-comprehensive.spec.ts`
