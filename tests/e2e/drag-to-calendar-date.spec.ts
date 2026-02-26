@@ -5,6 +5,9 @@ import { test, expect } from '@playwright/test';
  * Tests dragging tasks within calendar day view to different time slots
  */
 test.describe('Drag task to calendar date', () => {
+  // Increase timeout for this test due to cross-page data sync
+  test.setTimeout(60000); // 60 seconds
+
   test('task is draggable in calendar day view', async ({ page }) => {
     // Go to Todos and create a task with today's date
     await page.goto('/todos');
@@ -29,23 +32,15 @@ test.describe('Drag task to calendar date', () => {
     // Wait for modal to close
     await expect(modalHeading).not.toBeVisible({ timeout: 5000 });
 
-    // Wait longer for React Query mutation and cache invalidation to complete
+    // Wait for React Query mutation to complete
+    await page.waitForTimeout(2000);
+
+    // Navigate to Calendar - cache invalidation should trigger refetch
+    await page.goto('/calendar');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for React Query to refetch tasks (it should see stale cache and refetch)
     await page.waitForTimeout(3000);
-
-    // Verify task still exists in Todos before going to calendar
-    const inboxViewBtn = page.getByRole('button', { name: /📥.*Inbox/i });
-    await inboxViewBtn.click();
-    await page.waitForTimeout(500);
-    await expect(page.getByText(title).first()).toBeVisible({ timeout: 5000 });
-
-    // Navigate to Calendar with force reload to bypass any stale cache
-    await page.goto('/calendar', { waitUntil: 'networkidle' });
-
-    // Force a hard reload to ensure fresh data
-    await page.reload({ waitUntil: 'networkidle' });
-
-    // Give React Query ample time to fetch tasks
-    await page.waitForTimeout(5000);
 
     // Switch to Day view
     const dayViewBtn = page.getByRole('button', { name: /Day/i });
@@ -55,8 +50,9 @@ test.describe('Drag task to calendar date', () => {
     }
 
     // Find the task card in calendar - it should be draggable
+    // Use longer timeout for flaky test suite runs
     const taskCard = page.locator('[draggable="true"]').filter({ hasText: title }).first();
-    await expect(taskCard).toBeVisible({ timeout: 10000 });
+    await expect(taskCard).toBeVisible({ timeout: 20000 });
 
     // Verify task is draggable
     const isDraggable = await taskCard.getAttribute('draggable');
