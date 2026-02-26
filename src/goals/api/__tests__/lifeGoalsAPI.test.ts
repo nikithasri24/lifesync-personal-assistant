@@ -12,8 +12,6 @@ import {
   deleteMilestone,
   createCheckin,
   getGoalCheckins,
-  // recordStreak, // TODO: Not implemented yet
-  // getStreakHistory, // TODO: Not implemented yet
   getUserLifeDreams,
   createLifeDream,
   updateLifeDream,
@@ -104,15 +102,6 @@ describe('lifeGoalsAPI', () => {
     wins: 'Ran 10km without stopping',
     next_actions: 'Increase distance by 2km',
     created_at: '2025-11-19T10:00:00Z',
-  };
-
-  const mockStreakEntry = {
-    id: 'streak-1',
-    goal_id: 'goal-1',
-    date: '2025-11-19',
-    completed: true,
-    notes: 'Morning run completed',
-    created_at: '2025-11-19T07:00:00Z',
   };
 
   const mockLifeDream = {
@@ -568,24 +557,6 @@ describe('lifeGoalsAPI', () => {
     });
   });
 
-  // TODO: Implement streak tracking functions before enabling these tests
-  describe.skip('Streak Tracking (NOT IMPLEMENTED)', () => {
-    describe('recordStreak', () => {
-      it('should record a streak entry', async () => {
-        // TODO: Implement recordStreak function
-      });
-    });
-
-    describe('getStreakHistory', () => {
-      it('should fetch streak history with default limit', async () => {
-        // TODO: Implement getStreakHistory function
-      });
-
-      it('should fetch streak history with custom limit', async () => {
-        // TODO: Implement getStreakHistory function
-      });
-    });
-  });
 
   describe('Life Dreams', () => {
     describe('getUserLifeDreams', () => {
