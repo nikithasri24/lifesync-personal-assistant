@@ -162,7 +162,7 @@ test.describe('Nutrition Date-Specific Data', () => {
     await page.waitForTimeout(500);
 
     // Log different food on day 2
-    const await page.getByRole('button', { name: '+ Add Food' }).nth(0).click();
+    await page.getByRole('button', { name: '+ Add Food' }).nth(0).click();
     await page.waitForTimeout(500);
 
     await page.getByPlaceholder(/grilled chicken salad/i).fill(food2);
