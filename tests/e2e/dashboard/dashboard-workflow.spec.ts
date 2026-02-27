@@ -69,15 +69,15 @@ test.describe('Dashboard - Quick Actions', () => {
   });
 
   test('clicking Add Task opens quick add modal', async ({ page }) => {
-    await page.getByText('Add Task').click();
-    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: 'Add Task' }).click();
+    await page.waitForTimeout(800);
 
     // Quick add modal should appear
     await expect(page.getByPlaceholderText(/what needs to be done/i)).toBeVisible({ timeout: 5000 });
   });
 
   test('clicking New Note opens note form', async ({ page }) => {
-    await page.getByText('New Note').click();
+    await page.getByRole('button', { name: 'New Note' }).click();
     await page.waitForTimeout(500);
 
     // Note form should appear
@@ -102,14 +102,14 @@ test.describe('Dashboard - Task Creation', () => {
   test('create task from quick add and modal closes', async ({ page }) => {
     const taskTitle = `Dashboard Task ${Date.now()}`;
 
-    // Open quick add
-    await page.getByText('Add Task').click();
-    await page.waitForTimeout(800);
+    // Open quick add via aria-label selector (more precise than getByText)
+    await page.getByRole('button', { name: 'Add Task' }).click();
+    await page.waitForTimeout(1000);
 
     const input = page.getByPlaceholderText(/what needs to be done/i);
     await expect(input).toBeVisible({ timeout: 5000 });
 
-    // Fill task title and submit — button text is "Create Task"
+    // Fill task title and submit — FormModalV2 submitText is "Create Task"
     await input.fill(taskTitle);
     await page.getByRole('button', { name: 'Create Task' }).click();
     await page.waitForTimeout(1500);
@@ -119,8 +119,8 @@ test.describe('Dashboard - Task Creation', () => {
   });
 
   test('cancel quick add with Cancel button', async ({ page }) => {
-    await page.getByText('Add Task').click();
-    await page.waitForTimeout(800);
+    await page.getByRole('button', { name: 'Add Task' }).click();
+    await page.waitForTimeout(1000);
 
     const input = page.getByPlaceholderText(/what needs to be done/i);
     await expect(input).toBeVisible({ timeout: 5000 });
@@ -134,15 +134,15 @@ test.describe('Dashboard - Task Creation', () => {
   });
 
   test('cancel quick add with ESC key', async ({ page }) => {
-    await page.getByText('Add Task').click();
-    await page.waitForTimeout(800);
+    await page.getByRole('button', { name: 'Add Task' }).click();
+    await page.waitForTimeout(1000);
 
     const input = page.getByPlaceholderText(/what needs to be done/i);
     await expect(input).toBeVisible({ timeout: 5000 });
 
     // Press ESC to close the modal
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(800);
 
     await expect(input).not.toBeVisible({ timeout: 5000 });
   });
