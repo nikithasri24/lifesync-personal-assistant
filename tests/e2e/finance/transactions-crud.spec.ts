@@ -19,7 +19,7 @@ test.describe('Finance Transactions - Create Operations', () => {
     }
 
     // Click on Transactions tab
-    await page.getByRole('button', { name: /^Transactions$/i }).click();
+    await page.getByRole('tab', { name: 'Transactions' }).click();
     await page.waitForTimeout(500);
   });
 

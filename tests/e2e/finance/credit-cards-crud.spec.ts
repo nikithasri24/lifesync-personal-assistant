@@ -17,13 +17,9 @@ test.describe('Finance Credit Cards - Create Operations', () => {
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
       await backdrop.click();
       await page.waitForTimeout(300);
-    }
-
-      await page.waitForTimeout(500);
-    }
 
     // Click on Credit Cards tab
-    await page.getByRole('button', { name: /^Credit Cards$/i }).click();
+    await page.getByRole('tab', { name: 'Credit Cards' }).click();
     await page.waitForTimeout(500);
   });
 

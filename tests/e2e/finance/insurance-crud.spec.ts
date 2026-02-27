@@ -17,13 +17,9 @@ test.describe('Finance Insurance - Create Operations', () => {
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
       await backdrop.click();
       await page.waitForTimeout(300);
-    }
-
-      await page.waitForTimeout(500);
-    }
 
     // Click on Insurance tab
-    await page.getByRole('button', { name: /^Insurance$/i }).click();
+    await page.getByRole('tab', { name: 'Insurance' }).click();
     await page.waitForTimeout(500);
   });
 

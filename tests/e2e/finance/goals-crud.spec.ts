@@ -17,13 +17,9 @@ test.describe('Finance Goals - Create Operations', () => {
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
       await backdrop.click();
       await page.waitForTimeout(300);
-    }
-
-      await page.waitForTimeout(500);
-    }
 
     // Click on Goals tab
-    await page.getByRole('button', { name: /^Goals$/i }).click();
+    await page.getByRole('tab', { name: 'Goals' }).click();
     await page.waitForTimeout(500);
   });
 
