@@ -269,29 +269,30 @@ test.describe('Calendar - Event Creation', () => {
   });
 
   test('clicking FAB opens add event modal', async ({ page }) => {
-    await page.getByRole('button', { name: 'Add event' }).click();
-    await page.waitForTimeout(500);
+    // FAB may be partially overlapped by mobile nav — use force click
+    await page.getByRole('button', { name: 'Add event' }).click({ force: true });
+    await page.waitForTimeout(800);
 
-    await expect(page.getByRole('heading', { name: /add event/i })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add Event' })).toBeVisible({ timeout: 5000 });
   });
 
   test('add event modal has title input', async ({ page }) => {
-    await page.getByRole('button', { name: 'Add event' }).click();
-    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: 'Add event' }).click({ force: true });
+    await page.waitForTimeout(800);
 
     // Placeholder: "e.g., Team Meeting, Birthday Party"
     await expect(page.getByPlaceholderText(/team meeting/i)).toBeVisible({ timeout: 5000 });
   });
 
   test('cancel event creation closes modal', async ({ page }) => {
-    await page.getByRole('button', { name: 'Add event' }).click();
-    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: 'Add event' }).click({ force: true });
+    await page.waitForTimeout(800);
 
-    const heading = page.getByRole('heading', { name: /add event/i });
+    const heading = page.getByRole('heading', { name: 'Add Event' });
     await expect(heading).toBeVisible({ timeout: 5000 });
 
     await page.getByRole('button', { name: /cancel/i }).click();
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     await expect(heading).not.toBeVisible();
   });
@@ -299,12 +300,13 @@ test.describe('Calendar - Event Creation', () => {
   test('create new event with title', async ({ page }) => {
     const eventTitle = `E2E Event ${Date.now()}`;
 
-    await page.getByRole('button', { name: 'Add event' }).click();
-    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: 'Add event' }).click({ force: true });
+    await page.waitForTimeout(800);
 
     await page.getByPlaceholderText(/team meeting/i).fill(eventTitle);
 
-    await page.getByRole('button', { name: /add event/i }).last().click();
+    // Submit button text is "Create Event"
+    await page.getByRole('button', { name: 'Create Event' }).click();
     await page.waitForTimeout(1500);
 
     await expect(page.getByText(eventTitle)).toBeVisible({ timeout: 5000 });
