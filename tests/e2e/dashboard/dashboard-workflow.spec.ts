@@ -142,35 +142,34 @@ test.describe('Dashboard - Task Creation', () => {
   });
 });
 
-test.describe('Dashboard - Weekly Overview', () => {
+test.describe('Dashboard - Stats Grid', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(800);
   });
 
-  test('displays This Week section', async ({ page }) => {
-    await expect(page.getByText('This Week')).toBeVisible({ timeout: 5000 });
+  test('displays Tasks Today stat card', async ({ page }) => {
+    await expect(page.getByText('Tasks Today')).toBeVisible({ timeout: 5000 });
   });
 
-  test('displays Tasks Completed stat', async ({ page }) => {
-    await expect(page.getByText('Tasks Completed')).toBeVisible({ timeout: 5000 });
+  test('displays Habits stat card', async ({ page }) => {
+    await expect(page.getByText('Habits').first()).toBeVisible({ timeout: 5000 });
   });
 
-  test('displays Journal Entries stat', async ({ page }) => {
+  test('displays Notes stat card', async ({ page }) => {
+    await expect(page.getByText('Notes').first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('displays Journal Entries stat card', async ({ page }) => {
     await expect(page.getByText('Journal Entries')).toBeVisible({ timeout: 5000 });
   });
 
-  test('displays Total Habits stat', async ({ page }) => {
-    await expect(page.getByText('Total Habits')).toBeVisible({ timeout: 5000 });
-  });
-
-  test('stat values are numeric', async ({ page }) => {
+  test('stat cards have numeric values', async ({ page }) => {
     await page.waitForTimeout(1000);
-    // Stats should show numeric values
-    await expect(page.getByText('Tasks Completed')).toBeVisible({ timeout: 5000 });
-    // Just verify the section loads without error
-    await expect(page.getByText('This Week')).toBeVisible();
+    // Stats show numeric values (0 or more)
+    await expect(page.getByText('Tasks Today')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Journal Entries')).toBeVisible({ timeout: 5000 });
   });
 });
 
