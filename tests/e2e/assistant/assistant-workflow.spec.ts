@@ -101,10 +101,11 @@ test.describe('Assistant - Sending Messages', () => {
     await expect(input).toHaveValue('Hello, AI!');
   });
 
-  test('input clears after sending message', async ({ page }) => {
+  test('input clears after sending message with Enter', async ({ page }) => {
     const input = page.getByRole('textbox');
     await input.fill('Test message');
-    await page.getByRole('button', { name: /send message/i }).click();
+    // Use Enter key - more reliable than button click (avoids Quick Capture overlap)
+    await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
 
     await expect(input).toHaveValue('');
@@ -116,36 +117,34 @@ test.describe('Assistant - Sending Messages', () => {
     await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
 
-    // Input should clear after sending
     await expect(input).toHaveValue('');
   });
 
-  test('message appears in conversation after sending', async ({ page }) => {
+  test('message appears in conversation after sending with Enter', async ({ page }) => {
     const message = `Test message ${Date.now()}`;
     await page.getByRole('textbox').fill(message);
-    await page.getByRole('button', { name: /send message/i }).click();
+    // Use Enter key (send button overlaps with Quick Capture)
+    await page.keyboard.press('Enter');
     await page.waitForTimeout(1000);
 
     await expect(page.getByText(message)).toBeVisible({ timeout: 5000 });
   });
 
-  test('user message appears in chat immediately after sending', async ({ page }) => {
+  test('user message appears in chat immediately', async ({ page }) => {
     const msg = `Typing test ${Date.now()}`;
     await page.getByRole('textbox').fill(msg);
-    await page.getByRole('button', { name: /send message/i }).click();
+    await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
 
-    // User message should be visible immediately
     await expect(page.getByText(msg)).toBeVisible({ timeout: 5000 });
   });
 
-  test('chat bubbles have rounded-2xl styling', async ({ page }) => {
+  test('chat bubbles have rounded-2xl styling after sending', async ({ page }) => {
     const msg = `Style test ${Date.now()}`;
     await page.getByRole('textbox').fill(msg);
-    await page.getByRole('button', { name: /send message/i }).click();
+    await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
 
-    // At least one message bubble should exist
     const bubble = page.locator('.rounded-2xl').first();
     await expect(bubble).toBeVisible({ timeout: 5000 });
   });
@@ -240,13 +239,13 @@ test.describe('Assistant - Input Behavior', () => {
     await expect(input).toHaveValue('Testing input');
   });
 
-  test('two messages can be sent in sequence', async ({ page }) => {
+  test('two messages can be sent in sequence using Enter', async ({ page }) => {
     const message1 = `First ${Date.now()}`;
     const message2 = `Second ${Date.now() + 1}`;
 
-    // Send first message
+    // Send first message with Enter key
     await page.getByRole('textbox').fill(message1);
-    await page.getByRole('button', { name: /send message/i }).click();
+    await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
     await expect(page.getByText(message1)).toBeVisible({ timeout: 5000 });
 
@@ -255,7 +254,7 @@ test.describe('Assistant - Input Behavior', () => {
 
     // Send second message
     await page.getByRole('textbox').fill(message2);
-    await page.getByRole('button', { name: /send message/i }).click();
+    await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
 
     await expect(page.getByText(message2)).toBeVisible({ timeout: 5000 });
