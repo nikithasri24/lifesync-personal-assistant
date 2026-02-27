@@ -523,7 +523,138 @@ All critical display and form functionality is tested and validated. The impleme
 
 ---
 
+## 🎭 E2E Tests (7 test files)
+
+### Overview
+Comprehensive end-to-end tests for Finance feature using Playwright, covering all CRUD operations across finance domains.
+
+### Test Files
+
+#### 1. **accounts-crud.spec.ts**
+- **Coverage:** Finance account CRUD operations
+- **Test Categories:**
+  - Create Operations (6 tests): checking, savings, credit (with limit/APR), investment, with notes
+  - Update Operations (3 tests): update name, balance, change type
+  - Delete Operations (1 test): delete account
+  - Display & Filtering (2 tests): multiple accounts, currency formatting
+  - Edge Cases (4 tests): zero balance, negative balance, large balance, long name
+- **Total Tests:** 16 tests
+- **Account Types Tested:** checking, savings, credit, brokerage
+
+#### 2. **transactions-crud.spec.ts**
+- **Coverage:** Finance transaction CRUD operations
+- **Test Categories:**
+  - Create Operations (6 tests): expense, income, with category, with date, with merchant, with notes
+  - Update Operations (3 tests): update description, amount, change type (expense ↔ income)
+  - Delete Operations (1 test): delete transaction
+  - Display & Filtering (2 tests): multiple transactions, date formatting
+  - Edge Cases (3 tests): decimal amount, large amount, long description
+- **Total Tests:** 15 tests
+- **Transaction Types:** Expense (debit), Income (credit)
+
+#### 3. **budgets-crud.spec.ts**
+- **Coverage:** Monthly budget CRUD operations
+- **Test Categories:**
+  - Create Operations (5 tests): groceries, dining (with rollover), entertainment (with notes), transportation, utilities
+  - Update Operations (3 tests): update limit, change category, toggle rollover
+  - Delete Operations (1 test): delete budget
+  - Display & Progress (2 tests): multiple budgets, progress bar display
+  - Edge Cases (3 tests): large limit, future month, decimal limit
+- **Total Tests:** 14 tests
+- **Features:** Monthly budgets, category selection, rollover functionality
+
+#### 4. **goals-crud.spec.ts**
+- **Coverage:** Financial goal CRUD operations
+- **Test Categories:**
+  - Create Operations (8 tests): vacation, home, car, education, emergency, retirement, investment, with notes
+  - Update Operations (4 tests): update progress, target amount, deadline, change category
+  - Delete Operations (1 test): delete goal
+  - Display & Progress (2 tests): multiple goals, progress percentage
+  - Edge Cases (4 tests): zero current, already achieved, large target, decimal amounts
+- **Total Tests:** 19 tests
+- **Goal Categories:** 8 types (vacation, home, car, education, emergency, retirement, investment, other)
+
+#### 5. **loans-crud.spec.ts**
+- **Coverage:** Loan tracking CRUD operations
+- **Test Categories:**
+  - Create Operations (6 tests): mortgage, auto, student, personal, business, with notes
+  - Update Operations (4 tests): update balance, payment, rate, next payment date
+  - Delete Operations (1 test): delete paid-off loan
+  - Display & Tracking (2 tests): multiple loans, balance display
+  - Edge Cases (4 tests): zero balance, high rate, decimals, long term
+- **Total Tests:** 17 tests
+- **Loan Types:** 6 types (mortgage, auto, student, personal, business, other)
+
+#### 6. **credit-cards-crud.spec.ts**
+- **Coverage:** Credit card management CRUD operations
+- **Test Categories:**
+  - Create Operations (7 tests): cashback, points, miles, no rewards, with sign-up bonus, with benefits, with notes
+  - Update Operations (4 tests): update limit, APR, change rewards type, add benefits
+  - Delete Operations (1 test): delete closed card
+  - Display & Features (2 tests): multiple cards, last 4 digits display
+  - Edge Cases (4 tests): zero fee, high fee, high limit, decimal APR
+- **Total Tests:** 18 tests
+- **Rewards Types:** 4 types (cashback, points, miles, none)
+- **Features:** Sign-up bonuses, benefits tracking, rewards rates
+
+#### 7. **insurance-crud.spec.ts**
+- **Coverage:** Insurance policy CRUD operations
+- **Test Categories:**
+  - Create Operations (12 tests): health, life, auto, home, renters, disability, dental, vision, umbrella, quarterly, semi-annual, with notes
+  - Update Operations (4 tests): update premium, coverage, frequency, renewal date
+  - Delete Operations (1 test): delete cancelled policy
+  - Display & Organization (1 test): multiple policies
+  - Edge Cases (3 tests): high coverage, low premium, decimal premium
+- **Total Tests:** 21 tests
+- **Policy Types:** 10 types (health, life, auto, home, renters, disability, dental, vision, umbrella, other)
+- **Premium Frequencies:** 4 options (monthly, quarterly, semi-annual, annual)
+
+### E2E Test Statistics
+- **Total Test Files:** 7
+- **Total Tests:** 120 tests
+- **Test Framework:** Playwright
+- **Coverage:**
+  - Account types: 4 types tested
+  - Transaction operations: Expense/Income with categories
+  - Budget management: Monthly budgets with rollover
+  - Financial goals: 8 goal categories
+  - Loan tracking: 6 loan types with payment details
+  - Credit cards: 4 rewards types with bonuses
+  - Insurance: 10 policy types with 4 frequencies
+
+### Key Features Tested
+- Full CRUD operations for all finance domains
+- Form validation and error handling
+- Type-specific conditional fields
+- Currency formatting and large number handling
+- Date input and formatting
+- Multiple item display and filtering
+- Edge cases (zero, negative, decimals, large values)
+
+---
+
+## 📈 Complete Test Coverage Summary
+
+### Unit Tests
+- **Display Components:** 6 components, 219 tests
+- **Form Components:** 7 components, 185 tests
+- **Total Unit Tests:** 404 tests (all passing)
+- **Execution Time:** ~9.37s
+
+### E2E Tests
+- **Test Files:** 7 files
+- **Total E2E Tests:** 120 tests
+- **Coverage:** All major finance domains
+
+### Overall Statistics
+- **Grand Total:** 524 tests (404 unit + 120 E2E)
+- **Component Coverage:** 13 components (6 display + 7 forms)
+- **Feature Coverage:** Comprehensive (Accounts, Transactions, Budgets, Goals, Loans, Credit Cards, Insurance)
+- **Test Types:** Unit tests (Vitest) + E2E tests (Playwright)
+
+---
+
 **Last Updated:** 2026-02-26
-**Test Framework:** Vitest
-**Total Test Count:** 404 tests (all passing)
-**Total Execution Time:** ~9.37s
+**Test Frameworks:** Vitest (unit tests), Playwright (E2E tests)
+**Total Test Count:** 524 tests (404 unit + 120 E2E)
+**Unit Test Execution Time:** ~9.37s
