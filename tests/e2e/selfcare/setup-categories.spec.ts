@@ -14,33 +14,32 @@ test.describe('Selfcare Setup - Tab Navigation', () => {
   });
 
   test('displays all four tabs', async ({ page }) => {
-    await expect(page.getByRole('tab', { name: /routine/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /schedule/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /products/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /setup/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '✨ Routine' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '📅 Schedule' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '🧴 Products' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '⚙️ Setup' })).toBeVisible();
   });
 
   test('navigate to Routine tab', async ({ page }) => {
-    await page.getByRole('tab', { name: /routine/i }).click();
+    await page.getByRole('tab', { name: '✨ Routine' }).click();
     await page.waitForTimeout(300);
-    // Routine tab shows weekly routine table
-    await expect(page.getByRole('tab', { name: /routine/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '✨ Routine' })).toBeVisible();
   });
 
   test('navigate to Schedule tab', async ({ page }) => {
-    await page.getByRole('tab', { name: /schedule/i }).click();
+    await page.getByRole('tab', { name: '📅 Schedule' }).click();
     await page.waitForTimeout(300);
-    await expect(page.getByRole('tab', { name: /schedule/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '📅 Schedule' })).toBeVisible();
   });
 
   test('navigate to Products tab', async ({ page }) => {
-    await page.getByRole('tab', { name: /products/i }).click();
+    await page.getByRole('tab', { name: '🧴 Products' }).click();
     await page.waitForTimeout(300);
     await expect(page.getByRole('button', { name: /add product/i })).toBeVisible();
   });
 
   test('navigate to Setup tab', async ({ page }) => {
-    await page.getByRole('tab', { name: /setup/i }).click();
+    await page.getByRole('tab', { name: '⚙️ Setup' }).click();
     await page.waitForTimeout(300);
     await expect(page.getByRole('button', { name: /add category/i })).toBeVisible();
   });
@@ -51,7 +50,7 @@ test.describe('Selfcare Setup - Category Management', () => {
     await page.goto('/selfcare');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
-    await page.getByRole('tab', { name: /setup/i }).click();
+    await page.getByRole('tab', { name: '⚙️ Setup' }).click();
     await page.waitForTimeout(500);
   });
 
@@ -100,7 +99,7 @@ test.describe('Selfcare Setup - Item Management', () => {
     await page.goto('/selfcare');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
-    await page.getByRole('tab', { name: /setup/i }).click();
+    await page.getByRole('tab', { name: '⚙️ Setup' }).click();
     await page.waitForTimeout(500);
   });
 

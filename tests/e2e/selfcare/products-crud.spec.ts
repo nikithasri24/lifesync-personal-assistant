@@ -13,7 +13,7 @@ test.describe('Selfcare Products - Create Operations', () => {
     await page.waitForTimeout(500);
 
     // Navigate to Products tab
-    await page.getByRole('tab', { name: /products/i }).click();
+    await page.getByRole('tab', { name: '🧴 Products' }).click();
     await page.waitForTimeout(500);
   });
 
@@ -124,7 +124,7 @@ test.describe('Selfcare Products - Read Operations', () => {
     await page.goto('/selfcare');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
-    await page.getByRole('tab', { name: /products/i }).click();
+    await page.getByRole('tab', { name: '🧴 Products' }).click();
     await page.waitForTimeout(500);
   });
 
@@ -173,7 +173,7 @@ test.describe('Selfcare Products - Update Operations', () => {
     await page.goto('/selfcare');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
-    await page.getByRole('tab', { name: /products/i }).click();
+    await page.getByRole('tab', { name: '🧴 Products' }).click();
     await page.waitForTimeout(500);
 
     // Create a product to edit
@@ -251,7 +251,7 @@ test.describe('Selfcare Products - Delete Operations', () => {
     await page.goto('/selfcare');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
-    await page.getByRole('tab', { name: /products/i }).click();
+    await page.getByRole('tab', { name: '🧴 Products' }).click();
     await page.waitForTimeout(500);
 
     // Create a product to delete
@@ -283,7 +283,7 @@ test.describe('Selfcare Products - Validation', () => {
     await page.goto('/selfcare');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
-    await page.getByRole('tab', { name: /products/i }).click();
+    await page.getByRole('tab', { name: '🧴 Products' }).click();
     await page.waitForTimeout(500);
   });
 
