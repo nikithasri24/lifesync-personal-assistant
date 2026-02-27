@@ -280,8 +280,8 @@ test.describe('Calendar - Event Creation', () => {
     await page.locator('button[aria-label="Add event"]').evaluate(el => (el as HTMLElement).click());
     await page.waitForTimeout(800);
 
-    // Placeholder: "e.g., Team Meeting, Birthday Party"
-    await expect(page.getByPlaceholderText(/team meeting/i)).toBeVisible({ timeout: 5000 });
+    // Title input accessible name is "Event Title *"
+    await expect(page.getByRole('textbox', { name: /event title/i })).toBeVisible({ timeout: 5000 });
   });
 
   test('cancel event creation closes modal', async ({ page }) => {
@@ -303,12 +303,14 @@ test.describe('Calendar - Event Creation', () => {
     await page.locator('button[aria-label="Add event"]').evaluate(el => (el as HTMLElement).click());
     await page.waitForTimeout(800);
 
-    await page.getByPlaceholderText(/team meeting/i).fill(eventTitle);
+    // Fill title using accessible name "Event Title *"
+    await page.getByRole('textbox', { name: /event title/i }).fill(eventTitle);
 
     // Submit button text is "Create Event"
     await page.getByRole('button', { name: 'Create Event' }).click();
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
 
+    // Event should appear in the calendar (may be in any time slot)
     await expect(page.getByText(eventTitle)).toBeVisible({ timeout: 5000 });
   });
 
