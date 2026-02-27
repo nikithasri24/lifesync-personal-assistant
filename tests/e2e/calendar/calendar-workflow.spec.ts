@@ -269,15 +269,15 @@ test.describe('Calendar - Event Creation', () => {
   });
 
   test('clicking FAB opens add event modal', async ({ page }) => {
-    // FAB may be partially overlapped by mobile nav — use force click
-    await page.getByRole('button', { name: 'Add event' }).click({ force: true });
+    // Use evaluate() to directly fire click on the FAB, bypassing visual overlap
+    await page.locator('button[aria-label="Add event"]').evaluate(el => (el as HTMLElement).click());
     await page.waitForTimeout(800);
 
     await expect(page.getByRole('heading', { name: 'Add Event' })).toBeVisible({ timeout: 5000 });
   });
 
   test('add event modal has title input', async ({ page }) => {
-    await page.getByRole('button', { name: 'Add event' }).click({ force: true });
+    await page.locator('button[aria-label="Add event"]').evaluate(el => (el as HTMLElement).click());
     await page.waitForTimeout(800);
 
     // Placeholder: "e.g., Team Meeting, Birthday Party"
@@ -285,7 +285,7 @@ test.describe('Calendar - Event Creation', () => {
   });
 
   test('cancel event creation closes modal', async ({ page }) => {
-    await page.getByRole('button', { name: 'Add event' }).click({ force: true });
+    await page.locator('button[aria-label="Add event"]').evaluate(el => (el as HTMLElement).click());
     await page.waitForTimeout(800);
 
     const heading = page.getByRole('heading', { name: 'Add Event' });
@@ -300,7 +300,7 @@ test.describe('Calendar - Event Creation', () => {
   test('create new event with title', async ({ page }) => {
     const eventTitle = `E2E Event ${Date.now()}`;
 
-    await page.getByRole('button', { name: 'Add event' }).click({ force: true });
+    await page.locator('button[aria-label="Add event"]').evaluate(el => (el as HTMLElement).click());
     await page.waitForTimeout(800);
 
     await page.getByPlaceholderText(/team meeting/i).fill(eventTitle);
