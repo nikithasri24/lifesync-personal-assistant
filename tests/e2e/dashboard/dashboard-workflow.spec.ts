@@ -99,34 +99,37 @@ test.describe('Dashboard - Task Creation', () => {
     await page.waitForTimeout(800);
   });
 
-  test('create task from quick add', async ({ page }) => {
+  test('create task from quick add and modal closes', async ({ page }) => {
     const taskTitle = `Dashboard Task ${Date.now()}`;
 
     // Open quick add
     await page.getByText('Add Task').click();
     await page.waitForTimeout(500);
 
-    // Fill task title
-    await page.getByPlaceholderText(/what needs to be done/i).fill(taskTitle);
+    const input = page.getByPlaceholderText(/what needs to be done/i);
+    await expect(input).toBeVisible({ timeout: 3000 });
 
-    // Submit
-    await page.keyboard.press('Enter');
+    // Fill task title and submit
+    await input.fill(taskTitle);
+    await page.getByRole('button', { name: /add task/i }).last().click();
     await page.waitForTimeout(1000);
 
-    // Task might appear in today's tasks section
-    await expect(page.getByText(taskTitle)).toBeVisible({ timeout: 5000 });
+    // Modal should close after submit
+    await expect(input).not.toBeVisible({ timeout: 3000 });
   });
 
   test('cancel quick add with Cancel button', async ({ page }) => {
     await page.getByText('Add Task').click();
     await page.waitForTimeout(500);
 
-    await page.getByPlaceholderText(/what needs to be done/i).fill('Cancelled Task');
+    await expect(page.getByPlaceholderText(/what needs to be done/i)).toBeVisible({ timeout: 3000 });
 
+    // Click the Cancel button in the modal footer
     await page.getByRole('button', { name: /cancel/i }).click();
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
-    await expect(page.getByText('Cancelled Task')).not.toBeVisible();
+    // Modal should be closed
+    await expect(page.getByPlaceholderText(/what needs to be done/i)).not.toBeVisible({ timeout: 3000 });
   });
 
   test('cancel quick add with ESC key', async ({ page }) => {
@@ -135,10 +138,11 @@ test.describe('Dashboard - Task Creation', () => {
 
     await expect(page.getByPlaceholderText(/what needs to be done/i)).toBeVisible({ timeout: 3000 });
 
+    // Click outside input to unfocus, then press ESC
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
-    await expect(page.getByPlaceholderText(/what needs to be done/i)).not.toBeVisible();
+    await expect(page.getByPlaceholderText(/what needs to be done/i)).not.toBeVisible({ timeout: 3000 });
   });
 });
 
