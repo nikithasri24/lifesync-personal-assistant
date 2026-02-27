@@ -57,8 +57,7 @@ test.describe('Nutrition Date Navigation', () => {
     const foodName = `Dated Food ${Date.now()}`;
 
     // Log food on today
-    const breakfastSection = page.locator('text=Breakfast').locator('..').locator('..');
-    await breakfastSection.getByRole('button', { name: /add food/i }).click();
+    await page.getByRole('button', { name: '+ Add Food' }).nth(0).click();
     await page.waitForTimeout(500);
 
     await page.getByPlaceholder(/grilled chicken salad/i).fill(foodName);
@@ -143,8 +142,7 @@ test.describe('Nutrition Date-Specific Data', () => {
     const food2 = `Day2 Food ${Date.now()}`;
 
     // Log food on day 1
-    const breakfastSection = page.locator('text=Breakfast').locator('..').locator('..');
-    await breakfastSection.getByRole('button', { name: /add food/i }).click();
+    await page.getByRole('button', { name: '+ Add Food' }).nth(0).click();
     await page.waitForTimeout(500);
 
     await page.getByPlaceholder(/grilled chicken salad/i).fill(food1);
@@ -164,8 +162,7 @@ test.describe('Nutrition Date-Specific Data', () => {
     await page.waitForTimeout(500);
 
     // Log different food on day 2
-    const breakfastSection2 = page.locator('text=Breakfast').locator('..').locator('..');
-    await breakfastSection2.getByRole('button', { name: /add food/i }).click();
+    const await page.getByRole('button', { name: '+ Add Food' }).nth(0).click();
     await page.waitForTimeout(500);
 
     await page.getByPlaceholder(/grilled chicken salad/i).fill(food2);
@@ -197,8 +194,7 @@ test.describe('Nutrition Date-Specific Data', () => {
     const updatedName = `Updated Food ${Date.now()}`;
 
     // Log food on current day
-    const lunchSection = page.locator('text=Lunch').locator('..').locator('..');
-    await lunchSection.getByRole('button', { name: /add food/i }).click();
+    await page.getByRole('button', { name: '+ Add Food' }).nth(1).click();
     await page.waitForTimeout(500);
 
     await page.getByPlaceholder(/grilled chicken salad/i).fill(originalName);
@@ -239,8 +235,7 @@ test.describe('Nutrition Date-Specific Data', () => {
     const foodName = `Food to Delete ${Date.now()}`;
 
     // Log food on current day
-    const dinnerSection = page.locator('text=Dinner').locator('..').locator('..');
-    await dinnerSection.getByRole('button', { name: /add food/i }).click();
+    await page.getByRole('button', { name: '+ Add Food' }).nth(2).click();
     await page.waitForTimeout(500);
 
     await page.getByPlaceholder(/grilled chicken salad/i).fill(foodName);
