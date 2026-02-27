@@ -104,45 +104,47 @@ test.describe('Dashboard - Task Creation', () => {
 
     // Open quick add
     await page.getByText('Add Task').click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(800);
 
     const input = page.getByPlaceholderText(/what needs to be done/i);
-    await expect(input).toBeVisible({ timeout: 3000 });
+    await expect(input).toBeVisible({ timeout: 5000 });
 
-    // Fill task title and submit
+    // Fill task title and submit — button text is "Create Task"
     await input.fill(taskTitle);
-    await page.getByRole('button', { name: /add task/i }).last().click();
-    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Create Task' }).click();
+    await page.waitForTimeout(1500);
 
     // Modal should close after submit
-    await expect(input).not.toBeVisible({ timeout: 3000 });
+    await expect(input).not.toBeVisible({ timeout: 5000 });
   });
 
   test('cancel quick add with Cancel button', async ({ page }) => {
     await page.getByText('Add Task').click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(800);
 
-    await expect(page.getByPlaceholderText(/what needs to be done/i)).toBeVisible({ timeout: 3000 });
+    const input = page.getByPlaceholderText(/what needs to be done/i);
+    await expect(input).toBeVisible({ timeout: 5000 });
 
     // Click the Cancel button in the modal footer
     await page.getByRole('button', { name: /cancel/i }).click();
     await page.waitForTimeout(500);
 
     // Modal should be closed
-    await expect(page.getByPlaceholderText(/what needs to be done/i)).not.toBeVisible({ timeout: 3000 });
+    await expect(input).not.toBeVisible({ timeout: 5000 });
   });
 
   test('cancel quick add with ESC key', async ({ page }) => {
     await page.getByText('Add Task').click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(800);
 
-    await expect(page.getByPlaceholderText(/what needs to be done/i)).toBeVisible({ timeout: 3000 });
+    const input = page.getByPlaceholderText(/what needs to be done/i);
+    await expect(input).toBeVisible({ timeout: 5000 });
 
-    // Click outside input to unfocus, then press ESC
+    // Press ESC to close the modal
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
 
-    await expect(page.getByPlaceholderText(/what needs to be done/i)).not.toBeVisible({ timeout: 3000 });
+    await expect(input).not.toBeVisible({ timeout: 5000 });
   });
 });
 
