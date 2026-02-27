@@ -19,14 +19,12 @@ test.describe('Finance Credit Cards - Create Operations', () => {
       await page.waitForTimeout(300);
     }
 
-    // Navigate to Credit Cards tab
-    const cardsTab = page.getByRole('button', { name: /credit cards|cards/i }).or(
-      page.locator('button').filter({ hasText: /credit cards|cards/i })
-    );
-    if (await cardsTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await cardsTab.click();
       await page.waitForTimeout(500);
     }
+
+    // Click on Credit Cards tab
+    await page.getByRole('button', { name: /^Credit Cards$/i }).click();
+    await page.waitForTimeout(500);
   });
 
   test('create cashback rewards card', async ({ page }) => {

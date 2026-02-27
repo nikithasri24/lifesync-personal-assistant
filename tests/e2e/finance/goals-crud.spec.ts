@@ -19,14 +19,12 @@ test.describe('Finance Goals - Create Operations', () => {
       await page.waitForTimeout(300);
     }
 
-    // Navigate to Goals tab
-    const goalsTab = page.getByRole('button', { name: /goals/i }).or(
-      page.locator('button').filter({ hasText: /goals/i })
-    );
-    if (await goalsTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await goalsTab.click();
       await page.waitForTimeout(500);
     }
+
+    // Click on Goals tab
+    await page.getByRole('button', { name: /^Goals$/i }).click();
+    await page.waitForTimeout(500);
   });
 
   test('create vacation savings goal', async ({ page }) => {

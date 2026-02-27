@@ -19,14 +19,12 @@ test.describe('Finance Budgets - Create Operations', () => {
       await page.waitForTimeout(300);
     }
 
-    // Navigate to Budgets tab
-    const budgetsTab = page.getByRole('button', { name: /budgets/i }).or(
-      page.locator('button').filter({ hasText: /budgets/i })
-    );
-    if (await budgetsTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await budgetsTab.click();
       await page.waitForTimeout(500);
     }
+
+    // Click on Budgets tab
+    await page.getByRole('button', { name: /^Budgets$/i }).click();
+    await page.waitForTimeout(500);
   });
 
   test('create monthly budget for groceries', async ({ page }) => {

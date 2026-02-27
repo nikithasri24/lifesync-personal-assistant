@@ -19,14 +19,12 @@ test.describe('Finance Loans - Create Operations', () => {
       await page.waitForTimeout(300);
     }
 
-    // Navigate to Loans tab
-    const loansTab = page.getByRole('button', { name: /loans/i }).or(
-      page.locator('button').filter({ hasText: /loans/i })
-    );
-    if (await loansTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await loansTab.click();
       await page.waitForTimeout(500);
     }
+
+    // Click on Loans tab
+    await page.getByRole('button', { name: /^Loans$/i }).click();
+    await page.waitForTimeout(500);
   });
 
   test('create mortgage loan', async ({ page }) => {

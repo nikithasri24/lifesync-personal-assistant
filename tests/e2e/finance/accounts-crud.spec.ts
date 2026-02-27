@@ -18,6 +18,10 @@ test.describe('Finance Accounts - Create Operations', () => {
       await backdrop.click();
       await page.waitForTimeout(300);
     }
+
+    // Click on Accounts tab
+    await page.getByRole('button', { name: /^Accounts$/i }).click();
+    await page.waitForTimeout(500);
   });
 
   test('create checking account with basic info', async ({ page }) => {

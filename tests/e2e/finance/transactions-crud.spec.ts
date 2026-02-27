@@ -18,12 +18,9 @@ test.describe('Finance Transactions - Create Operations', () => {
       await page.waitForTimeout(300);
     }
 
-    // Navigate to Transactions view/tab if exists
-    const transactionsTab = page.getByRole('button', { name: /transactions/i }).first();
-    if (await transactionsTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await transactionsTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Click on Transactions tab
+    await page.getByRole('button', { name: /^Transactions$/i }).click();
+    await page.waitForTimeout(500);
   });
 
   test('create expense transaction', async ({ page }) => {

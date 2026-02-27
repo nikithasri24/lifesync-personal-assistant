@@ -19,14 +19,12 @@ test.describe('Finance Insurance - Create Operations', () => {
       await page.waitForTimeout(300);
     }
 
-    // Navigate to Insurance tab
-    const insuranceTab = page.getByRole('button', { name: /insurance/i }).or(
-      page.locator('button').filter({ hasText: /insurance/i })
-    );
-    if (await insuranceTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await insuranceTab.click();
       await page.waitForTimeout(500);
     }
+
+    // Click on Insurance tab
+    await page.getByRole('button', { name: /^Insurance$/i }).click();
+    await page.waitForTimeout(500);
   });
 
   test('create health insurance policy', async ({ page }) => {
