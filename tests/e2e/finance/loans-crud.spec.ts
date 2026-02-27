@@ -17,6 +17,7 @@ test.describe('Finance Loans - Create Operations', () => {
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
       await backdrop.click();
       await page.waitForTimeout(300);
+    }
 
     // Click on Loans tab
     await page.getByRole('tab', { name: 'Loans' }).click();
