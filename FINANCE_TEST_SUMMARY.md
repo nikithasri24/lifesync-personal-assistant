@@ -114,7 +114,7 @@ Comprehensive unit test coverage has been added for Finance feature V2 component
 
 ---
 
-## ✅ Form Component Tests (4 components, 105 tests)
+## ✅ Form Component Tests (7 components, 185 tests)
 
 ### 7. **AccountFormModalV2** (`src/finance/components/v2/__tests__/AccountFormModalV2.test.tsx`)
 - **Total Tests:** 25 tests (25 passing)
@@ -184,6 +184,57 @@ Comprehensive unit test coverage has been added for Finance feature V2 component
 
 ---
 
+### 11. **LoanFormModalV2** (`src/finance/components/v2/__tests__/LoanFormModalV2.test.tsx`)
+- **Total Tests:** 32 tests (32 passing)
+- **Coverage:** Loan creation/editing form with 6 loan types and payment details
+- **Status:** ✅ All passing
+- **Execution Time:** ~1,560ms
+
+#### Test Categories:
+- **Basic Rendering (4 tests):** Modal open/close, "Add Loan" vs "Edit Loan" title
+- **Form Fields (9 tests):** Name, type, principal, balance, interest rate, monthly payment, term, next payment date, notes
+- **Loan Types (2 tests):** List all 6 types, default to "Personal Loan"
+- **Form Interactions (9 tests):** Enter name, select type, enter amounts/rates/payments/dates, enter notes
+- **Form Submission (3 tests):** Call onSave with data, include loan type when selected, include optional fields
+- **Edge Cases (6 tests):** Zero principal validation, large amounts, whitespace trimming, decimal amounts, balance exceeding principal
+
+---
+
+### 12. **CreditCardFormModalV2** (`src/finance/components/v2/__tests__/CreditCardFormModalV2.test.tsx`)
+- **Total Tests:** 23 tests (23 passing)
+- **Coverage:** Credit card creation/editing form with rewards types and sign-up bonuses
+- **Status:** ✅ All passing
+- **Execution Time:** ~1,591ms
+
+#### Test Categories:
+- **Basic Rendering (4 tests):** Modal open/close, "Add Credit Card" vs "Edit Credit Card" title
+- **Form Fields (1 test):** Render all 13 form fields
+- **Rewards Types (2 tests):** List all 4 types, default to "Cash Back"
+- **Form Interactions (7 tests):** Enter card name, issuer, last 4 digits, credit limit, select rewards type, enter bonus, enter benefits
+- **Form Submission (2 tests):** Call onSave with required fields, include all optional fields when provided
+- **Validation (2 tests):** Require card name, require issuer
+- **Edge Cases (5 tests):** Last 4 digits with non-numeric, zero annual fee, whitespace trimming, decimal values, large sign-up bonus
+
+---
+
+### 13. **InsuranceFormModalV2** (`src/finance/components/v2/__tests__/InsuranceFormModalV2.test.tsx`)
+- **Total Tests:** 25 tests (25 passing)
+- **Coverage:** Insurance policy creation/editing form with 10 policy types and premium frequencies
+- **Status:** ✅ All passing
+- **Execution Time:** ~1,860ms
+
+#### Test Categories:
+- **Basic Rendering (4 tests):** Modal open/close, "Add Insurance Policy" vs "Edit Insurance Policy" title
+- **Form Fields (1 test):** Render all 11 form fields
+- **Policy Types (2 tests):** List all 10 types, default to "Health Insurance"
+- **Premium Frequencies (2 tests):** List all 4 frequencies, default to "Monthly"
+- **Form Interactions (7 tests):** Enter policy name, select type, enter provider/premium, select frequency, enter beneficiaries/notes
+- **Form Submission (2 tests):** Call onSave with required fields, include all optional fields when provided
+- **Validation (3 tests):** Require policy name, require provider, require premium > 0
+- **Edge Cases (4 tests):** Large coverage amounts, whitespace trimming, decimal values, policy number with special characters
+
+---
+
 ## 📈 Coverage Statistics
 
 ### By Component
@@ -196,11 +247,14 @@ Comprehensive unit test coverage has been added for Finance feature V2 component
 | BudgetCardV2 | BudgetCardV2.test.tsx | 34 | ✅ 34 passing | 169ms |
 | GoalCardV2 | GoalCardV2.test.tsx | 48 | ✅ 48 passing | 567ms |
 | LoanCardV2 | LoanCardV2.test.tsx | 46 | ✅ 46 passing | 350ms |
-| AccountFormModalV2 | AccountFormModalV2.test.tsx | 25 | ✅ 25 passing | 1073ms |
-| TransactionFormModalV2 | TransactionFormModalV2.test.tsx | 29 | ✅ 29 passing | 1124ms |
-| BudgetFormModalV2 | BudgetFormModalV2.test.tsx | 24 | ✅ 24 passing | 1005ms |
-| GoalFormModalV2 | GoalFormModalV2.test.tsx | 27 | ✅ 27 passing | 1406ms |
-| **Total** | **10 test files** | **324** | **✅ 324 passing** | **6.30s** |
+| AccountFormModalV2 | AccountFormModalV2.test.tsx | 25 | ✅ 25 passing | 787ms |
+| TransactionFormModalV2 | TransactionFormModalV2.test.tsx | 29 | ✅ 29 passing | 826ms |
+| BudgetFormModalV2 | BudgetFormModalV2.test.tsx | 24 | ✅ 24 passing | 723ms |
+| GoalFormModalV2 | GoalFormModalV2.test.tsx | 27 | ✅ 27 passing | 1183ms |
+| LoanFormModalV2 | LoanFormModalV2.test.tsx | 32 | ✅ 32 passing | 1560ms |
+| CreditCardFormModalV2 | CreditCardFormModalV2.test.tsx | 23 | ✅ 23 passing | 1591ms |
+| InsuranceFormModalV2 | InsuranceFormModalV2.test.tsx | 25 | ✅ 25 passing | 1860ms |
+| **Total** | **13 test files** | **404** | **✅ 404 passing** | **9.37s** |
 
 ### By Feature
 
@@ -216,6 +270,9 @@ Comprehensive unit test coverage has been added for Finance feature V2 component
 | Transaction Forms (Create/Edit) | 29 | ✅ All passing |
 | Budget Forms (Create/Edit) | 24 | ✅ All passing |
 | Goal Forms (Create/Edit) | 27 | ✅ All passing |
+| Loan Forms (Create/Edit) | 32 | ✅ All passing |
+| Credit Card Forms (Create/Edit) | 23 | ✅ All passing |
+| Insurance Forms (Create/Edit) | 25 | ✅ All passing |
 
 ---
 
@@ -282,13 +339,13 @@ npm run test -- AccountFormModalV2.test.tsx --run
 
 ## ✅ Quality Assurance Checklist
 
-- [x] All unit tests pass (324/324)
+- [x] All unit tests pass (404/404)
 - [x] Code coverage > 80%
 - [x] No console errors in tests
 - [x] Test names are descriptive
 - [x] Edge cases covered
 - [x] Accessibility tested
-- [x] Performance acceptable (~6s total)
+- [x] Performance acceptable (~9s total)
 - [x] Form validation tested
 - [x] Conditional rendering tested
 - [x] Currency and date formatting tested
@@ -298,24 +355,25 @@ npm run test -- AccountFormModalV2.test.tsx --run
 ## 🎉 Summary
 
 **Test Coverage: Excellent**
-- ✅ 324 total unit tests across 10 components
+- ✅ 404 total unit tests across 13 components
 - ✅ 100% passing test rate
 - ✅ 6 display components fully tested
-- ✅ 4 form components fully tested
+- ✅ 7 form components fully tested
 - ✅ Edge cases and error handling comprehensively covered
 - ✅ Owner badge support for merged mode
 - ✅ Conditional fields and form interactions tested
-- ✅ Transaction types (Expense/Income), budget rollover, goal categories
+- ✅ Transaction types (Expense/Income), budget rollover, 8 goal categories, 6 loan types, 4 rewards types, 10 insurance types
 
 **Test Quality: High**
 - ✅ Clear, descriptive test names
 - ✅ Proper mocking and isolation
-- ✅ Fast execution times (~6s total)
+- ✅ Fast execution times (~9s total)
 - ✅ Maintainable test structure
 - ✅ Currency and date formatting thoroughly tested
 - ✅ Progress tracking and calculations verified
-- ✅ All account, loan, and goal category icons tested
+- ✅ All account, loan, goal, rewards, and insurance type icons tested
 - ✅ ID-based element selection for robustness
+- ✅ Comprehensive validation testing for all forms
 
 **Confidence Level: High**
 All critical display and form functionality is tested and validated. The implementation is production-ready from a testing perspective.
@@ -420,20 +478,52 @@ All critical display and form functionality is tested and validated. The impleme
 - Whitespace trimming
 - Handles current amount exceeding target
 
----
+#### LoanFormModalV2
+- Loan name input (required)
+- Loan type selector with 6 options: Mortgage, Auto Loan, Student Loan, Personal Loan (default), Business Loan, Other
+- Principal amount (required, > 0, supports decimals)
+- Current balance (required, >= 0, supports decimals)
+- Interest rate (optional, APR %, supports decimals)
+- Monthly payment (required, > 0, supports decimals)
+- Loan term (optional, months)
+- Next payment date (optional)
+- Notes textarea
+- Whitespace trimming
+- Handles balance exceeding principal
 
-## 📝 Additional Components Available (Not Yet Tested)
+#### CreditCardFormModalV2
+- Card name input (required)
+- Issuer input (required)
+- Last 4 digits (optional, max 4 chars, strips non-digits)
+- Credit limit (optional, supports decimals)
+- APR (optional, %, supports decimals)
+- Annual fee (defaults to 0, supports decimals)
+- Rewards type selector with 4 options: Cash Back (default), Points, Travel Miles, No Rewards
+- Rewards rate (optional, %, supports decimals)
+- Sign-up bonus (optional, supports large numbers)
+- Bonus spending requirement (optional)
+- Bonus deadline (optional date)
+- Benefits textarea
+- Notes textarea
+- Whitespace trimming
 
-The following Finance V2 form components are available for future test coverage:
-
-### Form Components
-- `LoanFormModalV2` - Loan management form
-- `CreditCardFormModalV2` - Credit card form
-- `InsuranceFormModalV2` - Insurance policy form
+#### InsuranceFormModalV2
+- Policy name input (required)
+- Policy type selector with 10 options: Health Insurance (default), Life, Auto, Home, Renters, Disability, Dental, Vision, Umbrella, Other
+- Provider input (required)
+- Policy number (optional, supports special characters)
+- Coverage amount (optional, supports large decimals)
+- Premium (required, > 0, supports decimals)
+- Premium frequency selector with 4 options: Monthly (default), Quarterly, Semi-Annual, Annual
+- Deductible (optional, supports decimals)
+- Renewal date (optional)
+- Beneficiaries input (optional)
+- Notes textarea
+- Whitespace trimming
 
 ---
 
 **Last Updated:** 2026-02-26
 **Test Framework:** Vitest
-**Total Test Count:** 324 tests (all passing)
-**Total Execution Time:** ~6.30s
+**Total Test Count:** 404 tests (all passing)
+**Total Execution Time:** ~9.37s
