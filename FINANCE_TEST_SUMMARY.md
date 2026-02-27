@@ -114,13 +114,13 @@ Comprehensive unit test coverage has been added for Finance feature V2 component
 
 ---
 
-## ✅ Form Component Tests (1 component, 25 tests)
+## ✅ Form Component Tests (4 components, 105 tests)
 
 ### 7. **AccountFormModalV2** (`src/finance/components/v2/__tests__/AccountFormModalV2.test.tsx`)
 - **Total Tests:** 25 tests (25 passing)
 - **Coverage:** Account creation/editing form with 9 account types, conditional credit card fields
 - **Status:** ✅ All passing
-- **Execution Time:** ~580ms
+- **Execution Time:** ~1,073ms
 
 #### Test Categories:
 - **Basic Rendering (4 tests):** Modal open/close, "Add Account" vs "Edit Account" title
@@ -134,20 +134,73 @@ Comprehensive unit test coverage has been added for Finance feature V2 component
 
 ---
 
+### 8. **TransactionFormModalV2** (`src/finance/components/v2/__tests__/TransactionFormModalV2.test.tsx`)
+- **Total Tests:** 29 tests (29 passing)
+- **Coverage:** Transaction creation/editing form with type selector (Expense/Income) and categories
+- **Status:** ✅ All passing
+- **Execution Time:** ~1,124ms
+
+#### Test Categories:
+- **Basic Rendering (4 tests):** Modal open/close, "Add Transaction" vs "Edit Transaction" title
+- **Form Fields (7 tests):** Date, description, amount, type selector, account, category, merchant, notes
+- **Transaction Type (2 tests):** Expense and Income options, default to debit
+- **Account and Category Lists (4 tests):** Display account/category options, handle empty lists
+- **Form Interactions (7 tests):** Enter description, amount, select account/category, merchant, notes
+- **Form Submission (2 tests):** Call onSave with data, include category when selected
+- **Edge Cases (3 tests):** Zero amount, whitespace trimming, decimal amounts
+
+---
+
+### 9. **BudgetFormModalV2** (`src/finance/components/v2/__tests__/BudgetFormModalV2.test.tsx`)
+- **Total Tests:** 24 tests (24 passing)
+- **Coverage:** Budget creation/editing form with category selector and rollover option
+- **Status:** ✅ All passing
+- **Execution Time:** ~1,005ms
+
+#### Test Categories:
+- **Basic Rendering (4 tests):** Modal open/close, "Add Budget" vs "Edit Budget" title
+- **Form Fields (5 tests):** Month input, category selector, limit amount, rollover checkbox, notes
+- **Category List (2 tests):** Display category options, handle empty categories
+- **Rollover Checkbox (2 tests):** Default unchecked, allow checking rollover option
+- **Form Interactions (4 tests):** Enter limit, select category/month, enter notes
+- **Form Submission (3 tests):** Call onSave with data, include rollover when checked, include notes
+- **Edge Cases (4 tests):** Zero limit, large amounts, whitespace trimming, decimal amounts
+
+---
+
+### 10. **GoalFormModalV2** (`src/finance/components/v2/__tests__/GoalFormModalV2.test.tsx`)
+- **Total Tests:** 27 tests (27 passing)
+- **Coverage:** Financial goal creation/editing form with 8 category options
+- **Status:** ✅ All passing
+- **Execution Time:** ~1,406ms
+
+#### Test Categories:
+- **Basic Rendering (4 tests):** Modal open/close, "Add Goal" vs "Edit Goal" title
+- **Form Fields (6 tests):** Goal name, target amount, current amount, deadline, category, notes
+- **Goal Categories (2 tests):** List all 8 categories, default to "Other"
+- **Form Interactions (6 tests):** Enter name, target/current amounts, select category, set deadline, enter notes
+- **Form Submission (4 tests):** Call onSave with data, include deadline/category/current amount when provided
+- **Edge Cases (6 tests):** Zero target, large amounts, whitespace trimming, decimal amounts, current exceeds target
+
+---
+
 ## 📈 Coverage Statistics
 
 ### By Component
 
 | Component | Test File | Tests | Status | Time |
 |-----------|-----------|-------|--------|------|
-| AccountCardV2 | AccountCardV2.test.tsx | 39 | ✅ 39 passing | 167ms |
-| TransactionItemV2 | TransactionItemV2.test.tsx | 26 | ✅ 26 passing | 147ms |
-| MetricCardV2 | MetricCardV2.test.tsx | 26 | ✅ 26 passing | 129ms |
-| BudgetCardV2 | BudgetCardV2.test.tsx | 34 | ✅ 34 passing | 196ms |
-| GoalCardV2 | GoalCardV2.test.tsx | 48 | ✅ 48 passing | 226ms |
-| LoanCardV2 | LoanCardV2.test.tsx | 46 | ✅ 46 passing | 233ms |
-| AccountFormModalV2 | AccountFormModalV2.test.tsx | 25 | ✅ 25 passing | 580ms |
-| **Total** | **7 test files** | **244** | **✅ 244 passing** | **1.68s** |
+| AccountCardV2 | AccountCardV2.test.tsx | 39 | ✅ 39 passing | 354ms |
+| TransactionItemV2 | TransactionItemV2.test.tsx | 26 | ✅ 26 passing | 132ms |
+| MetricCardV2 | MetricCardV2.test.tsx | 26 | ✅ 26 passing | 116ms |
+| BudgetCardV2 | BudgetCardV2.test.tsx | 34 | ✅ 34 passing | 169ms |
+| GoalCardV2 | GoalCardV2.test.tsx | 48 | ✅ 48 passing | 567ms |
+| LoanCardV2 | LoanCardV2.test.tsx | 46 | ✅ 46 passing | 350ms |
+| AccountFormModalV2 | AccountFormModalV2.test.tsx | 25 | ✅ 25 passing | 1073ms |
+| TransactionFormModalV2 | TransactionFormModalV2.test.tsx | 29 | ✅ 29 passing | 1124ms |
+| BudgetFormModalV2 | BudgetFormModalV2.test.tsx | 24 | ✅ 24 passing | 1005ms |
+| GoalFormModalV2 | GoalFormModalV2.test.tsx | 27 | ✅ 27 passing | 1406ms |
+| **Total** | **10 test files** | **324** | **✅ 324 passing** | **6.30s** |
 
 ### By Feature
 
@@ -160,6 +213,9 @@ Comprehensive unit test coverage has been added for Finance feature V2 component
 | Goal Cards (Display) | 48 | ✅ All passing |
 | Loan Cards (Display) | 46 | ✅ All passing |
 | Account Forms (Create/Edit) | 25 | ✅ All passing |
+| Transaction Forms (Create/Edit) | 29 | ✅ All passing |
+| Budget Forms (Create/Edit) | 24 | ✅ All passing |
+| Goal Forms (Create/Edit) | 27 | ✅ All passing |
 
 ---
 
@@ -226,13 +282,13 @@ npm run test -- AccountFormModalV2.test.tsx --run
 
 ## ✅ Quality Assurance Checklist
 
-- [x] All unit tests pass (244/244)
+- [x] All unit tests pass (324/324)
 - [x] Code coverage > 80%
 - [x] No console errors in tests
 - [x] Test names are descriptive
 - [x] Edge cases covered
 - [x] Accessibility tested
-- [x] Performance acceptable (~2s total)
+- [x] Performance acceptable (~6s total)
 - [x] Form validation tested
 - [x] Conditional rendering tested
 - [x] Currency and date formatting tested
@@ -242,22 +298,24 @@ npm run test -- AccountFormModalV2.test.tsx --run
 ## 🎉 Summary
 
 **Test Coverage: Excellent**
-- ✅ 244 total unit tests across 7 components
+- ✅ 324 total unit tests across 10 components
 - ✅ 100% passing test rate
 - ✅ 6 display components fully tested
-- ✅ 1 form component fully tested
+- ✅ 4 form components fully tested
 - ✅ Edge cases and error handling comprehensively covered
 - ✅ Owner badge support for merged mode
 - ✅ Conditional fields and form interactions tested
+- ✅ Transaction types (Expense/Income), budget rollover, goal categories
 
 **Test Quality: High**
 - ✅ Clear, descriptive test names
 - ✅ Proper mocking and isolation
-- ✅ Fast execution times (~2s total)
+- ✅ Fast execution times (~6s total)
 - ✅ Maintainable test structure
 - ✅ Currency and date formatting thoroughly tested
 - ✅ Progress tracking and calculations verified
 - ✅ All account, loan, and goal category icons tested
+- ✅ ID-based element selection for robustness
 
 **Confidence Level: High**
 All critical display and form functionality is tested and validated. The implementation is production-ready from a testing perspective.
@@ -331,6 +389,37 @@ All critical display and form functionality is tested and validated. The impleme
 - Whitespace trimming
 - Empty value handling (defaults to 0 or undefined)
 
+#### TransactionFormModalV2
+- Transaction description (required)
+- Date input
+- Amount input (supports decimals)
+- Type selector: Expense (debit) or Income (credit) radio buttons
+- Account selector (required)
+- Category selector (optional)
+- Merchant name input
+- Notes textarea
+- Whitespace trimming
+- Zero amount handling
+
+#### BudgetFormModalV2
+- Month picker (type="month")
+- Category selector (required)
+- Budget limit input (required, supports decimals)
+- Rollover checkbox: "Rollover unused budget to next month"
+- Notes textarea
+- Whitespace trimming
+- ID-based form element selection for robustness
+
+#### GoalFormModalV2
+- Goal name input (required)
+- Target amount (required, > 0, supports decimals)
+- Current amount (defaults to 0, supports decimals)
+- Deadline input (optional)
+- Category selector with 8 options: Vacation, Home Purchase, Car Purchase, Education, Emergency Fund, Retirement, Investment, Other (default)
+- Notes textarea
+- Whitespace trimming
+- Handles current amount exceeding target
+
 ---
 
 ## 📝 Additional Components Available (Not Yet Tested)
@@ -338,9 +427,6 @@ All critical display and form functionality is tested and validated. The impleme
 The following Finance V2 form components are available for future test coverage:
 
 ### Form Components
-- `TransactionFormModalV2` - Transaction creation/editing form
-- `BudgetFormModalV2` - Budget creation form
-- `GoalFormModalV2` - Goal creation form
 - `LoanFormModalV2` - Loan management form
 - `CreditCardFormModalV2` - Credit card form
 - `InsuranceFormModalV2` - Insurance policy form
@@ -349,5 +435,5 @@ The following Finance V2 form components are available for future test coverage:
 
 **Last Updated:** 2026-02-26
 **Test Framework:** Vitest
-**Total Test Count:** 244 tests (all passing)
-**Total Execution Time:** ~1.68s
+**Total Test Count:** 324 tests (all passing)
+**Total Execution Time:** ~6.30s
