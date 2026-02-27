@@ -17,6 +17,7 @@ test.describe('Finance Budgets - Create Operations', () => {
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
       await backdrop.click();
       await page.waitForTimeout(300);
+    }
 
     // Click on Budgets tab
     await page.getByRole('tab', { name: 'Budgets' }).click();
