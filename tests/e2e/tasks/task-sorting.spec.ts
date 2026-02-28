@@ -124,60 +124,56 @@ test.describe('Task Sorting - Due Date', () => {
   test('tasks due today display prominently', async ({ page }) => {
     const todayTask = `Due Today ${Date.now()}`;
 
+    // Switch to Today view FIRST — QuickAdd in Today view auto-assigns today's date
+    await page.getByRole('button', { name: '📅 Today view' }).click();
+    await page.waitForTimeout(300);
+
     await page.getByRole('button', { name: /add task/i }).first().click();
     await page.waitForTimeout(300);
     await page.getByPlaceholder('What needs to be done?').fill(todayTask);
-
-    const dateInput = page.locator('input[type="date"]').first();
-    if (await dateInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      const today = new Date().toISOString().split('T')[0];
-      await dateInput.fill(today);
-    }
-
     await page.locator('form button[type="submit"]').click();
     await page.waitForTimeout(1000);
 
-    // Switch to Today view
-    await page.getByRole('button', { name: /📅.*today/i }).click();
-    await page.waitForTimeout(500);
-
+    // Task should be visible in Today view (has today's date assigned)
     await expect(page.getByText(todayTask)).toBeVisible({ timeout: 10000 });
-
-    // Should show "Due today" indicator
-    const todayIndicator = page.getByText(/due today/i);
-    if (await todayIndicator.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await expect(todayIndicator).toBeVisible();
-    }
   });
 
   test('upcoming tasks show due date', async ({ page }) => {
     const upcomingTask = `Upcoming ${Date.now()}`;
 
+    // Create task in Today view (gets today's date), then edit to set future date
+    await page.getByRole('button', { name: '📅 Today view' }).click();
+    await page.waitForTimeout(300);
+
     await page.getByRole('button', { name: /add task/i }).first().click();
     await page.waitForTimeout(300);
     await page.getByPlaceholder('What needs to be done?').fill(upcomingTask);
+    await page.locator('form button[type="submit"]').click();
+    await page.waitForTimeout(1000);
+
+    // Click the task to edit it and set a future due date
+    await page.getByText(upcomingTask).first().click();
+    await page.waitForTimeout(500);
 
     const dateInput = page.locator('input[type="date"]').first();
     if (await dateInput.isVisible({ timeout: 2000 }).catch(() => false)) {
       const future = new Date();
-      future.setDate(future.getDate() + 5);
+      future.setDate(future.getDate() + 3);
       await dateInput.fill(future.toISOString().split('T')[0]);
+      await page.locator('form button[type="submit"]').click();
+      await page.waitForTimeout(1000);
+    } else {
+      // If no date input in edit modal, just verify task exists
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(300);
     }
-
-    await page.locator('form button[type="submit"]').click();
-    await page.waitForTimeout(1000);
 
     // Switch to Upcoming view (exact accessible name)
     await page.getByRole('button', { name: '🗓️ Upcoming view' }).click();
     await page.waitForTimeout(500);
 
+    // Task with future date should appear in Upcoming view
     await expect(page.getByText(upcomingTask)).toBeVisible({ timeout: 10000 });
-
-    // Should show due date
-    const dueDate = page.getByText(/due/i);
-    if (await dueDate.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await expect(dueDate).toBeVisible();
-    }
   });
 });
 
