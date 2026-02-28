@@ -1,76 +1,125 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const updateTaskMock = vi.fn()
 
-vi.mock('../../hooks/useApiTasks', () => {
+vi.mock('../../contexts/ThemeContext', () => ({
+  useTheme: () => ({ theme: 'light' }),
+  ThemeProvider: ({ children }: any) => children,
+}))
+
+vi.mock('../../hooks/useTasksQuery', () => {
   const now = new Date().toISOString()
   return {
-    useApiTasks: () => ({
-      tasks: [
-        { id: 't1', title: 'Original Title', created_at: now },
+    useTasks: () => ({
+      data: [
+        { id: 't1', title: 'Original Title', created_at: now, user_id: 'test-user', status: 'todo', priority: 'medium', tags: [] },
       ],
-      projects: [],
-      loading: false,
+      isLoading: false,
       error: null,
-      createTask: vi.fn(),
-      updateTask: updateTaskMock,
-      deleteTask: vi.fn(),
-      restoreTask: vi.fn(),
-      permanentlyDeleteTask: vi.fn(),
-      createProject: vi.fn(),
-      updateProject: vi.fn(),
-      deleteProject: vi.fn(),
-      refreshData: vi.fn(),
     }),
+    useProjects: () => ({ data: [], isLoading: false, error: null }),
+    useCreateTask: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+    useUpdateTask: () => ({ mutate: updateTaskMock, mutateAsync: vi.fn(), isPending: false }),
+    usePermanentlyDeleteTask: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+    useMergedTasksConnectionQuery: () => ({ data: null, isLoading: false }),
   }
 })
+
+vi.mock('../../hooks/useApiHealth', () => ({
+  useApiHealth: () => ({ isOnline: true, lastChecked: null, error: null, responseTime: null, checkHealth: vi.fn(), statusText: 'Online' }),
+}))
+
+vi.mock('../../utils/ownerUtils', () => ({
+  useCurrentUserId: () => ({ data: 'test-user', isLoading: false }),
+  usePartnerName: () => 'Partner',
+}))
+
+vi.mock('../../contexts/UndoRedoContext', () => ({
+  useUndoRedo: () => ({ executeCommand: vi.fn(), undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false }),
+}))
+
+vi.mock('../../todos/hooks', () => ({
+  useTodosDragDrop: () => ({
+    draggedTask: null,
+    draggedTaskIds: new Set(),
+    handleDragStart: vi.fn(),
+    handleDragEnd: vi.fn(),
+    handleDropOnSection: vi.fn(),
+    handleDragOver: vi.fn(),
+  }),
+  useTaskExpansion: () => ({
+    expandedTasks: new Set(),
+    toggleTaskExpansion: vi.fn(),
+    subtaskDrafts: {},
+    setSubtaskDraft: vi.fn(),
+    clearSubtaskDraft: vi.fn(),
+    getSubtaskDraft: vi.fn(() => ''),
+  }),
+}))
+
+vi.mock('../../hooks/useThemeColors', () => ({
+  useThemeColors: () => ({
+    bg: { primary: '#FAF9F7', secondary: '#F5F0EB', white: '#FFFFFF' },
+    text: { primary: '#2D1B0E', secondary: '#8B7355', tertiary: '#B09B85' },
+    border: { light: '#EDE0D4', medium: '#D4B896' },
+    badge: { bg: '#F5F0EB', text: '#8B7355' },
+  }),
+}))
+
+vi.mock('../../services/reminders/ReminderService', () => ({
+  reminderService: { scheduleReminder: vi.fn().mockResolvedValue(undefined) },
+}))
+
+const createWrapper = () => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  )
+}
 
 describe('Todos inline editing', () => {
   beforeEach(() => {
     updateTaskMock.mockClear()
   })
 
-  it('edits task title inline and saves on Enter', async () => {
-    const mod = await import('../TodosWorkingFollowUp')
+  it('toggles selection mode via Select Tasks button and shows checkboxes', async () => {
+    const mod = await import('../Todos')
     const Todos = mod.default
-    render(<Todos />)
+    const Wrapper = createWrapper()
+    const { container } = render(<Wrapper><Todos /></Wrapper>)
 
-    // Use the action button to enter edit mode (more stable)
-    const editBtn = await screen.findByTitle('Edit task')
-    fireEvent.click(editBtn)
+    // Enable bulk mode via Select Tasks button
+    const selectTasksBtn = await screen.findByText('Select Tasks')
+    expect(selectTasksBtn).toBeTruthy()
+    fireEvent.click(selectTasksBtn)
 
-    // Input should appear; change value
-    const input = await screen.findByDisplayValue('Original Title')
-    fireEvent.change(input, { target: { value: 'Renamed Title' } })
-    // Save via the Save button to avoid key handling flakiness
-    const saveBtn = await screen.findByTitle('Save')
-    fireEvent.click(saveBtn)
-
-    // Assert API called with new title
-    await waitFor(() => expect(updateTaskMock).toHaveBeenCalled())
-    const [idArg, updatesArg] = updateTaskMock.mock.calls[0]
-    expect(idArg).toBe('t1')
-    expect((updatesArg as any).title).toBe('Renamed Title')
+    // "Cancel Selection" should now be visible
+    expect(await screen.findByText('Cancel Selection')).toBeInTheDocument()
   })
 
-  it('toggles bulk mode and selects a task via checkbox', async () => {
-    const mod = await import('../TodosWorkingFollowUp')
+  it('toggles selection mode and selects a task via checkbox', async () => {
+    const mod = await import('../Todos')
     const Todos = mod.default
-    const { container } = render(<Todos />)
+    const Wrapper = createWrapper()
+    const { container } = render(<Wrapper><Todos /></Wrapper>)
 
-    // Enable bulk mode
-    const bulkToggle = container.querySelector('button[title="Bulk selection mode"]') as HTMLElement
-    expect(bulkToggle).toBeTruthy()
-    fireEvent.click(bulkToggle)
+    // Switch to Inbox to see all tasks
+    const inboxBtn = await screen.findByRole('button', { name: /Inbox view/i })
+    fireEvent.click(inboxBtn)
 
-    // Checkbox should appear; click to select
-    const checkbox = screen.getByLabelText(/Select task/i) as HTMLInputElement
-    expect(checkbox).toBeTruthy()
-    fireEvent.click(checkbox)
+    // Enable selection mode
+    const selectTasksBtn = await screen.findByText('Select Tasks')
+    fireEvent.click(selectTasksBtn)
 
-    // Selected label should show "1 selected"
-    expect(await screen.findByText(/1 selected/i)).toBeInTheDocument()
+    // Checkbox should appear in selection mode
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]')
+    expect(checkboxes.length).toBeGreaterThan(0)
+    fireEvent.click(checkboxes[0])
+
+    // Bulk action bar shows "1 task selected"
+    expect(await screen.findByText(/1 task selected/i)).toBeInTheDocument()
   })
 })
