@@ -57,11 +57,26 @@ vi.mock('../../hooks/useOwnerInfo', () => ({
 
 describe('Habits error toasts', () => {
   it('shows error toast when add fails', async () => {
+    // Suppress unhandled rejection from re-throw in Habits.tsx (line 218: throw error)
+    // The component catches the error, shows toast, then re-throws so FormModalV2 can reset.
+    // This re-throw becomes an unhandled rejection in the test environment.
+    const rejectionHandler = (reason: Error) => {
+      if (reason?.message === 'fail') return; // suppress
+    };
+    process.on('unhandledRejection', rejectionHandler);
+
     // Make createHabit throw an error
     createHabitMock.mockRejectedValue(new Error('fail'))
 
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: {
+          // Suppress mutation error propagation in tests
+          // (the component re-throws after showing toast, which causes unhandled rejections)
+          onError: () => {},
+        },
+      },
     })
 
     const { default: Habits } = await import('../Habits')
@@ -93,5 +108,7 @@ describe('Habits error toasts', () => {
     await waitFor(() => {
       expect(screen.getByText(/Unable to save the habit right now/i)).toBeInTheDocument()
     })
+
+    process.off('unhandledRejection', rejectionHandler);
   })
 })
