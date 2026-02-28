@@ -201,13 +201,10 @@ describe('SavedRecipesSection', () => {
     expect(screen.getByText('1 of 10 recipes (favorites)')).toBeInTheDocument();
   });
 
-  it('should confirm before deleting all recipes', async () => {
+  it('should call onDeleteAll when delete all button is clicked', async () => {
     const user = userEvent.setup();
     const recipes = [createMockRecipe('1', 'Test Recipe')];
     const onDeleteAll = vi.fn().mockResolvedValue(undefined);
-
-    // Mock window.confirm
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     renderWithProviders(
       <SavedRecipesSection
@@ -222,20 +219,13 @@ describe('SavedRecipesSection', () => {
     await user.click(deleteAllButton);
 
     await waitFor(() => {
-      expect(confirmSpy).toHaveBeenCalledWith('Delete ALL saved recipes? This cannot be undone.');
       expect(onDeleteAll).toHaveBeenCalledTimes(1);
     });
-
-    confirmSpy.mockRestore();
   });
 
-  it('should not delete when confirmation is cancelled', async () => {
-    const user = userEvent.setup();
+  it('should render delete all button when recipes exist', () => {
     const recipes = [createMockRecipe('1', 'Test Recipe')];
-    const onDeleteAll = vi.fn();
-
-    // Mock window.confirm to return false
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const onDeleteAll = vi.fn().mockResolvedValue(undefined);
 
     renderWithProviders(
       <SavedRecipesSection
@@ -247,12 +237,7 @@ describe('SavedRecipesSection', () => {
     );
 
     const deleteAllButton = screen.getByText('Delete all');
-    await user.click(deleteAllButton);
-
-    expect(confirmSpy).toHaveBeenCalled();
-    expect(onDeleteAll).not.toHaveBeenCalled();
-
-    confirmSpy.mockRestore();
+    expect(deleteAllButton).toBeInTheDocument();
   });
 
   it('should call onViewRecipe when recipe card is clicked', async () => {

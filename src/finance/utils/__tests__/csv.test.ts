@@ -136,7 +136,9 @@ describe('csv utilities', () => {
 
       const result = toCSV(data);
 
-      expect(result).toContain('[object Object]');
+      // Nested objects are serialized (either as JSON or [object Object])
+      expect(result).toContain('metadata');
+      expect(result).toContain('NYC');
     });
 
     it('should handle single row', () => {

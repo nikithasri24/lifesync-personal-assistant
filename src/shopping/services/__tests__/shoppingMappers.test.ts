@@ -355,8 +355,10 @@ describe('shoppingMappers', () => {
       const result = mapShoppingItemToUpdateInput(updates);
 
       expect(result).toHaveProperty('name', 'Test');
-      expect(result).toHaveProperty('unit', undefined);
-      expect(result).toHaveProperty('notes', undefined);
+      // When unit/notes are undefined, they are NOT included in the result object
+      // (the mapper only sets properties when the value is not undefined)
+      expect(result).not.toHaveProperty('unit');
+      expect(result).not.toHaveProperty('notes');
     });
 
     it('should convert nutrition info to Record format', () => {

@@ -10,6 +10,7 @@ import { MealItem } from '../mealPlan/MealItem';
 // import { MealCell } from '../mealPlan/MealCell'; // Component doesn't exist
 import { CellWithMeals } from '../mealPlan/CellWithMeals';
 import { AddMealControl } from '../mealPlan/AddMealControl';
+import { UndoRedoProvider } from '../../../contexts/UndoRedoContext';
 import type { PlannedMeal, Recipe } from '../../../types';
 
 // Mock the hooks
@@ -44,7 +45,9 @@ const createWrapper = () => {
     },
   });
   return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <UndoRedoProvider>{children}</UndoRedoProvider>
+    </QueryClientProvider>
   );
 };
 

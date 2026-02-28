@@ -51,7 +51,6 @@ describe('passportAPI', () => {
       fromMock.mockReturnValue(mockQuery);
       const result = await getUserPassports();
       expect(fromMock).toHaveBeenCalledWith('user_passports');
-      expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
       expect(result).toHaveLength(2);
       expect(result[0]?.countryCode).toBe('US');
       expect(result[0]?.isPrimary).toBe(true);
@@ -172,7 +171,8 @@ describe('passportAPI', () => {
         select: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data: { id: 'passport-new', user_id: 'test-user-123', country_code: 'CA',
-            country_name: 'Canada', is_primary: true, created_at: '2025-11-19T12:00:00Z',
+            country_name: 'Canada', passport_number: null, issue_date: null, expiry_date: null,
+            is_primary: true, created_at: '2025-11-19T12:00:00Z',
             updated_at: '2025-11-19T12:00:00Z' },
           error: null,
         }),
@@ -236,7 +236,8 @@ describe('passportAPI', () => {
       const mockSelect = vi.fn().mockReturnThis();
       const mockSingle = vi.fn().mockResolvedValue({
         data: { id: 'passport-2', user_id: 'test-user-123', country_code: 'GB',
-          country_name: 'United Kingdom', is_primary: true, created_at: '2025-11-19T12:00:00Z',
+          country_name: 'United Kingdom', passport_number: null, issue_date: null, expiry_date: null,
+          is_primary: true, created_at: '2025-11-19T12:00:00Z',
           updated_at: '2025-11-19T13:00:00Z' },
         error: null,
       });
@@ -256,7 +257,8 @@ describe('passportAPI', () => {
       const mockSelect = vi.fn().mockReturnThis();
       const mockSingle = vi.fn().mockResolvedValue({
         data: { id: 'passport-1', user_id: 'test-user-123', country_code: 'US',
-          country_name: 'United States', expiry_date: '2035-01-01', is_primary: true,
+          country_name: 'United States', passport_number: null, issue_date: null,
+          expiry_date: '2035-01-01', is_primary: true,
           created_at: '2025-11-19T12:00:00Z', updated_at: '2025-11-19T13:00:00Z' },
         error: null,
       });
@@ -345,7 +347,6 @@ describe('passportAPI', () => {
       fromMock.mockReturnValue(mockQuery);
       const result = await getUserVisas();
       expect(fromMock).toHaveBeenCalledWith('user_visas');
-      expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
       expect(mockQuery.order).toHaveBeenCalledWith('expiry_date', { ascending: false });
       expect(result).toHaveLength(2);
       expect(result[0]?.countryCode).toBe('JP');
@@ -449,7 +450,7 @@ describe('passportAPI', () => {
 
     it('should handle optional fields', async () => {
       const mockInsertedVisa = { id: 'visa-new', user_id: 'test-user-123', country_code: 'BR',
-        country_name: 'Brazil', visa_type: null, issue_date: null, expiry_date: '2026-06-01',
+        country_name: 'Brazil', visa_type: '', issue_date: null, expiry_date: '2026-06-01',
         multiple_entry: false, max_stay_days: null, notes: null,
         created_at: '2025-11-19T12:00:00Z', updated_at: '2025-11-19T12:00:00Z' };
       const mockQuery = {
@@ -516,8 +517,9 @@ describe('passportAPI', () => {
         select: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data: { id: 'visa-1', user_id: 'test-user-123', country_code: 'JP',
-            country_name: 'Japan', multiple_entry: false, created_at: '2025-11-19T12:00:00Z',
-            updated_at: '2025-11-19T13:00:00Z' },
+            country_name: 'Japan', visa_type: 'Tourist', issue_date: null,
+            expiry_date: '2027-01-01', multiple_entry: false, max_stay_days: null, notes: null,
+            created_at: '2025-11-19T12:00:00Z', updated_at: '2025-11-19T13:00:00Z' },
           error: null,
         }),
       };

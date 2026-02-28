@@ -10,14 +10,17 @@ import {
 } from '@/hooks/useFinanceQuery';
 import type { RetirementAccountWithStats, RetirementAccountMetadataInput } from '../../types';
 
+// Create a shared mock API object so all calls to getFinanceAPI return the same instance
+const mockApi = {
+  listRetirementAccounts: vi.fn(),
+  getRetirementAccount: vi.fn(),
+  upsertRetirementAccountMetadata: vi.fn(),
+  deleteRetirementAccountMetadata: vi.fn(),
+};
+
 // Mock the API
 vi.mock('../../data', () => ({
-  getFinanceAPI: vi.fn(() => ({
-    listRetirementAccounts: vi.fn(),
-    getRetirementAccount: vi.fn(),
-    upsertRetirementAccountMetadata: vi.fn(),
-    deleteRetirementAccountMetadata: vi.fn(),
-  })),
+  getFinanceAPI: vi.fn(() => Promise.resolve(mockApi)),
 }));
 
 const mockRetirementAccounts: RetirementAccountWithStats[] = [
@@ -74,9 +77,7 @@ describe('Retirement React Query Hooks', () => {
 
   describe('useRetirementAccountsQuery', () => {
     it('should fetch retirement accounts successfully', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
-      vi.mocked(mockApi.listRetirementAccounts).mockResolvedValue(mockRetirementAccounts);
+      mockApi.listRetirementAccounts.mockResolvedValue(mockRetirementAccounts);
 
       const { result } = renderHook(() => useRetirementAccountsQuery(), { wrapper });
 
@@ -89,10 +90,8 @@ describe('Retirement React Query Hooks', () => {
     });
 
     it('should handle fetch error', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
       const error = new Error('Failed to fetch');
-      vi.mocked(mockApi.listRetirementAccounts).mockRejectedValue(error);
+      mockApi.listRetirementAccounts.mockRejectedValue(error);
 
       const { result } = renderHook(() => useRetirementAccountsQuery(), { wrapper });
 
@@ -113,9 +112,7 @@ describe('Retirement React Query Hooks', () => {
 
   describe('useRetirementAccountQuery', () => {
     it('should fetch single retirement account', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
-      vi.mocked(mockApi.getRetirementAccount).mockResolvedValue(mockRetirementAccounts[0]);
+      mockApi.getRetirementAccount.mockResolvedValue(mockRetirementAccounts[0]);
 
       const { result } = renderHook(() => useRetirementAccountQuery('acc1'), { wrapper });
 
@@ -130,17 +127,16 @@ describe('Retirement React Query Hooks', () => {
     it('should return null for null accountId', async () => {
       const { result } = renderHook(() => useRetirementAccountQuery(null), { wrapper });
 
+      // When disabled, result stays in loading state but with no data
+      // Check that no API call was made
       await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
+        expect(mockApi.getRetirementAccount).not.toHaveBeenCalled();
       });
 
-      expect(result.current.data).toBe(null);
+      expect(result.current.data).toBeUndefined();
     });
 
     it('should not fetch when accountId is null', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
-
       renderHook(() => useRetirementAccountQuery(null), { wrapper });
 
       await waitFor(() => {
@@ -149,10 +145,8 @@ describe('Retirement React Query Hooks', () => {
     });
 
     it('should handle fetch error', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
       const error = new Error('Account not found');
-      vi.mocked(mockApi.getRetirementAccount).mockRejectedValue(error);
+      mockApi.getRetirementAccount.mockRejectedValue(error);
 
       const { result } = renderHook(() => useRetirementAccountQuery('acc1'), { wrapper });
 
@@ -166,9 +160,7 @@ describe('Retirement React Query Hooks', () => {
 
   describe('useUpsertRetirementAccountMetadataMutation', () => {
     it('should upsert retirement account metadata', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
-      vi.mocked(mockApi.upsertRetirementAccountMetadata).mockResolvedValue(undefined);
+      mockApi.upsertRetirementAccountMetadata.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useUpsertRetirementAccountMetadataMutation(), { wrapper });
 
@@ -199,9 +191,7 @@ describe('Retirement React Query Hooks', () => {
     });
 
     it('should invalidate queries on success', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
-      vi.mocked(mockApi.upsertRetirementAccountMetadata).mockResolvedValue(undefined);
+      mockApi.upsertRetirementAccountMetadata.mockResolvedValue(undefined);
 
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -231,10 +221,8 @@ describe('Retirement React Query Hooks', () => {
     });
 
     it('should handle upsert error', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
       const error = new Error('Failed to save');
-      vi.mocked(mockApi.upsertRetirementAccountMetadata).mockRejectedValue(error);
+      mockApi.upsertRetirementAccountMetadata.mockRejectedValue(error);
 
       const { result } = renderHook(() => useUpsertRetirementAccountMetadataMutation(), { wrapper });
 
@@ -263,9 +251,7 @@ describe('Retirement React Query Hooks', () => {
 
   describe('useDeleteRetirementAccountMetadataMutation', () => {
     it('should delete retirement account metadata', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
-      vi.mocked(mockApi.deleteRetirementAccountMetadata).mockResolvedValue(undefined);
+      mockApi.deleteRetirementAccountMetadata.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useDeleteRetirementAccountMetadataMutation(), { wrapper });
 
@@ -279,9 +265,7 @@ describe('Retirement React Query Hooks', () => {
     });
 
     it('should invalidate queries on success', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
-      vi.mocked(mockApi.deleteRetirementAccountMetadata).mockResolvedValue(undefined);
+      mockApi.deleteRetirementAccountMetadata.mockResolvedValue(undefined);
 
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -297,10 +281,8 @@ describe('Retirement React Query Hooks', () => {
     });
 
     it('should handle delete error', async () => {
-      const { getFinanceAPI } = await import('../../data');
-      const mockApi = await getFinanceAPI();
       const error = new Error('Failed to delete');
-      vi.mocked(mockApi.deleteRetirementAccountMetadata).mockRejectedValue(error);
+      mockApi.deleteRetirementAccountMetadata.mockRejectedValue(error);
 
       const { result } = renderHook(() => useDeleteRetirementAccountMetadataMutation(), { wrapper });
 

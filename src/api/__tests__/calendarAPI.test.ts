@@ -6,6 +6,7 @@ import {
   updateCalendarEvent,
   deleteCalendarEvent,
 } from '../calendarAPI';
+import { clearCalendarMergedConnectionCache } from '../calendarData';
 
 // Mock Supabase
 vi.mock('../../lib/supabase', () => ({
@@ -15,6 +16,11 @@ vi.mock('../../lib/supabase', () => ({
     },
     from: vi.fn(),
   },
+}));
+
+// Mock the merged connection to avoid extra Supabase calls
+vi.mock('../../shared/api/SharedDataProvider', () => ({
+  getMergedConnectionId: vi.fn().mockResolvedValue(null),
 }));
 
 describe('Calendar API', () => {
@@ -36,6 +42,7 @@ describe('Calendar API', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clearCalendarMergedConnectionCache();
     (supabase!.auth.getUser as any).mockResolvedValue({
       data: { user: mockUser },
     });
@@ -79,10 +86,10 @@ describe('Calendar API', () => {
     const mockQuery = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockResolvedValue({
-        data: [mockEvent],
-        error: null,
-      }),
+      order: vi.fn().mockReturnThis(),
+      then: vi.fn((resolve: (val: { data: typeof mockEvent[]; error: null }) => void) =>
+        resolve({ data: [mockEvent], error: null })
+      ),
     };
 
     (supabase!.from as any).mockReturnValue(mockQuery);

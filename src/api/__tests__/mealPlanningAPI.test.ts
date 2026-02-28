@@ -16,6 +16,7 @@ import {
   createPantryItem,
   updatePantryItem,
   deletePantryItem,
+  clearMergedConnectionCache,
 } from '../mealPlanningAPI';
 
 // Mock Supabase
@@ -28,12 +29,18 @@ vi.mock('../../lib/supabase', () => ({
   },
 }));
 
+// Mock merged connection to avoid extra Supabase calls
+vi.mock('../../shared/api/SharedDataProvider', () => ({
+  getMergedConnectionId: vi.fn().mockResolvedValue(null),
+}));
+
 describe('mealPlanningAPI', () => {
-  const mockUser = { id: 'test-user-123' };
+  const mockUserId = '00000000-0000-0000-0000-000000000001';
+  const mockUser = { id: mockUserId };
 
   const mockRecipe = {
-    id: 'recipe-123',
-    user_id: 'test-user-123',
+    id: '00000000-0000-0000-0000-000000000010',
+    user_id: mockUserId,
     name: 'Pasta Carbonara',
     description: 'Classic Italian pasta dish',
     cuisine: 'Italian',
@@ -41,7 +48,7 @@ describe('mealPlanningAPI', () => {
     prep_time: 15,
     cook_time: 20,
     servings: 4,
-    calories: 650,
+    calories_per_serving: 650,
     ingredients: [{ name: 'Pasta', amount: '400g' }],
     instructions: 'Cook pasta, mix with sauce',
     tags: ['italian', 'pasta'],
@@ -51,11 +58,11 @@ describe('mealPlanningAPI', () => {
   };
 
   const mockMealPlan = {
-    id: 'mealplan-123',
-    user_id: 'test-user-123',
+    id: '00000000-0000-0000-0000-000000000020',
+    user_id: mockUserId,
     name: 'Week 1 Plan',
     week_start_date: '2026-01-06',
-    meal_columns: [{ id: 'breakfast', name: 'Breakfast' }],
+    meal_columns: null,
     shopping_list_generated: false,
     notes: 'Test plan',
     planned_meals: [],
@@ -64,9 +71,9 @@ describe('mealPlanningAPI', () => {
   };
 
   const mockPlannedMeal = {
-    id: 'plannedmeal-123',
-    meal_plan_id: 'mealplan-123',
-    recipe_id: 'recipe-123',
+    id: '00000000-0000-0000-0000-000000000030',
+    meal_plan_id: '00000000-0000-0000-0000-000000000020',
+    recipe_id: '00000000-0000-0000-0000-000000000010',
     custom_meal: null,
     date: '2026-01-06',
     meal_type: 'dinner',
@@ -79,8 +86,8 @@ describe('mealPlanningAPI', () => {
   };
 
   const mockPantryItem = {
-    id: 'pantry-123',
-    user_id: 'test-user-123',
+    id: '00000000-0000-0000-0000-000000000040',
+    user_id: mockUserId,
     name: 'Olive Oil',
     quantity: 1,
     unit: 'bottle',
@@ -96,6 +103,7 @@ describe('mealPlanningAPI', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clearMergedConnectionCache();
     (supabase!.auth.getUser as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: { user: mockUser },
     });
@@ -121,7 +129,7 @@ describe('mealPlanningAPI', () => {
 
         expect(supabase!.from).toHaveBeenCalledWith('recipes');
         expect(mockQuery.select).toHaveBeenCalledWith('*');
-        expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
+        expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUserId);
         expect(result).toEqual([mockRecipe]);
       });
 
@@ -285,20 +293,20 @@ describe('mealPlanningAPI', () => {
     describe('createPlannedMeal', () => {
       it('should create a planned meal after verifying plan ownership', async () => {
         const newMeal = {
-          meal_plan_id: 'mealplan-123',
-          recipe_id: 'recipe-123',
+          meal_plan_id: '00000000-0000-0000-0000-000000000020',
+          recipe_id: '00000000-0000-0000-0000-000000000010',
           date: '2026-01-07',
           meal_type: 'lunch',
           servings: 2,
           people_count: 2,
         };
 
-        // Mock for plan ownership check
+        // Mock for plan ownership check (verifyMealPlanAccess needs user_id to match)
         const mockPlanQuery = {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
           single: vi.fn().mockResolvedValue({
-            data: { id: 'mealplan-123' },
+            data: { id: '00000000-0000-0000-0000-000000000020', user_id: mockUserId, connection_id: null },
             error: null,
           }),
         };
@@ -327,7 +335,7 @@ describe('mealPlanningAPI', () => {
 
       it('should throw error if meal plan not owned by user', async () => {
         const newMeal = {
-          meal_plan_id: 'other-user-plan',
+          meal_plan_id: '00000000-0000-0000-0000-000000000099',
           date: '2026-01-07',
           meal_type: 'dinner',
           servings: 4,
@@ -382,7 +390,18 @@ describe('mealPlanningAPI', () => {
           category: 'pantry' as const,
         };
 
-        const mockQuery = {
+        // First call: module_permissions query
+        const mockPermissionsQuery = {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: null,
+            error: null,
+          }),
+        };
+
+        // Second call: pantry_items insert
+        const mockInsertQuery = {
           insert: vi.fn().mockReturnThis(),
           select: vi.fn().mockReturnThis(),
           single: vi.fn().mockResolvedValue({
@@ -391,7 +410,12 @@ describe('mealPlanningAPI', () => {
           }),
         };
 
-        (supabase!.from as ReturnType<typeof vi.fn>).mockReturnValue(mockQuery);
+        let callCount = 0;
+        (supabase!.from as ReturnType<typeof vi.fn>).mockImplementation(() => {
+          callCount++;
+          if (callCount === 1) return mockPermissionsQuery;
+          return mockInsertQuery;
+        });
 
         const result = await createPantryItem(newItem);
 

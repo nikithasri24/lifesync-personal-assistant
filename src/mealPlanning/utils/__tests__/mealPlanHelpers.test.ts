@@ -60,9 +60,10 @@ describe('mealPlanHelpers', () => {
       const result = ensureDate(dateString);
 
       expect(result).toBeInstanceOf(Date);
-      expect(result.getFullYear()).toBe(2024);
-      expect(result.getMonth()).toBe(0); // January
-      expect(result.getDate()).toBe(15);
+      // Use UTC methods since new Date('YYYY-MM-DD') creates UTC midnight
+      expect(result.getUTCFullYear()).toBe(2024);
+      expect(result.getUTCMonth()).toBe(0); // January
+      expect(result.getUTCDate()).toBe(15);
     });
 
     it('should handle various string date formats', () => {

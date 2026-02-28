@@ -212,7 +212,7 @@ describe('Dashboard', () => {
     expect(screen.getAllByText(/week's progress/i).length).toBeGreaterThan(0);
   });
 
-  it('lists today's tasks and allows completing one', () => {
+  it("lists today's tasks and allows completing one", () => {
     const { mockUpdateTask } = renderDashboard();
 
     expect(screen.getByText('Prepare quarterly report')).toBeInTheDocument();
@@ -226,7 +226,7 @@ describe('Dashboard', () => {
     }
   });
 
-  it('shows today's habits and allows recording a completion', async () => {
+  it("shows today's habits and allows recording a completion", async () => {
     const { mockCreateHabitEntry } = renderDashboard();
 
     expect(screen.getByText(/today's habits/i)).toBeInTheDocument();

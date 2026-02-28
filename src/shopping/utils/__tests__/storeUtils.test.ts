@@ -106,7 +106,7 @@ describe('storeUtils', () => {
       const scoreWith = calculateStoreScore(storeWithCategory, 'produce');
 
       expect(scoreWith).toBeGreaterThan(scoreWithout);
-      expect(scoreWith - scoreWithout).toBe(3); // Category bonus
+      expect(scoreWith - scoreWithout).toBeCloseTo(3); // Category bonus
     });
 
     it('should factor in price rating', () => {

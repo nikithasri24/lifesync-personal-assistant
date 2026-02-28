@@ -149,7 +149,7 @@ describe('PantryActionButtons', () => {
         unit: 'pcs',
         category: 'other',
         isLowStock: false,
-        expirationDate: new Date('2025-12-31'),
+        expirationDate: new Date('2027-12-31'),
         createdAt: new Date(),
         updatedAt: new Date(),
       },

@@ -95,7 +95,7 @@ describe('validate utilities', () => {
       await expect(validateTransactionInput(input)).rejects.toThrow();
     });
 
-    it('should accept negative amounts', async () => {
+    it('should throw on negative amounts (schema requires positive)', async () => {
       const input = {
         accountId: 'acc-1',
         dateISO: '2025-11-21',
@@ -104,12 +104,10 @@ describe('validate utilities', () => {
         type: 'debit' as const,
       };
 
-      const result = await validateTransactionInput(input);
-
-      expect(result.amount).toBe(-50);
+      await expect(validateTransactionInput(input)).rejects.toThrow();
     });
 
-    it('should accept zero amount', async () => {
+    it('should throw on zero amount (schema requires positive)', async () => {
       const input = {
         accountId: 'acc-1',
         dateISO: '2025-11-21',
@@ -118,9 +116,7 @@ describe('validate utilities', () => {
         type: 'debit' as const,
       };
 
-      const result = await validateTransactionInput(input);
-
-      expect(result.amount).toBe(0);
+      await expect(validateTransactionInput(input)).rejects.toThrow();
     });
   });
 

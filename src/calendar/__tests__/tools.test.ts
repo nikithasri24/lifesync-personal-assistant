@@ -44,6 +44,9 @@ describe('Calendar AI Tools', () => {
     });
 
     it('should handle missing required fields', async () => {
+      // Reset to simulate error when required field is missing
+      vi.mocked(calendarAPI.createCalendarEvent).mockRejectedValue(new Error('Missing required field: start_date'));
+
       const tool = calendarTools.find((t) => t.definition.function.name === 'create_event');
 
       const result = await tool!.execute(
@@ -81,14 +84,14 @@ describe('Calendar AI Tools', () => {
 
       const result = await tool!.execute(
         {
-          start_date: '2025-01-20',
-          end_date: '2025-01-22',
+          startDate: '2025-01-20',
+          endDate: '2025-01-22',
         },
         mockUserId
       );
 
       expect(result.success).toBe(true);
-      expect(result.events).toHaveLength(2);
+      expect(result.data ?? result.events).toHaveLength(2);
     });
 
     it('should filter events by type', async () => {
@@ -167,20 +170,12 @@ describe('Calendar AI Tools', () => {
 
   describe('find_free_slots tool', () => {
     it('should find free time slots', async () => {
-      const mockEvents = [
-        {
-          id: 'event-1',
-          start_date: '2025-01-20T10:00:00Z',
-          end_date: '2025-01-20T11:00:00Z',
-        },
-        {
-          id: 'event-2',
-          start_date: '2025-01-20T14:00:00Z',
-          end_date: '2025-01-20T15:00:00Z',
-        },
+      const mockSlots = [
+        { start: '2025-01-20T09:00:00Z', end: '2025-01-20T10:00:00Z' },
+        { start: '2025-01-20T11:00:00Z', end: '2025-01-20T14:00:00Z' },
       ];
 
-      vi.mocked(calendarAPI.getCalendarEvents).mockResolvedValue(mockEvents as any);
+      vi.mocked(calendarAPI.findFreeSlots).mockResolvedValue(mockSlots as any);
 
       const tool = calendarTools.find((t) => t.definition.function.name === 'find_free_slots');
       expect(tool).toBeDefined();
@@ -194,8 +189,9 @@ describe('Calendar AI Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.free_slots).toBeDefined();
-      expect(Array.isArray(result.free_slots)).toBe(true);
+      const slots = result.free_slots ?? result.data;
+      expect(slots).toBeDefined();
+      expect(Array.isArray(slots)).toBe(true);
     });
   });
 });

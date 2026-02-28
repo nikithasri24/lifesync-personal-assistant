@@ -5,6 +5,21 @@ import { TaskFocusIntegration } from '../TaskFocusIntegration'
 import { vi } from 'vitest'
 import { useComposedStore } from '../../../../stores/useComposedStore'
 import type { TaskData, Project } from '@/services/types'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import React from 'react'
+
+vi.mock('@/hooks/useTasksQuery', () => ({
+  useTasks: vi.fn(() => ({ data: [], isLoading: false })),
+  useTasksQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useUpdateTask: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+  useCreateTask: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+  useDeleteTask: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+}))
+
+vi.mock('@/hooks/useProjectsQuery', () => ({
+  useProjectsQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useMergedProjectsConnectionQuery: vi.fn(() => ({ data: null, isLoading: false })),
+}))
 
 const baseDate = new Date('2024-01-01T08:00:00.000Z')
 
@@ -147,15 +162,11 @@ const sampleProjects: Project[] = [
   }
 ]
 
-beforeEach(() => {
-  act(() => {
-    // tasks, projects, and sessions slices removed - now using React Query
-    // useComposedStore.setState({
-    //   tasks: sampleTasks.map(task => ({ ...task })),
-    //   projects: sampleProjects.map(project => ({ ...project })),
-    //   sessions: []
-    // })
-  })
+beforeEach(async () => {
+  const { useTasks } = await import('@/hooks/useTasksQuery')
+  const { useProjectsQuery } = await import('@/hooks/useProjectsQuery')
+  vi.mocked(useTasks).mockReturnValue({ data: sampleTasks, isLoading: false } as any)
+  vi.mocked(useProjectsQuery).mockReturnValue({ data: sampleProjects, isLoading: false } as any)
 })
 
 afterEach(() => {
@@ -167,6 +178,13 @@ afterEach(() => {
 })
 
 describe('TaskFocusIntegration tasks tab', () => {
+  const createWrapper = () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    return ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    )
+  }
+
   const renderTasks = (): { user: ReturnType<typeof userEvent.setup>; props: { onStartFocusSession: ReturnType<typeof vi.fn>; onTaskComplete: ReturnType<typeof vi.fn> } } => {
     const props = {
       onStartFocusSession: vi.fn(),
@@ -178,7 +196,8 @@ describe('TaskFocusIntegration tasks tab', () => {
       <TaskFocusIntegration
         onStartFocusSession={props.onStartFocusSession}
         onTaskComplete={props.onTaskComplete}
-      />
+      />,
+      { wrapper: createWrapper() }
     )
 
     return { user, props }

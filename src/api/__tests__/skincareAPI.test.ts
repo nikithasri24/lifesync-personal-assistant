@@ -135,7 +135,7 @@ describe('Skincare API', () => {
         eq: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
-          data: { ...mockProduct, currentlyUsing: false },
+          data: { ...mockProduct, currently_using: false },
           error: null,
         }),
       };
@@ -146,7 +146,7 @@ describe('Skincare API', () => {
 
       expect(mockQuery.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          currentlyUsing: false,
+          currently_using: false,
         })
       );
       expect(mockQuery.eq).toHaveBeenCalledWith('id', 'product-1');
@@ -298,9 +298,9 @@ describe('Skincare API', () => {
   describe('Stats', () => {
     it('should calculate skincare stats', async () => {
       const mockProducts = [
-        { id: '1', name: 'Product 1', in_use: true },
-        { id: '2', name: 'Product 2', in_use: false },
-        { id: '3', name: 'Product 3', in_use: true },
+        { id: '1', name: 'Product 1', currently_using: true, category: 'serum', usage_time: [], skin_type: null, concerns: [], ingredients: null, notes: null, purchase_date: null, expiry_date: null, size: null, size_unit: null, price: null, user_id: 'test-user-123', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+        { id: '2', name: 'Product 2', currently_using: false, category: 'serum', usage_time: [], skin_type: null, concerns: [], ingredients: null, notes: null, purchase_date: null, expiry_date: null, size: null, size_unit: null, price: null, user_id: 'test-user-123', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+        { id: '3', name: 'Product 3', currently_using: true, category: 'serum', usage_time: [], skin_type: null, concerns: [], ingredients: null, notes: null, purchase_date: null, expiry_date: null, size: null, size_unit: null, price: null, user_id: 'test-user-123', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
       ];
 
       const mockLogs = [

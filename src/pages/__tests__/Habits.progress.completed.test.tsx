@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { format } from 'date-fns'
 
 const today = new Date()
-const todayISO = format(today, 'yyyy-MM-dd')
+// Use UTC date to match component's toISOString().split('T')[0]
+const todayISO = today.toISOString().split('T')[0]
 
 vi.mock('../../hooks/useHabitsQuery', () => ({
   useHabits: () => ({
@@ -105,8 +106,12 @@ describe('Habits progress completed', () => {
       expect(screen.getByText('Plan')).toBeInTheDocument()
     })
 
-    // Progress section should show 2/2
-    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    // Progress section should show 2/2 (text may be split across nodes)
+    expect(
+      screen.getByText((content, element) => {
+        return element?.tagName.toLowerCase() === 'span' && element.textContent?.includes('2') && element.textContent?.includes('/ 2') || false;
+      })
+    ).toBeInTheDocument()
 
     // When habit is complete, button shows "Mark incomplete"
     const completeBtn = screen.getByRole('button', { name: /mark incomplete/i })
