@@ -200,7 +200,7 @@ test.describe('Task Filters - Priority', () => {
     await page.locator('form button[type="submit"]').click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Create normal task
@@ -210,7 +210,7 @@ test.describe('Task Filters - Priority', () => {
     await page.locator('form button[type="submit"]').click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Verify both tasks exist
@@ -255,7 +255,7 @@ test.describe('Task Filters - Priority', () => {
     await page.locator('form button[type="submit"]').click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Create low priority task
@@ -271,7 +271,7 @@ test.describe('Task Filters - Priority', () => {
     await page.locator('form button[type="submit"]').click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Verify both tasks exist
@@ -347,7 +347,7 @@ test.describe('Task Filters - Status', () => {
     await page.locator('form button[type="submit"]').click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Verify task was created successfully
@@ -379,7 +379,7 @@ test.describe('Task Filters - Status', () => {
     await page.locator('form button[type="submit"]').click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Verify task was created
@@ -430,7 +430,7 @@ test.describe('Task Filters - Status', () => {
     await page.locator('form button[type="submit"]').click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Verify task was created
@@ -498,7 +498,7 @@ test.describe('Task Filters - Starred', () => {
     await page.locator('form button[type="submit"]').click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Verify task was created
@@ -528,7 +528,7 @@ test.describe('Task Filters - Starred', () => {
     await page.locator('form button[type="submit"]').click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Verify both tasks exist
@@ -611,7 +611,7 @@ test.describe('Task Filters - Combined Filters', () => {
       await page.locator('form button[type="submit"]').click();
 
       // Wait for modal to close
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
     }
 
@@ -657,7 +657,7 @@ test.describe('Task Filters - Combined Filters', () => {
     await page.locator('form button[type="submit"]').click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Verify task was created

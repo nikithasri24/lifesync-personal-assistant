@@ -29,7 +29,7 @@ test.describe('Drag task to calendar date', () => {
     await addBtn.click();
 
     // Wait for modal
-    const modalHeading = page.getByRole('heading', { name: /quick add task/i });
+    const modalHeading = page.getByRole('heading', { name: 'Add New Task' });
     await expect(modalHeading).toBeVisible();
 
     const title = `Calendar Drag ${Date.now()}`;

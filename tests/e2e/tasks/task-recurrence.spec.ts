@@ -43,7 +43,7 @@ test.describe('Task Recurrence', () => {
       await page.locator('form button[type="submit"]').click();
 
       // Wait for modal to close
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Click on task to open TaskFormModalV2 for editing
@@ -76,7 +76,7 @@ test.describe('Task Recurrence', () => {
       const title = `Weekly Task ${Date.now()}`;
       await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
       await page.locator('form button[type="submit"]').click();
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Open edit modal
@@ -106,7 +106,7 @@ test.describe('Task Recurrence', () => {
       const title = `Monthly Task ${Date.now()}`;
       await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
       await page.locator('form button[type="submit"]').click();
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Open edit modal
@@ -136,7 +136,7 @@ test.describe('Task Recurrence', () => {
       const title = `Yearly Task ${Date.now()}`;
       await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
       await page.locator('form button[type="submit"]').click();
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Open edit modal
@@ -169,7 +169,7 @@ test.describe('Task Recurrence', () => {
       const title = `Icon Test ${Date.now()}`;
       await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
       await page.locator('form button[type="submit"]').click();
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Open edit and set to daily
@@ -193,7 +193,7 @@ test.describe('Task Recurrence', () => {
       const title = `Non-Recurring ${Date.now()}`;
       await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
       await page.locator('form button[type="submit"]').click();
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Verify task exists (no recurrence icon check - not accessible in tree)
@@ -209,7 +209,7 @@ test.describe('Task Recurrence', () => {
       const title = `Change Pattern ${Date.now()}`;
       await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
       await page.locator('form button[type="submit"]').click();
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Set to daily first
@@ -248,7 +248,7 @@ test.describe('Task Recurrence', () => {
       const title = `Remove Recurrence ${Date.now()}`;
       await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
       await page.locator('form button[type="submit"]').click();
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Set to weekly
@@ -289,7 +289,7 @@ test.describe('Task Recurrence', () => {
       const title = `Persist Test ${Date.now()}`;
       await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
       await page.locator('form button[type="submit"]').click();
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Set to monthly
@@ -339,7 +339,7 @@ test.describe('Task Recurrence', () => {
       const title = `Complete Recurring ${Date.now()}`;
       await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
       await page.locator('form button[type="submit"]').click();
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Set to daily
@@ -375,7 +375,7 @@ test.describe('Task Recurrence', () => {
       const title = `Status Change Recurring ${Date.now()}`;
       await page.getByPlaceholder(/What needs to be done\?/i).fill(title);
       await page.locator('form button[type="submit"]').click();
-      await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
       // Set to weekly

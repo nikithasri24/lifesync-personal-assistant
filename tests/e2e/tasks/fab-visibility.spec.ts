@@ -93,7 +93,7 @@ test.describe('Tasks Page FAB Visibility', () => {
     await fab.click();
 
     // Modal should open - "Quick Add Task"
-    const modalHeading = page.getByRole('heading', { name: /quick add task/i });
+    const modalHeading = page.getByRole('heading', { name: 'Add New Task' });
     await expect(modalHeading).toBeVisible();
 
     // Should have task input field

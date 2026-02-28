@@ -32,7 +32,7 @@ test.describe('Task CRUD - Create Operations', () => {
     await page.getByText('Add Task', { exact: true }).click();
 
     // Wait for modal to close
-    await expect(page.getByRole('heading', { name: /quick add task/i })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).not.toBeVisible({ timeout: 5000 });
 
     // Switch to Inbox to verify
     await page.getByRole('button', { name: /inbox/i }).click();

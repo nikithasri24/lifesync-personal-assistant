@@ -29,7 +29,7 @@ async function createTaskAndVerify(page: import('@playwright/test').Page, title:
   const fab = page.getByRole('button', { name: /add task/i }).first();
   await fab.click();
 
-  const modalHeading = page.getByRole('heading', { name: /quick add task/i });
+  const modalHeading = page.getByRole('heading', { name: 'Add New Task' });
   await expect(modalHeading).toBeVisible();
 
   await page.getByPlaceholder('What needs to be done?').fill(title);
