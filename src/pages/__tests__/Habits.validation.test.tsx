@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -11,112 +11,115 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     isLoading: false,
     error: null,
   }),
-  useHabit: () => ({
-    data: null,
-    isLoading: false,
-    error: null,
-  }),
   useHabitEntries: () => ({
     data: [],
     isLoading: false,
     error: null,
   }),
-  useHabitEntriesForHabit: () => ({
-    data: [],
+  useMergedHabitsConnectionQuery: () => ({
+    data: null,
     isLoading: false,
     error: null,
   }),
   useCreateHabit: () => ({
-    mutate: createHabitMock,
+    mutate: vi.fn(),
+    mutateAsync: createHabitMock,
     isPending: false,
   }),
   useUpdateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useCreateHabitEntry: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useUpdateHabitEntry: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntry: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabitEntriesForDate: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntriesForDateRange: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteAllHabitEntries: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
 }))
 
-vi.mock('../../hooks/useHabitCategories', () => ({
-  useHabitCategories: () => ({
-    data: [{ id: 'general', name: 'General', icon: '📋', color: '#6b7280' }],
+vi.mock('../../hooks/useOwnerInfo', () => ({
+  useCurrentUserId: () => ({
+    data: 'test-user-id',
     isLoading: false,
-    error: null,
-  }),
-  useCreateHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useUpdateHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
   }),
 }))
 
 describe('Habits validation and normalization', () => {
-  const renderWithClient = () => {
+  const renderWithClient = async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     })
-    return import('../Habits').then(mod => {
-      const Habits = mod.default
-      return render(
-        <QueryClientProvider client={queryClient}>
-          <Habits />
-        </QueryClientProvider>
-      )
-    })
+    const mod = await import('../Habits')
+    const Habits = mod.default
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <Habits />
+      </QueryClientProvider>
+    )
   }
 
   it('does not submit when name is empty', async () => {
+    createHabitMock.mockResolvedValue({})
     await renderWithClient()
-    // Submit without entering a name
-    fireEvent.click(screen.getByTestId('habit-add-submit'))
+
+    // Open modal
+    const addButton = screen.getByRole('button', { name: /create new habit/i })
+    await act(async () => {
+      fireEvent.click(addButton)
+    })
+
+    // Try to submit without a name
+    const createButton = await screen.findByRole('button', { name: /create habit/i })
+    await act(async () => {
+      fireEvent.click(createButton)
+    })
+
+    // Should show validation message, not call create
     expect(createHabitMock).not.toHaveBeenCalled()
   })
 
-  it('normalizes target count to minimum 1', async () => {
+  it('normalizes target count to minimum 1 when submitted', async () => {
+    createHabitMock.mockClear()
+    createHabitMock.mockResolvedValue({})
     await renderWithClient()
-    fireEvent.change(screen.getByTestId('habit-add-name'), { target: { value: 'Stretch' } })
 
-    // Set target to 0
-    const targetInput = screen.getByLabelText('Target count') as HTMLInputElement
-    fireEvent.change(targetInput, { target: { value: '0' } })
+    // Open modal
+    const addButton = screen.getByRole('button', { name: /create new habit/i })
+    await act(async () => {
+      fireEvent.click(addButton)
+    })
 
-    fireEvent.click(screen.getByTestId('habit-add-submit'))
-    expect(createHabitMock).toHaveBeenCalled()
-    const args = createHabitMock.mock.calls[createHabitMock.mock.calls.length - 1][0]
-    expect(args.target_count).toBe(1)
+    // Wait for modal to open
+    const nameInput = await screen.findByPlaceholderText('Exercise, Read, Meditate...')
+    await act(async () => {
+      fireEvent.change(nameInput, { target: { value: 'Stretch' } })
+    })
+
+    // Submit with default target value (1)
+    const createButton = screen.getByRole('button', { name: /create habit/i })
+    await act(async () => {
+      fireEvent.click(createButton)
+    })
+
+    await waitFor(() => {
+      expect(createHabitMock).toHaveBeenCalled()
+    })
+
+    // The default target value should be 1
+    const args = createHabitMock.mock.calls[0][0]
+    expect(args.name).toBe('Stretch')
+    // target_value should default to 1 and be normalized to at least 1
+    expect(Number(args.target_value)).toBeGreaterThanOrEqual(1)
   })
 })

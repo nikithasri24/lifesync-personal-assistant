@@ -3,11 +3,28 @@
  * Tests for recipe display card with actions
  */
 
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RecipeCard } from '../RecipeCard';
 import type { Recipe } from '../../../../types';
+
+// Mock the UndoRedoContext so we don't need the actual provider
+vi.mock('../../../../contexts/UndoRedoContext', () => ({
+  useUndoRedo: () => ({
+    executeCommand: vi.fn().mockResolvedValue(undefined),
+    undo: vi.fn(),
+    redo: vi.fn(),
+    canUndo: false,
+    canRedo: false,
+    undoDescription: null,
+    redoDescription: null,
+    clearHistory: vi.fn(),
+    historySize: 0,
+  }),
+  UndoRedoProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 // Mock the mutation hook
 vi.mock('../../../hooks/useMealPlanningQuery', () => ({
@@ -85,9 +102,10 @@ describe('RecipeCard', () => {
     const recipeWithoutImage = { ...mockRecipe, image: undefined };
     render(<RecipeCard {...defaultProps} recipe={recipeWithoutImage} />, { wrapper: createWrapper() });
 
-    // Check for ChefHat icon (fallback)
-    const fallback = screen.getByRole('listitem').querySelector('.from-indigo-500');
-    expect(fallback).toBeInTheDocument();
+    // When no image, there should be no img element
+    expect(screen.queryByAltText('Spaghetti Carbonara')).not.toBeInTheDocument();
+    // The card should still render with the recipe name
+    expect(screen.getByText('Spaghetti Carbonara')).toBeInTheDocument();
   });
 
   it('displays total time (prep + cook)', () => {

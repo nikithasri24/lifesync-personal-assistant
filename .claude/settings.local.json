@@ -160,7 +160,10 @@
       "Bash(tail:*)",
       "Bash(cd:*)",
       "Bash(npx playwright:*)",
-      "Bash(grep together:*)"
+      "Bash(grep together:*)",
+      "Bash(git:*)",
+      "Bash(read f:*)",
+      "Bash(npx vitest:*)"
     ],
     "deny": [],
     "ask": []

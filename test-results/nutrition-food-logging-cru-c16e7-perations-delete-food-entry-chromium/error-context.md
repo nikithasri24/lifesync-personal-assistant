@@ -1,0 +1,336 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: life weave
+          - generic [ref=e27]: Skillful Living
+        - button "Collapse sidebar" [ref=e28]:
+          - img [ref=e29]
+      - navigation "Main navigation" [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - heading "Main" [level=3] [ref=e35]
+            - list [ref=e36]:
+              - listitem [ref=e37]:
+                - link "Dashboard" [ref=e38] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e39] [cursor=pointer]
+                  - generic [ref=e42] [cursor=pointer]: Dashboard
+              - listitem [ref=e43]:
+                - link "AI Assistant" [ref=e44] [cursor=pointer]:
+                  - /url: /assistant
+                  - img [ref=e45] [cursor=pointer]
+                  - generic [ref=e47] [cursor=pointer]: AI Assistant
+              - listitem [ref=e48]:
+                - link "Calendar" [ref=e49] [cursor=pointer]:
+                  - /url: /calendar
+                  - img [ref=e50] [cursor=pointer]
+                  - generic [ref=e52] [cursor=pointer]: Calendar
+              - listitem [ref=e53]:
+                - link "Focus" [ref=e54] [cursor=pointer]:
+                  - /url: /focus
+                  - img [ref=e55] [cursor=pointer]
+                  - generic [ref=e58] [cursor=pointer]: Focus
+          - generic [ref=e59]:
+            - heading "Productivity" [level=3] [ref=e60]
+            - list [ref=e61]:
+              - listitem [ref=e62]:
+                - link "Habits" [ref=e63] [cursor=pointer]:
+                  - /url: /habits
+                  - img [ref=e64] [cursor=pointer]
+                  - generic [ref=e67] [cursor=pointer]: Habits
+              - listitem [ref=e68]:
+                - link "Tasks" [ref=e69] [cursor=pointer]:
+                  - /url: /todos
+                  - img [ref=e70] [cursor=pointer]
+                  - generic [ref=e74] [cursor=pointer]: Tasks
+              - listitem [ref=e75]:
+                - link "Notes" [ref=e76] [cursor=pointer]:
+                  - /url: /notes
+                  - img [ref=e77] [cursor=pointer]
+                  - generic [ref=e80] [cursor=pointer]: Notes
+          - generic [ref=e81]:
+            - heading "Wellbeing" [level=3] [ref=e82]
+            - list [ref=e83]:
+              - listitem [ref=e84]:
+                - link "Journal" [ref=e85] [cursor=pointer]:
+                  - /url: /journal
+                  - img [ref=e86] [cursor=pointer]
+                  - generic [ref=e88] [cursor=pointer]: Journal
+              - listitem [ref=e89]:
+                - link "Self Care" [ref=e90] [cursor=pointer]:
+                  - /url: /self-care
+                  - img [ref=e91] [cursor=pointer]
+                  - generic [ref=e94] [cursor=pointer]: Self Care
+              - listitem [ref=e95]:
+                - link "Nutrition" [ref=e96] [cursor=pointer]:
+                  - /url: /nutrition
+                  - img [ref=e97] [cursor=pointer]
+                  - generic [ref=e100] [cursor=pointer]: Nutrition
+                  - img [ref=e101] [cursor=pointer]
+          - generic [ref=e103]:
+            - heading "Personal" [level=3] [ref=e104]
+            - list [ref=e105]:
+              - listitem [ref=e106]:
+                - link "Travel" [ref=e107] [cursor=pointer]:
+                  - /url: /travel
+                  - img [ref=e108] [cursor=pointer]
+                  - generic [ref=e111] [cursor=pointer]: Travel
+              - listitem [ref=e112]:
+                - link "Visa Calculator" [ref=e113] [cursor=pointer]:
+                  - /url: /travel/visa
+                  - img [ref=e114] [cursor=pointer]
+                  - generic [ref=e116] [cursor=pointer]: Visa Calculator
+              - listitem [ref=e117]:
+                - link "Finances" [ref=e118] [cursor=pointer]:
+                  - /url: /finances
+                  - img [ref=e119] [cursor=pointer]
+                  - generic [ref=e121] [cursor=pointer]: Finances
+              - listitem [ref=e122]:
+                - link "Shopping" [ref=e123] [cursor=pointer]:
+                  - /url: /shopping
+                  - img [ref=e124] [cursor=pointer]
+                  - generic [ref=e128] [cursor=pointer]: Shopping
+              - listitem [ref=e129]:
+                - link "Meals" [ref=e130] [cursor=pointer]:
+                  - /url: /meals
+                  - img [ref=e131] [cursor=pointer]
+                  - generic [ref=e133] [cursor=pointer]: Meals
+              - listitem [ref=e134]:
+                - link "Goals" [ref=e135] [cursor=pointer]:
+                  - /url: /goals
+                  - img [ref=e136] [cursor=pointer]
+                  - generic [ref=e142] [cursor=pointer]: Goals
+              - listitem [ref=e143]:
+                - link "Shared" [ref=e144] [cursor=pointer]:
+                  - /url: /shared
+                  - img [ref=e145] [cursor=pointer]
+                  - generic [ref=e150] [cursor=pointer]: Shared
+              - listitem [ref=e151]:
+                - link "Together" [ref=e152] [cursor=pointer]:
+                  - /url: /together
+                  - img [ref=e153] [cursor=pointer]
+                  - generic [ref=e155] [cursor=pointer]: Together
+      - 'button "Switch theme. Current: Light" [ref=e157]':
+        - img [ref=e160]
+        - generic [ref=e166]: Light Mode
+    - main "nutrition page" [ref=e168]:
+      - heading "nutrition page" [level=1] [ref=e169]
+      - generic [ref=e170]:
+        - generic [ref=e172]:
+          - generic [ref=e173]:
+            - heading "🍽️" [level=1] [ref=e174]
+            - generic [ref=e175]: Track your meals & macros
+          - generic [ref=e177]:
+            - generic [ref=e178]:
+              - button "Previous day" [ref=e179]:
+                - img [ref=e180]
+              - generic [ref=e182]: Feb 27, 2026
+              - button "Next day" [ref=e183]:
+                - img [ref=e184]
+            - generic [ref=e186]:
+              - button "Take photo of food" [ref=e187]:
+                - img [ref=e188]
+                - generic [ref=e191]: Snap
+              - button "Search for food" [ref=e192]:
+                - img [ref=e193]
+                - generic [ref=e196]: Search
+              - button "Scan barcode" [ref=e197]:
+                - img [ref=e198]
+                - generic [ref=e203]: Barcode
+              - button "Quick add food" [ref=e204]:
+                - img [ref=e205]
+                - generic [ref=e206]: Quick
+            - generic [ref=e208]:
+              - generic [ref=e209]:
+                - heading "Log Food" [level=2] [ref=e210]
+                - button "Close" [ref=e211]:
+                  - img [ref=e212]
+              - generic [ref=e215]:
+                - generic [ref=e216]:
+                  - generic [ref=e217]:
+                    - generic [ref=e218]: Food Name
+                    - textbox "e.g., Grilled Chicken Salad" [ref=e219]
+                  - generic [ref=e220]:
+                    - generic [ref=e221]: Meal Type
+                    - generic [ref=e222]:
+                      - button "Select Breakfast meal type" [ref=e223]:
+                        - generic [ref=e224]: 🌅
+                        - generic [ref=e225]: Breakfast
+                      - button "Select Lunch meal type" [ref=e226]:
+                        - generic [ref=e227]: 🌞
+                        - generic [ref=e228]: Lunch
+                      - button "Select Dinner meal type" [ref=e229]:
+                        - generic [ref=e230]: 🌙
+                        - generic [ref=e231]: Dinner
+                      - button "Select Snack meal type" [ref=e232]:
+                        - generic [ref=e233]: 🍎
+                        - generic [ref=e234]: Snack
+                  - generic [ref=e235]:
+                    - generic [ref=e236]: Serving Size (optional)
+                    - textbox "e.g., 1 cup, 250g" [ref=e237]
+                  - generic [ref=e238]:
+                    - generic [ref=e239]: Calories
+                    - spinbutton [ref=e240]
+                  - generic [ref=e241]:
+                    - generic [ref=e242]:
+                      - generic [ref=e243]: Protein (g)
+                      - spinbutton [ref=e244]
+                    - generic [ref=e245]:
+                      - generic [ref=e246]: Carbs (g)
+                      - spinbutton [ref=e247]
+                    - generic [ref=e248]:
+                      - generic [ref=e249]: Fat (g)
+                      - spinbutton [ref=e250]
+                  - generic [ref=e251]:
+                    - generic [ref=e252]: Notes (optional)
+                    - textbox "Add any notes about this food..." [ref=e253]
+                - generic [ref=e254]:
+                  - button "Cancel" [ref=e255]
+                  - button "Log Food" [active] [ref=e256]
+            - generic [ref=e257]:
+              - generic [ref=e258]:
+                - generic [ref=e259]:
+                  - generic [ref=e260]:
+                    - generic [ref=e261]: 🌅
+                    - generic [ref=e262]: Breakfast
+                  - generic [ref=e263]: 1095 cal
+                - generic [ref=e264]:
+                  - generic [ref=e265] [cursor=pointer]:
+                    - generic [ref=e266] [cursor=pointer]: 🍽️
+                    - generic [ref=e267] [cursor=pointer]:
+                      - generic [ref=e268] [cursor=pointer]: Dated Food 1772234853901
+                      - generic [ref=e269] [cursor=pointer]: 1 serving
+                    - generic [ref=e270] [cursor=pointer]: 150 cal
+                  - generic [ref=e271] [cursor=pointer]:
+                    - generic [ref=e272] [cursor=pointer]: 🍽️
+                    - generic [ref=e273] [cursor=pointer]:
+                      - generic [ref=e274] [cursor=pointer]: Day1 Food 1772234861571
+                      - generic [ref=e275] [cursor=pointer]: 1 serving
+                    - generic [ref=e276] [cursor=pointer]: 100 cal
+                  - generic [ref=e277] [cursor=pointer]:
+                    - generic [ref=e278] [cursor=pointer]: 🍽️
+                    - generic [ref=e279] [cursor=pointer]:
+                      - generic [ref=e280] [cursor=pointer]: Scrambled Eggs 1772234892783
+                      - generic [ref=e281] [cursor=pointer]: 1 serving
+                    - generic [ref=e282] [cursor=pointer]: 180 cal
+                  - generic [ref=e283] [cursor=pointer]:
+                    - generic [ref=e284] [cursor=pointer]: 🍽️
+                    - generic [ref=e285] [cursor=pointer]:
+                      - generic [ref=e286] [cursor=pointer]: Chicken Breast 1772234900581
+                      - generic [ref=e287] [cursor=pointer]: 1 serving
+                    - generic [ref=e288] [cursor=pointer]: 165 cal
+                  - generic [ref=e289] [cursor=pointer]:
+                    - generic [ref=e290] [cursor=pointer]: 🍽️
+                    - generic [ref=e291] [cursor=pointer]:
+                      - generic [ref=e292] [cursor=pointer]: Test Food
+                      - generic [ref=e293] [cursor=pointer]: 1 serving
+                    - generic [ref=e294] [cursor=pointer]: 100 cal
+                  - generic [ref=e295] [cursor=pointer]:
+                    - generic [ref=e296] [cursor=pointer]: 🍽️
+                    - generic [ref=e297] [cursor=pointer]:
+                      - generic [ref=e298] [cursor=pointer]: Test Food
+                      - generic [ref=e299] [cursor=pointer]: 1 serving
+                    - generic [ref=e300] [cursor=pointer]: 100 cal
+                  - generic [ref=e301] [cursor=pointer]:
+                    - generic [ref=e302] [cursor=pointer]: 🍽️
+                    - generic [ref=e303] [cursor=pointer]:
+                      - generic [ref=e304] [cursor=pointer]: Test Food
+                      - generic [ref=e305] [cursor=pointer]: 1 serving
+                    - generic [ref=e306] [cursor=pointer]: 100 cal
+                  - generic [ref=e307] [cursor=pointer]:
+                    - generic [ref=e308] [cursor=pointer]: 🍽️
+                    - generic [ref=e309] [cursor=pointer]:
+                      - generic [ref=e310] [cursor=pointer]: Test Food
+                      - generic [ref=e311] [cursor=pointer]: 1 serving
+                    - generic [ref=e312] [cursor=pointer]: 100 cal
+                  - generic [ref=e313] [cursor=pointer]:
+                    - generic [ref=e314] [cursor=pointer]: 🍽️
+                    - generic [ref=e315] [cursor=pointer]:
+                      - generic [ref=e316] [cursor=pointer]: Test Food
+                      - generic [ref=e317] [cursor=pointer]: 1 serving
+                    - generic [ref=e318] [cursor=pointer]: 100 cal
+                - button "+ Add Food" [ref=e319] [cursor=pointer]
+              - generic [ref=e320]:
+                - generic [ref=e321]:
+                  - generic [ref=e322]:
+                    - generic [ref=e323]: 🌞
+                    - generic [ref=e324]: Lunch
+                  - generic [ref=e325]: 550 cal
+                - generic [ref=e326]:
+                  - generic [ref=e327] [cursor=pointer]:
+                    - generic [ref=e328] [cursor=pointer]: 🍽️
+                    - generic [ref=e329] [cursor=pointer]:
+                      - generic [ref=e330] [cursor=pointer]: Original Food 1772234868052
+                      - generic [ref=e331] [cursor=pointer]: 1 serving
+                    - generic [ref=e332] [cursor=pointer]: 200 cal
+                  - generic [ref=e333] [cursor=pointer]:
+                    - generic [ref=e334] [cursor=pointer]: 🍽️
+                    - generic [ref=e335] [cursor=pointer]:
+                      - generic [ref=e336] [cursor=pointer]: Salad 1772234894133
+                      - generic [ref=e337] [cursor=pointer]: 1 serving
+                    - generic [ref=e338] [cursor=pointer]: 250 cal
+                  - generic [ref=e339] [cursor=pointer]:
+                    - generic [ref=e340] [cursor=pointer]: 🍽️
+                    - generic [ref=e341] [cursor=pointer]:
+                      - generic [ref=e342] [cursor=pointer]: Test Food 1772234921256
+                      - generic [ref=e343] [cursor=pointer]: 1 serving
+                    - generic [ref=e344] [cursor=pointer]: 100 cal
+                - button "+ Add Food" [ref=e345] [cursor=pointer]
+              - generic [ref=e346]:
+                - generic [ref=e347]:
+                  - generic [ref=e348]:
+                    - generic [ref=e349]: 🌙
+                    - generic [ref=e350]: Dinner
+                  - generic [ref=e351]: 900 cal
+                - generic [ref=e352]:
+                  - generic [ref=e353] [cursor=pointer]:
+                    - generic [ref=e354] [cursor=pointer]: 🍽️
+                    - generic [ref=e355] [cursor=pointer]:
+                      - generic [ref=e356] [cursor=pointer]: Food to Delete 1772234868896
+                      - generic [ref=e357] [cursor=pointer]: 1 serving
+                    - generic [ref=e358] [cursor=pointer]: 250 cal
+                  - generic [ref=e359] [cursor=pointer]:
+                    - generic [ref=e360] [cursor=pointer]: 🍽️
+                    - generic [ref=e361] [cursor=pointer]:
+                      - generic [ref=e362] [cursor=pointer]: Grilled Chicken 1772234899618
+                      - generic [ref=e363] [cursor=pointer]: 1 serving
+                    - generic [ref=e364] [cursor=pointer]: 350 cal
+                  - generic [ref=e365] [cursor=pointer]:
+                    - generic [ref=e366] [cursor=pointer]: 🍽️
+                    - generic [ref=e367] [cursor=pointer]:
+                      - generic [ref=e368] [cursor=pointer]: Food to Delete
+                      - generic [ref=e369] [cursor=pointer]: 1 serving
+                    - generic [ref=e370] [cursor=pointer]: 300 cal
+                - button "+ Add Food" [ref=e371] [cursor=pointer]
+              - generic [ref=e372]:
+                - generic [ref=e373]:
+                  - generic [ref=e374]:
+                    - generic [ref=e375]: 🍎
+                    - generic [ref=e376]: Snack
+                  - generic [ref=e377]: 200 cal
+                - generic [ref=e378]:
+                  - generic [ref=e379] [cursor=pointer]:
+                    - generic [ref=e380] [cursor=pointer]: 🍽️
+                    - generic [ref=e381] [cursor=pointer]:
+                      - generic [ref=e382] [cursor=pointer]: Water 1772234900416
+                      - generic [ref=e383] [cursor=pointer]: 1 serving
+                    - generic [ref=e384] [cursor=pointer]: 0 cal
+                  - generic [ref=e385] [cursor=pointer]:
+                    - generic [ref=e386] [cursor=pointer]: 🍽️
+                    - generic [ref=e387] [cursor=pointer]:
+                      - generic [ref=e388] [cursor=pointer]: Protein Bar 1772234915689
+                      - generic [ref=e389] [cursor=pointer]: 1 serving
+                    - generic [ref=e390] [cursor=pointer]: 200 cal
+                - button "+ Add Food" [ref=e391] [cursor=pointer]
+        - button "Quick capture" [ref=e392]:
+          - img [ref=e393]
+  - generic [ref=e394]:
+    - img [ref=e396]
+    - button "Open Tanstack query devtools" [ref=e444] [cursor=pointer]:
+      - img [ref=e445] [cursor=pointer]
+```

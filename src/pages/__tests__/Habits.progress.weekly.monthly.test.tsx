@@ -21,22 +21,26 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
         name: 'Weekly habit',
         description: '',
         frequency: 'weekly',
-        target_count: 2,
-        category: 'work',
-        color: '#22c55e',
-        user_id: 'user1',
+        target_value: 2,
+        category: 'Work',
+        streak_count: 0,
+        best_streak: 0,
+        is_active: true,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
       {
         id: 'm1',
         name: 'Monthly habit',
         description: '',
         frequency: 'monthly',
-        target_count: 2,
-        category: 'health',
-        color: '#22c55e',
-        user_id: 'user1',
+        target_value: 2,
+        category: 'Health',
+        streak_count: 0,
+        best_streak: 0,
+        is_active: true,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     ],
     isLoading: false,
@@ -47,38 +51,47 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     isLoading: false,
     error: null,
   }),
+  useMergedHabitsConnectionQuery: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  }),
   useCreateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useUpdateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useCreateHabitEntry: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabitEntriesForDate: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntriesForDateRange: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteAllHabitEntries: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
 }))
 
+vi.mock('../../hooks/useOwnerInfo', () => ({
+  useCurrentUserId: () => ({
+    data: 'test-user-id',
+    isLoading: false,
+  }),
+}))
+
 describe('Habits weekly/monthly multi-target labels', () => {
-  it('shows Today 1/2 and category • weekly/monthly', async () => {
+  it('shows 1 / 2 progress and category • frequency for weekly and monthly habits', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -94,14 +107,16 @@ describe('Habits weekly/monthly multi-target labels', () => {
     )
 
     await waitFor(() => {
-      const wCard = screen.getByText('Weekly habit').closest('article') as HTMLElement
-      expect(wCard.textContent).toMatch(/work\s+•\s*weekly/i)
-      expect(wCard.textContent).toMatch(/Today\s+1\/2/)
-
-      const mCard = screen.getByText('Monthly habit').closest('article') as HTMLElement
-      expect(mCard.textContent).toMatch(/health\s+•\s*monthly/i)
-      expect(mCard.textContent).toMatch(/Today\s+1\/2/)
+      expect(screen.getByText('Weekly habit')).toBeInTheDocument()
+      expect(screen.getByText('Monthly habit')).toBeInTheDocument()
     })
+
+    // Frequency info is shown in the card header
+    expect(screen.getByText(/2x per week/i)).toBeInTheDocument()
+    expect(screen.getByText(/2x per month/i)).toBeInTheDocument()
+
+    // Progress shows 1 / 2 for both habits
+    const progressValues = screen.getAllByText('1 / 2')
+    expect(progressValues.length).toBe(2)
   })
 })
-

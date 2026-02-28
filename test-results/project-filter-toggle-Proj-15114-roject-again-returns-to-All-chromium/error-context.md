@@ -1,0 +1,183 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: life weave
+          - generic [ref=e27]: Skillful Living
+        - button "Collapse sidebar" [ref=e28]:
+          - img [ref=e29]
+      - navigation "Main navigation" [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - heading "Main" [level=3] [ref=e35]
+            - list [ref=e36]:
+              - listitem [ref=e37]:
+                - link "Dashboard" [ref=e38] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e39] [cursor=pointer]
+                  - generic [ref=e42] [cursor=pointer]: Dashboard
+              - listitem [ref=e43]:
+                - link "AI Assistant" [ref=e44] [cursor=pointer]:
+                  - /url: /assistant
+                  - img [ref=e45] [cursor=pointer]
+                  - generic [ref=e47] [cursor=pointer]: AI Assistant
+              - listitem [ref=e48]:
+                - link "Calendar" [ref=e49] [cursor=pointer]:
+                  - /url: /calendar
+                  - img [ref=e50] [cursor=pointer]
+                  - generic [ref=e52] [cursor=pointer]: Calendar
+              - listitem [ref=e53]:
+                - link "Focus" [ref=e54] [cursor=pointer]:
+                  - /url: /focus
+                  - img [ref=e55] [cursor=pointer]
+                  - generic [ref=e58] [cursor=pointer]: Focus
+          - generic [ref=e59]:
+            - heading "Productivity" [level=3] [ref=e60]
+            - list [ref=e61]:
+              - listitem [ref=e62]:
+                - link "Habits" [ref=e63] [cursor=pointer]:
+                  - /url: /habits
+                  - img [ref=e64] [cursor=pointer]
+                  - generic [ref=e67] [cursor=pointer]: Habits
+              - listitem [ref=e68]:
+                - link "Tasks" [ref=e69] [cursor=pointer]:
+                  - /url: /todos
+                  - img [ref=e70] [cursor=pointer]
+                  - generic [ref=e74] [cursor=pointer]: Tasks
+              - listitem [ref=e75]:
+                - link "Notes" [ref=e76] [cursor=pointer]:
+                  - /url: /notes
+                  - img [ref=e77] [cursor=pointer]
+                  - generic [ref=e80] [cursor=pointer]: Notes
+          - generic [ref=e81]:
+            - heading "Wellbeing" [level=3] [ref=e82]
+            - list [ref=e83]:
+              - listitem [ref=e84]:
+                - link "Journal" [ref=e85] [cursor=pointer]:
+                  - /url: /journal
+                  - img [ref=e86] [cursor=pointer]
+                  - generic [ref=e88] [cursor=pointer]: Journal
+              - listitem [ref=e89]:
+                - link "Self Care" [ref=e90] [cursor=pointer]:
+                  - /url: /self-care
+                  - img [ref=e91] [cursor=pointer]
+                  - generic [ref=e94] [cursor=pointer]: Self Care
+              - listitem [ref=e95]:
+                - link "Nutrition" [ref=e96] [cursor=pointer]:
+                  - /url: /nutrition
+                  - img [ref=e97] [cursor=pointer]
+                  - generic [ref=e100] [cursor=pointer]: Nutrition
+          - generic [ref=e101]:
+            - heading "Personal" [level=3] [ref=e102]
+            - list [ref=e103]:
+              - listitem [ref=e104]:
+                - link "Travel" [ref=e105] [cursor=pointer]:
+                  - /url: /travel
+                  - img [ref=e106] [cursor=pointer]
+                  - generic [ref=e109] [cursor=pointer]: Travel
+              - listitem [ref=e110]:
+                - link "Visa Calculator" [ref=e111] [cursor=pointer]:
+                  - /url: /travel/visa
+                  - img [ref=e112] [cursor=pointer]
+                  - generic [ref=e114] [cursor=pointer]: Visa Calculator
+              - listitem [ref=e115]:
+                - link "Finances" [ref=e116] [cursor=pointer]:
+                  - /url: /finances
+                  - img [ref=e117] [cursor=pointer]
+                  - generic [ref=e119] [cursor=pointer]: Finances
+              - listitem [ref=e120]:
+                - link "Shopping" [ref=e121] [cursor=pointer]:
+                  - /url: /shopping
+                  - img [ref=e122] [cursor=pointer]
+                  - generic [ref=e126] [cursor=pointer]: Shopping
+              - listitem [ref=e127]:
+                - link "Meals" [ref=e128] [cursor=pointer]:
+                  - /url: /meals
+                  - img [ref=e129] [cursor=pointer]
+                  - generic [ref=e131] [cursor=pointer]: Meals
+              - listitem [ref=e132]:
+                - link "Goals" [ref=e133] [cursor=pointer]:
+                  - /url: /goals
+                  - img [ref=e134] [cursor=pointer]
+                  - generic [ref=e140] [cursor=pointer]: Goals
+              - listitem [ref=e141]:
+                - link "Shared" [ref=e142] [cursor=pointer]:
+                  - /url: /shared
+                  - img [ref=e143] [cursor=pointer]
+                  - generic [ref=e148] [cursor=pointer]: Shared
+              - listitem [ref=e149]:
+                - link "Together" [ref=e150] [cursor=pointer]:
+                  - /url: /together
+                  - img [ref=e151] [cursor=pointer]
+                  - generic [ref=e153] [cursor=pointer]: Together
+      - 'button "Switch theme. Current: Light" [ref=e155]':
+        - img [ref=e158]
+        - generic [ref=e164]: Light Mode
+    - generic [ref=e165]:
+      - banner [ref=e166]:
+        - generic [ref=e167]:
+          - generic [ref=e169]:
+            - heading "Dashboard" [level=2] [ref=e170]
+            - paragraph [ref=e171]: Your productivity overview
+          - generic [ref=e172]:
+            - button "Notifications" [ref=e173]:
+              - img [ref=e174]
+            - button "Switch to Voice Mode" [ref=e178]:
+              - img [ref=e180]
+            - button "Voice" [ref=e185]:
+              - img [ref=e186]
+              - text: Voice
+      - main "dashboard page" [ref=e188]:
+        - heading "dashboard page" [level=1] [ref=e189]
+        - generic [ref=e190]:
+          - generic [ref=e191]:
+            - generic [ref=e192]:
+              - heading "📋 Projects" [level=1] [ref=e193]
+              - generic [ref=e194]:
+                - generic [ref=e195]:
+                  - generic [ref=e196]: "0"
+                  - generic [ref=e197]: Total
+                - generic [ref=e198]:
+                  - generic [ref=e199]: "0"
+                  - generic [ref=e200]: Active
+                - generic [ref=e201]:
+                  - generic [ref=e202]: 0%
+                  - generic [ref=e203]: Done
+            - generic [ref=e204]:
+              - generic [ref=e205]:
+                - img [ref=e206]
+                - textbox "Search projects" [ref=e209]
+              - generic [ref=e210]:
+                - tablist "Filter projects by status" [ref=e212]:
+                  - tab "All" [selected] [ref=e213]:
+                    - generic [ref=e214]: All
+                  - tab "Active" [ref=e215]:
+                    - generic [ref=e216]: Active
+                  - tab "Done" [ref=e217]:
+                    - generic [ref=e218]: Done
+                - tablist "Toggle view mode" [ref=e219]:
+                  - tab [ref=e220]:
+                    - img [ref=e222]
+                  - tab [selected] [ref=e224]:
+                    - img [ref=e226]
+            - generic [ref=e227]:
+              - img [ref=e228]
+              - heading "No projects yet" [level=3] [ref=e230]
+              - paragraph [ref=e231]: Get started by creating your first project
+              - button "Create Project" [active] [ref=e232]:
+                - img [ref=e233]
+                - text: Create Project
+            - button "New Project" [ref=e234] [cursor=pointer]:
+              - img [ref=e235] [cursor=pointer]
+              - generic [ref=e236] [cursor=pointer]: New Project
+          - button "Quick capture" [ref=e237]:
+            - img [ref=e238]
+  - generic [ref=e239]:
+    - img [ref=e241]
+    - button "Open Tanstack query devtools" [ref=e289] [cursor=pointer]:
+      - img [ref=e290] [cursor=pointer]
+```

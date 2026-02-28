@@ -1,0 +1,989 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: life weave
+          - generic [ref=e27]: Skillful Living
+        - button "Collapse sidebar" [ref=e28]:
+          - img [ref=e29]
+      - navigation "Main navigation" [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - heading "Main" [level=3] [ref=e35]
+            - list [ref=e36]:
+              - listitem [ref=e37]:
+                - link "Dashboard" [ref=e38] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e39] [cursor=pointer]
+                  - generic [ref=e42] [cursor=pointer]: Dashboard
+              - listitem [ref=e43]:
+                - link "AI Assistant" [ref=e44] [cursor=pointer]:
+                  - /url: /assistant
+                  - img [ref=e45] [cursor=pointer]
+                  - generic [ref=e47] [cursor=pointer]: AI Assistant
+              - listitem [ref=e48]:
+                - link "Calendar" [ref=e49] [cursor=pointer]:
+                  - /url: /calendar
+                  - img [ref=e50] [cursor=pointer]
+                  - generic [ref=e52] [cursor=pointer]: Calendar
+              - listitem [ref=e53]:
+                - link "Focus" [ref=e54] [cursor=pointer]:
+                  - /url: /focus
+                  - img [ref=e55] [cursor=pointer]
+                  - generic [ref=e58] [cursor=pointer]: Focus
+          - generic [ref=e59]:
+            - heading "Productivity" [level=3] [ref=e60]
+            - list [ref=e61]:
+              - listitem [ref=e62]:
+                - link "Habits" [ref=e63] [cursor=pointer]:
+                  - /url: /habits
+                  - img [ref=e64] [cursor=pointer]
+                  - generic [ref=e67] [cursor=pointer]: Habits
+                  - img [ref=e68] [cursor=pointer]
+              - listitem [ref=e70]:
+                - link "Tasks" [ref=e71] [cursor=pointer]:
+                  - /url: /todos
+                  - img [ref=e72] [cursor=pointer]
+                  - generic [ref=e76] [cursor=pointer]: Tasks
+              - listitem [ref=e77]:
+                - link "Notes" [ref=e78] [cursor=pointer]:
+                  - /url: /notes
+                  - img [ref=e79] [cursor=pointer]
+                  - generic [ref=e82] [cursor=pointer]: Notes
+          - generic [ref=e83]:
+            - heading "Wellbeing" [level=3] [ref=e84]
+            - list [ref=e85]:
+              - listitem [ref=e86]:
+                - link "Journal" [ref=e87] [cursor=pointer]:
+                  - /url: /journal
+                  - img [ref=e88] [cursor=pointer]
+                  - generic [ref=e90] [cursor=pointer]: Journal
+              - listitem [ref=e91]:
+                - link "Self Care" [ref=e92] [cursor=pointer]:
+                  - /url: /self-care
+                  - img [ref=e93] [cursor=pointer]
+                  - generic [ref=e96] [cursor=pointer]: Self Care
+              - listitem [ref=e97]:
+                - link "Nutrition" [ref=e98] [cursor=pointer]:
+                  - /url: /nutrition
+                  - img [ref=e99] [cursor=pointer]
+                  - generic [ref=e102] [cursor=pointer]: Nutrition
+          - generic [ref=e103]:
+            - heading "Personal" [level=3] [ref=e104]
+            - list [ref=e105]:
+              - listitem [ref=e106]:
+                - link "Travel" [ref=e107] [cursor=pointer]:
+                  - /url: /travel
+                  - img [ref=e108] [cursor=pointer]
+                  - generic [ref=e111] [cursor=pointer]: Travel
+              - listitem [ref=e112]:
+                - link "Visa Calculator" [ref=e113] [cursor=pointer]:
+                  - /url: /travel/visa
+                  - img [ref=e114] [cursor=pointer]
+                  - generic [ref=e116] [cursor=pointer]: Visa Calculator
+              - listitem [ref=e117]:
+                - link "Finances" [ref=e118] [cursor=pointer]:
+                  - /url: /finances
+                  - img [ref=e119] [cursor=pointer]
+                  - generic [ref=e121] [cursor=pointer]: Finances
+              - listitem [ref=e122]:
+                - link "Shopping" [ref=e123] [cursor=pointer]:
+                  - /url: /shopping
+                  - img [ref=e124] [cursor=pointer]
+                  - generic [ref=e128] [cursor=pointer]: Shopping
+              - listitem [ref=e129]:
+                - link "Meals" [ref=e130] [cursor=pointer]:
+                  - /url: /meals
+                  - img [ref=e131] [cursor=pointer]
+                  - generic [ref=e133] [cursor=pointer]: Meals
+              - listitem [ref=e134]:
+                - link "Goals" [ref=e135] [cursor=pointer]:
+                  - /url: /goals
+                  - img [ref=e136] [cursor=pointer]
+                  - generic [ref=e142] [cursor=pointer]: Goals
+              - listitem [ref=e143]:
+                - link "Shared" [ref=e144] [cursor=pointer]:
+                  - /url: /shared
+                  - img [ref=e145] [cursor=pointer]
+                  - generic [ref=e150] [cursor=pointer]: Shared
+              - listitem [ref=e151]:
+                - link "Together" [ref=e152] [cursor=pointer]:
+                  - /url: /together
+                  - img [ref=e153] [cursor=pointer]
+                  - generic [ref=e155] [cursor=pointer]: Together
+      - 'button "Switch theme. Current: Light" [ref=e157]':
+        - img [ref=e160]
+        - generic [ref=e166]: Light Mode
+    - main "habits page" [ref=e168]:
+      - heading "habits page" [level=1] [ref=e169]
+      - generic [ref=e170]:
+        - generic [ref=e172]:
+          - generic [ref=e175]:
+            - generic [ref=e177]: Habit created! 💪
+            - button "Dismiss notification" [ref=e178]:
+              - img [ref=e179]
+          - generic [ref=e182]:
+            - generic [ref=e183]:
+              - heading "Habits" [level=1] [ref=e184]
+              - paragraph [ref=e185]: Build better routines
+            - generic [ref=e186]:
+              - generic [ref=e187]: Today's Progress
+              - generic [ref=e188]:
+                - generic [ref=e189]:
+                  - generic [ref=e190]: "122"
+                  - generic [ref=e191]: Total
+                - generic [ref=e192]:
+                  - generic [ref=e193]: "0"
+                  - generic [ref=e194]: Done
+                - generic [ref=e195]:
+                  - generic [ref=e196]: "1"
+                  - generic [ref=e197]: Streak
+            - generic [ref=e198]:
+              - button "📅 Today" [ref=e199] [cursor=pointer]
+              - button "📊 Weekly" [ref=e200] [cursor=pointer]
+            - generic [ref=e201]:
+              - button "Previous" [ref=e202] [cursor=pointer]: ‹
+              - generic [ref=e204]: Today, Feb 27
+              - button "Next" [ref=e205] [cursor=pointer]: ›
+          - generic [ref=e206]:
+            - generic [ref=e207]:
+              - generic [ref=e208]:
+                - generic [ref=e209]:
+                  - generic [ref=e210]: Multi Target 1772234708617
+                  - generic [ref=e211]: 🧘 Health • 5x per week
+                - button "Mark complete" [ref=e212] [cursor=pointer]: ○
+              - generic [ref=e214]:
+                - generic [ref=e215]: Weekly Progress
+                - generic [ref=e216]: 0 / 5
+            - generic [ref=e218]:
+              - generic [ref=e219]:
+                - generic [ref=e220]:
+                  - generic [ref=e221]: Category Test 1772234704482
+                  - generic [ref=e222]: 💪 Fitness • 3x per week
+                - button "Mark complete" [ref=e223] [cursor=pointer]: ○
+              - generic [ref=e225]:
+                - generic [ref=e226]: Weekly Progress
+                - generic [ref=e227]: 0 / 3
+            - generic [ref=e230]:
+              - generic [ref=e231]:
+                - generic [ref=e232]: E2E Test Habit 1772234699840
+                - generic [ref=e233]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e234] [cursor=pointer]: ○
+            - generic [ref=e236]:
+              - generic [ref=e237]:
+                - generic [ref=e238]: Habit to Edit 1772234701338
+                - generic [ref=e239]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e240] [cursor=pointer]: ○
+            - generic [ref=e242]:
+              - generic [ref=e243]:
+                - generic [ref=e244]: Habit to Complete 1772234700722
+                - generic [ref=e245]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e246] [cursor=pointer]: ○
+            - generic [ref=e247]:
+              - generic [ref=e248]:
+                - generic [ref=e249]:
+                  - generic [ref=e250]: Reading 1771972328099
+                  - generic [ref=e251]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e252] [cursor=pointer]: ○
+              - generic [ref=e254]:
+                - generic [ref=e255]: Monthly Progress
+                - generic [ref=e256]: 0 / 3
+            - generic [ref=e258]:
+              - generic [ref=e259]:
+                - generic [ref=e260]:
+                  - generic [ref=e261]: Workout 1771972326313
+                  - generic [ref=e262]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e263] [cursor=pointer]: ○
+              - generic [ref=e265]:
+                - generic [ref=e266]: Weekly Progress
+                - generic [ref=e267]: 0 / 2
+            - generic [ref=e269]:
+              - generic [ref=e270]:
+                - generic [ref=e271]:
+                  - generic [ref=e272]: Water 1771972325448
+                  - generic [ref=e273]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e274] [cursor=pointer]: ○
+              - generic [ref=e276]:
+                - generic [ref=e277]: Today's Progress
+                - generic [ref=e278]: 0 / 3
+            - generic [ref=e281]:
+              - generic [ref=e282]:
+                - generic [ref=e283]: Monthly 1771972325047
+                - generic [ref=e284]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e285] [cursor=pointer]: ○
+            - generic [ref=e287]:
+              - generic [ref=e288]:
+                - generic [ref=e289]: Weekly 1771972323433
+                - generic [ref=e290]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e291] [cursor=pointer]: ○
+            - generic [ref=e293]:
+              - generic [ref=e294]:
+                - generic [ref=e295]: Walk 1771972317877
+                - generic [ref=e296]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e297] [cursor=pointer]: ○
+            - generic [ref=e298]:
+              - generic [ref=e299]:
+                - generic [ref=e300]:
+                  - generic [ref=e301]: Multi Target 1771972314452
+                  - generic [ref=e302]: 🧘 Health • 5x per week
+                - button "Mark complete" [ref=e303] [cursor=pointer]: ○
+              - generic [ref=e305]:
+                - generic [ref=e306]: Weekly Progress
+                - generic [ref=e307]: 0 / 5
+            - generic [ref=e309]:
+              - generic [ref=e310]:
+                - generic [ref=e311]:
+                  - generic [ref=e312]: Category Test 1771972308821
+                  - generic [ref=e313]: 💪 Fitness • 3x per week
+                - button "Mark complete" [ref=e314] [cursor=pointer]: ○
+              - generic [ref=e316]:
+                - generic [ref=e317]: Weekly Progress
+                - generic [ref=e318]: 0 / 3
+            - generic [ref=e321]:
+              - generic [ref=e322]:
+                - generic [ref=e323]: E2E Test Habit 1771972304636
+                - generic [ref=e324]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e325] [cursor=pointer]: ○
+            - generic [ref=e327]:
+              - generic [ref=e328]:
+                - generic [ref=e329]: Habit to Edit 1771972306905
+                - generic [ref=e330]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e331] [cursor=pointer]: ○
+            - generic [ref=e333]:
+              - generic [ref=e334]:
+                - generic [ref=e335]: Habit to Complete 1771972306151
+                - generic [ref=e336]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e337] [cursor=pointer]: ○
+            - generic [ref=e338]:
+              - generic [ref=e339]:
+                - generic [ref=e340]:
+                  - generic [ref=e341]: Reading 1771968046766
+                  - generic [ref=e342]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e343] [cursor=pointer]: ○
+              - generic [ref=e345]:
+                - generic [ref=e346]: Monthly Progress
+                - generic [ref=e347]: 0 / 3
+            - generic [ref=e349]:
+              - generic [ref=e350]:
+                - generic [ref=e351]:
+                  - generic [ref=e352]: Workout 1771968044863
+                  - generic [ref=e353]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e354] [cursor=pointer]: ○
+              - generic [ref=e356]:
+                - generic [ref=e357]: Weekly Progress
+                - generic [ref=e358]: 0 / 2
+            - generic [ref=e360]:
+              - generic [ref=e361]:
+                - generic [ref=e362]:
+                  - generic [ref=e363]: Water 1771968041532
+                  - generic [ref=e364]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e365] [cursor=pointer]: ○
+              - generic [ref=e367]:
+                - generic [ref=e368]: Today's Progress
+                - generic [ref=e369]: 0 / 3
+            - generic [ref=e372]:
+              - generic [ref=e373]:
+                - generic [ref=e374]: Monthly 1771968040620
+                - generic [ref=e375]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e376] [cursor=pointer]: ○
+            - generic [ref=e378]:
+              - generic [ref=e379]:
+                - generic [ref=e380]: Weekly 1771968038949
+                - generic [ref=e381]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e382] [cursor=pointer]: ○
+            - generic [ref=e384]:
+              - generic [ref=e385]:
+                - generic [ref=e386]: Walk 1771968030694
+                - generic [ref=e387]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e388] [cursor=pointer]: ○
+            - generic [ref=e389]:
+              - generic [ref=e390]:
+                - generic [ref=e391]:
+                  - generic [ref=e392]: Reading 1771967648741
+                  - generic [ref=e393]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e394] [cursor=pointer]: ○
+              - generic [ref=e396]:
+                - generic [ref=e397]: Monthly Progress
+                - generic [ref=e398]: 0 / 3
+            - generic [ref=e400]:
+              - generic [ref=e401]:
+                - generic [ref=e402]:
+                  - generic [ref=e403]: Water 1771967647647
+                  - generic [ref=e404]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e405] [cursor=pointer]: ○
+              - generic [ref=e407]:
+                - generic [ref=e408]: Today's Progress
+                - generic [ref=e409]: 0 / 3
+            - generic [ref=e412]:
+              - generic [ref=e413]:
+                - generic [ref=e414]: Monthly 1771967647168
+                - generic [ref=e415]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e416] [cursor=pointer]: ○
+            - generic [ref=e417]:
+              - generic [ref=e418]:
+                - generic [ref=e419]:
+                  - generic [ref=e420]: Workout 1771967647043
+                  - generic [ref=e421]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e422] [cursor=pointer]: ○
+              - generic [ref=e424]:
+                - generic [ref=e425]: Weekly Progress
+                - generic [ref=e426]: 0 / 2
+            - generic [ref=e429]:
+              - generic [ref=e430]:
+                - generic [ref=e431]: Weekly 1771967645472
+                - generic [ref=e432]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e433] [cursor=pointer]: ○
+            - generic [ref=e435]:
+              - generic [ref=e436]:
+                - generic [ref=e437]: Walk 1771967634566
+                - generic [ref=e438]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e439] [cursor=pointer]: ○
+            - generic [ref=e440]:
+              - generic [ref=e441]:
+                - generic [ref=e442]:
+                  - generic [ref=e443]: Reading 1771967482854
+                  - generic [ref=e444]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e445] [cursor=pointer]: ○
+              - generic [ref=e447]:
+                - generic [ref=e448]: Monthly Progress
+                - generic [ref=e449]: 0 / 3
+            - generic [ref=e451]:
+              - generic [ref=e452]:
+                - generic [ref=e453]:
+                  - generic [ref=e454]: Workout 1771967481066
+                  - generic [ref=e455]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e456] [cursor=pointer]: ○
+              - generic [ref=e458]:
+                - generic [ref=e459]: Weekly Progress
+                - generic [ref=e460]: 0 / 2
+            - generic [ref=e462]:
+              - generic [ref=e463]:
+                - generic [ref=e464]:
+                  - generic [ref=e465]: Water 1771967475646
+                  - generic [ref=e466]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e467] [cursor=pointer]: ○
+              - generic [ref=e469]:
+                - generic [ref=e470]: Today's Progress
+                - generic [ref=e471]: 0 / 3
+            - generic [ref=e474]:
+              - generic [ref=e475]:
+                - generic [ref=e476]: Walk 1771967468629
+                - generic [ref=e477]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e478] [cursor=pointer]: ○
+            - generic [ref=e480]:
+              - generic [ref=e481]:
+                - generic [ref=e482]: Monthly 1771967469047
+                - generic [ref=e483]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e484] [cursor=pointer]: ○
+            - generic [ref=e486]:
+              - generic [ref=e487]:
+                - generic [ref=e488]: Weekly 1771967467383
+                - generic [ref=e489]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e490] [cursor=pointer]: ○
+            - generic [ref=e491]:
+              - generic [ref=e492]:
+                - generic [ref=e493]:
+                  - generic [ref=e494]: Reading 1771964018669
+                  - generic [ref=e495]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e496] [cursor=pointer]: ○
+              - generic [ref=e498]:
+                - generic [ref=e499]: Monthly Progress
+                - generic [ref=e500]: 0 / 3
+            - generic [ref=e502]:
+              - generic [ref=e503]:
+                - generic [ref=e504]:
+                  - generic [ref=e505]: Workout 1771964017050
+                  - generic [ref=e506]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e507] [cursor=pointer]: ○
+              - generic [ref=e509]:
+                - generic [ref=e510]: Weekly Progress
+                - generic [ref=e511]: 0 / 2
+            - generic [ref=e514]:
+              - generic [ref=e515]:
+                - generic [ref=e516]: Monthly 1771964015650
+                - generic [ref=e517]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e518] [cursor=pointer]: ○
+            - generic [ref=e519]:
+              - generic [ref=e520]:
+                - generic [ref=e521]:
+                  - generic [ref=e522]: Water 1771964014085
+                  - generic [ref=e523]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e524] [cursor=pointer]: ○
+              - generic [ref=e526]:
+                - generic [ref=e527]: Today's Progress
+                - generic [ref=e528]: 0 / 3
+            - generic [ref=e531]:
+              - generic [ref=e532]:
+                - generic [ref=e533]: Weekly 1771964013964
+                - generic [ref=e534]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e535] [cursor=pointer]: ○
+            - generic [ref=e536]:
+              - generic [ref=e537]:
+                - generic [ref=e538]:
+                  - generic [ref=e539]: Multi Target 1771964011791
+                  - generic [ref=e540]: 🧘 Health • 5x per week
+                - button "Mark complete" [ref=e541] [cursor=pointer]: ○
+              - generic [ref=e543]:
+                - generic [ref=e544]: Weekly Progress
+                - generic [ref=e545]: 0 / 5
+            - generic [ref=e548]:
+              - generic [ref=e549]:
+                - generic [ref=e550]: Walk 1771964003447
+                - generic [ref=e551]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e552] [cursor=pointer]: ○
+            - generic [ref=e553]:
+              - generic [ref=e554]:
+                - generic [ref=e555]:
+                  - generic [ref=e556]: Category Test 1771963993322
+                  - generic [ref=e557]: 💪 Fitness • 3x per week
+                - button "Mark complete" [ref=e558] [cursor=pointer]: ○
+              - generic [ref=e560]:
+                - generic [ref=e561]: Weekly Progress
+                - generic [ref=e562]: 0 / 3
+            - generic [ref=e565]:
+              - generic [ref=e566]:
+                - generic [ref=e567]: Habit to Edit 1771963989768
+                - generic [ref=e568]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e569] [cursor=pointer]: ○
+            - generic [ref=e571]:
+              - generic [ref=e572]:
+                - generic [ref=e573]: Habit to Complete 1771963988201
+                - generic [ref=e574]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e575] [cursor=pointer]: ○
+            - generic [ref=e577]:
+              - generic [ref=e578]:
+                - generic [ref=e579]: E2E Test Habit 1771963979495
+                - generic [ref=e580]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e581] [cursor=pointer]: ○
+            - generic [ref=e582]:
+              - generic [ref=e583]:
+                - generic [ref=e584]:
+                  - generic [ref=e585]: Reading 1771963262382
+                  - generic [ref=e586]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e587] [cursor=pointer]: ○
+              - generic [ref=e589]:
+                - generic [ref=e590]: Monthly Progress
+                - generic [ref=e591]: 0 / 3
+            - generic [ref=e593]:
+              - generic [ref=e594]:
+                - generic [ref=e595]:
+                  - generic [ref=e596]: Workout 1771963260282
+                  - generic [ref=e597]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e598] [cursor=pointer]: ○
+              - generic [ref=e600]:
+                - generic [ref=e601]: Weekly Progress
+                - generic [ref=e602]: 0 / 2
+            - generic [ref=e604]:
+              - generic [ref=e605]:
+                - generic [ref=e606]:
+                  - generic [ref=e607]: Water 1771963256631
+                  - generic [ref=e608]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e609] [cursor=pointer]: ○
+              - generic [ref=e611]:
+                - generic [ref=e612]: Today's Progress
+                - generic [ref=e613]: 0 / 3
+            - generic [ref=e616]:
+              - generic [ref=e617]:
+                - generic [ref=e618]: Monthly 1771963255575
+                - generic [ref=e619]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e620] [cursor=pointer]: ○
+            - generic [ref=e622]:
+              - generic [ref=e623]:
+                - generic [ref=e624]: Weekly 1771963253885
+                - generic [ref=e625]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e626] [cursor=pointer]: ○
+            - generic [ref=e628]:
+              - generic [ref=e629]:
+                - generic [ref=e630]: Walk 1771963247448
+                - generic [ref=e631]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e632] [cursor=pointer]: ○
+            - generic [ref=e633]:
+              - generic [ref=e634]:
+                - generic [ref=e635]:
+                  - generic [ref=e636]: Reading 1771963121114
+                  - generic [ref=e637]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e638] [cursor=pointer]: ○
+              - generic [ref=e640]:
+                - generic [ref=e641]: Monthly Progress
+                - generic [ref=e642]: 0 / 3
+            - generic [ref=e644]:
+              - generic [ref=e645]:
+                - generic [ref=e646]:
+                  - generic [ref=e647]: Workout 1771963119502
+                  - generic [ref=e648]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e649] [cursor=pointer]: ○
+              - generic [ref=e651]:
+                - generic [ref=e652]: Weekly Progress
+                - generic [ref=e653]: 0 / 2
+            - generic [ref=e655]:
+              - generic [ref=e656]:
+                - generic [ref=e657]:
+                  - generic [ref=e658]: Water 1771963118106
+                  - generic [ref=e659]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e660] [cursor=pointer]: ○
+              - generic [ref=e662]:
+                - generic [ref=e663]: Today's Progress
+                - generic [ref=e664]: 0 / 3
+            - generic [ref=e667]:
+              - generic [ref=e668]:
+                - generic [ref=e669]: Monthly 1771963117939
+                - generic [ref=e670]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e671] [cursor=pointer]: ○
+            - generic [ref=e673]:
+              - generic [ref=e674]:
+                - generic [ref=e675]: Weekly 1771963116216
+                - generic [ref=e676]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e677] [cursor=pointer]: ○
+            - generic [ref=e679]:
+              - generic [ref=e680]:
+                - generic [ref=e681]: Habit to Edit 1771963103079
+                - generic [ref=e682]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e683] [cursor=pointer]: ○
+            - generic [ref=e685]:
+              - generic [ref=e686]:
+                - generic [ref=e687]: E2E Test Habit 1771963099850
+                - generic [ref=e688]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e689] [cursor=pointer]: ○
+            - generic [ref=e690]:
+              - generic [ref=e691]:
+                - generic [ref=e692]:
+                  - generic [ref=e693]: Category Test 1771963101748
+                  - generic [ref=e694]: 💪 Fitness • 3x per week
+                - button "Mark complete" [ref=e695] [cursor=pointer]: ○
+              - generic [ref=e697]:
+                - generic [ref=e698]: Weekly Progress
+                - generic [ref=e699]: 0 / 3
+            - generic [ref=e702]:
+              - generic [ref=e703]:
+                - generic [ref=e704]: Habit to Complete 1771963101336
+                - generic [ref=e705]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e706] [cursor=pointer]: ○
+            - generic [ref=e707]:
+              - generic [ref=e708]:
+                - generic [ref=e709]:
+                  - generic [ref=e710]: Reading 1771962109774
+                  - generic [ref=e711]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e712] [cursor=pointer]: ○
+              - generic [ref=e714]:
+                - generic [ref=e715]: Monthly Progress
+                - generic [ref=e716]: 0 / 3
+            - generic [ref=e718]:
+              - generic [ref=e719]:
+                - generic [ref=e720]:
+                  - generic [ref=e721]: Workout 1771962108138
+                  - generic [ref=e722]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e723] [cursor=pointer]: ○
+              - generic [ref=e725]:
+                - generic [ref=e726]: Weekly Progress
+                - generic [ref=e727]: 0 / 2
+            - generic [ref=e730]:
+              - generic [ref=e731]:
+                - generic [ref=e732]: Monthly 1771962107851
+                - generic [ref=e733]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e734] [cursor=pointer]: ○
+            - generic [ref=e735]:
+              - generic [ref=e736]:
+                - generic [ref=e737]:
+                  - generic [ref=e738]: Water 1771962107262
+                  - generic [ref=e739]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e740] [cursor=pointer]: ○
+              - generic [ref=e742]:
+                - generic [ref=e743]: Today's Progress
+                - generic [ref=e744]: 0 / 3
+            - generic [ref=e747]:
+              - generic [ref=e748]:
+                - generic [ref=e749]: Weekly 1771962106255
+                - generic [ref=e750]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e751] [cursor=pointer]: ○
+            - generic [ref=e753]:
+              - generic [ref=e754]:
+                - generic [ref=e755]: Walk 1771962097745
+                - generic [ref=e756]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e757] [cursor=pointer]: ○
+            - generic [ref=e758]:
+              - generic [ref=e759]:
+                - generic [ref=e760]:
+                  - generic [ref=e761]: Multi Target 1771962094960
+                  - generic [ref=e762]: 🧘 Health • 5x per week
+                - button "Mark complete" [ref=e763] [cursor=pointer]: ○
+              - generic [ref=e765]:
+                - generic [ref=e766]: Weekly Progress
+                - generic [ref=e767]: 0 / 5
+            - generic [ref=e769]:
+              - generic [ref=e770]:
+                - generic [ref=e771]:
+                  - generic [ref=e772]: Category Test 1771962090755
+                  - generic [ref=e773]: 💪 Fitness • 3x per week
+                - button "Mark complete" [ref=e774] [cursor=pointer]: ○
+              - generic [ref=e776]:
+                - generic [ref=e777]: Weekly Progress
+                - generic [ref=e778]: 0 / 3
+            - generic [ref=e781]:
+              - generic [ref=e782]:
+                - generic [ref=e783]: E2E Test Habit 1771962085203
+                - generic [ref=e784]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e785] [cursor=pointer]: ○
+            - generic [ref=e787]:
+              - generic [ref=e788]:
+                - generic [ref=e789]: Habit to Edit 1771962087117
+                - generic [ref=e790]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e791] [cursor=pointer]: ○
+            - generic [ref=e793]:
+              - generic [ref=e794]:
+                - generic [ref=e795]: Habit to Complete 1771962085987
+                - generic [ref=e796]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e797] [cursor=pointer]: ○
+            - generic [ref=e798]:
+              - generic [ref=e799]:
+                - generic [ref=e800]:
+                  - generic [ref=e801]: Reading 1771959698299
+                  - generic [ref=e802]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e803] [cursor=pointer]: ○
+              - generic [ref=e805]:
+                - generic [ref=e806]: Monthly Progress
+                - generic [ref=e807]: 0 / 3
+            - generic [ref=e809]:
+              - generic [ref=e810]:
+                - generic [ref=e811]:
+                  - generic [ref=e812]: Workout 1771959696629
+                  - generic [ref=e813]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e814] [cursor=pointer]: ○
+              - generic [ref=e816]:
+                - generic [ref=e817]: Weekly Progress
+                - generic [ref=e818]: 0 / 2
+            - generic [ref=e820]:
+              - generic [ref=e821]:
+                - generic [ref=e822]:
+                  - generic [ref=e823]: Water 1771959695320
+                  - generic [ref=e824]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e825] [cursor=pointer]: ○
+              - generic [ref=e827]:
+                - generic [ref=e828]: Today's Progress
+                - generic [ref=e829]: 0 / 3
+            - generic [ref=e832]:
+              - generic [ref=e833]:
+                - generic [ref=e834]: Monthly 1771959692506
+                - generic [ref=e835]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e836] [cursor=pointer]: ○
+            - generic [ref=e838]:
+              - generic [ref=e839]:
+                - generic [ref=e840]: Weekly 1771959690798
+                - generic [ref=e841]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e842] [cursor=pointer]: ○
+            - generic [ref=e843]:
+              - generic [ref=e844]:
+                - generic [ref=e845]:
+                  - generic [ref=e846]: Reading 1771959633757
+                  - generic [ref=e847]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e848] [cursor=pointer]: ○
+              - generic [ref=e850]:
+                - generic [ref=e851]: Monthly Progress
+                - generic [ref=e852]: 0 / 3
+            - generic [ref=e854]:
+              - generic [ref=e855]:
+                - generic [ref=e856]:
+                  - generic [ref=e857]: Workout 1771959632162
+                  - generic [ref=e858]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e859] [cursor=pointer]: ○
+              - generic [ref=e861]:
+                - generic [ref=e862]: Weekly Progress
+                - generic [ref=e863]: 0 / 2
+            - generic [ref=e866]:
+              - generic [ref=e867]:
+                - generic [ref=e868]: Monthly 1771959631521
+                - generic [ref=e869]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e870] [cursor=pointer]: ○
+            - generic [ref=e871]:
+              - generic [ref=e872]:
+                - generic [ref=e873]:
+                  - generic [ref=e874]: Water 1771959630339
+                  - generic [ref=e875]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e876] [cursor=pointer]: ○
+              - generic [ref=e878]:
+                - generic [ref=e879]: Today's Progress
+                - generic [ref=e880]: 0 / 3
+              - generic [ref=e882]: 🔥 1 day streak
+            - generic [ref=e884]:
+              - generic [ref=e885]:
+                - generic [ref=e886]: Test Habit E2E 1771959625756
+                - generic [ref=e887]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e888] [cursor=pointer]: ○
+            - generic [ref=e890]:
+              - generic [ref=e891]:
+                - generic [ref=e892]: Weekly 1771959629868
+                - generic [ref=e893]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e894] [cursor=pointer]: ○
+            - generic [ref=e896]:
+              - generic [ref=e897]:
+                - generic [ref=e898]: Walk 1771959624210
+                - generic [ref=e899]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e900] [cursor=pointer]: ○
+            - generic [ref=e901]:
+              - generic [ref=e902]:
+                - generic [ref=e903]:
+                  - generic [ref=e904]: Reading 1771959601939
+                  - generic [ref=e905]: 🧘 Health • 3x per month
+                - button "Mark complete" [ref=e906] [cursor=pointer]: ○
+              - generic [ref=e908]:
+                - generic [ref=e909]: Monthly Progress
+                - generic [ref=e910]: 0 / 3
+            - generic [ref=e913]:
+              - generic [ref=e914]:
+                - generic [ref=e915]: Monthly 1771959600671
+                - generic [ref=e916]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e917] [cursor=pointer]: ○
+            - generic [ref=e918]:
+              - generic [ref=e919]:
+                - generic [ref=e920]:
+                  - generic [ref=e921]: Workout 1771959600337
+                  - generic [ref=e922]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e923] [cursor=pointer]: ○
+              - generic [ref=e925]:
+                - generic [ref=e926]: Weekly Progress
+                - generic [ref=e927]: 0 / 2
+            - generic [ref=e930]:
+              - generic [ref=e931]:
+                - generic [ref=e932]: Weekly 1771959599066
+                - generic [ref=e933]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e934] [cursor=pointer]: ○
+            - generic [ref=e935]:
+              - generic [ref=e936]:
+                - generic [ref=e937]:
+                  - generic [ref=e938]: Water 1771959598491
+                  - generic [ref=e939]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e940] [cursor=pointer]: ○
+              - generic [ref=e942]:
+                - generic [ref=e943]: Today's Progress
+                - generic [ref=e944]: 0 / 3
+            - generic [ref=e946]:
+              - generic [ref=e947]:
+                - generic [ref=e948]:
+                  - generic [ref=e949]: Weekly Workout
+                  - generic [ref=e950]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e951] [cursor=pointer]: ○
+              - generic [ref=e953]:
+                - generic [ref=e954]: Weekly Progress
+                - generic [ref=e955]: 1 / 2
+              - generic [ref=e958]: 🔥 1 day streak
+            - generic [ref=e959]:
+              - generic [ref=e960]:
+                - generic [ref=e961]:
+                  - generic [ref=e962]: Drink Water
+                  - generic [ref=e963]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e964] [cursor=pointer]: ○
+              - generic [ref=e966]:
+                - generic [ref=e967]: Today's Progress
+                - generic [ref=e968]: 0 / 3
+              - generic [ref=e970]: 🔥 1 day streak
+            - generic [ref=e972]:
+              - generic [ref=e973]:
+                - generic [ref=e974]: Test Habit E2E 1771959518232
+                - generic [ref=e975]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e976] [cursor=pointer]: ○
+            - generic [ref=e978]:
+              - generic [ref=e979]:
+                - generic [ref=e980]: Weekly Exercise
+                - generic [ref=e981]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e982] [cursor=pointer]: ○
+            - generic [ref=e984]:
+              - generic [ref=e985]:
+                - generic [ref=e986]: Monthly Review
+                - generic [ref=e987]: 🧘 Health • 1x per month
+              - button "Mark complete" [ref=e988] [cursor=pointer]: ○
+            - generic [ref=e990]:
+              - generic [ref=e991]:
+                - generic [ref=e992]: Weekly Exercise
+                - generic [ref=e993]: 🧘 Health • 1x per week
+              - button "Mark complete" [ref=e994] [cursor=pointer]: ○
+            - generic [ref=e995]:
+              - generic [ref=e996]:
+                - generic [ref=e997]:
+                  - generic [ref=e998]: Weekly Workout
+                  - generic [ref=e999]: 🧘 Health • 2x per week
+                - button "Mark complete" [ref=e1000] [cursor=pointer]: ○
+              - generic [ref=e1002]:
+                - generic [ref=e1003]: Weekly Progress
+                - generic [ref=e1004]: 0 / 2
+            - generic [ref=e1006]:
+              - generic [ref=e1007]:
+                - generic [ref=e1008]:
+                  - generic [ref=e1009]: Drink Water
+                  - generic [ref=e1010]: 🧘 Health • Daily
+                - button "Mark complete" [ref=e1011] [cursor=pointer]: ○
+              - generic [ref=e1013]:
+                - generic [ref=e1014]: Today's Progress
+                - generic [ref=e1015]: 0 / 3
+            - generic [ref=e1018]:
+              - generic [ref=e1019]:
+                - generic [ref=e1020]: Walk 1771959354071
+                - generic [ref=e1021]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1022] [cursor=pointer]: ○
+            - generic [ref=e1024]:
+              - generic [ref=e1025]:
+                - generic [ref=e1026]: Walk 1771958994216
+                - generic [ref=e1027]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1028] [cursor=pointer]: ○
+            - generic [ref=e1030]:
+              - generic [ref=e1031]:
+                - generic [ref=e1032]: Walk 1771958857339
+                - generic [ref=e1033]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1034] [cursor=pointer]: ○
+            - generic [ref=e1036]:
+              - generic [ref=e1037]:
+                - generic [ref=e1038]: Walk 1771957988850
+                - generic [ref=e1039]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1040] [cursor=pointer]: ○
+            - generic [ref=e1042]:
+              - generic [ref=e1043]:
+                - generic [ref=e1044]: E2E Test Habit 1771956524452
+                - generic [ref=e1045]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1046] [cursor=pointer]: ○
+            - generic [ref=e1047]:
+              - generic [ref=e1048]:
+                - generic [ref=e1049]:
+                  - generic [ref=e1050]: Multi Target 1771954508910
+                  - generic [ref=e1051]: 🧘 Health • 5x per week
+                - button "Mark complete" [ref=e1052] [cursor=pointer]: ○
+              - generic [ref=e1054]:
+                - generic [ref=e1055]: Weekly Progress
+                - generic [ref=e1056]: 0 / 5
+            - generic [ref=e1058]:
+              - generic [ref=e1059]:
+                - generic [ref=e1060]:
+                  - generic [ref=e1061]: Category Test 1771954504471
+                  - generic [ref=e1062]: 💪 Fitness • 3x per week
+                - button "Mark complete" [ref=e1063] [cursor=pointer]: ○
+              - generic [ref=e1065]:
+                - generic [ref=e1066]: Weekly Progress
+                - generic [ref=e1067]: 0 / 3
+            - generic [ref=e1070]:
+              - generic [ref=e1071]:
+                - generic [ref=e1072]: E2E Test Habit 1771954499523
+                - generic [ref=e1073]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1074] [cursor=pointer]: ○
+            - generic [ref=e1076]:
+              - generic [ref=e1077]:
+                - generic [ref=e1078]: Habit to Edit 1771954500779
+                - generic [ref=e1079]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1080] [cursor=pointer]: ○
+            - generic [ref=e1082]:
+              - generic [ref=e1083]:
+                - generic [ref=e1084]: Habit to Complete 1771954500220
+                - generic [ref=e1085]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1086] [cursor=pointer]: ○
+            - generic [ref=e1087]:
+              - generic [ref=e1088]:
+                - generic [ref=e1089]:
+                  - generic [ref=e1090]: Multi Target 1771952881859
+                  - generic [ref=e1091]: 🧘 Health • 5x per week
+                - button "Mark complete" [ref=e1092] [cursor=pointer]: ○
+              - generic [ref=e1094]:
+                - generic [ref=e1095]: Weekly Progress
+                - generic [ref=e1096]: 0 / 5
+            - generic [ref=e1098]:
+              - generic [ref=e1099]:
+                - generic [ref=e1100]:
+                  - generic [ref=e1101]: Category Test 1771952878324
+                  - generic [ref=e1102]: 💪 Fitness • 3x per week
+                - button "Mark complete" [ref=e1103] [cursor=pointer]: ○
+              - generic [ref=e1105]:
+                - generic [ref=e1106]: Weekly Progress
+                - generic [ref=e1107]: 0 / 3
+            - generic [ref=e1110]:
+              - generic [ref=e1111]:
+                - generic [ref=e1112]: E2E Test Habit 1771952873715
+                - generic [ref=e1113]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1114] [cursor=pointer]: ○
+            - generic [ref=e1116]:
+              - generic [ref=e1117]:
+                - generic [ref=e1118]: Habit to Edit 1771952874743
+                - generic [ref=e1119]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1120] [cursor=pointer]: ○
+            - generic [ref=e1122]:
+              - generic [ref=e1123]:
+                - generic [ref=e1124]: Habit to Complete 1771952874159
+                - generic [ref=e1125]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1126] [cursor=pointer]: ○
+            - generic [ref=e1127]:
+              - generic [ref=e1128]:
+                - generic [ref=e1129]:
+                  - generic [ref=e1130]: Multi Target 1771951272424
+                  - generic [ref=e1131]: 🧘 Health • 5x per week
+                - button "Mark complete" [ref=e1132] [cursor=pointer]: ○
+              - generic [ref=e1134]:
+                - generic [ref=e1135]: Weekly Progress
+                - generic [ref=e1136]: 0 / 5
+            - generic [ref=e1138]:
+              - generic [ref=e1139]:
+                - generic [ref=e1140]:
+                  - generic [ref=e1141]: Category Test 1771951267042
+                  - generic [ref=e1142]: 💪 Fitness • 3x per week
+                - button "Mark complete" [ref=e1143] [cursor=pointer]: ○
+              - generic [ref=e1145]:
+                - generic [ref=e1146]: Weekly Progress
+                - generic [ref=e1147]: 0 / 3
+            - generic [ref=e1150]:
+              - generic [ref=e1151]:
+                - generic [ref=e1152]: E2E Test Habit 1771951262451
+                - generic [ref=e1153]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1154] [cursor=pointer]: ○
+            - generic [ref=e1156]:
+              - generic [ref=e1157]:
+                - generic [ref=e1158]: Habit to Complete 1771951263775
+                - generic [ref=e1159]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1160] [cursor=pointer]: ○
+            - generic [ref=e1162]:
+              - generic [ref=e1163]:
+                - generic [ref=e1164]: Habit to Edit 1771951263391
+                - generic [ref=e1165]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1166] [cursor=pointer]: ○
+            - generic [ref=e1167]:
+              - generic [ref=e1168]:
+                - generic [ref=e1169]:
+                  - generic [ref=e1170]: Multi Target 1771950602142
+                  - generic [ref=e1171]: 🧘 Health • 5x per week
+                - button "Mark complete" [ref=e1172] [cursor=pointer]: ○
+              - generic [ref=e1174]:
+                - generic [ref=e1175]: Weekly Progress
+                - generic [ref=e1176]: 0 / 5
+            - generic [ref=e1179]:
+              - generic [ref=e1180]:
+                - generic [ref=e1181]: E2E Test Habit 1771950594161
+                - generic [ref=e1182]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1183] [cursor=pointer]: ○
+            - generic [ref=e1184]:
+              - generic [ref=e1185]:
+                - generic [ref=e1186]:
+                  - generic [ref=e1187]: Category Test 1771950594751
+                  - generic [ref=e1188]: 💪 Fitness • 3x per week
+                - button "Mark complete" [ref=e1189] [cursor=pointer]: ○
+              - generic [ref=e1191]:
+                - generic [ref=e1192]: Weekly Progress
+                - generic [ref=e1193]: 0 / 3
+            - generic [ref=e1196]:
+              - generic [ref=e1197]:
+                - generic [ref=e1198]: Habit to Complete 1771950593299
+                - generic [ref=e1199]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1200] [cursor=pointer]: ○
+            - generic [ref=e1202]:
+              - generic [ref=e1203]:
+                - generic [ref=e1204]: Habit to Edit 1771950592686
+                - generic [ref=e1205]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1206] [cursor=pointer]: ○
+            - generic [ref=e1208]:
+              - generic [ref=e1209]:
+                - generic [ref=e1210]: E2E Test Habit 1771950567687
+                - generic [ref=e1211]: 🧘 Health • Daily
+              - button "Mark complete" [ref=e1212] [cursor=pointer]: ○
+          - button "Create new habit" [ref=e1213] [cursor=pointer]: +
+        - button "Quick capture" [ref=e1214]:
+          - img [ref=e1215]
+  - generic [ref=e1216]:
+    - img [ref=e1218]
+    - button "Open Tanstack query devtools" [ref=e1266] [cursor=pointer]:
+      - img [ref=e1267] [cursor=pointer]
+```

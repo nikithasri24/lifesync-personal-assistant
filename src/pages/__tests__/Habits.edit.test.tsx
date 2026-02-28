@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -13,19 +13,15 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
         name: 'Read',
         description: '15 minutes',
         frequency: 'daily',
-        target_count: 1,
-        category_id: 'general',
-        icon: '📖',
-        color: '#22c55e',
+        target_value: 1,
+        category: 'Learning',
+        streak_count: 0,
+        best_streak: 0,
+        is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
     ],
-    isLoading: false,
-    error: null,
-  }),
-  useHabit: () => ({
-    data: null,
     isLoading: false,
     error: null,
   }),
@@ -34,71 +30,49 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     isLoading: false,
     error: null,
   }),
-  useHabitEntriesForHabit: () => ({
-    data: [],
+  useMergedHabitsConnectionQuery: () => ({
+    data: null,
     isLoading: false,
     error: null,
   }),
   useCreateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useUpdateHabit: () => ({
     mutate: updateHabitMock,
+    mutateAsync: updateHabitMock,
     isPending: false,
   }),
   useDeleteHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useCreateHabitEntry: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useUpdateHabitEntry: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntry: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabitEntriesForDate: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntriesForDateRange: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteAllHabitEntries: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
 }))
 
-vi.mock('../../hooks/useHabitCategories', () => ({
-  useHabitCategories: () => ({
-    data: [{ id: 'general', name: 'General', icon: '📋', color: '#6b7280' }],
+vi.mock('../../hooks/useOwnerInfo', () => ({
+  useCurrentUserId: () => ({
+    data: 'test-user-id',
     isLoading: false,
-    error: null,
-  }),
-  useCreateHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useUpdateHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
   }),
 }))
 
 describe('Habits edit', () => {
-  it('opens edit form and saves changes', async () => {
+  it('opens edit modal when habit card is clicked', async () => {
+    updateHabitMock.mockResolvedValue({})
+
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     })
@@ -112,15 +86,40 @@ describe('Habits edit', () => {
       </QueryClientProvider>
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /edit/i }))
+    // Wait for habit to render
+    await waitFor(() => {
+      expect(screen.getByText('Read')).toBeInTheDocument()
+    })
 
-    const editNameInput = screen.getByTestId('habit-edit-name') as HTMLInputElement
-    fireEvent.change(editNameInput, { target: { value: 'Read books' } })
+    // Click on the habit name to open edit modal
+    await act(async () => {
+      fireEvent.click(screen.getByText('Read'))
+    })
 
-    fireEvent.click(screen.getByTestId('habit-save-changes'))
-    expect(updateHabitMock).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'h1',
-      updates: expect.objectContaining({ name: 'Read books' })
-    }))
+    // Edit modal should open with "Edit Habit" title
+    await waitFor(() => {
+      expect(screen.getByText('Edit Habit')).toBeInTheDocument()
+    })
+
+    // Change the name
+    const nameInput = screen.getByPlaceholderText('Exercise, Read, Meditate...')
+    await act(async () => {
+      fireEvent.change(nameInput, { target: { value: 'Read books' } })
+    })
+
+    // Save changes
+    const updateButton = screen.getByRole('button', { name: /update habit/i })
+    await act(async () => {
+      fireEvent.click(updateButton)
+    })
+
+    await waitFor(() => {
+      expect(updateHabitMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'h1',
+          updates: expect.objectContaining({ name: 'Read books' }),
+        })
+      )
+    })
   })
 })

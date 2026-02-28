@@ -1,0 +1,283 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "Expand sidebar" [active] [ref=e24]:
+        - img [ref=e25]
+      - navigation "Main navigation" [ref=e26]:
+        - generic [ref=e27]:
+          - list [ref=e29]:
+            - listitem [ref=e30]:
+              - link "Dashboard" [ref=e31] [cursor=pointer]:
+                - /url: /
+                - img [ref=e32] [cursor=pointer]
+                - generic [ref=e35] [cursor=pointer]: Dashboard
+            - listitem [ref=e36]:
+              - link "AI Assistant" [ref=e37] [cursor=pointer]:
+                - /url: /assistant
+                - img [ref=e38] [cursor=pointer]
+                - generic [ref=e40] [cursor=pointer]: AI Assistant
+            - listitem [ref=e41]:
+              - link "Calendar" [ref=e42] [cursor=pointer]:
+                - /url: /calendar
+                - img [ref=e43] [cursor=pointer]
+                - generic [ref=e45] [cursor=pointer]: Calendar
+            - listitem [ref=e46]:
+              - link "Focus" [ref=e47] [cursor=pointer]:
+                - /url: /focus
+                - img [ref=e48] [cursor=pointer]
+                - generic [ref=e51] [cursor=pointer]: Focus
+          - list [ref=e53]:
+            - listitem [ref=e54]:
+              - link "Habits" [ref=e55] [cursor=pointer]:
+                - /url: /habits
+                - img [ref=e56] [cursor=pointer]
+                - generic [ref=e59] [cursor=pointer]: Habits
+            - listitem [ref=e60]:
+              - link "Tasks" [ref=e61] [cursor=pointer]:
+                - /url: /todos
+                - img [ref=e62] [cursor=pointer]
+                - generic [ref=e66] [cursor=pointer]: Tasks
+            - listitem [ref=e67]:
+              - link "Notes" [ref=e68] [cursor=pointer]:
+                - /url: /notes
+                - img [ref=e69] [cursor=pointer]
+                - generic [ref=e72] [cursor=pointer]: Notes
+          - list [ref=e74]:
+            - listitem [ref=e75]:
+              - link "Journal" [ref=e76] [cursor=pointer]:
+                - /url: /journal
+                - img [ref=e77] [cursor=pointer]
+                - generic [ref=e79] [cursor=pointer]: Journal
+            - listitem [ref=e80]:
+              - link "Self Care" [ref=e81] [cursor=pointer]:
+                - /url: /self-care
+                - img [ref=e82] [cursor=pointer]
+                - generic [ref=e85] [cursor=pointer]: Self Care
+            - listitem [ref=e86]:
+              - link "Nutrition" [ref=e87] [cursor=pointer]:
+                - /url: /nutrition
+                - img [ref=e88] [cursor=pointer]
+                - generic [ref=e91] [cursor=pointer]: Nutrition
+          - list [ref=e93]:
+            - listitem [ref=e94]:
+              - link "Travel" [ref=e95] [cursor=pointer]:
+                - /url: /travel
+                - img [ref=e96] [cursor=pointer]
+                - generic [ref=e99] [cursor=pointer]: Travel
+            - listitem [ref=e100]:
+              - link "Visa Calculator" [ref=e101] [cursor=pointer]:
+                - /url: /travel/visa
+                - img [ref=e102] [cursor=pointer]
+                - generic [ref=e104] [cursor=pointer]: Visa Calculator
+            - listitem [ref=e105]:
+              - link "Finances" [ref=e106] [cursor=pointer]:
+                - /url: /finances
+                - img [ref=e107] [cursor=pointer]
+                - generic [ref=e109] [cursor=pointer]: Finances
+            - listitem [ref=e110]:
+              - link "Shopping" [ref=e111] [cursor=pointer]:
+                - /url: /shopping
+                - img [ref=e112] [cursor=pointer]
+                - generic [ref=e116] [cursor=pointer]: Shopping
+            - listitem [ref=e117]:
+              - link "Meals" [ref=e118] [cursor=pointer]:
+                - /url: /meals
+                - img [ref=e119] [cursor=pointer]
+                - generic [ref=e121] [cursor=pointer]: Meals
+            - listitem [ref=e122]:
+              - link "Goals" [ref=e123] [cursor=pointer]:
+                - /url: /goals
+                - img [ref=e124] [cursor=pointer]
+                - generic [ref=e130] [cursor=pointer]: Goals
+            - listitem [ref=e131]:
+              - link "Shared" [ref=e132] [cursor=pointer]:
+                - /url: /shared
+                - img [ref=e133] [cursor=pointer]
+                - generic [ref=e138] [cursor=pointer]: Shared
+            - listitem [ref=e139]:
+              - link "Together" [ref=e140] [cursor=pointer]:
+                - /url: /together
+                - img [ref=e141] [cursor=pointer]
+                - generic [ref=e143] [cursor=pointer]: Together
+      - 'button "Switch theme. Current: Light" [ref=e145]':
+        - img [ref=e148]
+        - generic [ref=e154]: Light Mode
+    - generic [ref=e155]:
+      - banner [ref=e156]:
+        - generic [ref=e157]:
+          - generic [ref=e159]:
+            - heading "Dashboard" [level=2] [ref=e160]
+            - paragraph [ref=e161]: Your productivity overview
+          - generic [ref=e162]:
+            - button "Notifications" [ref=e163]:
+              - img [ref=e164]
+            - button "Switch to Voice Mode" [ref=e168]:
+              - img [ref=e170]
+            - button "Voice" [ref=e175]:
+              - img [ref=e176]
+              - text: Voice
+      - main "dashboard page" [ref=e178]:
+        - heading "dashboard page" [level=1] [ref=e179]
+        - generic [ref=e180]:
+          - generic [ref=e182]:
+            - generic [ref=e183]:
+              - heading "🌤️ Good afternoon, Test1!" [level=1] [ref=e184]:
+                - generic [ref=e185]: 🌤️
+                - text: Good afternoon, Test1!
+              - paragraph [ref=e186]: Friday, February 27, 2026
+            - generic [ref=e187]:
+              - generic [ref=e188]:
+                - generic [ref=e189]: "5"
+                - generic [ref=e190]: Tasks Today
+              - generic [ref=e191]:
+                - generic [ref=e192]: "5"
+                - generic [ref=e193]: Habits
+              - generic [ref=e194]:
+                - generic [ref=e195]: "0"
+                - generic [ref=e196]: Notes
+              - generic [ref=e197]:
+                - generic [ref=e198]: "0"
+                - generic [ref=e199]: Journal Entries
+            - generic [ref=e200]:
+              - generic [ref=e202]: 🌤️ Afternoon Briefing
+              - list [ref=e203]:
+                - listitem [ref=e204]:
+                  - generic [ref=e205]: •
+                  - text: You have 5 tasks scheduled for today
+                - listitem [ref=e206]:
+                  - generic [ref=e207]: •
+                  - text: 5 habits ready to complete
+            - generic [ref=e208]:
+              - button "Add Task" [ref=e209]:
+                - generic [ref=e210]: ➕
+                - generic [ref=e211]: Add Task
+              - button "New Note" [ref=e212]:
+                - generic [ref=e213]: 📝
+                - generic [ref=e214]: New Note
+              - button "Journal" [ref=e215]:
+                - generic [ref=e216]: 📔
+                - generic [ref=e217]: Journal
+              - button "Focus" [ref=e218]:
+                - generic [ref=e219]: ⏱️
+                - generic [ref=e220]: Focus
+            - generic [ref=e221]:
+              - generic [ref=e222]:
+                - generic [ref=e223]:
+                  - img [ref=e225]
+                  - heading "Today's Tasks" [level=3] [ref=e229]
+                - button "View all" [ref=e230]:
+                  - generic [ref=e231]: View all
+                  - img [ref=e232]
+              - generic [ref=e234]:
+                - generic [ref=e235]:
+                  - button [ref=e236]:
+                    - img [ref=e237]
+                  - generic [ref=e239]:
+                    - paragraph [ref=e240]: Bravo E2E
+                    - generic [ref=e241]:
+                      - img [ref=e242]
+                      - paragraph [ref=e245]: Due Feb 26
+                  - generic [ref=e246]: medium
+                - generic [ref=e247]:
+                  - button [ref=e248]:
+                    - img [ref=e249]
+                  - generic [ref=e251]:
+                    - paragraph [ref=e252]: Alpha E2E
+                    - generic [ref=e253]:
+                      - img [ref=e254]
+                      - paragraph [ref=e257]: Due Feb 26
+                  - generic [ref=e258]: medium
+                - generic [ref=e259]:
+                  - button [ref=e260]:
+                    - img [ref=e261]
+                  - generic [ref=e263]:
+                    - paragraph [ref=e264]: Charlie E2E
+                    - generic [ref=e265]:
+                      - img [ref=e266]
+                      - paragraph [ref=e269]: Due Feb 26
+                  - generic [ref=e270]: medium
+                - generic [ref=e271]:
+                  - button [ref=e272]:
+                    - img [ref=e273]
+                  - generic [ref=e275]:
+                    - paragraph [ref=e276]: BB Task 1772235022121
+                    - generic [ref=e277]:
+                      - img [ref=e278]
+                      - paragraph [ref=e281]: Due Feb 26
+                  - generic [ref=e282]: medium
+                - generic [ref=e283]:
+                  - button [ref=e284]:
+                    - img [ref=e285]
+                  - generic [ref=e287]:
+                    - paragraph [ref=e288]: AA Task 1772235022121
+                    - generic [ref=e289]:
+                      - img [ref=e290]
+                      - paragraph [ref=e293]: Due Feb 26
+                  - generic [ref=e294]: medium
+            - generic [ref=e295]:
+              - generic [ref=e296]:
+                - generic [ref=e297]:
+                  - img [ref=e299]
+                  - heading "Today's Habits" [level=3] [ref=e304]
+                - button "View all" [ref=e305]:
+                  - generic [ref=e306]: View all
+                  - img [ref=e307]
+              - generic [ref=e309]:
+                - generic [ref=e310]:
+                  - generic [ref=e314]:
+                    - paragraph [ref=e315]: Reading 1772234721614
+                    - generic [ref=e316]: 0/3 today
+                    - text: "0"
+                  - button [ref=e317]:
+                    - img [ref=e318]
+                - generic [ref=e320]:
+                  - generic [ref=e324]:
+                    - paragraph [ref=e325]: Workout 1772234719948
+                    - generic [ref=e326]: 0/2 today
+                    - text: "0"
+                  - button [ref=e327]:
+                    - img [ref=e328]
+                - generic [ref=e330]:
+                  - generic [ref=e334]:
+                    - paragraph [ref=e335]: Water 1772234719301
+                    - generic [ref=e336]: 0/3 today
+                    - text: "0"
+                  - button [ref=e337]:
+                    - img [ref=e338]
+                - generic [ref=e340]:
+                  - generic [ref=e344]:
+                    - paragraph [ref=e345]: Monthly 1772234719132
+                    - generic [ref=e346]: 0/1 today
+                    - text: "0"
+                  - button [ref=e347]:
+                    - img [ref=e348]
+                - generic [ref=e350]:
+                  - generic [ref=e354]:
+                    - paragraph [ref=e355]: Weekly 1772234717516
+                    - generic [ref=e356]: 0/1 today
+                    - text: "0"
+                  - button [ref=e357]:
+                    - img [ref=e358]
+            - generic [ref=e360]:
+              - generic [ref=e361]:
+                - generic [ref=e362]:
+                  - img [ref=e364]
+                  - heading "Recent Notes" [level=3] [ref=e368]
+                - button "View all" [ref=e369]:
+                  - generic [ref=e370]: View all
+                  - img [ref=e371]
+              - generic [ref=e374]:
+                - img [ref=e376]
+                - heading "Capture your thoughts" [level=4] [ref=e379]
+                - paragraph [ref=e380]: Jot down ideas, reminders, or anything you want to remember.
+                - button "Write Your First Note" [ref=e381]
+          - button "Quick capture" [ref=e382]:
+            - img [ref=e383]
+  - generic [ref=e384]:
+    - img [ref=e386]
+    - button "Open Tanstack query devtools" [ref=e434] [cursor=pointer]:
+      - img [ref=e435] [cursor=pointer]
+```

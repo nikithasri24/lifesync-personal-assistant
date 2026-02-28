@@ -1,0 +1,256 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: life weave
+          - generic [ref=e27]: Skillful Living
+        - button "Collapse sidebar" [ref=e28]:
+          - img [ref=e29]
+      - navigation "Main navigation" [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - heading "Main" [level=3] [ref=e35]
+            - list [ref=e36]:
+              - listitem [ref=e37]:
+                - link "Dashboard" [ref=e38] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e39] [cursor=pointer]
+                  - generic [ref=e42] [cursor=pointer]: Dashboard
+              - listitem [ref=e43]:
+                - link "AI Assistant" [ref=e44] [cursor=pointer]:
+                  - /url: /assistant
+                  - img [ref=e45] [cursor=pointer]
+                  - generic [ref=e47] [cursor=pointer]: AI Assistant
+              - listitem [ref=e48]:
+                - link "Calendar" [ref=e49] [cursor=pointer]:
+                  - /url: /calendar
+                  - img [ref=e50] [cursor=pointer]
+                  - generic [ref=e52] [cursor=pointer]: Calendar
+              - listitem [ref=e53]:
+                - link "Focus" [ref=e54] [cursor=pointer]:
+                  - /url: /focus
+                  - img [ref=e55] [cursor=pointer]
+                  - generic [ref=e58] [cursor=pointer]: Focus
+          - generic [ref=e59]:
+            - heading "Productivity" [level=3] [ref=e60]
+            - list [ref=e61]:
+              - listitem [ref=e62]:
+                - link "Habits" [ref=e63] [cursor=pointer]:
+                  - /url: /habits
+                  - img [ref=e64] [cursor=pointer]
+                  - generic [ref=e67] [cursor=pointer]: Habits
+              - listitem [ref=e68]:
+                - link "Tasks" [ref=e69] [cursor=pointer]:
+                  - /url: /todos
+                  - img [ref=e70] [cursor=pointer]
+                  - generic [ref=e74] [cursor=pointer]: Tasks
+              - listitem [ref=e75]:
+                - link "Notes" [ref=e76] [cursor=pointer]:
+                  - /url: /notes
+                  - img [ref=e77] [cursor=pointer]
+                  - generic [ref=e80] [cursor=pointer]: Notes
+          - generic [ref=e81]:
+            - heading "Wellbeing" [level=3] [ref=e82]
+            - list [ref=e83]:
+              - listitem [ref=e84]:
+                - link "Journal" [ref=e85] [cursor=pointer]:
+                  - /url: /journal
+                  - img [ref=e86] [cursor=pointer]
+                  - generic [ref=e88] [cursor=pointer]: Journal
+              - listitem [ref=e89]:
+                - link "Self Care" [ref=e90] [cursor=pointer]:
+                  - /url: /self-care
+                  - img [ref=e91] [cursor=pointer]
+                  - generic [ref=e94] [cursor=pointer]: Self Care
+              - listitem [ref=e95]:
+                - link "Nutrition" [ref=e96] [cursor=pointer]:
+                  - /url: /nutrition
+                  - img [ref=e97] [cursor=pointer]
+                  - generic [ref=e100] [cursor=pointer]: Nutrition
+          - generic [ref=e101]:
+            - heading "Personal" [level=3] [ref=e102]
+            - list [ref=e103]:
+              - listitem [ref=e104]:
+                - link "Travel" [ref=e105] [cursor=pointer]:
+                  - /url: /travel
+                  - img [ref=e106] [cursor=pointer]
+                  - generic [ref=e109] [cursor=pointer]: Travel
+              - listitem [ref=e110]:
+                - link "Visa Calculator" [ref=e111] [cursor=pointer]:
+                  - /url: /travel/visa
+                  - img [ref=e112] [cursor=pointer]
+                  - generic [ref=e114] [cursor=pointer]: Visa Calculator
+              - listitem [ref=e115]:
+                - link "Finances" [ref=e116] [cursor=pointer]:
+                  - /url: /finances
+                  - img [ref=e117] [cursor=pointer]
+                  - generic [ref=e119] [cursor=pointer]: Finances
+                  - img [ref=e120] [cursor=pointer]
+              - listitem [ref=e122]:
+                - link "Shopping" [ref=e123] [cursor=pointer]:
+                  - /url: /shopping
+                  - img [ref=e124] [cursor=pointer]
+                  - generic [ref=e128] [cursor=pointer]: Shopping
+              - listitem [ref=e129]:
+                - link "Meals" [ref=e130] [cursor=pointer]:
+                  - /url: /meals
+                  - img [ref=e131] [cursor=pointer]
+                  - generic [ref=e133] [cursor=pointer]: Meals
+              - listitem [ref=e134]:
+                - link "Goals" [ref=e135] [cursor=pointer]:
+                  - /url: /goals
+                  - img [ref=e136] [cursor=pointer]
+                  - generic [ref=e142] [cursor=pointer]: Goals
+              - listitem [ref=e143]:
+                - link "Shared" [ref=e144] [cursor=pointer]:
+                  - /url: /shared
+                  - img [ref=e145] [cursor=pointer]
+                  - generic [ref=e150] [cursor=pointer]: Shared
+              - listitem [ref=e151]:
+                - link "Together" [ref=e152] [cursor=pointer]:
+                  - /url: /together
+                  - img [ref=e153] [cursor=pointer]
+                  - generic [ref=e155] [cursor=pointer]: Together
+      - 'button "Switch theme. Current: Light" [ref=e157]':
+        - img [ref=e160]
+        - generic [ref=e166]: Light Mode
+    - generic [ref=e167]:
+      - banner [ref=e168]:
+        - generic [ref=e169]:
+          - generic [ref=e171]:
+            - heading "Finances" [level=2] [ref=e172]
+            - paragraph
+          - generic [ref=e173]:
+            - button "Notifications" [ref=e174]:
+              - img [ref=e175]
+            - button "Switch to Voice Mode" [ref=e179]:
+              - img [ref=e181]
+            - button "Voice" [ref=e186]:
+              - img [ref=e187]
+              - text: Voice
+      - main "finances page" [ref=e189]:
+        - heading "finances page" [level=1] [ref=e190]
+        - generic [ref=e191]:
+          - generic [ref=e192]:
+            - tablist "View selection" [ref=e195]:
+              - tab "Dashboard" [ref=e196]
+              - tab "Accounts" [ref=e197]
+              - tab "Transactions" [selected] [ref=e198]
+              - tab "Budgets" [ref=e199]
+              - tab "Recurring" [ref=e200]
+              - tab "Net Worth" [ref=e201]
+              - tab "Goals" [ref=e202]
+              - tab "Loans" [ref=e203]
+              - tab "Retirement" [ref=e204]
+              - tab "Projections" [ref=e205]
+              - tab "Calculators" [ref=e206]
+              - tab "Credit Cards" [ref=e207]
+              - tab "Insurance" [ref=e208]
+              - tab "Settings" [ref=e209]
+            - generic [ref=e212]:
+              - generic [ref=e213]:
+                - heading "💸 Transactions" [level=1] [ref=e214]:
+                  - generic [ref=e215]: 💸
+                  - text: Transactions
+                - paragraph [ref=e216]: Track and categorize all your income and expenses
+              - generic [ref=e217]:
+                - generic [ref=e218]:
+                  - generic [ref=e221]: 💸 Transactions
+                  - generic [ref=e224]:
+                    - generic [ref=e226]:
+                      - generic [ref=e227]: Search
+                      - textbox "Search" [ref=e228]
+                    - generic [ref=e230]:
+                      - generic [ref=e231]: From
+                      - textbox "From" [ref=e232]
+                    - generic [ref=e234]:
+                      - generic [ref=e235]: To
+                      - textbox "To" [ref=e236]
+                    - generic [ref=e238]:
+                      - generic [ref=e239]: Type
+                      - combobox "Type" [ref=e240]:
+                        - option "All" [selected]
+                        - option "Debit"
+                        - option "Credit"
+                    - generic [ref=e241]:
+                      - button "Reset" [ref=e242]
+                      - button "Apply" [ref=e243]
+                - generic [ref=e244]:
+                  - generic [ref=e245]:
+                    - generic [ref=e247]: Transactions by Category
+                    - generic [ref=e248]:
+                      - button "Add Transaction" [active] [ref=e249]:
+                        - img [ref=e250]
+                        - text: Add Transaction
+                      - button "Import CSV" [ref=e251]
+                  - generic [ref=e252]:
+                    - generic [ref=e253]:
+                      - generic [ref=e254]: 0 transactions in 0 categories
+                      - generic [ref=e255]:
+                        - text: "Total:"
+                        - generic [ref=e256]: $0.00
+                    - generic [ref=e257]:
+                      - paragraph [ref=e258]: No transactions found
+                      - paragraph [ref=e259]: Add a transaction or adjust your filters
+                - generic [ref=e261]:
+                  - generic [ref=e262]:
+                    - heading "Add Expense" [level=2] [ref=e263]
+                    - paragraph [ref=e264]: Record expenses, purchases, or money spent
+                  - generic [ref=e266]:
+                    - generic [ref=e267]:
+                      - generic [ref=e268]: Account
+                      - combobox [ref=e269]:
+                        - option "Checking 1772223584588" [selected]
+                    - generic [ref=e270]:
+                      - generic [ref=e271]: Type
+                      - generic [ref=e272]:
+                        - generic [ref=e273]:
+                          - radio "Expense (Debit)" [checked] [ref=e274]
+                          - generic [ref=e275]: Expense (Debit)
+                        - generic [ref=e276]:
+                          - radio "Income (Credit)" [ref=e277]
+                          - generic [ref=e278]: Income (Credit)
+                    - generic [ref=e279]:
+                      - generic [ref=e280]: Quick Presets (click to fill)
+                      - generic [ref=e281]:
+                        - 'button "STARBUCKS #1234 ($5.75)" [ref=e282]'
+                        - button "NETFLIX.COM ($15.49)" [ref=e283]
+                        - button "WHOLE FOODS ($127.50)" [ref=e284]
+                        - button "MY LOCAL CAFE ($4.25)" [ref=e285]
+                        - button "AMAZON PRIME ($14.99)" [ref=e286]
+                        - button "UBER TRIP ($23.45)" [ref=e287]
+                        - button "SPOTIFY PREMIUM ($10.99)" [ref=e288]
+                        - 'button "MCDONALDS #456 ($12.50)" [ref=e289]'
+                        - button "TARGET STORE ($65.30)" [ref=e290]
+                        - button "CVS PHARMACY ($28.75)" [ref=e291]
+                    - generic [ref=e292]:
+                      - generic [ref=e293]: Description
+                      - 'textbox "e.g., STARBUCKS #1234" [ref=e294]'
+                    - generic [ref=e295]:
+                      - generic [ref=e296]: Amount
+                      - spinbutton [ref=e297]
+                    - generic [ref=e298]:
+                      - generic [ref=e299]: Category
+                      - combobox [ref=e300]:
+                        - option "-- Select Category --" [selected]
+                      - paragraph [ref=e301]: Expense categories shown first
+                    - generic [ref=e302]:
+                      - generic [ref=e303]: Date
+                      - textbox [ref=e304]: 2026-02-27
+                    - generic [ref=e305]:
+                      - generic [ref=e306]: Notes (optional)
+                      - textbox "Additional notes..." [ref=e307]
+                  - generic [ref=e308]:
+                    - button "Cancel" [ref=e309]
+                    - button "Add Transaction" [ref=e310]
+          - button "Quick capture" [ref=e311]:
+            - img [ref=e312]
+  - generic [ref=e313]:
+    - img [ref=e315]
+    - button "Open Tanstack query devtools" [ref=e363] [cursor=pointer]:
+      - img [ref=e364] [cursor=pointer]
+```

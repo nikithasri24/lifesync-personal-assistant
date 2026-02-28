@@ -1,0 +1,161 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: life weave
+          - generic [ref=e27]: Skillful Living
+        - button "Collapse sidebar" [ref=e28]:
+          - img [ref=e29]
+      - navigation "Main navigation" [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - heading "Main" [level=3] [ref=e35]
+            - list [ref=e36]:
+              - listitem [ref=e37]:
+                - link "Dashboard" [ref=e38] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e39] [cursor=pointer]
+                  - generic [ref=e42] [cursor=pointer]: Dashboard
+              - listitem [ref=e43]:
+                - link "AI Assistant" [ref=e44] [cursor=pointer]:
+                  - /url: /assistant
+                  - img [ref=e45] [cursor=pointer]
+                  - generic [ref=e47] [cursor=pointer]: AI Assistant
+              - listitem [ref=e48]:
+                - link "Calendar" [ref=e49] [cursor=pointer]:
+                  - /url: /calendar
+                  - img [ref=e50] [cursor=pointer]
+                  - generic [ref=e52] [cursor=pointer]: Calendar
+              - listitem [ref=e53]:
+                - link "Focus" [ref=e54] [cursor=pointer]:
+                  - /url: /focus
+                  - img [ref=e55] [cursor=pointer]
+                  - generic [ref=e58] [cursor=pointer]: Focus
+                  - img [ref=e59] [cursor=pointer]
+          - generic [ref=e61]:
+            - heading "Productivity" [level=3] [ref=e62]
+            - list [ref=e63]:
+              - listitem [ref=e64]:
+                - link "Habits" [ref=e65] [cursor=pointer]:
+                  - /url: /habits
+                  - img [ref=e66] [cursor=pointer]
+                  - generic [ref=e69] [cursor=pointer]: Habits
+              - listitem [ref=e70]:
+                - link "Tasks" [ref=e71] [cursor=pointer]:
+                  - /url: /todos
+                  - img [ref=e72] [cursor=pointer]
+                  - generic [ref=e76] [cursor=pointer]: Tasks
+              - listitem [ref=e77]:
+                - link "Notes" [ref=e78] [cursor=pointer]:
+                  - /url: /notes
+                  - img [ref=e79] [cursor=pointer]
+                  - generic [ref=e82] [cursor=pointer]: Notes
+          - generic [ref=e83]:
+            - heading "Wellbeing" [level=3] [ref=e84]
+            - list [ref=e85]:
+              - listitem [ref=e86]:
+                - link "Journal" [ref=e87] [cursor=pointer]:
+                  - /url: /journal
+                  - img [ref=e88] [cursor=pointer]
+                  - generic [ref=e90] [cursor=pointer]: Journal
+              - listitem [ref=e91]:
+                - link "Self Care" [ref=e92] [cursor=pointer]:
+                  - /url: /self-care
+                  - img [ref=e93] [cursor=pointer]
+                  - generic [ref=e96] [cursor=pointer]: Self Care
+              - listitem [ref=e97]:
+                - link "Nutrition" [ref=e98] [cursor=pointer]:
+                  - /url: /nutrition
+                  - img [ref=e99] [cursor=pointer]
+                  - generic [ref=e102] [cursor=pointer]: Nutrition
+          - generic [ref=e103]:
+            - heading "Personal" [level=3] [ref=e104]
+            - list [ref=e105]:
+              - listitem [ref=e106]:
+                - link "Travel" [ref=e107] [cursor=pointer]:
+                  - /url: /travel
+                  - img [ref=e108] [cursor=pointer]
+                  - generic [ref=e111] [cursor=pointer]: Travel
+              - listitem [ref=e112]:
+                - link "Visa Calculator" [ref=e113] [cursor=pointer]:
+                  - /url: /travel/visa
+                  - img [ref=e114] [cursor=pointer]
+                  - generic [ref=e116] [cursor=pointer]: Visa Calculator
+              - listitem [ref=e117]:
+                - link "Finances" [ref=e118] [cursor=pointer]:
+                  - /url: /finances
+                  - img [ref=e119] [cursor=pointer]
+                  - generic [ref=e121] [cursor=pointer]: Finances
+              - listitem [ref=e122]:
+                - link "Shopping" [ref=e123] [cursor=pointer]:
+                  - /url: /shopping
+                  - img [ref=e124] [cursor=pointer]
+                  - generic [ref=e128] [cursor=pointer]: Shopping
+              - listitem [ref=e129]:
+                - link "Meals" [ref=e130] [cursor=pointer]:
+                  - /url: /meals
+                  - img [ref=e131] [cursor=pointer]
+                  - generic [ref=e133] [cursor=pointer]: Meals
+              - listitem [ref=e134]:
+                - link "Goals" [ref=e135] [cursor=pointer]:
+                  - /url: /goals
+                  - img [ref=e136] [cursor=pointer]
+                  - generic [ref=e142] [cursor=pointer]: Goals
+              - listitem [ref=e143]:
+                - link "Shared" [ref=e144] [cursor=pointer]:
+                  - /url: /shared
+                  - img [ref=e145] [cursor=pointer]
+                  - generic [ref=e150] [cursor=pointer]: Shared
+              - listitem [ref=e151]:
+                - link "Together" [ref=e152] [cursor=pointer]:
+                  - /url: /together
+                  - img [ref=e153] [cursor=pointer]
+                  - generic [ref=e155] [cursor=pointer]: Together
+      - 'button "Switch theme. Current: Light" [ref=e157]':
+        - img [ref=e160]
+        - generic [ref=e166]: Light Mode
+    - main "focus page" [ref=e168]:
+      - heading "focus page" [level=1] [ref=e169]
+      - generic [ref=e170]:
+        - generic [ref=e172]:
+          - generic [ref=e173]:
+            - heading "⏱️" [level=1] [ref=e174]
+            - generic [ref=e175]: Choose a duration to begin
+          - generic [ref=e179]:
+            - generic [ref=e180]: 25:00
+            - generic [ref=e181]: Ready
+          - generic [ref=e182]:
+            - button "Reset timer" [ref=e183]:
+              - img [ref=e184]
+            - button "Start timer" [ref=e187]:
+              - img [ref=e188]
+          - generic [ref=e190]:
+            - generic [ref=e191]: Quick Start
+            - generic [ref=e192]:
+              - button "Set timer to Pomodoro - 25 minutes" [ref=e193]:
+                - generic [ref=e194]: 🍅
+                - generic [ref=e195]: Pomodoro
+                - generic [ref=e196]: 25 minutes
+              - button "Set timer to Short Break - 5 minutes" [ref=e197]:
+                - generic [ref=e198]: ☕
+                - generic [ref=e199]: Short Break
+                - generic [ref=e200]: 5 minutes
+              - button "Set timer to Deep Work - 90 minutes" [ref=e201]:
+                - generic [ref=e202]: 🧠
+                - generic [ref=e203]: Deep Work
+                - generic [ref=e204]: 90 minutes
+              - button "Set timer to Long Break - 15 minutes" [ref=e205]:
+                - generic [ref=e206]: 🌟
+                - generic [ref=e207]: Long Break
+                - generic [ref=e208]: 15 minutes
+        - button "Quick capture" [ref=e209]:
+          - img [ref=e210]
+  - generic [ref=e211]:
+    - img [ref=e213]
+    - button "Open Tanstack query devtools" [ref=e261] [cursor=pointer]:
+      - img [ref=e262] [cursor=pointer]
+```

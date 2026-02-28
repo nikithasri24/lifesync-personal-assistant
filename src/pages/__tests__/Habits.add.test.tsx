@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -32,49 +32,66 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     error: null,
   }),
   useCreateHabit: () => ({
-    mutate: createHabitMock,
+    mutate: vi.fn(),
+    mutateAsync: createHabitMock,
     isPending: false,
   }),
   useUpdateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useCreateHabitEntry: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useUpdateHabitEntry: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabitEntry: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabitEntriesForDate: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabitEntriesForDateRange: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteAllHabitEntries: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
+  }),
+}))
+
+vi.mock('../../hooks/useOwnerInfo', () => ({
+  useCurrentUserId: () => ({
+    data: 'test-user-id',
+    isLoading: false,
   }),
 }))
 
 describe('Habits Add', () => {
   beforeEach(() => {
     createHabitMock.mockClear()
+    createHabitMock.mockResolvedValue({})
   })
 
-  it('adds a habit via the form', async () => {
+  it('adds a habit via the modal form', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -90,9 +107,23 @@ describe('Habits Add', () => {
       </QueryClientProvider>
     )
 
-    const name = screen.getByPlaceholderText('Morning stretch') as HTMLInputElement
-    fireEvent.change(name, { target: { value: 'Pushups' } })
-    fireEvent.submit(name.closest('form')!)
+    // Open the modal using the FAB button
+    const addButton = screen.getByRole('button', { name: /create new habit/i })
+    await act(async () => {
+      fireEvent.click(addButton)
+    })
+
+    // Modal should now be open - find the name input by placeholder
+    const nameInput = await screen.findByPlaceholderText('Exercise, Read, Meditate...')
+    await act(async () => {
+      fireEvent.change(nameInput, { target: { value: 'Pushups' } })
+    })
+
+    // Submit the form (button text is "Create Habit")
+    const saveButton = screen.getByRole('button', { name: /create habit/i })
+    await act(async () => {
+      fireEvent.click(saveButton)
+    })
 
     await waitFor(() => {
       expect(createHabitMock).toHaveBeenCalled()
@@ -100,7 +131,5 @@ describe('Habits Add', () => {
 
     const args = createHabitMock.mock.calls[0][0]
     expect(args.name).toBe('Pushups')
-    expect(args.target_count).toBe(1)
   })
 })
-

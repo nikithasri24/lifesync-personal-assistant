@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -15,19 +15,15 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
         name: 'Plan',
         description: '',
         frequency: 'daily',
-        target_count: 2,
-        category_id: 'work',
-        icon: '📋',
-        color: '#22c55e',
+        target_value: 2,
+        category: 'Productivity',
+        streak_count: 0,
+        best_streak: 0,
+        is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
     ],
-    isLoading: false,
-    error: null,
-  }),
-  useHabit: () => ({
-    data: null,
     isLoading: false,
     error: null,
   }),
@@ -36,88 +32,62 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
       {
         id: 'e1',
         habit_id: 'h4',
-        completed_date: todayISO,
-        notes: '',
+        date: todayISO,
+        value: 1,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       },
       {
         id: 'e2',
         habit_id: 'h4',
-        completed_date: todayISO,
-        notes: '',
+        date: todayISO,
+        value: 1,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       },
     ],
     isLoading: false,
     error: null,
   }),
-  useHabitEntriesForHabit: () => ({
-    data: [],
+  useMergedHabitsConnectionQuery: () => ({
+    data: null,
     isLoading: false,
     error: null,
   }),
   useCreateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useUpdateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useCreateHabitEntry: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useUpdateHabitEntry: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntry: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabitEntriesForDate: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntriesForDateRange: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteAllHabitEntries: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
 }))
 
-vi.mock('../../hooks/useHabitCategories', () => ({
-  useHabitCategories: () => ({
-    data: [{ id: 'work', name: 'Work', icon: '💼', color: '#3b82f6' }],
+vi.mock('../../hooks/useOwnerInfo', () => ({
+  useCurrentUserId: () => ({
+    data: 'test-user-id',
     isLoading: false,
-    error: null,
-  }),
-  useCreateHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useUpdateHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
   }),
 }))
 
 describe('Habits progress completed', () => {
-  it('shows Completed today (2/2) and disables the button', async () => {
+  it('shows Mark incomplete button when habit is completed (2/2)', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     })
@@ -130,10 +100,16 @@ describe('Habits progress completed', () => {
       </QueryClientProvider>
     )
 
-    const card = screen.getByText('Plan').closest('article') as HTMLElement
-    expect(card).toBeTruthy()
-    expect(card.textContent).toMatch(/Completed today\s*\(2\/2\)/)
-    const completeBtn = screen.getByRole('button', { name: /completed today/i }) as HTMLButtonElement
-    expect(completeBtn).toBeDisabled()
+    // Wait for habit to render
+    await waitFor(() => {
+      expect(screen.getByText('Plan')).toBeInTheDocument()
+    })
+
+    // Progress section should show 2/2
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+
+    // When habit is complete, button shows "Mark incomplete"
+    const completeBtn = screen.getByRole('button', { name: /mark incomplete/i })
+    expect(completeBtn).toBeInTheDocument()
   })
 })

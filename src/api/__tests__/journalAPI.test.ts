@@ -153,10 +153,11 @@ describe('journalAPI', () => {
 
   describe('getJournalEntry', () => {
     it('should fetch a single journal entry by id', async () => {
+      // Implementation uses .maybeSingle() not .single()
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
+        maybeSingle: vi.fn().mockResolvedValue({
           data: mockEntry,
           error: null,
         }),
@@ -172,10 +173,11 @@ describe('journalAPI', () => {
     });
 
     it('should throw error when entry not found', async () => {
+      // Implementation uses .maybeSingle() not .single()
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
+        maybeSingle: vi.fn().mockResolvedValue({
           data: null,
           error: null,
         }),
@@ -183,7 +185,8 @@ describe('journalAPI', () => {
 
       (supabase!.from as any).mockReturnValue(mockQuery);
 
-      await expect(getJournalEntry('nonexistent')).rejects.toThrow('Journal entry not found');
+      // NotFoundError message format: "Journal Entry not found: nonexistent"
+      await expect(getJournalEntry('nonexistent')).rejects.toThrow('Journal Entry');
     });
   });
 

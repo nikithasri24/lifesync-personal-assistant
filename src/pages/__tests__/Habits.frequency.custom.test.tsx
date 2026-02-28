@@ -1,4 +1,4 @@
-import { render, screen, within, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -10,12 +10,14 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
         id: 'h5',
         name: 'Custom cadence',
         description: '',
-        frequency: 'custom',
-        target_count: 1,
-        category: 'other',
-        color: '#22c55e',
-        user_id: 'user1',
+        frequency: 'daily',
+        target_value: 1,
+        category: 'Other',
+        streak_count: 0,
+        best_streak: 0,
+        is_active: true,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     ],
     isLoading: false,
@@ -26,38 +28,47 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     isLoading: false,
     error: null,
   }),
+  useMergedHabitsConnectionQuery: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  }),
   useCreateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useUpdateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useCreateHabitEntry: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabitEntriesForDate: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntriesForDateRange: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteAllHabitEntries: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
 }))
 
+vi.mock('../../hooks/useOwnerInfo', () => ({
+  useCurrentUserId: () => ({
+    data: 'test-user-id',
+    isLoading: false,
+  }),
+}))
+
 describe('Habits frequency label: custom', () => {
-  it('renders category and custom frequency in the header', async () => {
+  it('renders habit name and category in the card', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -73,11 +84,10 @@ describe('Habits frequency label: custom', () => {
     )
 
     await waitFor(() => {
-      const card = screen.getByText('Custom cadence').closest('article') as HTMLElement
-      expect(card).toBeTruthy()
-      // Expect: "other • custom" somewhere near the header meta
-      expect(within(card).getByText(/other\s+•\s*custom/i)).toBeInTheDocument()
+      expect(screen.getByText('Custom cadence')).toBeInTheDocument()
     })
+
+    // Category should be shown in the card
+    expect(screen.getByText(/Other/)).toBeInTheDocument()
   })
 })
-

@@ -22,11 +22,13 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
         name: 'Hydrate',
         description: '',
         frequency: 'daily',
-        target_count: 3,
-        category: 'health',
-        color: '#22c55e',
-        user_id: 'user1',
+        target_value: 3,
+        category: 'Health',
+        streak_count: 0,
+        best_streak: 0,
+        is_active: true,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     ],
     isLoading: false,
@@ -37,38 +39,47 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     isLoading: false,
     error: null,
   }),
+  useMergedHabitsConnectionQuery: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  }),
   useCreateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useUpdateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useCreateHabitEntry: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabitEntriesForDate: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntriesForDateRange: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteAllHabitEntries: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
 }))
 
+vi.mock('../../hooks/useOwnerInfo', () => ({
+  useCurrentUserId: () => ({
+    data: 'test-user-id',
+    isLoading: false,
+  }),
+}))
+
 describe('Habits progress (multi-target)', () => {
-  it('shows Today 2/3 when two of three completed', async () => {
+  it('shows 2 / 3 progress when two of three completed', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -84,10 +95,10 @@ describe('Habits progress (multi-target)', () => {
     )
 
     await waitFor(() => {
-      const card = screen.getByText('Hydrate').closest('article') as HTMLElement
-      expect(card).toBeTruthy()
-      expect(card.textContent).toMatch(/Today\s+2\/3/)
+      expect(screen.getByText('Hydrate')).toBeInTheDocument()
     })
+
+    // Progress should show 2 / 3
+    expect(screen.getByText('2 / 3')).toBeInTheDocument()
   })
 })
-

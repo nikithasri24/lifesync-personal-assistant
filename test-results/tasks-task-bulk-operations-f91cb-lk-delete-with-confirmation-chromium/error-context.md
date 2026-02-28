@@ -1,0 +1,3449 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: life weave
+          - generic [ref=e27]: Skillful Living
+        - button "Collapse sidebar" [ref=e28]:
+          - img [ref=e29]
+      - navigation "Main navigation" [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - heading "Main" [level=3] [ref=e35]
+            - list [ref=e36]:
+              - listitem [ref=e37]:
+                - link "Dashboard" [ref=e38] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e39] [cursor=pointer]
+                  - generic [ref=e42] [cursor=pointer]: Dashboard
+              - listitem [ref=e43]:
+                - link "AI Assistant" [ref=e44] [cursor=pointer]:
+                  - /url: /assistant
+                  - img [ref=e45] [cursor=pointer]
+                  - generic [ref=e47] [cursor=pointer]: AI Assistant
+              - listitem [ref=e48]:
+                - link "Calendar" [ref=e49] [cursor=pointer]:
+                  - /url: /calendar
+                  - img [ref=e50] [cursor=pointer]
+                  - generic [ref=e52] [cursor=pointer]: Calendar
+              - listitem [ref=e53]:
+                - link "Focus" [ref=e54] [cursor=pointer]:
+                  - /url: /focus
+                  - img [ref=e55] [cursor=pointer]
+                  - generic [ref=e58] [cursor=pointer]: Focus
+          - generic [ref=e59]:
+            - heading "Productivity" [level=3] [ref=e60]
+            - list [ref=e61]:
+              - listitem [ref=e62]:
+                - link "Habits" [ref=e63] [cursor=pointer]:
+                  - /url: /habits
+                  - img [ref=e64] [cursor=pointer]
+                  - generic [ref=e67] [cursor=pointer]: Habits
+              - listitem [ref=e68]:
+                - link "Tasks" [ref=e69] [cursor=pointer]:
+                  - /url: /todos
+                  - img [ref=e70] [cursor=pointer]
+                  - generic [ref=e74] [cursor=pointer]: Tasks
+                  - img [ref=e75] [cursor=pointer]
+              - listitem [ref=e77]:
+                - link "Notes" [ref=e78] [cursor=pointer]:
+                  - /url: /notes
+                  - img [ref=e79] [cursor=pointer]
+                  - generic [ref=e82] [cursor=pointer]: Notes
+          - generic [ref=e83]:
+            - heading "Wellbeing" [level=3] [ref=e84]
+            - list [ref=e85]:
+              - listitem [ref=e86]:
+                - link "Journal" [ref=e87] [cursor=pointer]:
+                  - /url: /journal
+                  - img [ref=e88] [cursor=pointer]
+                  - generic [ref=e90] [cursor=pointer]: Journal
+              - listitem [ref=e91]:
+                - link "Self Care" [ref=e92] [cursor=pointer]:
+                  - /url: /self-care
+                  - img [ref=e93] [cursor=pointer]
+                  - generic [ref=e96] [cursor=pointer]: Self Care
+              - listitem [ref=e97]:
+                - link "Nutrition" [ref=e98] [cursor=pointer]:
+                  - /url: /nutrition
+                  - img [ref=e99] [cursor=pointer]
+                  - generic [ref=e102] [cursor=pointer]: Nutrition
+          - generic [ref=e103]:
+            - heading "Personal" [level=3] [ref=e104]
+            - list [ref=e105]:
+              - listitem [ref=e106]:
+                - link "Travel" [ref=e107] [cursor=pointer]:
+                  - /url: /travel
+                  - img [ref=e108] [cursor=pointer]
+                  - generic [ref=e111] [cursor=pointer]: Travel
+              - listitem [ref=e112]:
+                - link "Visa Calculator" [ref=e113] [cursor=pointer]:
+                  - /url: /travel/visa
+                  - img [ref=e114] [cursor=pointer]
+                  - generic [ref=e116] [cursor=pointer]: Visa Calculator
+              - listitem [ref=e117]:
+                - link "Finances" [ref=e118] [cursor=pointer]:
+                  - /url: /finances
+                  - img [ref=e119] [cursor=pointer]
+                  - generic [ref=e121] [cursor=pointer]: Finances
+              - listitem [ref=e122]:
+                - link "Shopping" [ref=e123] [cursor=pointer]:
+                  - /url: /shopping
+                  - img [ref=e124] [cursor=pointer]
+                  - generic [ref=e128] [cursor=pointer]: Shopping
+              - listitem [ref=e129]:
+                - link "Meals" [ref=e130] [cursor=pointer]:
+                  - /url: /meals
+                  - img [ref=e131] [cursor=pointer]
+                  - generic [ref=e133] [cursor=pointer]: Meals
+              - listitem [ref=e134]:
+                - link "Goals" [ref=e135] [cursor=pointer]:
+                  - /url: /goals
+                  - img [ref=e136] [cursor=pointer]
+                  - generic [ref=e142] [cursor=pointer]: Goals
+              - listitem [ref=e143]:
+                - link "Shared" [ref=e144] [cursor=pointer]:
+                  - /url: /shared
+                  - img [ref=e145] [cursor=pointer]
+                  - generic [ref=e150] [cursor=pointer]: Shared
+              - listitem [ref=e151]:
+                - link "Together" [ref=e152] [cursor=pointer]:
+                  - /url: /together
+                  - img [ref=e153] [cursor=pointer]
+                  - generic [ref=e155] [cursor=pointer]: Together
+      - 'button "Switch theme. Current: Light" [ref=e157]':
+        - img [ref=e160]
+        - generic [ref=e166]: Light Mode
+    - main "Tasks page" [ref=e168]:
+      - heading "Tasks page" [level=1] [ref=e169]
+      - generic [ref=e170]:
+        - generic [ref=e171]:
+          - generic [ref=e172]:
+            - generic [ref=e173]:
+              - heading "✅ Tasks" [level=1] [ref=e174]:
+                - generic [ref=e175]: ✅
+                - text: Tasks
+              - paragraph [ref=e176]: Organize and track your to-dos
+            - generic [ref=e178]:
+              - button "📅 Today view" [ref=e179]: 📅 Today
+              - button "📥 Inbox view" [ref=e180]: 📥 Inbox
+              - button "🗓️ Upcoming view" [ref=e181]: 🗓️ Upcoming
+              - button "📋 List view" [ref=e182]: 📋 List
+            - generic [ref=e183]:
+              - button "🔍 Show Filters" [ref=e184]
+              - button "Cancel Selection" [ref=e185]:
+                - img [ref=e186]
+                - text: Cancel Selection
+            - generic [ref=e189]:
+              - generic [ref=e190]:
+                - generic [ref=e191]: 2 tasks selected
+                - button "Select All (612)" [ref=e192]
+                - button "Deselect All" [ref=e193]
+              - button "Delete Selected" [ref=e194]:
+                - img [ref=e195]
+                - text: Delete Selected
+            - generic [ref=e198]: 612 tasks • 47 completed
+            - generic [ref=e199]:
+              - generic [ref=e200]:
+                - generic [ref=e201]:
+                  - generic [ref=e203]: 📝 To Do
+                  - generic [ref=e204]: "565"
+                - generic [ref=e205]:
+                  - generic [ref=e206]:
+                    - checkbox [checked] [ref=e207] [cursor=pointer]
+                    - button "Delete Bulk 2 1772235632205 Medium" [ref=e208] [cursor=pointer]:
+                      - generic [ref=e210] [cursor=pointer]: Delete Bulk 2 1772235632205
+                      - generic [ref=e213] [cursor=pointer]: Medium
+                  - generic [ref=e214]:
+                    - checkbox [checked] [ref=e215] [cursor=pointer]
+                    - button "Complete Bulk 2 1772235631119 Medium" [ref=e216] [cursor=pointer]:
+                      - generic [ref=e218] [cursor=pointer]: Complete Bulk 2 1772235631119
+                      - generic [ref=e221] [cursor=pointer]: Medium
+                  - generic [ref=e222]:
+                    - checkbox [ref=e223] [cursor=pointer]
+                    - button "Delete Bulk 1 1772235632205 Medium" [ref=e224] [cursor=pointer]:
+                      - generic [ref=e226] [cursor=pointer]: Delete Bulk 1 1772235632205
+                      - generic [ref=e229] [cursor=pointer]: Medium
+                  - generic [ref=e230]:
+                    - checkbox [ref=e231] [cursor=pointer]
+                    - button "Complete Bulk 1 1772235631119 Medium" [ref=e232] [cursor=pointer]:
+                      - generic [ref=e234] [cursor=pointer]: Complete Bulk 1 1772235631119
+                      - generic [ref=e237] [cursor=pointer]: Medium
+                  - generic [ref=e238]:
+                    - checkbox [ref=e239] [cursor=pointer]
+                    - button "Bulk Task 3 1772235627967 Medium" [ref=e240] [cursor=pointer]:
+                      - generic [ref=e242] [cursor=pointer]: Bulk Task 3 1772235627967
+                      - generic [ref=e245] [cursor=pointer]: Medium
+                  - generic [ref=e246]:
+                    - checkbox [ref=e247] [cursor=pointer]
+                    - button "Bulk Task 2 1772235627967 Medium" [ref=e248] [cursor=pointer]:
+                      - generic [ref=e250] [cursor=pointer]: Bulk Task 2 1772235627967
+                      - generic [ref=e253] [cursor=pointer]: Medium
+                  - generic [ref=e254]:
+                    - checkbox [ref=e255] [cursor=pointer]
+                    - button "Bulk Task 1 1772235627967 Medium" [ref=e256] [cursor=pointer]:
+                      - generic [ref=e258] [cursor=pointer]: Bulk Task 1 1772235627967
+                      - generic [ref=e261] [cursor=pointer]: Medium
+                  - generic [ref=e262]:
+                    - checkbox [ref=e263] [cursor=pointer]
+                    - button "Select Task 2 1772235622991 Medium" [ref=e264] [cursor=pointer]:
+                      - generic [ref=e266] [cursor=pointer]: Select Task 2 1772235622991
+                      - generic [ref=e269] [cursor=pointer]: Medium
+                  - generic [ref=e270]:
+                    - checkbox [ref=e271] [cursor=pointer]
+                    - button "Select Task 1 1772235622991 Medium" [ref=e272] [cursor=pointer]:
+                      - generic [ref=e274] [cursor=pointer]: Select Task 1 1772235622991
+                      - generic [ref=e277] [cursor=pointer]: Medium
+                  - generic [ref=e278]:
+                    - checkbox [ref=e279] [cursor=pointer]
+                    - button "Parent E2E 1772235520370 Medium" [ref=e280] [cursor=pointer]:
+                      - generic [ref=e282] [cursor=pointer]: Parent E2E 1772235520370
+                      - generic [ref=e285] [cursor=pointer]: Medium
+                  - generic [ref=e286]:
+                    - checkbox [ref=e287] [cursor=pointer]
+                    - button "Persist Star 1772235516175 ⭐ Medium" [ref=e288] [cursor=pointer]:
+                      - generic [ref=e289] [cursor=pointer]:
+                        - generic [ref=e290] [cursor=pointer]: Persist Star 1772235516175
+                        - generic [ref=e291] [cursor=pointer]: ⭐
+                      - generic [ref=e294] [cursor=pointer]: Medium
+                  - generic [ref=e295]:
+                    - checkbox [ref=e296] [cursor=pointer]
+                    - button "Star Me 1772235516175 ⭐ Medium" [ref=e297] [cursor=pointer]:
+                      - generic [ref=e298] [cursor=pointer]:
+                        - generic [ref=e299] [cursor=pointer]: Star Me 1772235516175
+                        - generic [ref=e300] [cursor=pointer]: ⭐
+                      - generic [ref=e303] [cursor=pointer]: Medium
+                  - generic [ref=e304]:
+                    - checkbox [ref=e305] [cursor=pointer]
+                    - button "Bravo E2E Medium" [ref=e306] [cursor=pointer]:
+                      - generic [ref=e308] [cursor=pointer]: Bravo E2E
+                      - generic [ref=e311] [cursor=pointer]: Medium
+                  - generic [ref=e312]:
+                    - checkbox [ref=e313] [cursor=pointer]
+                    - button "Alpha E2E Medium" [ref=e314] [cursor=pointer]:
+                      - generic [ref=e316] [cursor=pointer]: Alpha E2E
+                      - generic [ref=e319] [cursor=pointer]: Medium
+                  - generic [ref=e320]:
+                    - checkbox [ref=e321] [cursor=pointer]
+                    - button "Charlie E2E Medium" [ref=e322] [cursor=pointer]:
+                      - generic [ref=e324] [cursor=pointer]: Charlie E2E
+                      - generic [ref=e327] [cursor=pointer]: Medium
+                  - generic [ref=e328]:
+                    - checkbox [ref=e329] [cursor=pointer]
+                    - button "BB Task 1772235022121 Medium" [ref=e330] [cursor=pointer]:
+                      - generic [ref=e332] [cursor=pointer]: BB Task 1772235022121
+                      - generic [ref=e335] [cursor=pointer]: Medium
+                  - generic [ref=e336]:
+                    - checkbox [ref=e337] [cursor=pointer]
+                    - button "AA Task 1772235022121 Medium" [ref=e338] [cursor=pointer]:
+                      - generic [ref=e340] [cursor=pointer]: AA Task 1772235022121
+                      - generic [ref=e343] [cursor=pointer]: Medium
+                  - generic [ref=e344]:
+                    - checkbox [ref=e345] [cursor=pointer]
+                    - button "Inline Edit 1772234721555 Medium" [ref=e346] [cursor=pointer]:
+                      - generic [ref=e348] [cursor=pointer]: Inline Edit 1772234721555
+                      - generic [ref=e351] [cursor=pointer]: Medium
+                  - generic [ref=e352]:
+                    - checkbox [ref=e353] [cursor=pointer]
+                    - button "Calendar Drag 1772233642613 Medium" [ref=e354] [cursor=pointer]:
+                      - generic [ref=e356] [cursor=pointer]: Calendar Drag 1772233642613
+                      - generic [ref=e359] [cursor=pointer]: Medium
+                  - generic [ref=e360]:
+                    - checkbox [ref=e361] [cursor=pointer]
+                    - button "Visual Feedback 1772233641956 Medium" [ref=e362] [cursor=pointer]:
+                      - generic [ref=e364] [cursor=pointer]: Visual Feedback 1772233641956
+                      - generic [ref=e367] [cursor=pointer]: Medium
+                  - generic [ref=e368]:
+                    - checkbox [ref=e369] [cursor=pointer]
+                    - button "Drag Persist 1772233636257 Medium" [ref=e370] [cursor=pointer]:
+                      - generic [ref=e372] [cursor=pointer]: Drag Persist 1772233636257
+                      - generic [ref=e375] [cursor=pointer]: Medium
+                  - generic [ref=e376]:
+                    - checkbox [ref=e377] [cursor=pointer]
+                    - button "Selection Mode 1772233635606 Medium" [ref=e378] [cursor=pointer]:
+                      - generic [ref=e380] [cursor=pointer]: Selection Mode 1772233635606
+                      - generic [ref=e383] [cursor=pointer]: Medium
+                  - generic [ref=e384]:
+                    - checkbox [ref=e385] [cursor=pointer]
+                    - button "Drag To Done 1772233635172 Medium" [ref=e386] [cursor=pointer]:
+                      - generic [ref=e388] [cursor=pointer]: Drag To Done 1772233635172
+                      - generic [ref=e391] [cursor=pointer]: Medium
+                  - generic [ref=e392]:
+                    - checkbox [ref=e393] [cursor=pointer]
+                    - button "Drag To Waiting 1772233621025 Medium" [ref=e394] [cursor=pointer]:
+                      - generic [ref=e396] [cursor=pointer]: Drag To Waiting 1772233621025
+                      - generic [ref=e399] [cursor=pointer]: Medium
+                  - generic [ref=e400]:
+                    - checkbox [ref=e401] [cursor=pointer]
+                    - button "Drag To Progress 1772233598796 Medium" [ref=e402] [cursor=pointer]:
+                      - generic [ref=e404] [cursor=pointer]: Drag To Progress 1772233598796
+                      - generic [ref=e407] [cursor=pointer]: Medium
+                  - generic [ref=e408]:
+                    - checkbox [ref=e409] [cursor=pointer]
+                    - button "Persist2 1772233592925 Medium" [ref=e410] [cursor=pointer]:
+                      - generic [ref=e412] [cursor=pointer]: Persist2 1772233592925
+                      - generic [ref=e415] [cursor=pointer]: Medium
+                  - generic [ref=e416]:
+                    - checkbox [ref=e417] [cursor=pointer]
+                    - button "Persist1 1772233592925 Medium" [ref=e418] [cursor=pointer]:
+                      - generic [ref=e420] [cursor=pointer]: Persist1 1772233592925
+                      - generic [ref=e423] [cursor=pointer]: Medium
+                  - generic [ref=e424]:
+                    - checkbox [ref=e425] [cursor=pointer]
+                    - button "Multi3 1772233590680 Medium" [ref=e426] [cursor=pointer]:
+                      - generic [ref=e428] [cursor=pointer]: Multi3 1772233590680
+                      - generic [ref=e431] [cursor=pointer]: Medium
+                  - generic [ref=e432]:
+                    - checkbox [ref=e433] [cursor=pointer]
+                    - button "Single2 1772233591657 Medium" [ref=e434] [cursor=pointer]:
+                      - generic [ref=e436] [cursor=pointer]: Single2 1772233591657
+                      - generic [ref=e439] [cursor=pointer]: Medium
+                  - generic [ref=e440]:
+                    - checkbox [ref=e441] [cursor=pointer]
+                    - button "Single1 1772233591657 Medium" [ref=e442] [cursor=pointer]:
+                      - generic [ref=e444] [cursor=pointer]: Single1 1772233591657
+                      - generic [ref=e447] [cursor=pointer]: Medium
+                  - generic [ref=e448]:
+                    - checkbox [ref=e449] [cursor=pointer]
+                    - button "Multi2 1772233590680 Medium" [ref=e450] [cursor=pointer]:
+                      - generic [ref=e452] [cursor=pointer]: Multi2 1772233590680
+                      - generic [ref=e455] [cursor=pointer]: Medium
+                  - generic [ref=e456]:
+                    - checkbox [ref=e457] [cursor=pointer]
+                    - button "Badge2 1772233590762 Medium" [ref=e458] [cursor=pointer]:
+                      - generic [ref=e460] [cursor=pointer]: Badge2 1772233590762
+                      - generic [ref=e463] [cursor=pointer]: Medium
+                  - generic [ref=e464]:
+                    - checkbox [ref=e465] [cursor=pointer]
+                    - button "Badge1 1772233590762 Medium" [ref=e466] [cursor=pointer]:
+                      - generic [ref=e468] [cursor=pointer]: Badge1 1772233590762
+                      - generic [ref=e471] [cursor=pointer]: Medium
+                  - generic [ref=e472]:
+                    - checkbox [ref=e473] [cursor=pointer]
+                    - button "Multi1 1772233590680 Medium" [ref=e474] [cursor=pointer]:
+                      - generic [ref=e476] [cursor=pointer]: Multi1 1772233590680
+                      - generic [ref=e479] [cursor=pointer]: Medium
+                  - generic [ref=e480]:
+                    - checkbox [ref=e481] [cursor=pointer]
+                    - button "Dashboard Task 1772233515064 Medium" [ref=e482] [cursor=pointer]:
+                      - generic [ref=e484] [cursor=pointer]: Dashboard Task 1772233515064
+                      - generic [ref=e487] [cursor=pointer]: Medium
+                  - generic [ref=e488]:
+                    - checkbox [ref=e489] [cursor=pointer]
+                    - button "Del B 1772233451993 Medium" [ref=e490] [cursor=pointer]:
+                      - generic [ref=e492] [cursor=pointer]: Del B 1772233451993
+                      - generic [ref=e495] [cursor=pointer]: Medium
+                  - generic [ref=e496]:
+                    - checkbox [ref=e497] [cursor=pointer]
+                    - button "Del A 1772233451993 Medium" [ref=e498] [cursor=pointer]:
+                      - generic [ref=e500] [cursor=pointer]: Del A 1772233451993
+                      - generic [ref=e503] [cursor=pointer]: Medium
+                  - generic [ref=e504]:
+                    - checkbox [ref=e505] [cursor=pointer]
+                    - button "Bulk T2 1772233447916 Medium" [ref=e506] [cursor=pointer]:
+                      - generic [ref=e508] [cursor=pointer]: Bulk T2 1772233447916
+                      - generic [ref=e511] [cursor=pointer]: Medium
+                  - generic [ref=e512]:
+                    - checkbox [ref=e513] [cursor=pointer]
+                    - button "Bulk T1 1772233447916 Medium" [ref=e514] [cursor=pointer]:
+                      - generic [ref=e516] [cursor=pointer]: Bulk T1 1772233447916
+                      - generic [ref=e519] [cursor=pointer]: Medium
+                  - generic [ref=e520]:
+                    - checkbox [ref=e521] [cursor=pointer]
+                    - button "Dashboard Task 1772231720543 Medium" [ref=e522] [cursor=pointer]:
+                      - generic [ref=e524] [cursor=pointer]: Dashboard Task 1772231720543
+                      - generic [ref=e527] [cursor=pointer]: Medium
+                  - generic [ref=e528]:
+                    - checkbox [ref=e529] [cursor=pointer]
+                    - button "Dashboard Task 1772231289481 Medium" [ref=e530] [cursor=pointer]:
+                      - generic [ref=e532] [cursor=pointer]: Dashboard Task 1772231289481
+                      - generic [ref=e535] [cursor=pointer]: Medium
+                  - generic [ref=e536]:
+                    - checkbox [ref=e537] [cursor=pointer]
+                    - button "Dashboard Task 1772231156882 Medium" [ref=e538] [cursor=pointer]:
+                      - generic [ref=e540] [cursor=pointer]: Dashboard Task 1772231156882
+                      - generic [ref=e543] [cursor=pointer]: Medium
+                  - generic [ref=e544]:
+                    - checkbox [ref=e545] [cursor=pointer]
+                    - button "Dashboard Task 1772230992839 Medium" [ref=e546] [cursor=pointer]:
+                      - generic [ref=e548] [cursor=pointer]: Dashboard Task 1772230992839
+                      - generic [ref=e551] [cursor=pointer]: Medium
+                  - generic [ref=e552]:
+                    - checkbox [ref=e553] [cursor=pointer]
+                    - button "Dashboard Task 1772230867200 Medium" [ref=e554] [cursor=pointer]:
+                      - generic [ref=e556] [cursor=pointer]: Dashboard Task 1772230867200
+                      - generic [ref=e559] [cursor=pointer]: Medium
+                  - generic [ref=e560]:
+                    - checkbox [ref=e561] [cursor=pointer]
+                    - button "Status Change Recurring 1772138745634 Medium" [ref=e562] [cursor=pointer]:
+                      - generic [ref=e564] [cursor=pointer]: Status Change Recurring 1772138745634
+                      - generic [ref=e567] [cursor=pointer]: Medium
+                  - generic [ref=e568]:
+                    - checkbox [ref=e569] [cursor=pointer]
+                    - button "Complete Recurring 1772138745332 Medium" [ref=e570] [cursor=pointer]:
+                      - generic [ref=e572] [cursor=pointer]: Complete Recurring 1772138745332
+                      - generic [ref=e575] [cursor=pointer]: Medium
+                  - generic [ref=e576]:
+                    - checkbox [ref=e577] [cursor=pointer]
+                    - button "Persist Test 1772138721542 Medium" [ref=e578] [cursor=pointer]:
+                      - generic [ref=e580] [cursor=pointer]: Persist Test 1772138721542
+                      - generic [ref=e583] [cursor=pointer]: Medium
+                  - generic [ref=e584]:
+                    - checkbox [ref=e585] [cursor=pointer]
+                    - button "Remove Recurrence 1772138716751 Medium" [ref=e586] [cursor=pointer]:
+                      - generic [ref=e588] [cursor=pointer]: Remove Recurrence 1772138716751
+                      - generic [ref=e591] [cursor=pointer]: Medium
+                  - generic [ref=e592]:
+                    - checkbox [ref=e593] [cursor=pointer]
+                    - button "Non-Recurring 1772138716181 Medium" [ref=e594] [cursor=pointer]:
+                      - generic [ref=e596] [cursor=pointer]: Non-Recurring 1772138716181
+                      - generic [ref=e599] [cursor=pointer]: Medium
+                  - generic [ref=e600]:
+                    - checkbox [ref=e601] [cursor=pointer]
+                    - button "Change Pattern 1772138715736 Medium" [ref=e602] [cursor=pointer]:
+                      - generic [ref=e604] [cursor=pointer]: Change Pattern 1772138715736
+                      - generic [ref=e607] [cursor=pointer]: Medium
+                  - generic [ref=e608]:
+                    - checkbox [ref=e609] [cursor=pointer]
+                    - button "Icon Test 1772138715448 Medium" [ref=e610] [cursor=pointer]:
+                      - generic [ref=e612] [cursor=pointer]: Icon Test 1772138715448
+                      - generic [ref=e615] [cursor=pointer]: Medium
+                  - generic [ref=e616]:
+                    - checkbox [ref=e617] [cursor=pointer]
+                    - button "Weekly Task 1772138685146 Medium" [ref=e618] [cursor=pointer]:
+                      - generic [ref=e620] [cursor=pointer]: Weekly Task 1772138685146
+                      - generic [ref=e623] [cursor=pointer]: Medium
+                  - generic [ref=e624]:
+                    - checkbox [ref=e625] [cursor=pointer]
+                    - button "Yearly Task 1772138684834 Medium" [ref=e626] [cursor=pointer]:
+                      - generic [ref=e628] [cursor=pointer]: Yearly Task 1772138684834
+                      - generic [ref=e631] [cursor=pointer]: Medium
+                  - generic [ref=e632]:
+                    - checkbox [ref=e633] [cursor=pointer]
+                    - button "Daily Task 1772138684305 Medium" [ref=e634] [cursor=pointer]:
+                      - generic [ref=e636] [cursor=pointer]: Daily Task 1772138684305
+                      - generic [ref=e639] [cursor=pointer]: Medium
+                  - generic [ref=e640]:
+                    - checkbox [ref=e641] [cursor=pointer]
+                    - button "Monthly Task 1772138684129 Medium" [ref=e642] [cursor=pointer]:
+                      - generic [ref=e644] [cursor=pointer]: Monthly Task 1772138684129
+                      - generic [ref=e647] [cursor=pointer]: Medium
+                  - generic [ref=e648]:
+                    - checkbox [ref=e649] [cursor=pointer]
+                    - button "Persist 1772136939827 Medium" [ref=e650] [cursor=pointer]:
+                      - generic [ref=e652] [cursor=pointer]: Persist 1772136939827
+                      - generic [ref=e655] [cursor=pointer]: Medium
+                  - generic [ref=e656]:
+                    - checkbox [ref=e657] [cursor=pointer]
+                    - button "Drag Task 1772136935362 Medium" [ref=e658] [cursor=pointer]:
+                      - generic [ref=e660] [cursor=pointer]: Drag Task 1772136935362
+                      - generic [ref=e663] [cursor=pointer]: Medium
+                  - generic [ref=e664]:
+                    - checkbox [ref=e665] [cursor=pointer]
+                    - button "Active 1772136929611 Medium" [ref=e666] [cursor=pointer]:
+                      - generic [ref=e668] [cursor=pointer]: Active 1772136929611
+                      - generic [ref=e671] [cursor=pointer]: Medium
+                  - generic [ref=e672]:
+                    - checkbox [ref=e673] [cursor=pointer]
+                    - button "No Due Date 1772136927688 Medium" [ref=e674] [cursor=pointer]:
+                      - generic [ref=e676] [cursor=pointer]: No Due Date 1772136927688
+                      - generic [ref=e679] [cursor=pointer]: Medium
+                  - generic [ref=e680]:
+                    - checkbox [ref=e681] [cursor=pointer]
+                    - button "No Date 1772136927789 Medium" [ref=e682] [cursor=pointer]:
+                      - generic [ref=e684] [cursor=pointer]: No Date 1772136927789
+                      - generic [ref=e687] [cursor=pointer]: Medium
+                  - generic [ref=e688]:
+                    - checkbox [ref=e689] [cursor=pointer]
+                    - button "InProgress 1772136926047 Medium" [ref=e690] [cursor=pointer]:
+                      - generic [ref=e692] [cursor=pointer]: InProgress 1772136926047
+                      - generic [ref=e695] [cursor=pointer]: Medium
+                  - generic [ref=e696]:
+                    - checkbox [ref=e697] [cursor=pointer]
+                    - button "Todo 1772136926047 Medium" [ref=e698] [cursor=pointer]:
+                      - generic [ref=e700] [cursor=pointer]: Todo 1772136926047
+                      - generic [ref=e703] [cursor=pointer]: Medium
+                  - generic [ref=e704]:
+                    - checkbox [ref=e705] [cursor=pointer]
+                    - button "Upcoming 1772136919708 Medium" [ref=e706] [cursor=pointer]:
+                      - generic [ref=e708] [cursor=pointer]: Upcoming 1772136919708
+                      - generic [ref=e711] [cursor=pointer]: Medium
+                  - generic [ref=e712]:
+                    - checkbox [ref=e713] [cursor=pointer]
+                    - button "Move Between 1772136917386 Medium" [ref=e714] [cursor=pointer]:
+                      - generic [ref=e716] [cursor=pointer]: Move Between 1772136917386
+                      - generic [ref=e719] [cursor=pointer]: Medium
+                  - generic [ref=e720]:
+                    - checkbox [ref=e721] [cursor=pointer]
+                    - button "Todo 1772136916753 Medium" [ref=e722] [cursor=pointer]:
+                      - generic [ref=e724] [cursor=pointer]: Todo 1772136916753
+                      - generic [ref=e727] [cursor=pointer]: Medium
+                  - generic [ref=e728]:
+                    - checkbox [ref=e729] [cursor=pointer]
+                    - button "Completed 1772136915541 Medium" [ref=e730] [cursor=pointer]:
+                      - generic [ref=e732] [cursor=pointer]: Completed 1772136915541
+                      - generic [ref=e735] [cursor=pointer]: Medium
+                  - generic [ref=e736]:
+                    - checkbox [ref=e737] [cursor=pointer]
+                    - button "Future 1772136911944 Medium" [ref=e738] [cursor=pointer]:
+                      - generic [ref=e740] [cursor=pointer]: Future 1772136911944
+                      - generic [ref=e743] [cursor=pointer]: Medium
+                  - generic [ref=e744]:
+                    - checkbox [ref=e745] [cursor=pointer]
+                    - button "Upcoming 1772136913867 Medium" [ref=e746] [cursor=pointer]:
+                      - generic [ref=e748] [cursor=pointer]: Upcoming 1772136913867
+                      - generic [ref=e751] [cursor=pointer]: Medium
+                  - generic [ref=e752]:
+                    - checkbox [ref=e753] [cursor=pointer]
+                    - button "Today 1772136911944 Medium" [ref=e754] [cursor=pointer]:
+                      - generic [ref=e756] [cursor=pointer]: Today 1772136911944
+                      - generic [ref=e759] [cursor=pointer]: Medium
+                  - generic [ref=e760]:
+                    - checkbox [ref=e761] [cursor=pointer]
+                    - button "No Date 1772136911944 Medium" [ref=e762] [cursor=pointer]:
+                      - generic [ref=e764] [cursor=pointer]: No Date 1772136911944
+                      - generic [ref=e767] [cursor=pointer]: Medium
+                  - generic [ref=e768]:
+                    - checkbox [ref=e769] [cursor=pointer]
+                    - button "Urgent 1772136910069 Medium" [ref=e770] [cursor=pointer]:
+                      - generic [ref=e772] [cursor=pointer]: Urgent 1772136910069
+                      - generic [ref=e775] [cursor=pointer]: Medium
+                  - generic [ref=e776]:
+                    - checkbox [ref=e777] [cursor=pointer]
+                    - button "Overdue 1772136911030 Medium" [ref=e778] [cursor=pointer]:
+                      - generic [ref=e780] [cursor=pointer]: Overdue 1772136911030
+                      - generic [ref=e783] [cursor=pointer]: Medium
+                  - generic [ref=e784]:
+                    - checkbox [ref=e785] [cursor=pointer]
+                    - button "Low 1772136910069 Medium" [ref=e786] [cursor=pointer]:
+                      - generic [ref=e788] [cursor=pointer]: Low 1772136910069
+                      - generic [ref=e791] [cursor=pointer]: Medium
+                  - generic [ref=e792]:
+                    - checkbox [ref=e793] [cursor=pointer]
+                    - button "Due Today 1772136909545 Medium" [ref=e794] [cursor=pointer]:
+                      - generic [ref=e796] [cursor=pointer]: Due Today 1772136909545
+                      - generic [ref=e799] [cursor=pointer]: Medium
+                  - generic [ref=e800]:
+                    - checkbox [ref=e801] [cursor=pointer]
+                    - button "Today Due 1772136908299 Medium" [ref=e802] [cursor=pointer]:
+                      - generic [ref=e804] [cursor=pointer]: Today Due 1772136908299
+                      - generic [ref=e807] [cursor=pointer]: Medium
+                  - generic [ref=e808]:
+                    - checkbox [ref=e809] [cursor=pointer]
+                    - button "Overdue Task 1772136907707 Medium" [ref=e810] [cursor=pointer]:
+                      - generic [ref=e812] [cursor=pointer]: Overdue Task 1772136907707
+                      - generic [ref=e815] [cursor=pointer]: Medium
+                  - generic [ref=e816]:
+                    - checkbox [ref=e817] [cursor=pointer]
+                    - button "High Priority 1772136907032 Medium" [ref=e818] [cursor=pointer]:
+                      - generic [ref=e820] [cursor=pointer]: High Priority 1772136907032
+                      - generic [ref=e823] [cursor=pointer]: Medium
+                  - generic [ref=e824]:
+                    - checkbox [ref=e825] [cursor=pointer]
+                    - button "Future Task 1772136904930 Medium" [ref=e826] [cursor=pointer]:
+                      - generic [ref=e828] [cursor=pointer]: Future Task 1772136904930
+                      - generic [ref=e831] [cursor=pointer]: Medium
+                  - generic [ref=e832]:
+                    - checkbox [ref=e833] [cursor=pointer]
+                    - button "Combined Filters 1772136678210 Medium" [ref=e834] [cursor=pointer]:
+                      - generic [ref=e836] [cursor=pointer]: Combined Filters 1772136678210
+                      - generic [ref=e839] [cursor=pointer]: Medium
+                  - generic [ref=e840]:
+                    - checkbox [ref=e841] [cursor=pointer]
+                    - button "Urgent Different 1772136676587 Medium" [ref=e842] [cursor=pointer]:
+                      - generic [ref=e844] [cursor=pointer]: Urgent Different 1772136676587
+                      - generic [ref=e847] [cursor=pointer]: Medium
+                  - generic [ref=e848]:
+                    - checkbox [ref=e849] [cursor=pointer]
+                    - button "Urgent Search 1772136676587 Medium" [ref=e850] [cursor=pointer]:
+                      - generic [ref=e852] [cursor=pointer]: Urgent Search 1772136676587
+                      - generic [ref=e855] [cursor=pointer]: Medium
+                  - generic [ref=e856]:
+                    - checkbox [ref=e857] [cursor=pointer]
+                    - button "Normal Task 1772136670614 Medium" [ref=e858] [cursor=pointer]:
+                      - generic [ref=e860] [cursor=pointer]: Normal Task 1772136670614
+                      - generic [ref=e863] [cursor=pointer]: Medium
+                  - generic [ref=e864]:
+                    - checkbox [ref=e865] [cursor=pointer]
+                    - button "Starred Task 1772136670614 Medium" [ref=e866] [cursor=pointer]:
+                      - generic [ref=e868] [cursor=pointer]: Starred Task 1772136670614
+                      - generic [ref=e871] [cursor=pointer]: Medium
+                  - generic [ref=e872]:
+                    - checkbox [ref=e873] [cursor=pointer]
+                    - button "In Progress Task 1772136663644 Medium" [ref=e874] [cursor=pointer]:
+                      - generic [ref=e876] [cursor=pointer]: In Progress Task 1772136663644
+                      - generic [ref=e879] [cursor=pointer]: Medium
+                  - generic [ref=e880]:
+                    - checkbox [ref=e881] [cursor=pointer]
+                    - button "Low Priority Task 1772136657927 Medium" [ref=e882] [cursor=pointer]:
+                      - generic [ref=e884] [cursor=pointer]: Low Priority Task 1772136657927
+                      - generic [ref=e887] [cursor=pointer]: Medium
+                  - generic [ref=e888]:
+                    - checkbox [ref=e889] [cursor=pointer]
+                    - button "Normal Priority 1772136656687 Medium" [ref=e890] [cursor=pointer]:
+                      - generic [ref=e892] [cursor=pointer]: Normal Priority 1772136656687
+                      - generic [ref=e895] [cursor=pointer]: Medium
+                  - generic [ref=e896]:
+                    - checkbox [ref=e897] [cursor=pointer]
+                    - button "High Priority Task 1772136657927 Medium" [ref=e898] [cursor=pointer]:
+                      - generic [ref=e900] [cursor=pointer]: High Priority Task 1772136657927
+                      - generic [ref=e903] [cursor=pointer]: Medium
+                  - generic [ref=e904]:
+                    - checkbox [ref=e905] [cursor=pointer]
+                    - button "Todo Status 1772136657853 Medium" [ref=e906] [cursor=pointer]:
+                      - generic [ref=e908] [cursor=pointer]: Todo Status 1772136657853
+                      - generic [ref=e911] [cursor=pointer]: Medium
+                  - generic [ref=e912]:
+                    - checkbox [ref=e913] [cursor=pointer]
+                    - button "Urgent Priority 1772136656687 Medium" [ref=e914] [cursor=pointer]:
+                      - generic [ref=e916] [cursor=pointer]: Urgent Priority 1772136656687
+                      - generic [ref=e919] [cursor=pointer]: Medium
+                  - generic [ref=e920]:
+                    - checkbox [ref=e921] [cursor=pointer]
+                    - button "Different Title 1772136648813 Medium" [ref=e922] [cursor=pointer]:
+                      - generic [ref=e924] [cursor=pointer]: Different Title 1772136648813
+                      - generic [ref=e927] [cursor=pointer]: Medium
+                  - generic [ref=e928]:
+                    - checkbox [ref=e929] [cursor=pointer]
+                    - button "CaseSensitive Test 1772136650321 Medium" [ref=e930] [cursor=pointer]:
+                      - generic [ref=e932] [cursor=pointer]: CaseSensitive Test 1772136650321
+                      - generic [ref=e935] [cursor=pointer]: Medium
+                  - generic [ref=e936]:
+                    - checkbox [ref=e937] [cursor=pointer]
+                    - button "Partial Match Test 1772136650260 Medium" [ref=e938] [cursor=pointer]:
+                      - generic [ref=e940] [cursor=pointer]: Partial Match Test 1772136650260
+                      - generic [ref=e943] [cursor=pointer]: Medium
+                  - generic [ref=e944]:
+                    - checkbox [ref=e945] [cursor=pointer]
+                    - button "Clear Search 1772136649346 Medium" [ref=e946] [cursor=pointer]:
+                      - generic [ref=e948] [cursor=pointer]: Clear Search 1772136649346
+                      - generic [ref=e951] [cursor=pointer]: Medium
+                  - generic [ref=e952]:
+                    - checkbox [ref=e953] [cursor=pointer]
+                    - button "Search Match 1772136648813 Medium" [ref=e954] [cursor=pointer]:
+                      - generic [ref=e956] [cursor=pointer]: Search Match 1772136648813
+                      - generic [ref=e959] [cursor=pointer]: Medium
+                  - generic [ref=e960]:
+                    - checkbox [ref=e961] [cursor=pointer]
+                    - button "Urgent Different 1772136388970 Medium" [ref=e962] [cursor=pointer]:
+                      - generic [ref=e964] [cursor=pointer]: Urgent Different 1772136388970
+                      - generic [ref=e967] [cursor=pointer]: Medium
+                  - generic [ref=e968]:
+                    - checkbox [ref=e969] [cursor=pointer]
+                    - button "Combined Filters 1772136389393 Medium" [ref=e970] [cursor=pointer]:
+                      - generic [ref=e972] [cursor=pointer]: Combined Filters 1772136389393
+                      - generic [ref=e975] [cursor=pointer]: Medium
+                  - generic [ref=e976]:
+                    - checkbox [ref=e977] [cursor=pointer]
+                    - button "Urgent Search 1772136388970 Medium" [ref=e978] [cursor=pointer]:
+                      - generic [ref=e980] [cursor=pointer]: Urgent Search 1772136388970
+                      - generic [ref=e983] [cursor=pointer]: Medium
+                  - generic [ref=e984]:
+                    - checkbox [ref=e985] [cursor=pointer]
+                    - button "Normal Task 1772136382750 Medium" [ref=e986] [cursor=pointer]:
+                      - generic [ref=e988] [cursor=pointer]: Normal Task 1772136382750
+                      - generic [ref=e991] [cursor=pointer]: Medium
+                  - generic [ref=e992]:
+                    - checkbox [ref=e993] [cursor=pointer]
+                    - button "Starred Task 1772136382750 Medium" [ref=e994] [cursor=pointer]:
+                      - generic [ref=e996] [cursor=pointer]: Starred Task 1772136382750
+                      - generic [ref=e999] [cursor=pointer]: Medium
+                  - generic [ref=e1000]:
+                    - checkbox [ref=e1001] [cursor=pointer]
+                    - button "In Progress Task 1772136374394 Medium" [ref=e1002] [cursor=pointer]:
+                      - generic [ref=e1004] [cursor=pointer]: In Progress Task 1772136374394
+                      - generic [ref=e1007] [cursor=pointer]: Medium
+                  - generic [ref=e1008]:
+                    - checkbox [ref=e1009] [cursor=pointer]
+                    - button "Low Priority Task 1772136368627 Medium" [ref=e1010] [cursor=pointer]:
+                      - generic [ref=e1012] [cursor=pointer]: Low Priority Task 1772136368627
+                      - generic [ref=e1015] [cursor=pointer]: Medium
+                  - generic [ref=e1016]:
+                    - checkbox [ref=e1017] [cursor=pointer]
+                    - button "Todo Status 1772136369516 Medium" [ref=e1018] [cursor=pointer]:
+                      - generic [ref=e1020] [cursor=pointer]: Todo Status 1772136369516
+                      - generic [ref=e1023] [cursor=pointer]: Medium
+                  - generic [ref=e1024]:
+                    - checkbox [ref=e1025] [cursor=pointer]
+                    - button "Normal Priority 1772136367738 Medium" [ref=e1026] [cursor=pointer]:
+                      - generic [ref=e1028] [cursor=pointer]: Normal Priority 1772136367738
+                      - generic [ref=e1031] [cursor=pointer]: Medium
+                  - generic [ref=e1032]:
+                    - checkbox [ref=e1033] [cursor=pointer]
+                    - button "High Priority Task 1772136368627 Medium" [ref=e1034] [cursor=pointer]:
+                      - generic [ref=e1036] [cursor=pointer]: High Priority Task 1772136368627
+                      - generic [ref=e1039] [cursor=pointer]: Medium
+                  - generic [ref=e1040]:
+                    - checkbox [ref=e1041] [cursor=pointer]
+                    - button "Urgent Priority 1772136367738 Medium" [ref=e1042] [cursor=pointer]:
+                      - generic [ref=e1044] [cursor=pointer]: Urgent Priority 1772136367738
+                      - generic [ref=e1047] [cursor=pointer]: Medium
+                  - generic [ref=e1048]:
+                    - checkbox [ref=e1049] [cursor=pointer]
+                    - button "Different Title 1772136361082 Medium" [ref=e1050] [cursor=pointer]:
+                      - generic [ref=e1052] [cursor=pointer]: Different Title 1772136361082
+                      - generic [ref=e1055] [cursor=pointer]: Medium
+                  - generic [ref=e1056]:
+                    - checkbox [ref=e1057] [cursor=pointer]
+                    - button "CaseSensitive Test 1772136361394 Medium" [ref=e1058] [cursor=pointer]:
+                      - generic [ref=e1060] [cursor=pointer]: CaseSensitive Test 1772136361394
+                      - generic [ref=e1063] [cursor=pointer]: Medium
+                  - generic [ref=e1064]:
+                    - checkbox [ref=e1065] [cursor=pointer]
+                    - button "Search Match 1772136361082 Medium" [ref=e1066] [cursor=pointer]:
+                      - generic [ref=e1068] [cursor=pointer]: Search Match 1772136361082
+                      - generic [ref=e1071] [cursor=pointer]: Medium
+                  - generic [ref=e1072]:
+                    - checkbox [ref=e1073] [cursor=pointer]
+                    - button "Partial Match Test 1772136360527 Medium" [ref=e1074] [cursor=pointer]:
+                      - generic [ref=e1076] [cursor=pointer]: Partial Match Test 1772136360527
+                      - generic [ref=e1079] [cursor=pointer]: Medium
+                  - generic [ref=e1080]:
+                    - checkbox [ref=e1081] [cursor=pointer]
+                    - button "Clear Search 1772136359958 Medium" [ref=e1082] [cursor=pointer]:
+                      - generic [ref=e1084] [cursor=pointer]: Clear Search 1772136359958
+                      - generic [ref=e1087] [cursor=pointer]: Medium
+                  - generic [ref=e1088]:
+                    - checkbox [ref=e1089] [cursor=pointer]
+                    - button "Combined Filters 1772136113062 Medium" [ref=e1090] [cursor=pointer]:
+                      - generic [ref=e1092] [cursor=pointer]: Combined Filters 1772136113062
+                      - generic [ref=e1095] [cursor=pointer]: Medium
+                  - generic [ref=e1096]:
+                    - checkbox [ref=e1097] [cursor=pointer]
+                    - button "Urgent Different 1772136110043 Medium" [ref=e1098] [cursor=pointer]:
+                      - generic [ref=e1100] [cursor=pointer]: Urgent Different 1772136110043
+                      - generic [ref=e1103] [cursor=pointer]: Medium
+                  - generic [ref=e1104]:
+                    - checkbox [ref=e1105] [cursor=pointer]
+                    - button "Urgent Search 1772136110043 Medium" [ref=e1106] [cursor=pointer]:
+                      - generic [ref=e1108] [cursor=pointer]: Urgent Search 1772136110043
+                      - generic [ref=e1111] [cursor=pointer]: Medium
+                  - generic [ref=e1112]:
+                    - checkbox [ref=e1113] [cursor=pointer]
+                    - button "Normal Task 1772136099063 Medium" [ref=e1114] [cursor=pointer]:
+                      - generic [ref=e1116] [cursor=pointer]: Normal Task 1772136099063
+                      - generic [ref=e1119] [cursor=pointer]: Medium
+                  - generic [ref=e1120]:
+                    - checkbox [ref=e1121] [cursor=pointer]
+                    - button "Starred Task 1772136099063 Medium" [ref=e1122] [cursor=pointer]:
+                      - generic [ref=e1124] [cursor=pointer]: Starred Task 1772136099063
+                      - generic [ref=e1127] [cursor=pointer]: Medium
+                  - generic [ref=e1128]:
+                    - checkbox [ref=e1129] [cursor=pointer]
+                    - button "In Progress Task 1772136092444 Medium" [ref=e1130] [cursor=pointer]:
+                      - generic [ref=e1132] [cursor=pointer]: In Progress Task 1772136092444
+                      - generic [ref=e1135] [cursor=pointer]: Medium
+                  - generic [ref=e1136]:
+                    - checkbox [ref=e1137] [cursor=pointer]
+                    - button "Todo Status 1772136088678 Medium" [ref=e1138] [cursor=pointer]:
+                      - generic [ref=e1140] [cursor=pointer]: Todo Status 1772136088678
+                      - generic [ref=e1143] [cursor=pointer]: Medium
+                  - generic [ref=e1144]:
+                    - checkbox [ref=e1145] [cursor=pointer]
+                    - button "High Priority Task 1772136086496 Medium" [ref=e1146] [cursor=pointer]:
+                      - generic [ref=e1148] [cursor=pointer]: High Priority Task 1772136086496
+                      - generic [ref=e1151] [cursor=pointer]: Medium
+                  - generic [ref=e1152]:
+                    - checkbox [ref=e1153] [cursor=pointer]
+                    - button "Urgent Priority 1772136081258 Medium" [ref=e1154] [cursor=pointer]:
+                      - generic [ref=e1156] [cursor=pointer]: Urgent Priority 1772136081258
+                      - generic [ref=e1159] [cursor=pointer]: Medium
+                  - generic [ref=e1160]:
+                    - checkbox [ref=e1161] [cursor=pointer]
+                    - button "Partial Match Test 1772136080544 Medium" [ref=e1162] [cursor=pointer]:
+                      - generic [ref=e1164] [cursor=pointer]: Partial Match Test 1772136080544
+                      - generic [ref=e1167] [cursor=pointer]: Medium
+                  - generic [ref=e1168]:
+                    - checkbox [ref=e1169] [cursor=pointer]
+                    - button "Clear Search 1772136078711 Medium" [ref=e1170] [cursor=pointer]:
+                      - generic [ref=e1172] [cursor=pointer]: Clear Search 1772136078711
+                      - generic [ref=e1175] [cursor=pointer]: Medium
+                  - generic [ref=e1176]:
+                    - checkbox [ref=e1177] [cursor=pointer]
+                    - button "CaseSensitive Test 1772136076907 Medium" [ref=e1178] [cursor=pointer]:
+                      - generic [ref=e1180] [cursor=pointer]: CaseSensitive Test 1772136076907
+                      - generic [ref=e1183] [cursor=pointer]: Medium
+                  - generic [ref=e1184]:
+                    - checkbox [ref=e1185] [cursor=pointer]
+                    - button "Different Title 1772136073096 Medium" [ref=e1186] [cursor=pointer]:
+                      - generic [ref=e1188] [cursor=pointer]: Different Title 1772136073096
+                      - generic [ref=e1191] [cursor=pointer]: Medium
+                  - generic [ref=e1192]:
+                    - checkbox [ref=e1193] [cursor=pointer]
+                    - button "Search Match 1772136073096 Medium" [ref=e1194] [cursor=pointer]:
+                      - generic [ref=e1196] [cursor=pointer]: Search Match 1772136073096
+                      - generic [ref=e1199] [cursor=pointer]: Medium
+                  - generic [ref=e1200]:
+                    - checkbox [ref=e1201] [cursor=pointer]
+                    - button "Urgent Different 1772135959486 Medium" [ref=e1202] [cursor=pointer]:
+                      - generic [ref=e1204] [cursor=pointer]: Urgent Different 1772135959486
+                      - generic [ref=e1207] [cursor=pointer]: Medium
+                  - generic [ref=e1208]:
+                    - checkbox [ref=e1209] [cursor=pointer]
+                    - button "Combined Filters 1772135960765 Medium" [ref=e1210] [cursor=pointer]:
+                      - generic [ref=e1212] [cursor=pointer]: Combined Filters 1772135960765
+                      - generic [ref=e1215] [cursor=pointer]: Medium
+                  - generic [ref=e1216]:
+                    - checkbox [ref=e1217] [cursor=pointer]
+                    - button "Urgent Search 1772135959486 Medium" [ref=e1218] [cursor=pointer]:
+                      - generic [ref=e1220] [cursor=pointer]: Urgent Search 1772135959486
+                      - generic [ref=e1223] [cursor=pointer]: Medium
+                  - generic [ref=e1224]:
+                    - checkbox [ref=e1225] [cursor=pointer]
+                    - button "Normal Task 1772135954149 Medium" [ref=e1226] [cursor=pointer]:
+                      - generic [ref=e1228] [cursor=pointer]: Normal Task 1772135954149
+                      - generic [ref=e1231] [cursor=pointer]: Medium
+                  - generic [ref=e1232]:
+                    - checkbox [ref=e1233] [cursor=pointer]
+                    - button "Starred Task 1772135954149 Medium" [ref=e1234] [cursor=pointer]:
+                      - generic [ref=e1236] [cursor=pointer]: Starred Task 1772135954149
+                      - generic [ref=e1239] [cursor=pointer]: Medium
+                  - generic [ref=e1240]:
+                    - checkbox [ref=e1241] [cursor=pointer]
+                    - button "In Progress Task 1772135946569 Medium" [ref=e1242] [cursor=pointer]:
+                      - generic [ref=e1244] [cursor=pointer]: In Progress Task 1772135946569
+                      - generic [ref=e1247] [cursor=pointer]: Medium
+                  - generic [ref=e1248]:
+                    - checkbox [ref=e1249] [cursor=pointer]
+                    - button "Normal Priority 1772135940506 Medium" [ref=e1250] [cursor=pointer]:
+                      - generic [ref=e1252] [cursor=pointer]: Normal Priority 1772135940506
+                      - generic [ref=e1255] [cursor=pointer]: Medium
+                  - generic [ref=e1256]:
+                    - checkbox [ref=e1257] [cursor=pointer]
+                    - button "Todo Status 1772135941885 Medium" [ref=e1258] [cursor=pointer]:
+                      - generic [ref=e1260] [cursor=pointer]: Todo Status 1772135941885
+                      - generic [ref=e1263] [cursor=pointer]: Medium
+                  - generic [ref=e1264]:
+                    - checkbox [ref=e1265] [cursor=pointer]
+                    - button "High Priority Task 1772135941379 Medium" [ref=e1266] [cursor=pointer]:
+                      - generic [ref=e1268] [cursor=pointer]: High Priority Task 1772135941379
+                      - generic [ref=e1271] [cursor=pointer]: Medium
+                  - generic [ref=e1272]:
+                    - checkbox [ref=e1273] [cursor=pointer]
+                    - button "Urgent Priority 1772135940506 Medium" [ref=e1274] [cursor=pointer]:
+                      - generic [ref=e1276] [cursor=pointer]: Urgent Priority 1772135940506
+                      - generic [ref=e1279] [cursor=pointer]: Medium
+                  - generic [ref=e1280]:
+                    - checkbox [ref=e1281] [cursor=pointer]
+                    - button "Different Title 1772135933489 Medium" [ref=e1282] [cursor=pointer]:
+                      - generic [ref=e1284] [cursor=pointer]: Different Title 1772135933489
+                      - generic [ref=e1287] [cursor=pointer]: Medium
+                  - generic [ref=e1288]:
+                    - checkbox [ref=e1289] [cursor=pointer]
+                    - button "CaseSensitive Test 1772135934728 Medium" [ref=e1290] [cursor=pointer]:
+                      - generic [ref=e1292] [cursor=pointer]: CaseSensitive Test 1772135934728
+                      - generic [ref=e1295] [cursor=pointer]: Medium
+                  - generic [ref=e1296]:
+                    - checkbox [ref=e1297] [cursor=pointer]
+                    - button "Partial Match Test 1772135934375 Medium" [ref=e1298] [cursor=pointer]:
+                      - generic [ref=e1300] [cursor=pointer]: Partial Match Test 1772135934375
+                      - generic [ref=e1303] [cursor=pointer]: Medium
+                  - generic [ref=e1304]:
+                    - checkbox [ref=e1305] [cursor=pointer]
+                    - button "Clear Search 1772135933959 Medium" [ref=e1306] [cursor=pointer]:
+                      - generic [ref=e1308] [cursor=pointer]: Clear Search 1772135933959
+                      - generic [ref=e1311] [cursor=pointer]: Medium
+                  - generic [ref=e1312]:
+                    - checkbox [ref=e1313] [cursor=pointer]
+                    - button "Search Match 1772135933489 Medium" [ref=e1314] [cursor=pointer]:
+                      - generic [ref=e1316] [cursor=pointer]: Search Match 1772135933489
+                      - generic [ref=e1319] [cursor=pointer]: Medium
+                  - generic [ref=e1320]:
+                    - checkbox [ref=e1321] [cursor=pointer]
+                    - button "Bulk Delete 2 1772134706834 Medium" [ref=e1322] [cursor=pointer]:
+                      - generic [ref=e1324] [cursor=pointer]: Bulk Delete 2 1772134706834
+                      - generic [ref=e1327] [cursor=pointer]: Medium
+                  - generic [ref=e1328]:
+                    - checkbox [ref=e1329] [cursor=pointer]
+                    - button "Bulk Delete 1 1772134706834 Medium" [ref=e1330] [cursor=pointer]:
+                      - generic [ref=e1332] [cursor=pointer]: Bulk Delete 1 1772134706834
+                      - generic [ref=e1335] [cursor=pointer]: Medium
+                  - generic [ref=e1336]:
+                    - checkbox [ref=e1337] [cursor=pointer]
+                    - button "Description Update 1772134703127 Medium" [ref=e1338] [cursor=pointer]:
+                      - generic [ref=e1340] [cursor=pointer]: Description Update 1772134703127
+                      - generic [ref=e1343] [cursor=pointer]: Medium
+                  - generic [ref=e1344]:
+                    - checkbox [ref=e1345] [cursor=pointer]
+                    - button "Add Due Date 1772134699630 Medium" [ref=e1346] [cursor=pointer]:
+                      - generic [ref=e1348] [cursor=pointer]: Add Due Date 1772134699630
+                      - generic [ref=e1351] [cursor=pointer]: Medium
+                  - generic [ref=e1352]:
+                    - checkbox [ref=e1353] [cursor=pointer]
+                    - button "Status Change 1772134698857 Medium" [ref=e1354] [cursor=pointer]:
+                      - generic [ref=e1356] [cursor=pointer]: Status Change 1772134698857
+                      - generic [ref=e1359] [cursor=pointer]: Medium
+                  - generic [ref=e1360]:
+                    - checkbox [ref=e1361] [cursor=pointer]
+                    - button "Priority Change 1772134695634 Medium" [ref=e1362] [cursor=pointer]:
+                      - generic [ref=e1364] [cursor=pointer]: Priority Change 1772134695634
+                      - generic [ref=e1367] [cursor=pointer]: Medium
+                  - generic [ref=e1368]:
+                    - checkbox [ref=e1369] [cursor=pointer]
+                    - button "Original Title 1772134691950 Medium" [ref=e1370] [cursor=pointer]:
+                      - generic [ref=e1372] [cursor=pointer]: Original Title 1772134691950
+                      - generic [ref=e1375] [cursor=pointer]: Medium
+                  - generic [ref=e1376]:
+                    - checkbox [ref=e1377] [cursor=pointer]
+                    - button "Today Task 1772134691372 Medium" [ref=e1378] [cursor=pointer]:
+                      - generic [ref=e1380] [cursor=pointer]: Today Task 1772134691372
+                      - generic [ref=e1383] [cursor=pointer]: Medium
+                  - generic [ref=e1384]:
+                    - checkbox [ref=e1385] [cursor=pointer]
+                    - button "Sequential Task 3 1772134682996 Medium" [ref=e1386] [cursor=pointer]:
+                      - generic [ref=e1388] [cursor=pointer]: Sequential Task 3 1772134682996
+                      - generic [ref=e1391] [cursor=pointer]: Medium
+                  - generic [ref=e1392]:
+                    - checkbox [ref=e1393] [cursor=pointer]
+                    - button "Sequential Task 2 1772134682996 Medium" [ref=e1394] [cursor=pointer]:
+                      - generic [ref=e1396] [cursor=pointer]: Sequential Task 2 1772134682996
+                      - generic [ref=e1399] [cursor=pointer]: Medium
+                  - generic [ref=e1400]:
+                    - checkbox [ref=e1401] [cursor=pointer]
+                    - button "View Details 1772134683533 Medium" [ref=e1402] [cursor=pointer]:
+                      - generic [ref=e1404] [cursor=pointer]: View Details 1772134683533
+                      - generic [ref=e1407] [cursor=pointer]: Medium
+                  - generic [ref=e1408]:
+                    - checkbox [ref=e1409] [cursor=pointer]
+                    - button "Sequential Task 1 1772134682996 Medium" [ref=e1410] [cursor=pointer]:
+                      - generic [ref=e1412] [cursor=pointer]: Sequential Task 1 1772134682996
+                      - generic [ref=e1415] [cursor=pointer]: Medium
+                  - generic [ref=e1416]:
+                    - checkbox [ref=e1417] [cursor=pointer]
+                    - button "Priority Task 1772134679254 Medium" [ref=e1418] [cursor=pointer]:
+                      - generic [ref=e1420] [cursor=pointer]: Priority Task 1772134679254
+                      - generic [ref=e1423] [cursor=pointer]: Medium
+                  - generic [ref=e1424]:
+                    - checkbox [ref=e1425] [cursor=pointer]
+                    - button "Today Task 1772134679132 Medium" [ref=e1426] [cursor=pointer]:
+                      - generic [ref=e1428] [cursor=pointer]: Today Task 1772134679132
+                      - generic [ref=e1431] [cursor=pointer]: Medium
+                  - generic [ref=e1432]:
+                    - checkbox [ref=e1433] [cursor=pointer]
+                    - button "Quick Task 1772134678325 Medium" [ref=e1434] [cursor=pointer]:
+                      - generic [ref=e1436] [cursor=pointer]: Quick Task 1772134678325
+                      - generic [ref=e1439] [cursor=pointer]: Medium
+                  - generic [ref=e1440]:
+                    - checkbox [ref=e1441] [cursor=pointer]
+                    - button "Detailed Task 1772134677852 Medium" [ref=e1442] [cursor=pointer]:
+                      - generic [ref=e1444] [cursor=pointer]: Detailed Task 1772134677852
+                      - generic [ref=e1447] [cursor=pointer]: Medium
+                  - generic [ref=e1448]:
+                    - checkbox [ref=e1449] [cursor=pointer]
+                    - button "Buy groceries 1772133816765 Medium" [ref=e1450] [cursor=pointer]:
+                      - generic [ref=e1452] [cursor=pointer]: Buy groceries 1772133816765
+                      - generic [ref=e1455] [cursor=pointer]: Medium
+                  - generic [ref=e1456]:
+                    - checkbox [ref=e1457] [cursor=pointer]
+                    - button "Star Me 1772133814725 ⭐ Medium" [ref=e1458] [cursor=pointer]:
+                      - generic [ref=e1459] [cursor=pointer]:
+                        - generic [ref=e1460] [cursor=pointer]: Star Me 1772133814725
+                        - generic [ref=e1461] [cursor=pointer]: ⭐
+                      - generic [ref=e1464] [cursor=pointer]: Medium
+                  - generic [ref=e1465]:
+                    - checkbox [ref=e1466] [cursor=pointer]
+                    - button "Badge2 1772133406007 Medium" [ref=e1467] [cursor=pointer]:
+                      - generic [ref=e1469] [cursor=pointer]: Badge2 1772133406007
+                      - generic [ref=e1472] [cursor=pointer]: Medium
+                  - generic [ref=e1473]:
+                    - checkbox [ref=e1474] [cursor=pointer]
+                    - button "Single2 1772133405501 Medium" [ref=e1475] [cursor=pointer]:
+                      - generic [ref=e1477] [cursor=pointer]: Single2 1772133405501
+                      - generic [ref=e1480] [cursor=pointer]: Medium
+                  - generic [ref=e1481]:
+                    - checkbox [ref=e1482] [cursor=pointer]
+                    - button "Badge1 1772133406007 Medium" [ref=e1483] [cursor=pointer]:
+                      - generic [ref=e1485] [cursor=pointer]: Badge1 1772133406007
+                      - generic [ref=e1488] [cursor=pointer]: Medium
+                  - generic [ref=e1489]:
+                    - checkbox [ref=e1490] [cursor=pointer]
+                    - button "Single1 1772133405501 Medium" [ref=e1491] [cursor=pointer]:
+                      - generic [ref=e1493] [cursor=pointer]: Single1 1772133405501
+                      - generic [ref=e1496] [cursor=pointer]: Medium
+                  - generic [ref=e1497]:
+                    - checkbox [ref=e1498] [cursor=pointer]
+                    - button "Multi3 1772133404069 Medium" [ref=e1499] [cursor=pointer]:
+                      - generic [ref=e1501] [cursor=pointer]: Multi3 1772133404069
+                      - generic [ref=e1504] [cursor=pointer]: Medium
+                  - generic [ref=e1505]:
+                    - checkbox [ref=e1506] [cursor=pointer]
+                    - button "Persist2 1772133404486 Medium" [ref=e1507] [cursor=pointer]:
+                      - generic [ref=e1509] [cursor=pointer]: Persist2 1772133404486
+                      - generic [ref=e1512] [cursor=pointer]: Medium
+                  - generic [ref=e1513]:
+                    - checkbox [ref=e1514] [cursor=pointer]
+                    - button "Multi2 1772133404069 Medium" [ref=e1515] [cursor=pointer]:
+                      - generic [ref=e1517] [cursor=pointer]: Multi2 1772133404069
+                      - generic [ref=e1520] [cursor=pointer]: Medium
+                  - generic [ref=e1521]:
+                    - checkbox [ref=e1522] [cursor=pointer]
+                    - button "Persist1 1772133404486 Medium" [ref=e1523] [cursor=pointer]:
+                      - generic [ref=e1525] [cursor=pointer]: Persist1 1772133404486
+                      - generic [ref=e1528] [cursor=pointer]: Medium
+                  - generic [ref=e1529]:
+                    - checkbox [ref=e1530] [cursor=pointer]
+                    - button "Multi1 1772133404069 Medium" [ref=e1531] [cursor=pointer]:
+                      - generic [ref=e1533] [cursor=pointer]: Multi1 1772133404069
+                      - generic [ref=e1536] [cursor=pointer]: Medium
+                  - generic [ref=e1537]:
+                    - checkbox [ref=e1538] [cursor=pointer]
+                    - button "Visual Feedback 1772133382647 Medium" [ref=e1539] [cursor=pointer]:
+                      - generic [ref=e1541] [cursor=pointer]: Visual Feedback 1772133382647
+                      - generic [ref=e1544] [cursor=pointer]: Medium
+                  - generic [ref=e1545]:
+                    - checkbox [ref=e1546] [cursor=pointer]
+                    - button "Selection Mode 1772133382378 Medium" [ref=e1547] [cursor=pointer]:
+                      - generic [ref=e1549] [cursor=pointer]: Selection Mode 1772133382378
+                      - generic [ref=e1552] [cursor=pointer]: Medium
+                  - generic [ref=e1553]:
+                    - checkbox [ref=e1554] [cursor=pointer]
+                    - button "Drag Persist 1772133370412 Medium" [ref=e1555] [cursor=pointer]:
+                      - generic [ref=e1557] [cursor=pointer]: Drag Persist 1772133370412
+                      - generic [ref=e1560] [cursor=pointer]: Medium
+                  - generic [ref=e1561]:
+                    - checkbox [ref=e1562] [cursor=pointer]
+                    - button "Drag To Done 1772133369988 Medium" [ref=e1563] [cursor=pointer]:
+                      - generic [ref=e1565] [cursor=pointer]: Drag To Done 1772133369988
+                      - generic [ref=e1568] [cursor=pointer]: Medium
+                  - generic [ref=e1569]:
+                    - checkbox [ref=e1570] [cursor=pointer]
+                    - button "Drag To Waiting 1772133369882 Medium" [ref=e1571] [cursor=pointer]:
+                      - generic [ref=e1573] [cursor=pointer]: Drag To Waiting 1772133369882
+                      - generic [ref=e1576] [cursor=pointer]: Medium
+                  - generic [ref=e1577]:
+                    - checkbox [ref=e1578] [cursor=pointer]
+                    - button "Drag To Progress 1772133369775 Medium" [ref=e1579] [cursor=pointer]:
+                      - generic [ref=e1581] [cursor=pointer]: Drag To Progress 1772133369775
+                      - generic [ref=e1584] [cursor=pointer]: Medium
+                  - generic [ref=e1585]:
+                    - checkbox [ref=e1586] [cursor=pointer]
+                    - button "Visual Feedback 1772133242563 Medium" [ref=e1587] [cursor=pointer]:
+                      - generic [ref=e1589] [cursor=pointer]: Visual Feedback 1772133242563
+                      - generic [ref=e1592] [cursor=pointer]: Medium
+                  - generic [ref=e1593]:
+                    - checkbox [ref=e1594] [cursor=pointer]
+                    - button "Selection Mode 1772133242216 Medium" [ref=e1595] [cursor=pointer]:
+                      - generic [ref=e1597] [cursor=pointer]: Selection Mode 1772133242216
+                      - generic [ref=e1600] [cursor=pointer]: Medium
+                  - generic [ref=e1601]:
+                    - checkbox [ref=e1602] [cursor=pointer]
+                    - button "Drag Persist 1772133227819 Medium" [ref=e1603] [cursor=pointer]:
+                      - generic [ref=e1605] [cursor=pointer]: Drag Persist 1772133227819
+                      - generic [ref=e1608] [cursor=pointer]: Medium
+                  - generic [ref=e1609]:
+                    - checkbox [ref=e1610] [cursor=pointer]
+                    - button "Drag To Done 1772133225388 Medium" [ref=e1611] [cursor=pointer]:
+                      - generic [ref=e1613] [cursor=pointer]: Drag To Done 1772133225388
+                      - generic [ref=e1616] [cursor=pointer]: Medium
+                  - generic [ref=e1617]:
+                    - checkbox [ref=e1618] [cursor=pointer]
+                    - button "Drag To Waiting 1772133215765 Medium" [ref=e1619] [cursor=pointer]:
+                      - generic [ref=e1621] [cursor=pointer]: Drag To Waiting 1772133215765
+                      - generic [ref=e1624] [cursor=pointer]: Medium
+                  - generic [ref=e1625]:
+                    - checkbox [ref=e1626] [cursor=pointer]
+                    - button "Drag To Progress 1772133214199 Medium" [ref=e1627] [cursor=pointer]:
+                      - generic [ref=e1629] [cursor=pointer]: Drag To Progress 1772133214199
+                      - generic [ref=e1632] [cursor=pointer]: Medium
+                  - generic [ref=e1633]:
+                    - checkbox [ref=e1634] [cursor=pointer]
+                    - button "Visual Feedback 1772133173136 Medium" [ref=e1635] [cursor=pointer]:
+                      - generic [ref=e1637] [cursor=pointer]: Visual Feedback 1772133173136
+                      - generic [ref=e1640] [cursor=pointer]: Medium
+                  - generic [ref=e1641]:
+                    - checkbox [ref=e1642] [cursor=pointer]
+                    - button "Selection Mode 1772133171217 Medium" [ref=e1643] [cursor=pointer]:
+                      - generic [ref=e1645] [cursor=pointer]: Selection Mode 1772133171217
+                      - generic [ref=e1648] [cursor=pointer]: Medium
+                  - generic [ref=e1649]:
+                    - checkbox [ref=e1650] [cursor=pointer]
+                    - button "Drag To Waiting 1772133161841 Medium" [ref=e1651] [cursor=pointer]:
+                      - generic [ref=e1653] [cursor=pointer]: Drag To Waiting 1772133161841
+                      - generic [ref=e1656] [cursor=pointer]: Medium
+                  - generic [ref=e1657]:
+                    - checkbox [ref=e1658] [cursor=pointer]
+                    - button "Drag Persist 1772133161503 Medium" [ref=e1659] [cursor=pointer]:
+                      - generic [ref=e1661] [cursor=pointer]: Drag Persist 1772133161503
+                      - generic [ref=e1664] [cursor=pointer]: Medium
+                  - generic [ref=e1665]:
+                    - checkbox [ref=e1666] [cursor=pointer]
+                    - button "Drag To Done 1772133160940 Medium" [ref=e1667] [cursor=pointer]:
+                      - generic [ref=e1669] [cursor=pointer]: Drag To Done 1772133160940
+                      - generic [ref=e1672] [cursor=pointer]: Medium
+                  - generic [ref=e1673]:
+                    - checkbox [ref=e1674] [cursor=pointer]
+                    - button "Drag To Progress 1772133159985 Medium" [ref=e1675] [cursor=pointer]:
+                      - generic [ref=e1677] [cursor=pointer]: Drag To Progress 1772133159985
+                      - generic [ref=e1680] [cursor=pointer]: Medium
+                  - generic [ref=e1681]:
+                    - checkbox [ref=e1682] [cursor=pointer]
+                    - button "Visual Feedback 1772133029056 Medium" [ref=e1683] [cursor=pointer]:
+                      - generic [ref=e1685] [cursor=pointer]: Visual Feedback 1772133029056
+                      - generic [ref=e1688] [cursor=pointer]: Medium
+                  - generic [ref=e1689]:
+                    - checkbox [ref=e1690] [cursor=pointer]
+                    - button "Selection Mode 1772133022439 Medium" [ref=e1691] [cursor=pointer]:
+                      - generic [ref=e1693] [cursor=pointer]: Selection Mode 1772133022439
+                      - generic [ref=e1696] [cursor=pointer]: Medium
+                  - generic [ref=e1697]:
+                    - checkbox [ref=e1698] [cursor=pointer]
+                    - button "Drag Persist 1772133013576 Medium" [ref=e1699] [cursor=pointer]:
+                      - generic [ref=e1701] [cursor=pointer]: Drag Persist 1772133013576
+                      - generic [ref=e1704] [cursor=pointer]: Medium
+                  - generic [ref=e1705]:
+                    - checkbox [ref=e1706] [cursor=pointer]
+                    - button "Drag To Done 1772133010873 Medium" [ref=e1707] [cursor=pointer]:
+                      - generic [ref=e1709] [cursor=pointer]: Drag To Done 1772133010873
+                      - generic [ref=e1712] [cursor=pointer]: Medium
+                  - generic [ref=e1713]:
+                    - checkbox [ref=e1714] [cursor=pointer]
+                    - button "Drag To Waiting 1772133001973 Medium" [ref=e1715] [cursor=pointer]:
+                      - generic [ref=e1717] [cursor=pointer]: Drag To Waiting 1772133001973
+                      - generic [ref=e1720] [cursor=pointer]: Medium
+                  - generic [ref=e1721]:
+                    - checkbox [ref=e1722] [cursor=pointer]
+                    - button "Drag To Progress 1772132999942 Medium" [ref=e1723] [cursor=pointer]:
+                      - generic [ref=e1725] [cursor=pointer]: Drag To Progress 1772132999942
+                      - generic [ref=e1728] [cursor=pointer]: Medium
+                  - generic [ref=e1729]:
+                    - checkbox [ref=e1730] [cursor=pointer]
+                    - button "Visual Feedback 1772132959248 Medium" [ref=e1731] [cursor=pointer]:
+                      - generic [ref=e1733] [cursor=pointer]: Visual Feedback 1772132959248
+                      - generic [ref=e1736] [cursor=pointer]: Medium
+                  - generic [ref=e1737]:
+                    - checkbox [ref=e1738] [cursor=pointer]
+                    - button "Selection Mode 1772132958944 Medium" [ref=e1739] [cursor=pointer]:
+                      - generic [ref=e1741] [cursor=pointer]: Selection Mode 1772132958944
+                      - generic [ref=e1744] [cursor=pointer]: Medium
+                  - generic [ref=e1745]:
+                    - checkbox [ref=e1746] [cursor=pointer]
+                    - button "Drag To Waiting 1772132947666 Medium" [ref=e1747] [cursor=pointer]:
+                      - generic [ref=e1749] [cursor=pointer]: Drag To Waiting 1772132947666
+                      - generic [ref=e1752] [cursor=pointer]: Medium
+                  - generic [ref=e1753]:
+                    - checkbox [ref=e1754] [cursor=pointer]
+                    - button "Drag Persist 1772132947547 Medium" [ref=e1755] [cursor=pointer]:
+                      - generic [ref=e1757] [cursor=pointer]: Drag Persist 1772132947547
+                      - generic [ref=e1760] [cursor=pointer]: Medium
+                  - generic [ref=e1761]:
+                    - checkbox [ref=e1762] [cursor=pointer]
+                    - button "Drag To Progress 1772132947437 Medium" [ref=e1763] [cursor=pointer]:
+                      - generic [ref=e1765] [cursor=pointer]: Drag To Progress 1772132947437
+                      - generic [ref=e1768] [cursor=pointer]: Medium
+                  - generic [ref=e1769]:
+                    - checkbox [ref=e1770] [cursor=pointer]
+                    - button "Drag To Done 1772132947407 Medium" [ref=e1771] [cursor=pointer]:
+                      - generic [ref=e1773] [cursor=pointer]: Drag To Done 1772132947407
+                      - generic [ref=e1776] [cursor=pointer]: Medium
+                  - generic [ref=e1777]:
+                    - checkbox [ref=e1778] [cursor=pointer]
+                    - button "Calendar Drag 1772067736216 Medium" [ref=e1779] [cursor=pointer]:
+                      - generic [ref=e1781] [cursor=pointer]: Calendar Drag 1772067736216
+                      - generic [ref=e1784] [cursor=pointer]: Medium
+                  - generic [ref=e1785]:
+                    - checkbox [ref=e1786] [cursor=pointer]
+                    - button "Calendar Drag 1772067457675 Medium" [ref=e1787] [cursor=pointer]:
+                      - generic [ref=e1789] [cursor=pointer]: Calendar Drag 1772067457675
+                      - generic [ref=e1792] [cursor=pointer]: Medium
+                  - generic [ref=e1793]:
+                    - checkbox [ref=e1794] [cursor=pointer]
+                    - button "Visual Feedback 1772067436698 Medium" [ref=e1795] [cursor=pointer]:
+                      - generic [ref=e1797] [cursor=pointer]: Visual Feedback 1772067436698
+                      - generic [ref=e1800] [cursor=pointer]: Medium
+                  - generic [ref=e1801]:
+                    - checkbox [ref=e1802] [cursor=pointer]
+                    - button "Selection Mode 1772067436181 Medium" [ref=e1803] [cursor=pointer]:
+                      - generic [ref=e1805] [cursor=pointer]: Selection Mode 1772067436181
+                      - generic [ref=e1808] [cursor=pointer]: Medium
+                  - generic [ref=e1809]:
+                    - checkbox [ref=e1810] [cursor=pointer]
+                    - button "Drag To Done 1772067425882 Medium" [ref=e1811] [cursor=pointer]:
+                      - generic [ref=e1813] [cursor=pointer]: Drag To Done 1772067425882
+                      - generic [ref=e1816] [cursor=pointer]: Medium
+                  - generic [ref=e1817]:
+                    - checkbox [ref=e1818] [cursor=pointer]
+                    - button "Drag To Progress 1772067425364 Medium" [ref=e1819] [cursor=pointer]:
+                      - generic [ref=e1821] [cursor=pointer]: Drag To Progress 1772067425364
+                      - generic [ref=e1824] [cursor=pointer]: Medium
+                  - generic [ref=e1825]:
+                    - checkbox [ref=e1826] [cursor=pointer]
+                    - button "Drag To Waiting 1772067424747 Medium" [ref=e1827] [cursor=pointer]:
+                      - generic [ref=e1829] [cursor=pointer]: Drag To Waiting 1772067424747
+                      - generic [ref=e1832] [cursor=pointer]: Medium
+                  - generic [ref=e1833]:
+                    - checkbox [ref=e1834] [cursor=pointer]
+                    - button "Drag Persist 1772067424394 Medium" [ref=e1835] [cursor=pointer]:
+                      - generic [ref=e1837] [cursor=pointer]: Drag Persist 1772067424394
+                      - generic [ref=e1840] [cursor=pointer]: Medium
+                  - generic [ref=e1841]:
+                    - checkbox [ref=e1842] [cursor=pointer]
+                    - button "BB Task 1772067117166 Medium" [ref=e1843] [cursor=pointer]:
+                      - generic [ref=e1845] [cursor=pointer]: BB Task 1772067117166
+                      - generic [ref=e1848] [cursor=pointer]: Medium
+                  - generic [ref=e1849]:
+                    - checkbox [ref=e1850] [cursor=pointer]
+                    - button "AA Task 1772067117166 Medium" [ref=e1851] [cursor=pointer]:
+                      - generic [ref=e1853] [cursor=pointer]: AA Task 1772067117166
+                      - generic [ref=e1856] [cursor=pointer]: Medium
+                  - generic [ref=e1857]:
+                    - checkbox [ref=e1858] [cursor=pointer]
+                    - button "Calendar Drag 1772067109782 Medium" [ref=e1859] [cursor=pointer]:
+                      - generic [ref=e1861] [cursor=pointer]: Calendar Drag 1772067109782
+                      - generic [ref=e1864] [cursor=pointer]: Medium
+                  - generic [ref=e1865]:
+                    - checkbox [ref=e1866] [cursor=pointer]
+                    - button "Visual Feedback 1772067109346 Medium" [ref=e1867] [cursor=pointer]:
+                      - generic [ref=e1869] [cursor=pointer]: Visual Feedback 1772067109346
+                      - generic [ref=e1872] [cursor=pointer]: Medium
+                  - generic [ref=e1873]:
+                    - checkbox [ref=e1874] [cursor=pointer]
+                    - button "Selection Mode 1772067105900 Medium" [ref=e1875] [cursor=pointer]:
+                      - generic [ref=e1877] [cursor=pointer]: Selection Mode 1772067105900
+                      - generic [ref=e1880] [cursor=pointer]: Medium
+                  - generic [ref=e1881]:
+                    - checkbox [ref=e1882] [cursor=pointer]
+                    - button "Drag Persist 1772067103399 Medium" [ref=e1883] [cursor=pointer]:
+                      - generic [ref=e1885] [cursor=pointer]: Drag Persist 1772067103399
+                      - generic [ref=e1888] [cursor=pointer]: Medium
+                  - generic [ref=e1889]:
+                    - checkbox [ref=e1890] [cursor=pointer]
+                    - button "Drag To Done 1772067099203 Medium" [ref=e1891] [cursor=pointer]:
+                      - generic [ref=e1893] [cursor=pointer]: Drag To Done 1772067099203
+                      - generic [ref=e1896] [cursor=pointer]: Medium
+                  - generic [ref=e1897]:
+                    - checkbox [ref=e1898] [cursor=pointer]
+                    - button "Drag To Waiting 1772067097951 Medium" [ref=e1899] [cursor=pointer]:
+                      - generic [ref=e1901] [cursor=pointer]: Drag To Waiting 1772067097951
+                      - generic [ref=e1904] [cursor=pointer]: Medium
+                  - generic [ref=e1905]:
+                    - checkbox [ref=e1906] [cursor=pointer]
+                    - button "Drag To Progress 1772067088453 Medium" [ref=e1907] [cursor=pointer]:
+                      - generic [ref=e1909] [cursor=pointer]: Drag To Progress 1772067088453
+                      - generic [ref=e1912] [cursor=pointer]: Medium
+                  - generic [ref=e1913]:
+                    - checkbox [ref=e1914] [cursor=pointer]
+                    - button "Persist2 1772067084420 Medium" [ref=e1915] [cursor=pointer]:
+                      - generic [ref=e1917] [cursor=pointer]: Persist2 1772067084420
+                      - generic [ref=e1920] [cursor=pointer]: Medium
+                  - generic [ref=e1921]:
+                    - checkbox [ref=e1922] [cursor=pointer]
+                    - button "Persist1 1772067084420 Medium" [ref=e1923] [cursor=pointer]:
+                      - generic [ref=e1925] [cursor=pointer]: Persist1 1772067084420
+                      - generic [ref=e1928] [cursor=pointer]: Medium
+                  - generic [ref=e1929]:
+                    - checkbox [ref=e1930] [cursor=pointer]
+                    - button "Multi3 1772067081822 Medium" [ref=e1931] [cursor=pointer]:
+                      - generic [ref=e1933] [cursor=pointer]: Multi3 1772067081822
+                      - generic [ref=e1936] [cursor=pointer]: Medium
+                  - generic [ref=e1937]:
+                    - checkbox [ref=e1938] [cursor=pointer]
+                    - button "Single2 1772067081991 Medium" [ref=e1939] [cursor=pointer]:
+                      - generic [ref=e1941] [cursor=pointer]: Single2 1772067081991
+                      - generic [ref=e1944] [cursor=pointer]: Medium
+                  - generic [ref=e1945]:
+                    - checkbox [ref=e1946] [cursor=pointer]
+                    - button "Multi2 1772067081822 Medium" [ref=e1947] [cursor=pointer]:
+                      - generic [ref=e1949] [cursor=pointer]: Multi2 1772067081822
+                      - generic [ref=e1952] [cursor=pointer]: Medium
+                  - generic [ref=e1953]:
+                    - checkbox [ref=e1954] [cursor=pointer]
+                    - button "Badge2 1772067081705 Medium" [ref=e1955] [cursor=pointer]:
+                      - generic [ref=e1957] [cursor=pointer]: Badge2 1772067081705
+                      - generic [ref=e1960] [cursor=pointer]: Medium
+                  - generic [ref=e1961]:
+                    - checkbox [ref=e1962] [cursor=pointer]
+                    - button "Single1 1772067081991 Medium" [ref=e1963] [cursor=pointer]:
+                      - generic [ref=e1965] [cursor=pointer]: Single1 1772067081991
+                      - generic [ref=e1968] [cursor=pointer]: Medium
+                  - generic [ref=e1969]:
+                    - checkbox [ref=e1970] [cursor=pointer]
+                    - button "Multi1 1772067081822 Medium" [ref=e1971] [cursor=pointer]:
+                      - generic [ref=e1973] [cursor=pointer]: Multi1 1772067081822
+                      - generic [ref=e1976] [cursor=pointer]: Medium
+                  - generic [ref=e1977]:
+                    - checkbox [ref=e1978] [cursor=pointer]
+                    - button "Badge1 1772067081705 Medium" [ref=e1979] [cursor=pointer]:
+                      - generic [ref=e1981] [cursor=pointer]: Badge1 1772067081705
+                      - generic [ref=e1984] [cursor=pointer]: Medium
+                  - generic [ref=e1985]:
+                    - checkbox [ref=e1986] [cursor=pointer]
+                    - button "Calendar Drag 1772066779394 Medium" [ref=e1987] [cursor=pointer]:
+                      - generic [ref=e1989] [cursor=pointer]: Calendar Drag 1772066779394
+                      - generic [ref=e1992] [cursor=pointer]: Medium
+                  - generic [ref=e1993]:
+                    - checkbox [ref=e1994] [cursor=pointer]
+                    - button "Calendar Drag 1772066420944 Medium" [ref=e1995] [cursor=pointer]:
+                      - generic [ref=e1997] [cursor=pointer]: Calendar Drag 1772066420944
+                      - generic [ref=e2000] [cursor=pointer]: Medium
+                  - generic [ref=e2001]:
+                    - checkbox [ref=e2002] [cursor=pointer]
+                    - button "Calendar Drag 1772066414975 Medium" [ref=e2003] [cursor=pointer]:
+                      - generic [ref=e2005] [cursor=pointer]: Calendar Drag 1772066414975
+                      - generic [ref=e2008] [cursor=pointer]: Medium
+                  - generic [ref=e2009]:
+                    - checkbox [ref=e2010] [cursor=pointer]
+                    - button "Calendar Drag 1772066413632 Medium" [ref=e2011] [cursor=pointer]:
+                      - generic [ref=e2013] [cursor=pointer]: Calendar Drag 1772066413632
+                      - generic [ref=e2016] [cursor=pointer]: Medium
+                  - generic [ref=e2017]:
+                    - checkbox [ref=e2018] [cursor=pointer]
+                    - button "BB Task 1772066125485 Medium" [ref=e2019] [cursor=pointer]:
+                      - generic [ref=e2021] [cursor=pointer]: BB Task 1772066125485
+                      - generic [ref=e2024] [cursor=pointer]: Medium
+                  - generic [ref=e2025]:
+                    - checkbox [ref=e2026] [cursor=pointer]
+                    - button "AA Task 1772066125485 Medium" [ref=e2027] [cursor=pointer]:
+                      - generic [ref=e2029] [cursor=pointer]: AA Task 1772066125485
+                      - generic [ref=e2032] [cursor=pointer]: Medium
+                  - generic [ref=e2033]:
+                    - checkbox [ref=e2034] [cursor=pointer]
+                    - button "Calendar Drag 1772066120182 Medium" [ref=e2035] [cursor=pointer]:
+                      - generic [ref=e2037] [cursor=pointer]: Calendar Drag 1772066120182
+                      - generic [ref=e2040] [cursor=pointer]: Medium
+                  - generic [ref=e2041]:
+                    - checkbox [ref=e2042] [cursor=pointer]
+                    - button "Visual Feedback 1772066116977 Medium" [ref=e2043] [cursor=pointer]:
+                      - generic [ref=e2045] [cursor=pointer]: Visual Feedback 1772066116977
+                      - generic [ref=e2048] [cursor=pointer]: Medium
+                  - generic [ref=e2049]:
+                    - checkbox [ref=e2050] [cursor=pointer]
+                    - button "Selection Mode 1772066116307 Medium" [ref=e2051] [cursor=pointer]:
+                      - generic [ref=e2053] [cursor=pointer]: Selection Mode 1772066116307
+                      - generic [ref=e2056] [cursor=pointer]: Medium
+                  - generic [ref=e2057]:
+                    - checkbox [ref=e2058] [cursor=pointer]
+                    - button "Drag Persist 1772066110759 Medium" [ref=e2059] [cursor=pointer]:
+                      - generic [ref=e2061] [cursor=pointer]: Drag Persist 1772066110759
+                      - generic [ref=e2064] [cursor=pointer]: Medium
+                  - generic [ref=e2065]:
+                    - checkbox [ref=e2066] [cursor=pointer]
+                    - button "Drag To Done 1772066110615 Medium" [ref=e2067] [cursor=pointer]:
+                      - generic [ref=e2069] [cursor=pointer]: Drag To Done 1772066110615
+                      - generic [ref=e2072] [cursor=pointer]: Medium
+                  - generic [ref=e2073]:
+                    - checkbox [ref=e2074] [cursor=pointer]
+                    - button "Drag To Waiting 1772066105921 Medium" [ref=e2075] [cursor=pointer]:
+                      - generic [ref=e2077] [cursor=pointer]: Drag To Waiting 1772066105921
+                      - generic [ref=e2080] [cursor=pointer]: Medium
+                  - generic [ref=e2081]:
+                    - checkbox [ref=e2082] [cursor=pointer]
+                    - button "Drag To Progress 1772066100737 Medium" [ref=e2083] [cursor=pointer]:
+                      - generic [ref=e2085] [cursor=pointer]: Drag To Progress 1772066100737
+                      - generic [ref=e2088] [cursor=pointer]: Medium
+                  - generic [ref=e2089]:
+                    - checkbox [ref=e2090] [cursor=pointer]
+                    - button "Persist2 1772066094797 Medium" [ref=e2091] [cursor=pointer]:
+                      - generic [ref=e2093] [cursor=pointer]: Persist2 1772066094797
+                      - generic [ref=e2096] [cursor=pointer]: Medium
+                  - generic [ref=e2097]:
+                    - checkbox [ref=e2098] [cursor=pointer]
+                    - button "Persist1 1772066094797 Medium" [ref=e2099] [cursor=pointer]:
+                      - generic [ref=e2101] [cursor=pointer]: Persist1 1772066094797
+                      - generic [ref=e2104] [cursor=pointer]: Medium
+                  - generic [ref=e2105]:
+                    - checkbox [ref=e2106] [cursor=pointer]
+                    - button "Multi3 1772066091368 Medium" [ref=e2107] [cursor=pointer]:
+                      - generic [ref=e2109] [cursor=pointer]: Multi3 1772066091368
+                      - generic [ref=e2112] [cursor=pointer]: Medium
+                  - generic [ref=e2113]:
+                    - checkbox [ref=e2114] [cursor=pointer]
+                    - button "Badge2 1772066091577 Medium" [ref=e2115] [cursor=pointer]:
+                      - generic [ref=e2117] [cursor=pointer]: Badge2 1772066091577
+                      - generic [ref=e2120] [cursor=pointer]: Medium
+                  - generic [ref=e2121]:
+                    - checkbox [ref=e2122] [cursor=pointer]
+                    - button "Multi2 1772066091368 Medium" [ref=e2123] [cursor=pointer]:
+                      - generic [ref=e2125] [cursor=pointer]: Multi2 1772066091368
+                      - generic [ref=e2128] [cursor=pointer]: Medium
+                  - generic [ref=e2129]:
+                    - checkbox [ref=e2130] [cursor=pointer]
+                    - button "Single2 1772066091070 Medium" [ref=e2131] [cursor=pointer]:
+                      - generic [ref=e2133] [cursor=pointer]: Single2 1772066091070
+                      - generic [ref=e2136] [cursor=pointer]: Medium
+                  - generic [ref=e2137]:
+                    - checkbox [ref=e2138] [cursor=pointer]
+                    - button "Badge1 1772066091577 Medium" [ref=e2139] [cursor=pointer]:
+                      - generic [ref=e2141] [cursor=pointer]: Badge1 1772066091577
+                      - generic [ref=e2144] [cursor=pointer]: Medium
+                  - generic [ref=e2145]:
+                    - checkbox [ref=e2146] [cursor=pointer]
+                    - button "Multi1 1772066091368 Medium" [ref=e2147] [cursor=pointer]:
+                      - generic [ref=e2149] [cursor=pointer]: Multi1 1772066091368
+                      - generic [ref=e2152] [cursor=pointer]: Medium
+                  - generic [ref=e2153]:
+                    - checkbox [ref=e2154] [cursor=pointer]
+                    - button "Single1 1772066091070 Medium" [ref=e2155] [cursor=pointer]:
+                      - generic [ref=e2157] [cursor=pointer]: Single1 1772066091070
+                      - generic [ref=e2160] [cursor=pointer]: Medium
+                  - generic [ref=e2161]:
+                    - checkbox [ref=e2162] [cursor=pointer]
+                    - button "Calendar Drag 1772061300435 Medium" [ref=e2163] [cursor=pointer]:
+                      - generic [ref=e2165] [cursor=pointer]: Calendar Drag 1772061300435
+                      - generic [ref=e2168] [cursor=pointer]: Medium
+                  - generic [ref=e2169]:
+                    - checkbox [ref=e2170] [cursor=pointer]
+                    - button "Visual Feedback 1772061247215 Medium" [ref=e2171] [cursor=pointer]:
+                      - generic [ref=e2173] [cursor=pointer]: Visual Feedback 1772061247215
+                      - generic [ref=e2176] [cursor=pointer]: Medium
+                  - generic [ref=e2177]:
+                    - checkbox [ref=e2178] [cursor=pointer]
+                    - button "Selection Mode 1772061245231 Medium" [ref=e2179] [cursor=pointer]:
+                      - generic [ref=e2181] [cursor=pointer]: Selection Mode 1772061245231
+                      - generic [ref=e2184] [cursor=pointer]: Medium
+                  - generic [ref=e2185]:
+                    - checkbox [ref=e2186] [cursor=pointer]
+                    - button "Drag Persist 1772061237483 Medium" [ref=e2187] [cursor=pointer]:
+                      - generic [ref=e2189] [cursor=pointer]: Drag Persist 1772061237483
+                      - generic [ref=e2192] [cursor=pointer]: Medium
+                  - generic [ref=e2193]:
+                    - checkbox [ref=e2194] [cursor=pointer]
+                    - button "Drag To Done 1772061237164 Medium" [ref=e2195] [cursor=pointer]:
+                      - generic [ref=e2197] [cursor=pointer]: Drag To Done 1772061237164
+                      - generic [ref=e2200] [cursor=pointer]: Medium
+                  - generic [ref=e2201]:
+                    - checkbox [ref=e2202] [cursor=pointer]
+                    - button "Drag To Waiting 1772061236499 Medium" [ref=e2203] [cursor=pointer]:
+                      - generic [ref=e2205] [cursor=pointer]: Drag To Waiting 1772061236499
+                      - generic [ref=e2208] [cursor=pointer]: Medium
+                  - generic [ref=e2209]:
+                    - checkbox [ref=e2210] [cursor=pointer]
+                    - button "Drag To Progress 1772061235986 Medium" [ref=e2211] [cursor=pointer]:
+                      - generic [ref=e2213] [cursor=pointer]: Drag To Progress 1772061235986
+                      - generic [ref=e2216] [cursor=pointer]: Medium
+                  - generic [ref=e2217]:
+                    - checkbox [ref=e2218] [cursor=pointer]
+                    - button "Calendar Drag 1772060036235 Medium" [ref=e2219] [cursor=pointer]:
+                      - generic [ref=e2221] [cursor=pointer]: Calendar Drag 1772060036235
+                      - generic [ref=e2224] [cursor=pointer]: Medium
+                  - generic [ref=e2225]:
+                    - checkbox [ref=e2226] [cursor=pointer]
+                    - button "Calendar Drag 1772059780614 Medium" [ref=e2227] [cursor=pointer]:
+                      - generic [ref=e2229] [cursor=pointer]: Calendar Drag 1772059780614
+                      - generic [ref=e2232] [cursor=pointer]: Medium
+                  - generic [ref=e2233]:
+                    - checkbox [ref=e2234] [cursor=pointer]
+                    - button "Calendar Drag 1772059402165 Medium" [ref=e2235] [cursor=pointer]:
+                      - generic [ref=e2237] [cursor=pointer]: Calendar Drag 1772059402165
+                      - generic [ref=e2240] [cursor=pointer]: Medium
+                  - generic [ref=e2241]:
+                    - checkbox [ref=e2242] [cursor=pointer]
+                    - button "Calendar Drag 1772059142076 Medium" [ref=e2243] [cursor=pointer]:
+                      - generic [ref=e2245] [cursor=pointer]: Calendar Drag 1772059142076
+                      - generic [ref=e2248] [cursor=pointer]: Medium
+                  - generic [ref=e2249]:
+                    - checkbox [ref=e2250] [cursor=pointer]
+                    - button "Calendar Drag 1772058697663 Medium" [ref=e2251] [cursor=pointer]:
+                      - generic [ref=e2253] [cursor=pointer]: Calendar Drag 1772058697663
+                      - generic [ref=e2256] [cursor=pointer]: Medium
+                  - generic [ref=e2257]:
+                    - checkbox [ref=e2258] [cursor=pointer]
+                    - button "Calendar Drag 1772058690565 Medium" [ref=e2259] [cursor=pointer]:
+                      - generic [ref=e2261] [cursor=pointer]: Calendar Drag 1772058690565
+                      - generic [ref=e2264] [cursor=pointer]: Medium
+                  - generic [ref=e2265]:
+                    - checkbox [ref=e2266] [cursor=pointer]
+                    - button "Calendar Drag 1772058526135 Medium" [ref=e2267] [cursor=pointer]:
+                      - generic [ref=e2269] [cursor=pointer]: Calendar Drag 1772058526135
+                      - generic [ref=e2272] [cursor=pointer]: Medium
+                  - generic [ref=e2273]:
+                    - checkbox [ref=e2274] [cursor=pointer]
+                    - button "Count Test Task 1772057360067 Medium" [ref=e2275] [cursor=pointer]:
+                      - generic [ref=e2277] [cursor=pointer]: Count Test Task 1772057360067
+                      - generic [ref=e2280] [cursor=pointer]: Medium
+                  - generic [ref=e2281]:
+                    - checkbox [ref=e2282] [cursor=pointer]
+                    - button "Priority Test Task 1772057351521 Medium" [ref=e2283] [cursor=pointer]:
+                      - generic [ref=e2285] [cursor=pointer]: Priority Test Task 1772057351521
+                      - generic [ref=e2288] [cursor=pointer]: Medium
+                  - generic [ref=e2289]:
+                    - checkbox [ref=e2290] [cursor=pointer]
+                    - button "Task to Edit 1772057351139 Medium" [ref=e2291] [cursor=pointer]:
+                      - generic [ref=e2293] [cursor=pointer]: Task to Edit 1772057351139
+                      - generic [ref=e2296] [cursor=pointer]: Medium
+                  - generic [ref=e2297]:
+                    - checkbox [ref=e2298] [cursor=pointer]
+                    - button "E2E Test Task 1772057350507 Medium" [ref=e2299] [cursor=pointer]:
+                      - generic [ref=e2301] [cursor=pointer]: E2E Test Task 1772057350507
+                      - generic [ref=e2304] [cursor=pointer]: Medium
+                  - generic [ref=e2305]:
+                    - checkbox [ref=e2306] [cursor=pointer]
+                    - button "Visual Feedback 1772057327301 Medium" [ref=e2307] [cursor=pointer]:
+                      - generic [ref=e2309] [cursor=pointer]: Visual Feedback 1772057327301
+                      - generic [ref=e2312] [cursor=pointer]: Medium
+                  - generic [ref=e2313]:
+                    - checkbox [ref=e2314] [cursor=pointer]
+                    - button "Selection Mode 1772057322191 Medium" [ref=e2315] [cursor=pointer]:
+                      - generic [ref=e2317] [cursor=pointer]: Selection Mode 1772057322191
+                      - generic [ref=e2320] [cursor=pointer]: Medium
+                  - generic [ref=e2321]:
+                    - checkbox [ref=e2322] [cursor=pointer]
+                    - button "Drag Persist 1772057320124 Medium" [ref=e2323] [cursor=pointer]:
+                      - generic [ref=e2325] [cursor=pointer]: Drag Persist 1772057320124
+                      - generic [ref=e2328] [cursor=pointer]: Medium
+                  - generic [ref=e2329]:
+                    - checkbox [ref=e2330] [cursor=pointer]
+                    - button "Drag To Done 1772057318853 Medium" [ref=e2331] [cursor=pointer]:
+                      - generic [ref=e2333] [cursor=pointer]: Drag To Done 1772057318853
+                      - generic [ref=e2336] [cursor=pointer]: Medium
+                  - generic [ref=e2337]:
+                    - checkbox [ref=e2338] [cursor=pointer]
+                    - button "Drag To Waiting 1772057317464 Medium" [ref=e2339] [cursor=pointer]:
+                      - generic [ref=e2341] [cursor=pointer]: Drag To Waiting 1772057317464
+                      - generic [ref=e2344] [cursor=pointer]: Medium
+                  - generic [ref=e2345]:
+                    - checkbox [ref=e2346] [cursor=pointer]
+                    - button "Drag To Progress 1772057310974 Medium" [ref=e2347] [cursor=pointer]:
+                      - generic [ref=e2349] [cursor=pointer]: Drag To Progress 1772057310974
+                      - generic [ref=e2352] [cursor=pointer]: Medium
+                  - generic [ref=e2353]:
+                    - checkbox [ref=e2354] [cursor=pointer]
+                    - button "Persist2 1772057304145 Medium" [ref=e2355] [cursor=pointer]:
+                      - generic [ref=e2357] [cursor=pointer]: Persist2 1772057304145
+                      - generic [ref=e2360] [cursor=pointer]: Medium
+                  - generic [ref=e2361]:
+                    - checkbox [ref=e2362] [cursor=pointer]
+                    - button "Single2 1772057303754 Medium" [ref=e2363] [cursor=pointer]:
+                      - generic [ref=e2365] [cursor=pointer]: Single2 1772057303754
+                      - generic [ref=e2368] [cursor=pointer]: Medium
+                  - generic [ref=e2369]:
+                    - checkbox [ref=e2370] [cursor=pointer]
+                    - button "Badge2 1772057303793 Medium" [ref=e2371] [cursor=pointer]:
+                      - generic [ref=e2373] [cursor=pointer]: Badge2 1772057303793
+                      - generic [ref=e2376] [cursor=pointer]: Medium
+                  - generic [ref=e2377]:
+                    - checkbox [ref=e2378] [cursor=pointer]
+                    - button "Persist1 1772057304145 Medium" [ref=e2379] [cursor=pointer]:
+                      - generic [ref=e2381] [cursor=pointer]: Persist1 1772057304145
+                      - generic [ref=e2384] [cursor=pointer]: Medium
+                  - generic [ref=e2385]:
+                    - checkbox [ref=e2386] [cursor=pointer]
+                    - button "Single1 1772057303754 Medium" [ref=e2387] [cursor=pointer]:
+                      - generic [ref=e2389] [cursor=pointer]: Single1 1772057303754
+                      - generic [ref=e2392] [cursor=pointer]: Medium
+                  - generic [ref=e2393]:
+                    - checkbox [ref=e2394] [cursor=pointer]
+                    - button "Badge1 1772057303793 Medium" [ref=e2395] [cursor=pointer]:
+                      - generic [ref=e2397] [cursor=pointer]: Badge1 1772057303793
+                      - generic [ref=e2400] [cursor=pointer]: Medium
+                  - generic [ref=e2401]:
+                    - checkbox [ref=e2402] [cursor=pointer]
+                    - button "Multi3 1772057302341 Medium" [ref=e2403] [cursor=pointer]:
+                      - generic [ref=e2405] [cursor=pointer]: Multi3 1772057302341
+                      - generic [ref=e2408] [cursor=pointer]: Medium
+                  - generic [ref=e2409]:
+                    - checkbox [ref=e2410] [cursor=pointer]
+                    - button "Multi2 1772057302341 Medium" [ref=e2411] [cursor=pointer]:
+                      - generic [ref=e2413] [cursor=pointer]: Multi2 1772057302341
+                      - generic [ref=e2416] [cursor=pointer]: Medium
+                  - generic [ref=e2417]:
+                    - checkbox [ref=e2418] [cursor=pointer]
+                    - button "Multi1 1772057302341 Medium" [ref=e2419] [cursor=pointer]:
+                      - generic [ref=e2421] [cursor=pointer]: Multi1 1772057302341
+                      - generic [ref=e2424] [cursor=pointer]: Medium
+                  - generic [ref=e2425]:
+                    - checkbox [ref=e2426] [cursor=pointer]
+                    - button "Calendar Drag 1772057222721 Medium" [ref=e2427] [cursor=pointer]:
+                      - generic [ref=e2429] [cursor=pointer]: Calendar Drag 1772057222721
+                      - generic [ref=e2432] [cursor=pointer]: Medium
+                  - generic [ref=e2433]:
+                    - checkbox [ref=e2434] [cursor=pointer]
+                    - button "Calendar Drag 1772057169591 Medium" [ref=e2435] [cursor=pointer]:
+                      - generic [ref=e2437] [cursor=pointer]: Calendar Drag 1772057169591
+                      - generic [ref=e2440] [cursor=pointer]: Medium
+                  - generic [ref=e2441]:
+                    - checkbox [ref=e2442] [cursor=pointer]
+                    - button "Count Test Task 1772057138904 Medium" [ref=e2443] [cursor=pointer]:
+                      - generic [ref=e2445] [cursor=pointer]: Count Test Task 1772057138904
+                      - generic [ref=e2448] [cursor=pointer]: Medium
+                  - generic [ref=e2449]:
+                    - checkbox [ref=e2450] [cursor=pointer]
+                    - button "E2E Test Task 1772057131991 Medium" [ref=e2451] [cursor=pointer]:
+                      - generic [ref=e2453] [cursor=pointer]: E2E Test Task 1772057131991
+                      - generic [ref=e2456] [cursor=pointer]: Medium
+                  - generic [ref=e2457]:
+                    - checkbox [ref=e2458] [cursor=pointer]
+                    - button "Priority Test Task 1772057130147 Medium" [ref=e2459] [cursor=pointer]:
+                      - generic [ref=e2461] [cursor=pointer]: Priority Test Task 1772057130147
+                      - generic [ref=e2464] [cursor=pointer]: Medium
+                  - generic [ref=e2465]:
+                    - checkbox [ref=e2466] [cursor=pointer]
+                    - button "Task to Edit 1772057129941 Medium" [ref=e2467] [cursor=pointer]:
+                      - generic [ref=e2469] [cursor=pointer]: Task to Edit 1772057129941
+                      - generic [ref=e2472] [cursor=pointer]: Medium
+                  - generic [ref=e2473]:
+                    - checkbox [ref=e2474] [cursor=pointer]
+                    - button "Calendar Drag 1772057081330 Medium" [ref=e2475] [cursor=pointer]:
+                      - generic [ref=e2477] [cursor=pointer]: Calendar Drag 1772057081330
+                      - generic [ref=e2480] [cursor=pointer]: Medium
+                  - generic [ref=e2481]:
+                    - checkbox [ref=e2482] [cursor=pointer]
+                    - button "Visual Feedback 1772055429434 Medium" [ref=e2483] [cursor=pointer]:
+                      - generic [ref=e2485] [cursor=pointer]: Visual Feedback 1772055429434
+                      - generic [ref=e2488] [cursor=pointer]: Medium
+                  - generic [ref=e2489]:
+                    - checkbox [ref=e2490] [cursor=pointer]
+                    - button "Calendar Drag 1772055429327 Medium" [ref=e2491] [cursor=pointer]:
+                      - generic [ref=e2493] [cursor=pointer]: Calendar Drag 1772055429327
+                      - generic [ref=e2496] [cursor=pointer]: Medium
+                  - generic [ref=e2497]:
+                    - checkbox [ref=e2498] [cursor=pointer]
+                    - button "Selection Mode 1772055424436 Medium" [ref=e2499] [cursor=pointer]:
+                      - generic [ref=e2501] [cursor=pointer]: Selection Mode 1772055424436
+                      - generic [ref=e2504] [cursor=pointer]: Medium
+                  - generic [ref=e2505]:
+                    - checkbox [ref=e2506] [cursor=pointer]
+                    - button "Drag Persist 1772055424334 Medium" [ref=e2507] [cursor=pointer]:
+                      - generic [ref=e2509] [cursor=pointer]: Drag Persist 1772055424334
+                      - generic [ref=e2512] [cursor=pointer]: Medium
+                  - generic [ref=e2513]:
+                    - checkbox [ref=e2514] [cursor=pointer]
+                    - button "Drag To Done 1772055422548 Medium" [ref=e2515] [cursor=pointer]:
+                      - generic [ref=e2517] [cursor=pointer]: Drag To Done 1772055422548
+                      - generic [ref=e2520] [cursor=pointer]: Medium
+                  - generic [ref=e2521]:
+                    - checkbox [ref=e2522] [cursor=pointer]
+                    - button "Drag To Waiting 1772055419744 Medium" [ref=e2523] [cursor=pointer]:
+                      - generic [ref=e2525] [cursor=pointer]: Drag To Waiting 1772055419744
+                      - generic [ref=e2528] [cursor=pointer]: Medium
+                  - generic [ref=e2529]:
+                    - checkbox [ref=e2530] [cursor=pointer]
+                    - button "Drag To Progress 1772055414217 Medium" [ref=e2531] [cursor=pointer]:
+                      - generic [ref=e2533] [cursor=pointer]: Drag To Progress 1772055414217
+                      - generic [ref=e2536] [cursor=pointer]: Medium
+                  - generic [ref=e2537]:
+                    - checkbox [ref=e2538] [cursor=pointer]
+                    - button "Multi3 1772055408207 Medium" [ref=e2539] [cursor=pointer]:
+                      - generic [ref=e2541] [cursor=pointer]: Multi3 1772055408207
+                      - generic [ref=e2544] [cursor=pointer]: Medium
+                  - generic [ref=e2545]:
+                    - checkbox [ref=e2546] [cursor=pointer]
+                    - button "Multi2 1772055408207 Medium" [ref=e2547] [cursor=pointer]:
+                      - generic [ref=e2549] [cursor=pointer]: Multi2 1772055408207
+                      - generic [ref=e2552] [cursor=pointer]: Medium
+                  - generic [ref=e2553]:
+                    - checkbox [ref=e2554] [cursor=pointer]
+                    - button "Multi1 1772055408207 Medium" [ref=e2555] [cursor=pointer]:
+                      - generic [ref=e2557] [cursor=pointer]: Multi1 1772055408207
+                      - generic [ref=e2560] [cursor=pointer]: Medium
+                  - generic [ref=e2561]:
+                    - checkbox [ref=e2562] [cursor=pointer]
+                    - button "Single2 1772055407445 Medium" [ref=e2563] [cursor=pointer]:
+                      - generic [ref=e2565] [cursor=pointer]: Single2 1772055407445
+                      - generic [ref=e2568] [cursor=pointer]: Medium
+                  - generic [ref=e2569]:
+                    - checkbox [ref=e2570] [cursor=pointer]
+                    - button "Persist2 1772055407260 Medium" [ref=e2571] [cursor=pointer]:
+                      - generic [ref=e2573] [cursor=pointer]: Persist2 1772055407260
+                      - generic [ref=e2576] [cursor=pointer]: Medium
+                  - generic [ref=e2577]:
+                    - checkbox [ref=e2578] [cursor=pointer]
+                    - button "Badge2 1772055407217 Medium" [ref=e2579] [cursor=pointer]:
+                      - generic [ref=e2581] [cursor=pointer]: Badge2 1772055407217
+                      - generic [ref=e2584] [cursor=pointer]: Medium
+                  - generic [ref=e2585]:
+                    - checkbox [ref=e2586] [cursor=pointer]
+                    - button "Single1 1772055407445 Medium" [ref=e2587] [cursor=pointer]:
+                      - generic [ref=e2589] [cursor=pointer]: Single1 1772055407445
+                      - generic [ref=e2592] [cursor=pointer]: Medium
+                  - generic [ref=e2593]:
+                    - checkbox [ref=e2594] [cursor=pointer]
+                    - button "Persist1 1772055407260 Medium" [ref=e2595] [cursor=pointer]:
+                      - generic [ref=e2597] [cursor=pointer]: Persist1 1772055407260
+                      - generic [ref=e2600] [cursor=pointer]: Medium
+                  - generic [ref=e2601]:
+                    - checkbox [ref=e2602] [cursor=pointer]
+                    - button "Badge1 1772055407217 Medium" [ref=e2603] [cursor=pointer]:
+                      - generic [ref=e2605] [cursor=pointer]: Badge1 1772055407217
+                      - generic [ref=e2608] [cursor=pointer]: Medium
+                  - generic [ref=e2609]:
+                    - checkbox [ref=e2610] [cursor=pointer]
+                    - button "Count Test Task 1772055376753 Medium" [ref=e2611] [cursor=pointer]:
+                      - generic [ref=e2613] [cursor=pointer]: Count Test Task 1772055376753
+                      - generic [ref=e2616] [cursor=pointer]: Medium
+                  - generic [ref=e2617]:
+                    - checkbox [ref=e2618] [cursor=pointer]
+                    - button "E2E Test Task 1772055368897 Medium" [ref=e2619] [cursor=pointer]:
+                      - generic [ref=e2621] [cursor=pointer]: E2E Test Task 1772055368897
+                      - generic [ref=e2624] [cursor=pointer]: Medium
+                  - generic [ref=e2625]:
+                    - checkbox [ref=e2626] [cursor=pointer]
+                    - button "Task to Edit 1772055368061 Medium" [ref=e2627] [cursor=pointer]:
+                      - generic [ref=e2629] [cursor=pointer]: Task to Edit 1772055368061
+                      - generic [ref=e2632] [cursor=pointer]: Medium
+                  - generic [ref=e2633]:
+                    - checkbox [ref=e2634] [cursor=pointer]
+                    - button "Visual Feedback 1772048668861 Medium" [ref=e2635] [cursor=pointer]:
+                      - generic [ref=e2637] [cursor=pointer]: Visual Feedback 1772048668861
+                      - generic [ref=e2640] [cursor=pointer]: Medium
+                  - generic [ref=e2641]:
+                    - checkbox [ref=e2642] [cursor=pointer]
+                    - button "Selection Mode 1772048667613 Medium" [ref=e2643] [cursor=pointer]:
+                      - generic [ref=e2645] [cursor=pointer]: Selection Mode 1772048667613
+                      - generic [ref=e2648] [cursor=pointer]: Medium
+                  - generic [ref=e2649]:
+                    - checkbox [ref=e2650] [cursor=pointer]
+                    - button "Drag Persist 1772048660654 Medium" [ref=e2651] [cursor=pointer]:
+                      - generic [ref=e2653] [cursor=pointer]: Drag Persist 1772048660654
+                      - generic [ref=e2656] [cursor=pointer]: Medium
+                  - generic [ref=e2657]:
+                    - checkbox [ref=e2658] [cursor=pointer]
+                    - button "Drag To Waiting 1772048659795 Medium" [ref=e2659] [cursor=pointer]:
+                      - generic [ref=e2661] [cursor=pointer]: Drag To Waiting 1772048659795
+                      - generic [ref=e2664] [cursor=pointer]: Medium
+                  - generic [ref=e2665]:
+                    - checkbox [ref=e2666] [cursor=pointer]
+                    - button "Drag To Progress 1772048659630 Medium" [ref=e2667] [cursor=pointer]:
+                      - generic [ref=e2669] [cursor=pointer]: Drag To Progress 1772048659630
+                      - generic [ref=e2672] [cursor=pointer]: Medium
+                  - generic [ref=e2673]:
+                    - checkbox [ref=e2674] [cursor=pointer]
+                    - button "Drag To Done 1772048659407 Medium" [ref=e2675] [cursor=pointer]:
+                      - generic [ref=e2677] [cursor=pointer]: Drag To Done 1772048659407
+                      - generic [ref=e2680] [cursor=pointer]: Medium
+                  - generic [ref=e2681]:
+                    - checkbox [ref=e2682] [cursor=pointer]
+                    - button "Single2 1771999874042 Medium" [ref=e2683] [cursor=pointer]:
+                      - generic [ref=e2685] [cursor=pointer]: Single2 1771999874042
+                      - generic [ref=e2688] [cursor=pointer]: Medium
+                  - generic [ref=e2689]:
+                    - checkbox [ref=e2690] [cursor=pointer]
+                    - button "Multi3 1771999872777 Medium" [ref=e2691] [cursor=pointer]:
+                      - generic [ref=e2693] [cursor=pointer]: Multi3 1771999872777
+                      - generic [ref=e2696] [cursor=pointer]: Medium
+                  - generic [ref=e2697]:
+                    - checkbox [ref=e2698] [cursor=pointer]
+                    - button "Badge2 1771999873307 Medium" [ref=e2699] [cursor=pointer]:
+                      - generic [ref=e2701] [cursor=pointer]: Badge2 1771999873307
+                      - generic [ref=e2704] [cursor=pointer]: Medium
+                  - generic [ref=e2705]:
+                    - checkbox [ref=e2706] [cursor=pointer]
+                    - button "Single1 1771999874042 Medium" [ref=e2707] [cursor=pointer]:
+                      - generic [ref=e2709] [cursor=pointer]: Single1 1771999874042
+                      - generic [ref=e2712] [cursor=pointer]: Medium
+                  - generic [ref=e2713]:
+                    - checkbox [ref=e2714] [cursor=pointer]
+                    - button "Multi2 1771999872777 Medium" [ref=e2715] [cursor=pointer]:
+                      - generic [ref=e2717] [cursor=pointer]: Multi2 1771999872777
+                      - generic [ref=e2720] [cursor=pointer]: Medium
+                  - generic [ref=e2721]:
+                    - checkbox [ref=e2722] [cursor=pointer]
+                    - button "Badge1 1771999873307 Medium" [ref=e2723] [cursor=pointer]:
+                      - generic [ref=e2725] [cursor=pointer]: Badge1 1771999873307
+                      - generic [ref=e2728] [cursor=pointer]: Medium
+                  - generic [ref=e2729]:
+                    - checkbox [ref=e2730] [cursor=pointer]
+                    - button "Persist2 1771999872563 Medium" [ref=e2731] [cursor=pointer]:
+                      - generic [ref=e2733] [cursor=pointer]: Persist2 1771999872563
+                      - generic [ref=e2736] [cursor=pointer]: Medium
+                  - generic [ref=e2737]:
+                    - checkbox [ref=e2738] [cursor=pointer]
+                    - button "Multi1 1771999872777 Medium" [ref=e2739] [cursor=pointer]:
+                      - generic [ref=e2741] [cursor=pointer]: Multi1 1771999872777
+                      - generic [ref=e2744] [cursor=pointer]: Medium
+                  - generic [ref=e2745]:
+                    - checkbox [ref=e2746] [cursor=pointer]
+                    - button "Persist1 1771999872563 Medium" [ref=e2747] [cursor=pointer]:
+                      - generic [ref=e2749] [cursor=pointer]: Persist1 1771999872563
+                      - generic [ref=e2752] [cursor=pointer]: Medium
+                  - generic [ref=e2753]:
+                    - checkbox [ref=e2754] [cursor=pointer]
+                    - button "Persist2 1771999833245 Medium" [ref=e2755] [cursor=pointer]:
+                      - generic [ref=e2757] [cursor=pointer]: Persist2 1771999833245
+                      - generic [ref=e2760] [cursor=pointer]: Medium
+                  - generic [ref=e2761]:
+                    - checkbox [ref=e2762] [cursor=pointer]
+                    - button "Multi3 1771999832401 Medium" [ref=e2763] [cursor=pointer]:
+                      - generic [ref=e2765] [cursor=pointer]: Multi3 1771999832401
+                      - generic [ref=e2768] [cursor=pointer]: Medium
+                  - generic [ref=e2769]:
+                    - checkbox [ref=e2770] [cursor=pointer]
+                    - button "Persist1 1771999833245 Medium" [ref=e2771] [cursor=pointer]:
+                      - generic [ref=e2773] [cursor=pointer]: Persist1 1771999833245
+                      - generic [ref=e2776] [cursor=pointer]: Medium
+                  - generic [ref=e2777]:
+                    - checkbox [ref=e2778] [cursor=pointer]
+                    - button "Multi2 1771999832401 Medium" [ref=e2779] [cursor=pointer]:
+                      - generic [ref=e2781] [cursor=pointer]: Multi2 1771999832401
+                      - generic [ref=e2784] [cursor=pointer]: Medium
+                  - generic [ref=e2785]:
+                    - checkbox [ref=e2786] [cursor=pointer]
+                    - button "Badge2 1771999832341 Medium" [ref=e2787] [cursor=pointer]:
+                      - generic [ref=e2789] [cursor=pointer]: Badge2 1771999832341
+                      - generic [ref=e2792] [cursor=pointer]: Medium
+                  - generic [ref=e2793]:
+                    - checkbox [ref=e2794] [cursor=pointer]
+                    - button "Multi1 1771999832401 Medium" [ref=e2795] [cursor=pointer]:
+                      - generic [ref=e2797] [cursor=pointer]: Multi1 1771999832401
+                      - generic [ref=e2800] [cursor=pointer]: Medium
+                  - generic [ref=e2801]:
+                    - checkbox [ref=e2802] [cursor=pointer]
+                    - button "Badge1 1771999832341 Medium" [ref=e2803] [cursor=pointer]:
+                      - generic [ref=e2805] [cursor=pointer]: Badge1 1771999832341
+                      - generic [ref=e2808] [cursor=pointer]: Medium
+                  - generic [ref=e2809]:
+                    - checkbox [ref=e2810] [cursor=pointer]
+                    - button "Single2 1771999831643 Medium" [ref=e2811] [cursor=pointer]:
+                      - generic [ref=e2813] [cursor=pointer]: Single2 1771999831643
+                      - generic [ref=e2816] [cursor=pointer]: Medium
+                  - generic [ref=e2817]:
+                    - checkbox [ref=e2818] [cursor=pointer]
+                    - button "Single1 1771999831643 Medium" [ref=e2819] [cursor=pointer]:
+                      - generic [ref=e2821] [cursor=pointer]: Single1 1771999831643
+                      - generic [ref=e2824] [cursor=pointer]: Medium
+                  - generic [ref=e2825]:
+                    - checkbox [ref=e2826] [cursor=pointer]
+                    - button "Multi3 1771999641316 Medium" [ref=e2827] [cursor=pointer]:
+                      - generic [ref=e2829] [cursor=pointer]: Multi3 1771999641316
+                      - generic [ref=e2832] [cursor=pointer]: Medium
+                  - generic [ref=e2833]:
+                    - checkbox [ref=e2834] [cursor=pointer]
+                    - button "Persist2 1771999641371 Medium" [ref=e2835] [cursor=pointer]:
+                      - generic [ref=e2837] [cursor=pointer]: Persist2 1771999641371
+                      - generic [ref=e2840] [cursor=pointer]: Medium
+                  - generic [ref=e2841]:
+                    - checkbox [ref=e2842] [cursor=pointer]
+                    - button "Multi2 1771999641316 Medium" [ref=e2843] [cursor=pointer]:
+                      - generic [ref=e2845] [cursor=pointer]: Multi2 1771999641316
+                      - generic [ref=e2848] [cursor=pointer]: Medium
+                  - generic [ref=e2849]:
+                    - checkbox [ref=e2850] [cursor=pointer]
+                    - button "Persist1 1771999641371 Medium" [ref=e2851] [cursor=pointer]:
+                      - generic [ref=e2853] [cursor=pointer]: Persist1 1771999641371
+                      - generic [ref=e2856] [cursor=pointer]: Medium
+                  - generic [ref=e2857]:
+                    - checkbox [ref=e2858] [cursor=pointer]
+                    - button "Multi1 1771999641316 Medium" [ref=e2859] [cursor=pointer]:
+                      - generic [ref=e2861] [cursor=pointer]: Multi1 1771999641316
+                      - generic [ref=e2864] [cursor=pointer]: Medium
+                  - generic [ref=e2865]:
+                    - checkbox [ref=e2866] [cursor=pointer]
+                    - button "Badge2 1771999640322 Medium" [ref=e2867] [cursor=pointer]:
+                      - generic [ref=e2869] [cursor=pointer]: Badge2 1771999640322
+                      - generic [ref=e2872] [cursor=pointer]: Medium
+                  - generic [ref=e2873]:
+                    - checkbox [ref=e2874] [cursor=pointer]
+                    - button "Badge1 1771999640322 Medium" [ref=e2875] [cursor=pointer]:
+                      - generic [ref=e2877] [cursor=pointer]: Badge1 1771999640322
+                      - generic [ref=e2880] [cursor=pointer]: Medium
+                  - generic [ref=e2881]:
+                    - checkbox [ref=e2882] [cursor=pointer]
+                    - button "Single2 1771999639709 Medium" [ref=e2883] [cursor=pointer]:
+                      - generic [ref=e2885] [cursor=pointer]: Single2 1771999639709
+                      - generic [ref=e2888] [cursor=pointer]: Medium
+                  - generic [ref=e2889]:
+                    - checkbox [ref=e2890] [cursor=pointer]
+                    - button "Single1 1771999639709 Medium" [ref=e2891] [cursor=pointer]:
+                      - generic [ref=e2893] [cursor=pointer]: Single1 1771999639709
+                      - generic [ref=e2896] [cursor=pointer]: Medium
+                  - generic [ref=e2897]:
+                    - checkbox [ref=e2898] [cursor=pointer]
+                    - button "Calendar Drag 1771999259780 Medium" [ref=e2899] [cursor=pointer]:
+                      - generic [ref=e2901] [cursor=pointer]: Calendar Drag 1771999259780
+                      - generic [ref=e2904] [cursor=pointer]: Medium
+                  - generic [ref=e2905]:
+                    - checkbox [ref=e2906] [cursor=pointer]
+                    - button "Calendar Drag 1771999225993 Medium" [ref=e2907] [cursor=pointer]:
+                      - generic [ref=e2909] [cursor=pointer]: Calendar Drag 1771999225993
+                      - generic [ref=e2912] [cursor=pointer]: Medium
+                  - generic [ref=e2913]:
+                    - checkbox [ref=e2914] [cursor=pointer]
+                    - button "Visual Feedback 1771981539173 Medium" [ref=e2915] [cursor=pointer]:
+                      - generic [ref=e2917] [cursor=pointer]: Visual Feedback 1771981539173
+                      - generic [ref=e2920] [cursor=pointer]: Medium
+                  - generic [ref=e2921]:
+                    - checkbox [ref=e2922] [cursor=pointer]
+                    - button "Selection Mode 1771981537274 Medium" [ref=e2923] [cursor=pointer]:
+                      - generic [ref=e2925] [cursor=pointer]: Selection Mode 1771981537274
+                      - generic [ref=e2928] [cursor=pointer]: Medium
+                  - generic [ref=e2929]:
+                    - checkbox [ref=e2930] [cursor=pointer]
+                    - button "Drag To Progress 1771981531696 Medium" [ref=e2931] [cursor=pointer]:
+                      - generic [ref=e2933] [cursor=pointer]: Drag To Progress 1771981531696
+                      - generic [ref=e2936] [cursor=pointer]: Medium
+                  - generic [ref=e2937]:
+                    - checkbox [ref=e2938] [cursor=pointer]
+                    - button "Drag Persist 1771981531532 Medium" [ref=e2939] [cursor=pointer]:
+                      - generic [ref=e2941] [cursor=pointer]: Drag Persist 1771981531532
+                      - generic [ref=e2944] [cursor=pointer]: Medium
+                  - generic [ref=e2945]:
+                    - checkbox [ref=e2946] [cursor=pointer]
+                    - button "Drag To Waiting 1771981530410 Medium" [ref=e2947] [cursor=pointer]:
+                      - generic [ref=e2949] [cursor=pointer]: Drag To Waiting 1771981530410
+                      - generic [ref=e2952] [cursor=pointer]: Medium
+                  - generic [ref=e2953]:
+                    - checkbox [ref=e2954] [cursor=pointer]
+                    - button "Drag To Done 1771981530045 Medium" [ref=e2955] [cursor=pointer]:
+                      - generic [ref=e2957] [cursor=pointer]: Drag To Done 1771981530045
+                      - generic [ref=e2960] [cursor=pointer]: Medium
+                  - generic [ref=e2961]:
+                    - checkbox [ref=e2962] [cursor=pointer]
+                    - button "Visual Feedback 1771981470124 Medium" [ref=e2963] [cursor=pointer]:
+                      - generic [ref=e2965] [cursor=pointer]: Visual Feedback 1771981470124
+                      - generic [ref=e2968] [cursor=pointer]: Medium
+                  - generic [ref=e2969]:
+                    - checkbox [ref=e2970] [cursor=pointer]
+                    - button "Selection Mode 1771981469392 Medium" [ref=e2971] [cursor=pointer]:
+                      - generic [ref=e2973] [cursor=pointer]: Selection Mode 1771981469392
+                      - generic [ref=e2976] [cursor=pointer]: Medium
+                  - generic [ref=e2977]:
+                    - checkbox [ref=e2978] [cursor=pointer]
+                    - button "Drag To Waiting 1771981463618 Medium" [ref=e2979] [cursor=pointer]:
+                      - generic [ref=e2981] [cursor=pointer]: Drag To Waiting 1771981463618
+                      - generic [ref=e2984] [cursor=pointer]: Medium
+                  - generic [ref=e2985]:
+                    - checkbox [ref=e2986] [cursor=pointer]
+                    - button "Drag To Progress 1771981462835 Medium" [ref=e2987] [cursor=pointer]:
+                      - generic [ref=e2989] [cursor=pointer]: Drag To Progress 1771981462835
+                      - generic [ref=e2992] [cursor=pointer]: Medium
+                  - generic [ref=e2993]:
+                    - checkbox [ref=e2994] [cursor=pointer]
+                    - button "Drag Persist 1771981462449 Medium" [ref=e2995] [cursor=pointer]:
+                      - generic [ref=e2997] [cursor=pointer]: Drag Persist 1771981462449
+                      - generic [ref=e3000] [cursor=pointer]: Medium
+                  - generic [ref=e3001]:
+                    - checkbox [ref=e3002] [cursor=pointer]
+                    - button "Drag To Done 1771981462252 Medium" [ref=e3003] [cursor=pointer]:
+                      - generic [ref=e3005] [cursor=pointer]: Drag To Done 1771981462252
+                      - generic [ref=e3008] [cursor=pointer]: Medium
+                  - generic [ref=e3009]:
+                    - checkbox [ref=e3010] [cursor=pointer]
+                    - button "Visual Feedback 1771979097087 Medium" [ref=e3011] [cursor=pointer]:
+                      - generic [ref=e3013] [cursor=pointer]: Visual Feedback 1771979097087
+                      - generic [ref=e3016] [cursor=pointer]: Medium
+                  - generic [ref=e3017]:
+                    - checkbox [ref=e3018] [cursor=pointer]
+                    - button "Selection Mode 1771979096470 Medium" [ref=e3019] [cursor=pointer]:
+                      - generic [ref=e3021] [cursor=pointer]: Selection Mode 1771979096470
+                      - generic [ref=e3024] [cursor=pointer]: Medium
+                  - generic [ref=e3025]:
+                    - checkbox [ref=e3026] [cursor=pointer]
+                    - button "Drag To Done 1771979089788 Medium" [ref=e3027] [cursor=pointer]:
+                      - generic [ref=e3029] [cursor=pointer]: Drag To Done 1771979089788
+                      - generic [ref=e3032] [cursor=pointer]: Medium
+                  - generic [ref=e3033]:
+                    - checkbox [ref=e3034] [cursor=pointer]
+                    - button "Drag To Progress 1771979089428 Medium" [ref=e3035] [cursor=pointer]:
+                      - generic [ref=e3037] [cursor=pointer]: Drag To Progress 1771979089428
+                      - generic [ref=e3040] [cursor=pointer]: Medium
+                  - generic [ref=e3041]:
+                    - checkbox [ref=e3042] [cursor=pointer]
+                    - button "Drag To Waiting 1771979088925 Medium" [ref=e3043] [cursor=pointer]:
+                      - generic [ref=e3045] [cursor=pointer]: Drag To Waiting 1771979088925
+                      - generic [ref=e3048] [cursor=pointer]: Medium
+                  - generic [ref=e3049]:
+                    - checkbox [ref=e3050] [cursor=pointer]
+                    - button "Drag Persist 1771979088755 Medium" [ref=e3051] [cursor=pointer]:
+                      - generic [ref=e3053] [cursor=pointer]: Drag Persist 1771979088755
+                      - generic [ref=e3056] [cursor=pointer]: Medium
+                  - generic [ref=e3057]:
+                    - checkbox [ref=e3058] [cursor=pointer]
+                    - button "Visual Feedback 1771978812333 Medium" [ref=e3059] [cursor=pointer]:
+                      - generic [ref=e3061] [cursor=pointer]: Visual Feedback 1771978812333
+                      - generic [ref=e3064] [cursor=pointer]: Medium
+                  - generic [ref=e3065]:
+                    - checkbox [ref=e3066] [cursor=pointer]
+                    - button "Selection Mode 1771978807165 Medium" [ref=e3067] [cursor=pointer]:
+                      - generic [ref=e3069] [cursor=pointer]: Selection Mode 1771978807165
+                      - generic [ref=e3072] [cursor=pointer]: Medium
+                  - generic [ref=e3073]:
+                    - checkbox [ref=e3074] [cursor=pointer]
+                    - button "Drag To Waiting 1771978802483 Medium" [ref=e3075] [cursor=pointer]:
+                      - generic [ref=e3077] [cursor=pointer]: Drag To Waiting 1771978802483
+                      - generic [ref=e3080] [cursor=pointer]: Medium
+                  - generic [ref=e3081]:
+                    - checkbox [ref=e3082] [cursor=pointer]
+                    - button "Drag Persist 1771978801037 Medium" [ref=e3083] [cursor=pointer]:
+                      - generic [ref=e3085] [cursor=pointer]: Drag Persist 1771978801037
+                      - generic [ref=e3088] [cursor=pointer]: Medium
+                  - generic [ref=e3089]:
+                    - checkbox [ref=e3090] [cursor=pointer]
+                    - button "Drag To Done 1771978800620 Medium" [ref=e3091] [cursor=pointer]:
+                      - generic [ref=e3093] [cursor=pointer]: Drag To Done 1771978800620
+                      - generic [ref=e3096] [cursor=pointer]: Medium
+                  - generic [ref=e3097]:
+                    - checkbox [ref=e3098] [cursor=pointer]
+                    - button "Drag To Progress 1771978800105 Medium" [ref=e3099] [cursor=pointer]:
+                      - generic [ref=e3101] [cursor=pointer]: Drag To Progress 1771978800105
+                      - generic [ref=e3104] [cursor=pointer]: Medium
+                  - generic [ref=e3105]:
+                    - checkbox [ref=e3106] [cursor=pointer]
+                    - button "Visual Feedback 1771978668245 Medium" [ref=e3107] [cursor=pointer]:
+                      - generic [ref=e3109] [cursor=pointer]: Visual Feedback 1771978668245
+                      - generic [ref=e3112] [cursor=pointer]: Medium
+                  - generic [ref=e3113]:
+                    - checkbox [ref=e3114] [cursor=pointer]
+                    - button "Selection Mode 1771978660998 Medium" [ref=e3115] [cursor=pointer]:
+                      - generic [ref=e3117] [cursor=pointer]: Selection Mode 1771978660998
+                      - generic [ref=e3120] [cursor=pointer]: Medium
+                  - generic [ref=e3121]:
+                    - checkbox [ref=e3122] [cursor=pointer]
+                    - button "Drag To Done 1771978660430 Medium" [ref=e3123] [cursor=pointer]:
+                      - generic [ref=e3125] [cursor=pointer]: Drag To Done 1771978660430
+                      - generic [ref=e3128] [cursor=pointer]: Medium
+                  - generic [ref=e3129]:
+                    - checkbox [ref=e3130] [cursor=pointer]
+                    - button "Drag Persist 1771978660062 Medium" [ref=e3131] [cursor=pointer]:
+                      - generic [ref=e3133] [cursor=pointer]: Drag Persist 1771978660062
+                      - generic [ref=e3136] [cursor=pointer]: Medium
+                  - generic [ref=e3137]:
+                    - checkbox [ref=e3138] [cursor=pointer]
+                    - button "Drag To Waiting 1771978643544 Medium" [ref=e3139] [cursor=pointer]:
+                      - generic [ref=e3141] [cursor=pointer]: Drag To Waiting 1771978643544
+                      - generic [ref=e3144] [cursor=pointer]: Medium
+                  - generic [ref=e3145]:
+                    - checkbox [ref=e3146] [cursor=pointer]
+                    - button "Drag To Progress 1771978629645 Medium" [ref=e3147] [cursor=pointer]:
+                      - generic [ref=e3149] [cursor=pointer]: Drag To Progress 1771978629645
+                      - generic [ref=e3152] [cursor=pointer]: Medium
+                  - generic [ref=e3153]:
+                    - checkbox [ref=e3154] [cursor=pointer]
+                    - button "Visual Feedback 1771978580897 Medium" [ref=e3155] [cursor=pointer]:
+                      - generic [ref=e3157] [cursor=pointer]: Visual Feedback 1771978580897
+                      - generic [ref=e3160] [cursor=pointer]: Medium
+                  - generic [ref=e3161]:
+                    - checkbox [ref=e3162] [cursor=pointer]
+                    - button "Selection Mode 1771978573981 Medium" [ref=e3163] [cursor=pointer]:
+                      - generic [ref=e3165] [cursor=pointer]: Selection Mode 1771978573981
+                      - generic [ref=e3168] [cursor=pointer]: Medium
+                  - generic [ref=e3169]:
+                    - checkbox [ref=e3170] [cursor=pointer]
+                    - button "Drag Persist 1771978565943 Medium" [ref=e3171] [cursor=pointer]:
+                      - generic [ref=e3173] [cursor=pointer]: Drag Persist 1771978565943
+                      - generic [ref=e3176] [cursor=pointer]: Medium
+                  - generic [ref=e3177]:
+                    - checkbox [ref=e3178] [cursor=pointer]
+                    - button "Drag To Waiting 1771978565668 Medium" [ref=e3179] [cursor=pointer]:
+                      - generic [ref=e3181] [cursor=pointer]: Drag To Waiting 1771978565668
+                      - generic [ref=e3184] [cursor=pointer]: Medium
+                  - generic [ref=e3185]:
+                    - checkbox [ref=e3186] [cursor=pointer]
+                    - button "Drag To Done 1771978565301 Medium" [ref=e3187] [cursor=pointer]:
+                      - generic [ref=e3189] [cursor=pointer]: Drag To Done 1771978565301
+                      - generic [ref=e3192] [cursor=pointer]: Medium
+                  - generic [ref=e3193]:
+                    - checkbox [ref=e3194] [cursor=pointer]
+                    - button "Drag To Progress 1771978564569 Medium" [ref=e3195] [cursor=pointer]:
+                      - generic [ref=e3197] [cursor=pointer]: Drag To Progress 1771978564569
+                      - generic [ref=e3200] [cursor=pointer]: Medium
+                  - generic [ref=e3201]:
+                    - checkbox [ref=e3202] [cursor=pointer]
+                    - button "Bulk T2 1771974970310 Medium" [ref=e3203] [cursor=pointer]:
+                      - generic [ref=e3205] [cursor=pointer]: Bulk T2 1771974970310
+                      - generic [ref=e3208] [cursor=pointer]: Medium
+                  - generic [ref=e3209]:
+                    - checkbox [ref=e3210] [cursor=pointer]
+                    - button "Del B 1771974969981 Medium" [ref=e3211] [cursor=pointer]:
+                      - generic [ref=e3213] [cursor=pointer]: Del B 1771974969981
+                      - generic [ref=e3216] [cursor=pointer]: Medium
+                  - generic [ref=e3217]:
+                    - checkbox [ref=e3218] [cursor=pointer]
+                    - button "Bulk T1 1771974970310 Medium" [ref=e3219] [cursor=pointer]:
+                      - generic [ref=e3221] [cursor=pointer]: Bulk T1 1771974970310
+                      - generic [ref=e3224] [cursor=pointer]: Medium
+                  - generic [ref=e3225]:
+                    - checkbox [ref=e3226] [cursor=pointer]
+                    - button "Del A 1771974969981 Medium" [ref=e3227] [cursor=pointer]:
+                      - generic [ref=e3229] [cursor=pointer]: Del A 1771974969981
+                      - generic [ref=e3232] [cursor=pointer]: Medium
+                  - generic [ref=e3233]:
+                    - checkbox [ref=e3234] [cursor=pointer]
+                    - button "Del A 1771974813196 Medium" [ref=e3235] [cursor=pointer]:
+                      - generic [ref=e3237] [cursor=pointer]: Del A 1771974813196
+                      - generic [ref=e3240] [cursor=pointer]: Medium
+                  - generic [ref=e3241]:
+                    - checkbox [ref=e3242] [cursor=pointer]
+                    - button "Bulk T1 1771974813084 Medium" [ref=e3243] [cursor=pointer]:
+                      - generic [ref=e3245] [cursor=pointer]: Bulk T1 1771974813084
+                      - generic [ref=e3248] [cursor=pointer]: Medium
+                  - generic [ref=e3249]:
+                    - checkbox [ref=e3250] [cursor=pointer]
+                    - button "Del A 1771974671278 Medium" [ref=e3251] [cursor=pointer]:
+                      - generic [ref=e3253] [cursor=pointer]: Del A 1771974671278
+                      - generic [ref=e3256] [cursor=pointer]: Medium
+                  - generic [ref=e3257]:
+                    - checkbox [ref=e3258] [cursor=pointer]
+                    - button "Bulk T1 1771974670978 Medium" [ref=e3259] [cursor=pointer]:
+                      - generic [ref=e3261] [cursor=pointer]: Bulk T1 1771974670978
+                      - generic [ref=e3264] [cursor=pointer]: Medium
+                  - generic [ref=e3265]:
+                    - checkbox [ref=e3266] [cursor=pointer]
+                    - button "Del B 1771974521352 Medium" [ref=e3267] [cursor=pointer]:
+                      - generic [ref=e3269] [cursor=pointer]: Del B 1771974521352
+                      - generic [ref=e3272] [cursor=pointer]: Medium
+                  - generic [ref=e3273]:
+                    - checkbox [ref=e3274] [cursor=pointer]
+                    - button "Del A 1771974521352 Medium" [ref=e3275] [cursor=pointer]:
+                      - generic [ref=e3277] [cursor=pointer]: Del A 1771974521352
+                      - generic [ref=e3280] [cursor=pointer]: Medium
+                  - generic [ref=e3281]:
+                    - checkbox [ref=e3282] [cursor=pointer]
+                    - button "Del B 1771974266674 Medium" [ref=e3283] [cursor=pointer]:
+                      - generic [ref=e3285] [cursor=pointer]: Del B 1771974266674
+                      - generic [ref=e3288] [cursor=pointer]: Medium
+                  - generic [ref=e3289]:
+                    - checkbox [ref=e3290] [cursor=pointer]
+                    - button "Bulk T2 1771974266529 Medium" [ref=e3291] [cursor=pointer]:
+                      - generic [ref=e3293] [cursor=pointer]: Bulk T2 1771974266529
+                      - generic [ref=e3296] [cursor=pointer]: Medium
+                  - generic [ref=e3297]:
+                    - checkbox [ref=e3298] [cursor=pointer]
+                    - button "Del A 1771974266674 Medium" [ref=e3299] [cursor=pointer]:
+                      - generic [ref=e3301] [cursor=pointer]: Del A 1771974266674
+                      - generic [ref=e3304] [cursor=pointer]: Medium
+                  - generic [ref=e3305]:
+                    - checkbox [ref=e3306] [cursor=pointer]
+                    - button "Bulk T1 1771974266529 Medium" [ref=e3307] [cursor=pointer]:
+                      - generic [ref=e3309] [cursor=pointer]: Bulk T1 1771974266529
+                      - generic [ref=e3312] [cursor=pointer]: Medium
+                  - generic [ref=e3313]:
+                    - checkbox [ref=e3314] [cursor=pointer]
+                    - button "Bulk T2 1771973970328 Medium" [ref=e3315] [cursor=pointer]:
+                      - generic [ref=e3317] [cursor=pointer]: Bulk T2 1771973970328
+                      - generic [ref=e3320] [cursor=pointer]: Medium
+                  - generic [ref=e3321]:
+                    - checkbox [ref=e3322] [cursor=pointer]
+                    - button "Del B 1771973969730 Medium" [ref=e3323] [cursor=pointer]:
+                      - generic [ref=e3325] [cursor=pointer]: Del B 1771973969730
+                      - generic [ref=e3328] [cursor=pointer]: Medium
+                  - generic [ref=e3329]:
+                    - checkbox [ref=e3330] [cursor=pointer]
+                    - button "Bulk T1 1771973970328 Medium" [ref=e3331] [cursor=pointer]:
+                      - generic [ref=e3333] [cursor=pointer]: Bulk T1 1771973970328
+                      - generic [ref=e3336] [cursor=pointer]: Medium
+                  - generic [ref=e3337]:
+                    - checkbox [ref=e3338] [cursor=pointer]
+                    - button "Del A 1771973969730 Medium" [ref=e3339] [cursor=pointer]:
+                      - generic [ref=e3341] [cursor=pointer]: Del A 1771973969730
+                      - generic [ref=e3344] [cursor=pointer]: Medium
+                  - generic [ref=e3345]:
+                    - checkbox [ref=e3346] [cursor=pointer]
+                    - button "Bulk T2 1771973703408 Medium" [ref=e3347] [cursor=pointer]:
+                      - generic [ref=e3349] [cursor=pointer]: Bulk T2 1771973703408
+                      - generic [ref=e3352] [cursor=pointer]: Medium
+                  - generic [ref=e3353]:
+                    - checkbox [ref=e3354] [cursor=pointer]
+                    - button "Del B 1771973703201 Medium" [ref=e3355] [cursor=pointer]:
+                      - generic [ref=e3357] [cursor=pointer]: Del B 1771973703201
+                      - generic [ref=e3360] [cursor=pointer]: Medium
+                  - generic [ref=e3361]:
+                    - checkbox [ref=e3362] [cursor=pointer]
+                    - button "Bulk T1 1771973703408 Medium" [ref=e3363] [cursor=pointer]:
+                      - generic [ref=e3365] [cursor=pointer]: Bulk T1 1771973703408
+                      - generic [ref=e3368] [cursor=pointer]: Medium
+                  - generic [ref=e3369]:
+                    - checkbox [ref=e3370] [cursor=pointer]
+                    - button "Del A 1771973703201 Medium" [ref=e3371] [cursor=pointer]:
+                      - generic [ref=e3373] [cursor=pointer]: Del A 1771973703201
+                      - generic [ref=e3376] [cursor=pointer]: Medium
+                  - generic [ref=e3377]:
+                    - checkbox [ref=e3378] [cursor=pointer]
+                    - button "Del B 1771973429007 Medium" [ref=e3379] [cursor=pointer]:
+                      - generic [ref=e3381] [cursor=pointer]: Del B 1771973429007
+                      - generic [ref=e3384] [cursor=pointer]: Medium
+                  - generic [ref=e3385]:
+                    - checkbox [ref=e3386] [cursor=pointer]
+                    - button "Bulk T2 1771973428744 Medium" [ref=e3387] [cursor=pointer]:
+                      - generic [ref=e3389] [cursor=pointer]: Bulk T2 1771973428744
+                      - generic [ref=e3392] [cursor=pointer]: Medium
+                  - generic [ref=e3393]:
+                    - checkbox [ref=e3394] [cursor=pointer]
+                    - button "Del A 1771973429007 Medium" [ref=e3395] [cursor=pointer]:
+                      - generic [ref=e3397] [cursor=pointer]: Del A 1771973429007
+                      - generic [ref=e3400] [cursor=pointer]: Medium
+                  - generic [ref=e3401]:
+                    - checkbox [ref=e3402] [cursor=pointer]
+                    - button "Bulk T1 1771973428744 Medium" [ref=e3403] [cursor=pointer]:
+                      - generic [ref=e3405] [cursor=pointer]: Bulk T1 1771973428744
+                      - generic [ref=e3408] [cursor=pointer]: Medium
+                  - generic [ref=e3409]:
+                    - checkbox [ref=e3410] [cursor=pointer]
+                    - button "Buy groceries 1771972804004 Medium" [ref=e3411] [cursor=pointer]:
+                      - generic [ref=e3413] [cursor=pointer]: Buy groceries 1771972804004
+                      - generic [ref=e3416] [cursor=pointer]: Medium
+                  - generic [ref=e3417]:
+                    - checkbox [ref=e3418] [cursor=pointer]
+                    - button "Count Test Task 1771972803241 Medium" [ref=e3419] [cursor=pointer]:
+                      - generic [ref=e3421] [cursor=pointer]: Count Test Task 1771972803241
+                      - generic [ref=e3424] [cursor=pointer]: Medium
+                  - generic [ref=e3425]:
+                    - checkbox [ref=e3426] [cursor=pointer]
+                    - button "Priority Test Task 1771972793602 Medium" [ref=e3427] [cursor=pointer]:
+                      - generic [ref=e3429] [cursor=pointer]: Priority Test Task 1771972793602
+                      - generic [ref=e3432] [cursor=pointer]: Medium
+                  - generic [ref=e3433]:
+                    - checkbox [ref=e3434] [cursor=pointer]
+                    - button "Task to Edit 1771972791719 Medium" [ref=e3435] [cursor=pointer]:
+                      - generic [ref=e3437] [cursor=pointer]: Task to Edit 1771972791719
+                      - generic [ref=e3440] [cursor=pointer]: Medium
+                  - generic [ref=e3441]:
+                    - checkbox [ref=e3442] [cursor=pointer]
+                    - button "E2E Test Task 1771972785482 Medium" [ref=e3443] [cursor=pointer]:
+                      - generic [ref=e3445] [cursor=pointer]: E2E Test Task 1771972785482
+                      - generic [ref=e3448] [cursor=pointer]: Medium
+                  - generic [ref=e3449]:
+                    - checkbox [ref=e3450] [cursor=pointer]
+                    - button "Parent E2E 1771972730334 Medium" [ref=e3451] [cursor=pointer]:
+                      - generic [ref=e3453] [cursor=pointer]: Parent E2E 1771972730334
+                      - generic [ref=e3456] [cursor=pointer]: Medium
+                  - generic [ref=e3457]:
+                    - checkbox [ref=e3458] [cursor=pointer]
+                    - button "Star Me 1771972725825 ⭐ Medium" [ref=e3459] [cursor=pointer]:
+                      - generic [ref=e3460] [cursor=pointer]:
+                        - generic [ref=e3461] [cursor=pointer]: Star Me 1771972725825
+                        - generic [ref=e3462] [cursor=pointer]: ⭐
+                      - generic [ref=e3465] [cursor=pointer]: Medium
+                  - generic [ref=e3466]:
+                    - checkbox [ref=e3467] [cursor=pointer]
+                    - button "Persist Star 1771972722336 ⭐ Medium" [ref=e3468] [cursor=pointer]:
+                      - generic [ref=e3469] [cursor=pointer]:
+                        - generic [ref=e3470] [cursor=pointer]: Persist Star 1771972722336
+                        - generic [ref=e3471] [cursor=pointer]: ⭐
+                      - generic [ref=e3474] [cursor=pointer]: Medium
+                  - generic [ref=e3475]:
+                    - checkbox [ref=e3476] [cursor=pointer]
+                    - button "Bravo E2E Medium" [ref=e3477] [cursor=pointer]:
+                      - generic [ref=e3479] [cursor=pointer]: Bravo E2E
+                      - generic [ref=e3482] [cursor=pointer]: Medium
+                  - generic [ref=e3483]:
+                    - checkbox [ref=e3484] [cursor=pointer]
+                    - button "Alpha E2E Medium" [ref=e3485] [cursor=pointer]:
+                      - generic [ref=e3487] [cursor=pointer]: Alpha E2E
+                      - generic [ref=e3490] [cursor=pointer]: Medium
+                  - generic [ref=e3491]:
+                    - checkbox [ref=e3492] [cursor=pointer]
+                    - button "Charlie E2E Medium" [ref=e3493] [cursor=pointer]:
+                      - generic [ref=e3495] [cursor=pointer]: Charlie E2E
+                      - generic [ref=e3498] [cursor=pointer]: Medium
+                  - generic [ref=e3499]:
+                    - checkbox [ref=e3500] [cursor=pointer]
+                    - button "BB Task 1771972498352 Medium" [ref=e3501] [cursor=pointer]:
+                      - generic [ref=e3503] [cursor=pointer]: BB Task 1771972498352
+                      - generic [ref=e3506] [cursor=pointer]: Medium
+                  - generic [ref=e3507]:
+                    - checkbox [ref=e3508] [cursor=pointer]
+                    - button "AA Task 1771972498352 Medium" [ref=e3509] [cursor=pointer]:
+                      - generic [ref=e3511] [cursor=pointer]: AA Task 1771972498352
+                      - generic [ref=e3514] [cursor=pointer]: Medium
+                  - generic [ref=e3515]:
+                    - checkbox [ref=e3516] [cursor=pointer]
+                    - button "Inline Edit 1771972328713 Medium" [ref=e3517] [cursor=pointer]:
+                      - generic [ref=e3519] [cursor=pointer]: Inline Edit 1771972328713
+                      - generic [ref=e3522] [cursor=pointer]: Medium
+                  - generic [ref=e3523]:
+                    - checkbox [ref=e3524] [cursor=pointer]
+                    - button "Drag Multi 1771972142502 Medium" [ref=e3525] [cursor=pointer]:
+                      - generic [ref=e3527] [cursor=pointer]: Drag Multi 1771972142502
+                      - generic [ref=e3530] [cursor=pointer]: Medium
+                  - generic [ref=e3531]:
+                    - checkbox [ref=e3532] [cursor=pointer]
+                    - button "Drop To Today 1771972141718 Medium" [ref=e3533] [cursor=pointer]:
+                      - generic [ref=e3535] [cursor=pointer]: Drop To Today 1771972141718
+                      - generic [ref=e3538] [cursor=pointer]: Medium
+                  - generic [ref=e3539]:
+                    - checkbox [ref=e3540] [cursor=pointer]
+                    - button "Drop To Upcoming 1771972141223 Medium" [ref=e3541] [cursor=pointer]:
+                      - generic [ref=e3543] [cursor=pointer]: Drop To Upcoming 1771972141223
+                      - generic [ref=e3546] [cursor=pointer]: Medium
+                  - generic [ref=e3547]:
+                    - checkbox [ref=e3548] [cursor=pointer]
+                    - button "Calendar Drop 1771972110159 Medium" [ref=e3549] [cursor=pointer]:
+                      - generic [ref=e3551] [cursor=pointer]: Calendar Drop 1771972110159
+                      - generic [ref=e3554] [cursor=pointer]: Medium
+                  - generic [ref=e3555]:
+                    - checkbox [ref=e3556] [cursor=pointer]
+                    - button "Persist Scheduled 1771972109380 Medium" [ref=e3557] [cursor=pointer]:
+                      - generic [ref=e3559] [cursor=pointer]: Persist Scheduled 1771972109380
+                      - generic [ref=e3562] [cursor=pointer]: Medium
+                  - generic [ref=e3563]:
+                    - checkbox [ref=e3564] [cursor=pointer]
+                    - button "Persist Waiting 1771972107648 Medium" [ref=e3565] [cursor=pointer]:
+                      - generic [ref=e3567] [cursor=pointer]: Persist Waiting 1771972107648
+                      - generic [ref=e3570] [cursor=pointer]: Medium
+                  - generic [ref=e3571]:
+                    - checkbox [ref=e3572] [cursor=pointer]
+                    - button "Dashboard Task 1771972076729 Medium" [ref=e3573] [cursor=pointer]:
+                      - generic [ref=e3575] [cursor=pointer]: Dashboard Task 1771972076729
+                      - generic [ref=e3578] [cursor=pointer]: Medium
+                  - generic [ref=e3579]:
+                    - checkbox [ref=e3580] [cursor=pointer]
+                    - button "Del B 1771972043474 Medium" [ref=e3581] [cursor=pointer]:
+                      - generic [ref=e3583] [cursor=pointer]: Del B 1771972043474
+                      - generic [ref=e3586] [cursor=pointer]: Medium
+                  - generic [ref=e3587]:
+                    - checkbox [ref=e3588] [cursor=pointer]
+                    - button "Del A 1771972043234 Medium" [ref=e3589] [cursor=pointer]:
+                      - generic [ref=e3591] [cursor=pointer]: Del A 1771972043234
+                      - generic [ref=e3594] [cursor=pointer]: Medium
+                  - generic [ref=e3595]:
+                    - checkbox [ref=e3596] [cursor=pointer]
+                    - button "Bulk T2 1771972039677 Medium" [ref=e3597] [cursor=pointer]:
+                      - generic [ref=e3599] [cursor=pointer]: Bulk T2 1771972039677
+                      - generic [ref=e3602] [cursor=pointer]: Medium
+                  - generic [ref=e3603]:
+                    - checkbox [ref=e3604] [cursor=pointer]
+                    - button "Bulk T1 1771972039158 Medium" [ref=e3605] [cursor=pointer]:
+                      - generic [ref=e3607] [cursor=pointer]: Bulk T1 1771972039158
+                      - generic [ref=e3610] [cursor=pointer]: Medium
+                  - generic [ref=e3611]:
+                    - checkbox [ref=e3612] [cursor=pointer]
+                    - button "Persist Star 1771971793993 ⭐ Medium" [ref=e3613] [cursor=pointer]:
+                      - generic [ref=e3614] [cursor=pointer]:
+                        - generic [ref=e3615] [cursor=pointer]: Persist Star 1771971793993
+                        - generic [ref=e3616] [cursor=pointer]: ⭐
+                      - generic [ref=e3619] [cursor=pointer]: Medium
+                  - generic [ref=e3620]:
+                    - checkbox [ref=e3621] [cursor=pointer]
+                    - button "Star Me 1771971793622 ⭐ Medium" [ref=e3622] [cursor=pointer]:
+                      - generic [ref=e3623] [cursor=pointer]:
+                        - generic [ref=e3624] [cursor=pointer]: Star Me 1771971793622
+                        - generic [ref=e3625] [cursor=pointer]: ⭐
+                      - generic [ref=e3628] [cursor=pointer]: Medium
+                  - generic [ref=e3629]:
+                    - checkbox [ref=e3630] [cursor=pointer]
+                    - button "Star Me 1771971510623 Medium" [ref=e3631] [cursor=pointer]:
+                      - generic [ref=e3633] [cursor=pointer]: Star Me 1771971510623
+                      - generic [ref=e3636] [cursor=pointer]: Medium
+                  - generic [ref=e3637]:
+                    - checkbox [ref=e3638] [cursor=pointer]
+                    - button "Persist Star 1771971510053 Medium" [ref=e3639] [cursor=pointer]:
+                      - generic [ref=e3641] [cursor=pointer]: Persist Star 1771971510053
+                      - generic [ref=e3644] [cursor=pointer]: Medium
+                  - generic [ref=e3645]:
+                    - checkbox [ref=e3646] [cursor=pointer]
+                    - button "Complete Me 1771971509985 Medium" [ref=e3647] [cursor=pointer]:
+                      - generic [ref=e3649] [cursor=pointer]: Complete Me 1771971509985
+                      - generic [ref=e3652] [cursor=pointer]: Medium
+                  - generic [ref=e3653]:
+                    - checkbox [ref=e3654] [cursor=pointer]
+                    - button "Inline Edit 1771971424085 Medium" [ref=e3655] [cursor=pointer]:
+                      - generic [ref=e3657] [cursor=pointer]: Inline Edit 1771971424085
+                      - generic [ref=e3660] [cursor=pointer]: Medium
+                  - generic [ref=e3661]:
+                    - checkbox [ref=e3662] [cursor=pointer]
+                    - button "Star Me 1771971140476 Medium" [ref=e3663] [cursor=pointer]:
+                      - generic [ref=e3665] [cursor=pointer]: Star Me 1771971140476
+                      - generic [ref=e3668] [cursor=pointer]: Medium
+                  - generic [ref=e3669]:
+                    - checkbox [ref=e3670] [cursor=pointer]
+                    - button "Complete Me 1771971140001 Medium" [ref=e3671] [cursor=pointer]:
+                      - generic [ref=e3673] [cursor=pointer]: Complete Me 1771971140001
+                      - generic [ref=e3676] [cursor=pointer]: Medium
+                  - generic [ref=e3677]:
+                    - checkbox [ref=e3678] [cursor=pointer]
+                    - button "Persist Star 1771971139871 Medium" [ref=e3679] [cursor=pointer]:
+                      - generic [ref=e3681] [cursor=pointer]: Persist Star 1771971139871
+                      - generic [ref=e3684] [cursor=pointer]: Medium
+                  - generic [ref=e3685]:
+                    - checkbox [ref=e3686] [cursor=pointer]
+                    - button "Star Me 1771970889004 Medium" [ref=e3687] [cursor=pointer]:
+                      - generic [ref=e3689] [cursor=pointer]: Star Me 1771970889004
+                      - generic [ref=e3692] [cursor=pointer]: Medium
+                  - generic [ref=e3693]:
+                    - checkbox [ref=e3694] [cursor=pointer]
+                    - button "Persist Star 1771970862247 Medium" [ref=e3695] [cursor=pointer]:
+                      - generic [ref=e3697] [cursor=pointer]: Persist Star 1771970862247
+                      - generic [ref=e3700] [cursor=pointer]: Medium
+                  - generic [ref=e3701]:
+                    - checkbox [ref=e3702] [cursor=pointer]
+                    - button "Complete Me 1771970859797 Medium" [ref=e3703] [cursor=pointer]:
+                      - generic [ref=e3705] [cursor=pointer]: Complete Me 1771970859797
+                      - generic [ref=e3708] [cursor=pointer]: Medium
+                  - generic [ref=e3709]:
+                    - checkbox [ref=e3710] [cursor=pointer]
+                    - button "Persist Star 1771970828614 Medium" [ref=e3711] [cursor=pointer]:
+                      - generic [ref=e3713] [cursor=pointer]: Persist Star 1771970828614
+                      - generic [ref=e3716] [cursor=pointer]: Medium
+                  - generic [ref=e3717]:
+                    - checkbox [ref=e3718] [cursor=pointer]
+                    - button "Complete Me 1771970828110 Medium" [ref=e3719] [cursor=pointer]:
+                      - generic [ref=e3721] [cursor=pointer]: Complete Me 1771970828110
+                      - generic [ref=e3724] [cursor=pointer]: Medium
+                  - generic [ref=e3725]:
+                    - checkbox [ref=e3726] [cursor=pointer]
+                    - button "Star Me 1771970828053 Medium" [ref=e3727] [cursor=pointer]:
+                      - generic [ref=e3729] [cursor=pointer]: Star Me 1771970828053
+                      - generic [ref=e3732] [cursor=pointer]: Medium
+                  - generic [ref=e3733]:
+                    - checkbox [ref=e3734] [cursor=pointer]
+                    - button "Persist Star 1771970504057 Medium" [ref=e3735] [cursor=pointer]:
+                      - generic [ref=e3737] [cursor=pointer]: Persist Star 1771970504057
+                      - generic [ref=e3740] [cursor=pointer]: Medium
+                  - generic [ref=e3741]:
+                    - checkbox [ref=e3742] [cursor=pointer]
+                    - button "Star Me 1771970503824 Medium" [ref=e3743] [cursor=pointer]:
+                      - generic [ref=e3745] [cursor=pointer]: Star Me 1771970503824
+                      - generic [ref=e3748] [cursor=pointer]: Medium
+                  - generic [ref=e3749]:
+                    - checkbox [ref=e3750] [cursor=pointer]
+                    - button "Complete Me 1771970503430 Medium" [ref=e3751] [cursor=pointer]:
+                      - generic [ref=e3753] [cursor=pointer]: Complete Me 1771970503430
+                      - generic [ref=e3756] [cursor=pointer]: Medium
+                  - generic [ref=e3757]:
+                    - checkbox [ref=e3758] [cursor=pointer]
+                    - button "Star Me 1771970383543 Medium" [ref=e3759] [cursor=pointer]:
+                      - generic [ref=e3761] [cursor=pointer]: Star Me 1771970383543
+                      - generic [ref=e3764] [cursor=pointer]: Medium
+                  - generic [ref=e3765]:
+                    - checkbox [ref=e3766] [cursor=pointer]
+                    - button "Complete Me 1771970383105 Medium" [ref=e3767] [cursor=pointer]:
+                      - generic [ref=e3769] [cursor=pointer]: Complete Me 1771970383105
+                      - generic [ref=e3772] [cursor=pointer]: Medium
+                  - generic [ref=e3773]:
+                    - checkbox [ref=e3774] [cursor=pointer]
+                    - button "Persist Star 1771970383015 Medium" [ref=e3775] [cursor=pointer]:
+                      - generic [ref=e3777] [cursor=pointer]: Persist Star 1771970383015
+                      - generic [ref=e3780] [cursor=pointer]: Medium
+                  - generic [ref=e3781]:
+                    - checkbox [ref=e3782] [cursor=pointer]
+                    - button "Star Me 1771969773242 Medium" [ref=e3783] [cursor=pointer]:
+                      - generic [ref=e3785] [cursor=pointer]: Star Me 1771969773242
+                      - generic [ref=e3788] [cursor=pointer]: Medium
+                  - generic [ref=e3789]:
+                    - checkbox [ref=e3790] [cursor=pointer]
+                    - button "Complete Me 1771969773149 Medium" [ref=e3791] [cursor=pointer]:
+                      - generic [ref=e3793] [cursor=pointer]: Complete Me 1771969773149
+                      - generic [ref=e3796] [cursor=pointer]: Medium
+                  - generic [ref=e3797]:
+                    - checkbox [ref=e3798] [cursor=pointer]
+                    - button "Inline Edit 1771969772517 Medium" [ref=e3799] [cursor=pointer]:
+                      - generic [ref=e3801] [cursor=pointer]: Inline Edit 1771969772517
+                      - generic [ref=e3804] [cursor=pointer]: Medium
+                  - generic [ref=e3805]:
+                    - checkbox [ref=e3806] [cursor=pointer]
+                    - button "Persist Star 1771969772386 Medium" [ref=e3807] [cursor=pointer]:
+                      - generic [ref=e3809] [cursor=pointer]: Persist Star 1771969772386
+                      - generic [ref=e3812] [cursor=pointer]: Medium
+                  - generic [ref=e3813]:
+                    - checkbox [ref=e3814] [cursor=pointer]
+                    - button "Star Me 1771969241078 Medium" [ref=e3815] [cursor=pointer]:
+                      - generic [ref=e3817] [cursor=pointer]: Star Me 1771969241078
+                      - generic [ref=e3820] [cursor=pointer]: Medium
+                  - generic [ref=e3821]:
+                    - checkbox [ref=e3822] [cursor=pointer]
+                    - button "Complete Me 1771969240082 Medium" [ref=e3823] [cursor=pointer]:
+                      - generic [ref=e3825] [cursor=pointer]: Complete Me 1771969240082
+                      - generic [ref=e3828] [cursor=pointer]: Medium
+                  - generic [ref=e3829]:
+                    - checkbox [ref=e3830] [cursor=pointer]
+                    - button "Persist Star 1771969239918 Medium" [ref=e3831] [cursor=pointer]:
+                      - generic [ref=e3833] [cursor=pointer]: Persist Star 1771969239918
+                      - generic [ref=e3836] [cursor=pointer]: Medium
+                  - generic [ref=e3837]:
+                    - checkbox [ref=e3838] [cursor=pointer]
+                    - button "Inline Edit 1771969240276 Medium" [ref=e3839] [cursor=pointer]:
+                      - generic [ref=e3841] [cursor=pointer]: Inline Edit 1771969240276
+                      - generic [ref=e3844] [cursor=pointer]: Medium
+                  - generic [ref=e3845]:
+                    - checkbox [ref=e3846] [cursor=pointer]
+                    - button "Star Me 1771969014508 Medium" [ref=e3847] [cursor=pointer]:
+                      - generic [ref=e3849] [cursor=pointer]: Star Me 1771969014508
+                      - generic [ref=e3852] [cursor=pointer]: Medium
+                  - generic [ref=e3853]:
+                    - checkbox [ref=e3854] [cursor=pointer]
+                    - button "Inline Edit 1771969014186 Medium" [ref=e3855] [cursor=pointer]:
+                      - generic [ref=e3857] [cursor=pointer]: Inline Edit 1771969014186
+                      - generic [ref=e3860] [cursor=pointer]: Medium
+                  - generic [ref=e3861]:
+                    - checkbox [ref=e3862] [cursor=pointer]
+                    - button "Buy groceries 1771968064418 Medium" [ref=e3863] [cursor=pointer]:
+                      - generic [ref=e3865] [cursor=pointer]: Buy groceries 1771968064418
+                      - generic [ref=e3868] [cursor=pointer]: Medium
+                  - generic [ref=e3869]:
+                    - checkbox [ref=e3870] [cursor=pointer]
+                    - button "Count Test Task 1771968065382 Medium" [ref=e3871] [cursor=pointer]:
+                      - generic [ref=e3873] [cursor=pointer]: Count Test Task 1771968065382
+                      - generic [ref=e3876] [cursor=pointer]: Medium
+                  - generic [ref=e3877]:
+                    - checkbox [ref=e3878] [cursor=pointer]
+                    - button "Priority Test Task 1771968057526 Medium" [ref=e3879] [cursor=pointer]:
+                      - generic [ref=e3881] [cursor=pointer]: Priority Test Task 1771968057526
+                      - generic [ref=e3884] [cursor=pointer]: Medium
+                  - generic [ref=e3885]:
+                    - checkbox [ref=e3886] [cursor=pointer]
+                    - button "Task to Edit 1771968050854 Medium" [ref=e3887] [cursor=pointer]:
+                      - generic [ref=e3889] [cursor=pointer]: Task to Edit 1771968050854
+                      - generic [ref=e3892] [cursor=pointer]: Medium
+                  - generic [ref=e3893]:
+                    - checkbox [ref=e3894] [cursor=pointer]
+                    - button "E2E Test Task 1771968048971 Medium" [ref=e3895] [cursor=pointer]:
+                      - generic [ref=e3897] [cursor=pointer]: E2E Test Task 1771968048971
+                      - generic [ref=e3900] [cursor=pointer]: Medium
+                  - generic [ref=e3901]:
+                    - checkbox [ref=e3902] [cursor=pointer]
+                    - button "Buy groceries 1771967671380 Medium" [ref=e3903] [cursor=pointer]:
+                      - generic [ref=e3905] [cursor=pointer]: Buy groceries 1771967671380
+                      - generic [ref=e3908] [cursor=pointer]: Medium
+                  - generic [ref=e3909]:
+                    - checkbox [ref=e3910] [cursor=pointer]
+                    - button "Count Test Task 1771967670307 Medium" [ref=e3911] [cursor=pointer]:
+                      - generic [ref=e3913] [cursor=pointer]: Count Test Task 1771967670307
+                      - generic [ref=e3916] [cursor=pointer]: Medium
+                  - generic [ref=e3917]:
+                    - checkbox [ref=e3918] [cursor=pointer]
+                    - button "Priority Test Task 1771967656898 Medium" [ref=e3919] [cursor=pointer]:
+                      - generic [ref=e3921] [cursor=pointer]: Priority Test Task 1771967656898
+                      - generic [ref=e3924] [cursor=pointer]: Medium
+                  - generic [ref=e3925]:
+                    - checkbox [ref=e3926] [cursor=pointer]
+                    - button "Task to Edit 1771967655115 Medium" [ref=e3927] [cursor=pointer]:
+                      - generic [ref=e3929] [cursor=pointer]: Task to Edit 1771967655115
+                      - generic [ref=e3932] [cursor=pointer]: Medium
+                  - generic [ref=e3933]:
+                    - checkbox [ref=e3934] [cursor=pointer]
+                    - button "E2E Test Task 1771967652984 Medium" [ref=e3935] [cursor=pointer]:
+                      - generic [ref=e3937] [cursor=pointer]: E2E Test Task 1771967652984
+                      - generic [ref=e3940] [cursor=pointer]: Medium
+                  - generic [ref=e3941]:
+                    - checkbox [ref=e3942] [cursor=pointer]
+                    - button "Task to Edit 1771967487052 Medium" [ref=e3943] [cursor=pointer]:
+                      - generic [ref=e3945] [cursor=pointer]: Task to Edit 1771967487052
+                      - generic [ref=e3948] [cursor=pointer]: Medium
+                  - generic [ref=e3949]:
+                    - checkbox [ref=e3950] [cursor=pointer]
+                    - button "E2E Test Task 1771967481632 Medium" [ref=e3951] [cursor=pointer]:
+                      - generic [ref=e3953] [cursor=pointer]: E2E Test Task 1771967481632
+                      - generic [ref=e3956] [cursor=pointer]: Medium
+                  - generic [ref=e3957]:
+                    - checkbox [ref=e3958] [cursor=pointer]
+                    - button "Buy groceries 1771963877725 Medium" [ref=e3959] [cursor=pointer]:
+                      - generic [ref=e3961] [cursor=pointer]: Buy groceries 1771963877725
+                      - generic [ref=e3964] [cursor=pointer]: Medium
+                  - generic [ref=e3965]:
+                    - checkbox [ref=e3966] [cursor=pointer]
+                    - button "Count Test Task 1771963871578 Medium" [ref=e3967] [cursor=pointer]:
+                      - generic [ref=e3969] [cursor=pointer]: Count Test Task 1771963871578
+                      - generic [ref=e3972] [cursor=pointer]: Medium
+                  - generic [ref=e3973]:
+                    - checkbox [ref=e3974] [cursor=pointer]
+                    - button "Priority Test Task 1771963858406 Medium" [ref=e3975] [cursor=pointer]:
+                      - generic [ref=e3977] [cursor=pointer]: Priority Test Task 1771963858406
+                      - generic [ref=e3980] [cursor=pointer]: Medium
+                  - generic [ref=e3981]:
+                    - checkbox [ref=e3982] [cursor=pointer]
+                    - button "Task to Edit 1771963854306 Medium" [ref=e3983] [cursor=pointer]:
+                      - generic [ref=e3985] [cursor=pointer]: Task to Edit 1771963854306
+                      - generic [ref=e3988] [cursor=pointer]: Medium
+                  - generic [ref=e3989]:
+                    - checkbox [ref=e3990] [cursor=pointer]
+                    - button "E2E Test Task 1771963845994 Medium" [ref=e3991] [cursor=pointer]:
+                      - generic [ref=e3993] [cursor=pointer]: E2E Test Task 1771963845994
+                      - generic [ref=e3996] [cursor=pointer]: Medium
+                  - generic [ref=e3997]:
+                    - checkbox [ref=e3998] [cursor=pointer]
+                    - button "Dashboard Task 1771963672456 Medium" [ref=e3999] [cursor=pointer]:
+                      - generic [ref=e4001] [cursor=pointer]: Dashboard Task 1771963672456
+                      - generic [ref=e4004] [cursor=pointer]: Medium
+                  - generic [ref=e4005]:
+                    - checkbox [ref=e4006] [cursor=pointer]
+                    - button "Buy groceries 1771963292406 Medium" [ref=e4007] [cursor=pointer]:
+                      - generic [ref=e4009] [cursor=pointer]: Buy groceries 1771963292406
+                      - generic [ref=e4012] [cursor=pointer]: Medium
+                  - generic [ref=e4013]:
+                    - checkbox [ref=e4014] [cursor=pointer]
+                    - button "Count Test Task 1771963283664 Medium" [ref=e4015] [cursor=pointer]:
+                      - generic [ref=e4017] [cursor=pointer]: Count Test Task 1771963283664
+                      - generic [ref=e4020] [cursor=pointer]: Medium
+                  - generic [ref=e4021]:
+                    - checkbox [ref=e4022] [cursor=pointer]
+                    - button "Priority Test Task 1771963271853 Medium" [ref=e4023] [cursor=pointer]:
+                      - generic [ref=e4025] [cursor=pointer]: Priority Test Task 1771963271853
+                      - generic [ref=e4028] [cursor=pointer]: Medium
+                  - generic [ref=e4029]:
+                    - checkbox [ref=e4030] [cursor=pointer]
+                    - button "Task to Edit 1771963269948 Medium" [ref=e4031] [cursor=pointer]:
+                      - generic [ref=e4033] [cursor=pointer]: Task to Edit 1771963269948
+                      - generic [ref=e4036] [cursor=pointer]: Medium
+                  - generic [ref=e4037]:
+                    - checkbox [ref=e4038] [cursor=pointer]
+                    - button "E2E Test Task 1771963265462 Medium" [ref=e4039] [cursor=pointer]:
+                      - generic [ref=e4041] [cursor=pointer]: E2E Test Task 1771963265462
+                      - generic [ref=e4044] [cursor=pointer]: Medium
+                  - generic [ref=e4045]:
+                    - checkbox [ref=e4046] [cursor=pointer]
+                    - button "Count Test Task 1771962739280 Medium" [ref=e4047] [cursor=pointer]:
+                      - generic [ref=e4049] [cursor=pointer]: Count Test Task 1771962739280
+                      - generic [ref=e4052] [cursor=pointer]: Medium
+                  - generic [ref=e4053]:
+                    - checkbox [ref=e4054] [cursor=pointer]
+                    - button "E2E Test Task 1771962721091 Medium" [ref=e4055] [cursor=pointer]:
+                      - generic [ref=e4057] [cursor=pointer]: E2E Test Task 1771962721091
+                      - generic [ref=e4060] [cursor=pointer]: Medium
+                  - generic [ref=e4061]:
+                    - checkbox [ref=e4062] [cursor=pointer]
+                    - button "Task to Edit 1771962717589 Medium" [ref=e4063] [cursor=pointer]:
+                      - generic [ref=e4065] [cursor=pointer]: Task to Edit 1771962717589
+                      - generic [ref=e4068] [cursor=pointer]: Medium
+                  - generic [ref=e4069]:
+                    - checkbox [ref=e4070] [cursor=pointer]
+                    - button "Priority Test Task 1771962712728 Medium" [ref=e4071] [cursor=pointer]:
+                      - generic [ref=e4073] [cursor=pointer]: Priority Test Task 1771962712728
+                      - generic [ref=e4076] [cursor=pointer]: Medium
+                  - generic [ref=e4077]:
+                    - checkbox [ref=e4078] [cursor=pointer]
+                    - button "Buy groceries 1771962646166 Medium" [ref=e4079] [cursor=pointer]:
+                      - generic [ref=e4081] [cursor=pointer]: Buy groceries 1771962646166
+                      - generic [ref=e4084] [cursor=pointer]: Medium
+                  - generic [ref=e4085]:
+                    - checkbox [ref=e4086] [cursor=pointer]
+                    - button "E2E Test Task 1771962062638 Medium" [ref=e4087] [cursor=pointer]:
+                      - generic [ref=e4089] [cursor=pointer]: E2E Test Task 1771962062638
+                      - generic [ref=e4092] [cursor=pointer]: Medium
+                  - generic [ref=e4093]:
+                    - checkbox [ref=e4094] [cursor=pointer]
+                    - button "Dashboard Task 1771960332578 Medium" [ref=e4095] [cursor=pointer]:
+                      - generic [ref=e4097] [cursor=pointer]: Dashboard Task 1771960332578
+                      - generic [ref=e4100] [cursor=pointer]: Medium
+                  - generic [ref=e4101]:
+                    - checkbox [ref=e4102] [cursor=pointer]
+                    - button "Buy groceries 1771959702315 Medium" [ref=e4103] [cursor=pointer]:
+                      - generic [ref=e4105] [cursor=pointer]: Buy groceries 1771959702315
+                      - generic [ref=e4108] [cursor=pointer]: Medium
+                  - generic [ref=e4109]:
+                    - checkbox [ref=e4110] [cursor=pointer]
+                    - button "Buy groceries 1771959676459 Medium" [ref=e4111] [cursor=pointer]:
+                      - generic [ref=e4113] [cursor=pointer]: Buy groceries 1771959676459
+                      - generic [ref=e4116] [cursor=pointer]: Medium
+                  - generic [ref=e4117]:
+                    - checkbox [ref=e4118] [cursor=pointer]
+                    - button "Buy groceries 1771959360733 Medium" [ref=e4119] [cursor=pointer]:
+                      - generic [ref=e4121] [cursor=pointer]: Buy groceries 1771959360733
+                      - generic [ref=e4124] [cursor=pointer]: Medium
+                  - generic [ref=e4125]:
+                    - checkbox [ref=e4126] [cursor=pointer]
+                    - button "Buy groceries 1771959135616 Medium" [ref=e4127] [cursor=pointer]:
+                      - generic [ref=e4129] [cursor=pointer]: Buy groceries 1771959135616
+                      - generic [ref=e4132] [cursor=pointer]: Medium
+                  - generic [ref=e4133]:
+                    - checkbox [ref=e4134] [cursor=pointer]
+                    - button "Buy groceries 1771959065534 Medium" [ref=e4135] [cursor=pointer]:
+                      - generic [ref=e4137] [cursor=pointer]: Buy groceries 1771959065534
+                      - generic [ref=e4140] [cursor=pointer]: Medium
+                  - generic [ref=e4141]:
+                    - checkbox [ref=e4142] [cursor=pointer]
+                    - button "Task to Delete 1771959033300 Medium" [ref=e4143] [cursor=pointer]:
+                      - generic [ref=e4145] [cursor=pointer]: Task to Delete 1771959033300
+                      - generic [ref=e4148] [cursor=pointer]: Medium
+                  - generic [ref=e4149]:
+                    - checkbox [ref=e4150] [cursor=pointer]
+                    - button "Buy groceries 1771959031075 Medium" [ref=e4151] [cursor=pointer]:
+                      - generic [ref=e4153] [cursor=pointer]: Buy groceries 1771959031075
+                      - generic [ref=e4156] [cursor=pointer]: Medium
+                  - generic [ref=e4157]:
+                    - checkbox [ref=e4158] [cursor=pointer]
+                    - button "Task to Delete 1771959003531 Medium" [ref=e4159] [cursor=pointer]:
+                      - generic [ref=e4161] [cursor=pointer]: Task to Delete 1771959003531
+                      - generic [ref=e4164] [cursor=pointer]: Medium
+                  - generic [ref=e4165]:
+                    - checkbox [ref=e4166] [cursor=pointer]
+                    - button "Buy groceries 1771959000873 Medium" [ref=e4167] [cursor=pointer]:
+                      - generic [ref=e4169] [cursor=pointer]: Buy groceries 1771959000873
+                      - generic [ref=e4172] [cursor=pointer]: Medium
+                  - generic [ref=e4173]:
+                    - checkbox [ref=e4174] [cursor=pointer]
+                    - button "Task to Delete 1771958867113 Medium" [ref=e4175] [cursor=pointer]:
+                      - generic [ref=e4177] [cursor=pointer]: Task to Delete 1771958867113
+                      - generic [ref=e4180] [cursor=pointer]: Medium
+                  - generic [ref=e4181]:
+                    - checkbox [ref=e4182] [cursor=pointer]
+                    - button "Toggle Task 1771958864961 Medium" [ref=e4183] [cursor=pointer]:
+                      - generic [ref=e4185] [cursor=pointer]: Toggle Task 1771958864961
+                      - generic [ref=e4188] [cursor=pointer]: Medium
+                  - generic [ref=e4189]:
+                    - checkbox [ref=e4190] [cursor=pointer]
+                    - button "Task to Delete 1771958807376 Medium" [ref=e4191] [cursor=pointer]:
+                      - generic [ref=e4193] [cursor=pointer]: Task to Delete 1771958807376
+                      - generic [ref=e4196] [cursor=pointer]: Medium
+                  - generic [ref=e4197]:
+                    - checkbox [ref=e4198] [cursor=pointer]
+                    - button "Buy groceries 1771958803715 Medium" [ref=e4199] [cursor=pointer]:
+                      - generic [ref=e4201] [cursor=pointer]: Buy groceries 1771958803715
+                      - generic [ref=e4204] [cursor=pointer]: Medium
+                  - generic [ref=e4205]:
+                    - checkbox [ref=e4206] [cursor=pointer]
+                    - button "Task to Delete 1771958732947 Medium" [ref=e4207] [cursor=pointer]:
+                      - generic [ref=e4209] [cursor=pointer]: Task to Delete 1771958732947
+                      - generic [ref=e4212] [cursor=pointer]: Medium
+                  - generic [ref=e4213]:
+                    - checkbox [ref=e4214] [cursor=pointer]
+                    - button "Buy groceries 1771958729702 Medium" [ref=e4215] [cursor=pointer]:
+                      - generic [ref=e4217] [cursor=pointer]: Buy groceries 1771958729702
+                      - generic [ref=e4220] [cursor=pointer]: Medium
+                  - generic [ref=e4221]:
+                    - checkbox [ref=e4222] [cursor=pointer]
+                    - button "Toggle Task 1771958728764 Medium" [ref=e4223] [cursor=pointer]:
+                      - generic [ref=e4225] [cursor=pointer]: Toggle Task 1771958728764
+                      - generic [ref=e4228] [cursor=pointer]: Medium
+                  - generic [ref=e4229]:
+                    - checkbox [ref=e4230] [cursor=pointer]
+                    - button "Task to Delete 1771958071825 Medium" [ref=e4231] [cursor=pointer]:
+                      - generic [ref=e4233] [cursor=pointer]: Task to Delete 1771958071825
+                      - generic [ref=e4236] [cursor=pointer]: Medium
+                  - generic [ref=e4237]:
+                    - checkbox [ref=e4238] [cursor=pointer]
+                    - button "Toggle Task 1771958068668 Medium" [ref=e4239] [cursor=pointer]:
+                      - generic [ref=e4241] [cursor=pointer]: Toggle Task 1771958068668
+                      - generic [ref=e4244] [cursor=pointer]: Medium
+                  - generic [ref=e4245]:
+                    - checkbox [ref=e4246] [cursor=pointer]
+                    - button "Buy groceries 1771958068079 Medium" [ref=e4247] [cursor=pointer]:
+                      - generic [ref=e4249] [cursor=pointer]: Buy groceries 1771958068079
+                      - generic [ref=e4252] [cursor=pointer]: Medium
+                  - generic [ref=e4253]:
+                    - checkbox [ref=e4254] [cursor=pointer]
+                    - button "Buy groceries Medium" [ref=e4255] [cursor=pointer]:
+                      - generic [ref=e4257] [cursor=pointer]: Buy groceries
+                      - generic [ref=e4260] [cursor=pointer]: Medium
+                  - generic [ref=e4261]:
+                    - checkbox [ref=e4262] [cursor=pointer]
+                    - button "Buy groceries Medium" [ref=e4263] [cursor=pointer]:
+                      - generic [ref=e4265] [cursor=pointer]: Buy groceries
+                      - generic [ref=e4268] [cursor=pointer]: Medium
+                  - generic [ref=e4269]:
+                    - checkbox [ref=e4270] [cursor=pointer]
+                    - button "Task to Delete Medium" [ref=e4271] [cursor=pointer]:
+                      - generic [ref=e4273] [cursor=pointer]: Task to Delete
+                      - generic [ref=e4276] [cursor=pointer]: Medium
+                  - generic [ref=e4277]:
+                    - checkbox [ref=e4278] [cursor=pointer]
+                    - button "Test Task Medium" [ref=e4279] [cursor=pointer]:
+                      - generic [ref=e4281] [cursor=pointer]: Test Task
+                      - generic [ref=e4284] [cursor=pointer]: Medium
+                  - generic [ref=e4285]:
+                    - checkbox [ref=e4286] [cursor=pointer]
+                    - button "Test Task Medium" [ref=e4287] [cursor=pointer]:
+                      - generic [ref=e4289] [cursor=pointer]: Test Task
+                      - generic [ref=e4292] [cursor=pointer]: Medium
+                  - generic [ref=e4293]:
+                    - checkbox [ref=e4294] [cursor=pointer]
+                    - button "Buy groceries Medium" [ref=e4295] [cursor=pointer]:
+                      - generic [ref=e4297] [cursor=pointer]: Buy groceries
+                      - generic [ref=e4300] [cursor=pointer]: Medium
+                  - generic [ref=e4301]:
+                    - checkbox [ref=e4302] [cursor=pointer]
+                    - button "Dashboard Task 1771954266238 Medium" [ref=e4303] [cursor=pointer]:
+                      - generic [ref=e4305] [cursor=pointer]: Dashboard Task 1771954266238
+                      - generic [ref=e4308] [cursor=pointer]: Medium
+                  - generic [ref=e4309]:
+                    - checkbox [ref=e4310] [cursor=pointer]
+                    - button "Count Test Task 1771953430515 Medium" [ref=e4311] [cursor=pointer]:
+                      - generic [ref=e4313] [cursor=pointer]: Count Test Task 1771953430515
+                      - generic [ref=e4316] [cursor=pointer]: Medium
+                  - generic [ref=e4317]:
+                    - checkbox [ref=e4318] [cursor=pointer]
+                    - button "Priority Test Task 1771953422570 Medium" [ref=e4319] [cursor=pointer]:
+                      - generic [ref=e4321] [cursor=pointer]: Priority Test Task 1771953422570
+                      - generic [ref=e4324] [cursor=pointer]: Medium
+                  - generic [ref=e4325]:
+                    - checkbox [ref=e4326] [cursor=pointer]
+                    - button "Task to Edit 1771953418091 Medium" [ref=e4327] [cursor=pointer]:
+                      - generic [ref=e4329] [cursor=pointer]: Task to Edit 1771953418091
+                      - generic [ref=e4332] [cursor=pointer]: Medium
+                  - generic [ref=e4333]:
+                    - checkbox [ref=e4334] [cursor=pointer]
+                    - button "Task to Complete 1771953414350 Medium" [ref=e4335] [cursor=pointer]:
+                      - generic [ref=e4337] [cursor=pointer]: Task to Complete 1771953414350
+                      - generic [ref=e4340] [cursor=pointer]: Medium
+                  - generic [ref=e4341]:
+                    - checkbox [ref=e4342] [cursor=pointer]
+                    - button "E2E Test Task 1771953410002 Medium" [ref=e4343] [cursor=pointer]:
+                      - generic [ref=e4345] [cursor=pointer]: E2E Test Task 1771953410002
+                      - generic [ref=e4348] [cursor=pointer]: Medium
+                  - generic [ref=e4349]:
+                    - checkbox [ref=e4350] [cursor=pointer]
+                    - button "Dashboard Task 1771952638928 Medium" [ref=e4351] [cursor=pointer]:
+                      - generic [ref=e4353] [cursor=pointer]: Dashboard Task 1771952638928
+                      - generic [ref=e4356] [cursor=pointer]: Medium
+                  - generic [ref=e4357]:
+                    - checkbox [ref=e4358] [cursor=pointer]
+                    - button "Count Test Task 1771951837781 Medium" [ref=e4359] [cursor=pointer]:
+                      - generic [ref=e4361] [cursor=pointer]: Count Test Task 1771951837781
+                      - generic [ref=e4364] [cursor=pointer]: Medium
+                  - generic [ref=e4365]:
+                    - checkbox [ref=e4366] [cursor=pointer]
+                    - button "Priority Test Task 1771951829488 Medium" [ref=e4367] [cursor=pointer]:
+                      - generic [ref=e4369] [cursor=pointer]: Priority Test Task 1771951829488
+                      - generic [ref=e4372] [cursor=pointer]: Medium
+                  - generic [ref=e4373]:
+                    - checkbox [ref=e4374] [cursor=pointer]
+                    - button "Task to Edit 1771951824084 Medium" [ref=e4375] [cursor=pointer]:
+                      - generic [ref=e4377] [cursor=pointer]: Task to Edit 1771951824084
+                      - generic [ref=e4380] [cursor=pointer]: Medium
+                  - generic [ref=e4381]:
+                    - checkbox [ref=e4382] [cursor=pointer]
+                    - button "Task to Complete 1771951821087 Medium" [ref=e4383] [cursor=pointer]:
+                      - generic [ref=e4385] [cursor=pointer]: Task to Complete 1771951821087
+                      - generic [ref=e4388] [cursor=pointer]: Medium
+                  - generic [ref=e4389]:
+                    - checkbox [ref=e4390] [cursor=pointer]
+                    - button "E2E Test Task 1771951816600 Medium" [ref=e4391] [cursor=pointer]:
+                      - generic [ref=e4393] [cursor=pointer]: E2E Test Task 1771951816600
+                      - generic [ref=e4396] [cursor=pointer]: Medium
+                  - generic [ref=e4397]:
+                    - checkbox [ref=e4398] [cursor=pointer]
+                    - button "Dashboard Task 1771951025395 Medium" [ref=e4399] [cursor=pointer]:
+                      - generic [ref=e4401] [cursor=pointer]: Dashboard Task 1771951025395
+                      - generic [ref=e4404] [cursor=pointer]: Medium
+                  - generic [ref=e4405]:
+                    - checkbox [ref=e4406] [cursor=pointer]
+                    - button "Count Test Task 1771915679685 Medium" [ref=e4407] [cursor=pointer]:
+                      - generic [ref=e4409] [cursor=pointer]: Count Test Task 1771915679685
+                      - generic [ref=e4412] [cursor=pointer]: Medium
+                  - generic [ref=e4413]:
+                    - checkbox [ref=e4414] [cursor=pointer]
+                    - button "Priority Test Task 1771915673215 Medium" [ref=e4415] [cursor=pointer]:
+                      - generic [ref=e4417] [cursor=pointer]: Priority Test Task 1771915673215
+                      - generic [ref=e4420] [cursor=pointer]: Medium
+                  - generic [ref=e4421]:
+                    - checkbox [ref=e4422] [cursor=pointer]
+                    - button "Task to Edit 1771915669380 Medium" [ref=e4423] [cursor=pointer]:
+                      - generic [ref=e4425] [cursor=pointer]: Task to Edit 1771915669380
+                      - generic [ref=e4428] [cursor=pointer]: Medium
+                  - generic [ref=e4429]:
+                    - checkbox [ref=e4430] [cursor=pointer]
+                    - button "E2E Test Task 1771915663305 Medium" [ref=e4431] [cursor=pointer]:
+                      - generic [ref=e4433] [cursor=pointer]: E2E Test Task 1771915663305
+                      - generic [ref=e4436] [cursor=pointer]: Medium
+                  - generic [ref=e4437]:
+                    - checkbox [ref=e4438] [cursor=pointer]
+                    - button "Dashboard Task 1771914886370 Medium" [ref=e4439] [cursor=pointer]:
+                      - generic [ref=e4441] [cursor=pointer]: Dashboard Task 1771914886370
+                      - generic [ref=e4444] [cursor=pointer]: Medium
+                  - generic [ref=e4445]:
+                    - checkbox [ref=e4446] [cursor=pointer]
+                    - button "Count Test Task 1771911384222 Medium" [ref=e4447] [cursor=pointer]:
+                      - generic [ref=e4449] [cursor=pointer]: Count Test Task 1771911384222
+                      - generic [ref=e4452] [cursor=pointer]: Medium
+                  - generic [ref=e4453]:
+                    - checkbox [ref=e4454] [cursor=pointer]
+                    - button "Priority Test Task 1771911378613 Medium" [ref=e4455] [cursor=pointer]:
+                      - generic [ref=e4457] [cursor=pointer]: Priority Test Task 1771911378613
+                      - generic [ref=e4460] [cursor=pointer]: Medium
+                  - generic [ref=e4461]:
+                    - checkbox [ref=e4462] [cursor=pointer]
+                    - button "Task to Edit 1771911376505 Medium" [ref=e4463] [cursor=pointer]:
+                      - generic [ref=e4465] [cursor=pointer]: Task to Edit 1771911376505
+                      - generic [ref=e4468] [cursor=pointer]: Medium
+                  - generic [ref=e4469]:
+                    - checkbox [ref=e4470] [cursor=pointer]
+                    - button "E2E Test Task 1771911375087 Medium" [ref=e4471] [cursor=pointer]:
+                      - generic [ref=e4473] [cursor=pointer]: E2E Test Task 1771911375087
+                      - generic [ref=e4476] [cursor=pointer]: Medium
+                  - generic [ref=e4477]:
+                    - checkbox [ref=e4478] [cursor=pointer]
+                    - button "Dashboard Task 1771911328627 Medium" [ref=e4479] [cursor=pointer]:
+                      - generic [ref=e4481] [cursor=pointer]: Dashboard Task 1771911328627
+                      - generic [ref=e4484] [cursor=pointer]: Medium
+                  - generic [ref=e4485]:
+                    - checkbox [ref=e4486] [cursor=pointer]
+                    - button "Count Test Task 1771911194993 Medium" [ref=e4487] [cursor=pointer]:
+                      - generic [ref=e4489] [cursor=pointer]: Count Test Task 1771911194993
+                      - generic [ref=e4492] [cursor=pointer]: Medium
+                  - generic [ref=e4493]:
+                    - checkbox [ref=e4494] [cursor=pointer]
+                    - button "Priority Test Task 1771911189381 Medium" [ref=e4495] [cursor=pointer]:
+                      - generic [ref=e4497] [cursor=pointer]: Priority Test Task 1771911189381
+                      - generic [ref=e4500] [cursor=pointer]: Medium
+                  - generic [ref=e4501]:
+                    - checkbox [ref=e4502] [cursor=pointer]
+                    - button "Task to Edit 1771911188190 Medium" [ref=e4503] [cursor=pointer]:
+                      - generic [ref=e4505] [cursor=pointer]: Task to Edit 1771911188190
+                      - generic [ref=e4508] [cursor=pointer]: Medium
+                  - generic [ref=e4509]:
+                    - checkbox [ref=e4510] [cursor=pointer]
+                    - button "E2E Test Task 1771911186680 Medium" [ref=e4511] [cursor=pointer]:
+                      - generic [ref=e4513] [cursor=pointer]: E2E Test Task 1771911186680
+                      - generic [ref=e4516] [cursor=pointer]: Medium
+                  - generic [ref=e4517]:
+                    - checkbox [ref=e4518] [cursor=pointer]
+                    - button "Dashboard Task 1771911074638 Medium" [ref=e4519] [cursor=pointer]:
+                      - generic [ref=e4521] [cursor=pointer]: Dashboard Task 1771911074638
+                      - generic [ref=e4524] [cursor=pointer]: Medium
+                  - generic [ref=e4525]:
+                    - checkbox [ref=e4526] [cursor=pointer]
+                    - button "Count Test Task 1771909600971 Medium" [ref=e4527] [cursor=pointer]:
+                      - generic [ref=e4529] [cursor=pointer]: Count Test Task 1771909600971
+                      - generic [ref=e4532] [cursor=pointer]: Medium
+                  - generic [ref=e4533]:
+                    - checkbox [ref=e4534] [cursor=pointer]
+                    - button "Task to Edit 1771909595438 Medium" [ref=e4535] [cursor=pointer]:
+                      - generic [ref=e4537] [cursor=pointer]: Task to Edit 1771909595438
+                      - generic [ref=e4540] [cursor=pointer]: Medium
+                  - generic [ref=e4541]:
+                    - checkbox [ref=e4542] [cursor=pointer]
+                    - button "Priority Test Task 1771909594621 Medium" [ref=e4543] [cursor=pointer]:
+                      - generic [ref=e4545] [cursor=pointer]: Priority Test Task 1771909594621
+                      - generic [ref=e4548] [cursor=pointer]: Medium
+                  - generic [ref=e4549]:
+                    - checkbox [ref=e4550] [cursor=pointer]
+                    - button "E2E Test Task 1771909591724 Medium" [ref=e4551] [cursor=pointer]:
+                      - generic [ref=e4553] [cursor=pointer]: E2E Test Task 1771909591724
+                      - generic [ref=e4556] [cursor=pointer]: Medium
+                  - generic [ref=e4557]:
+                    - checkbox [ref=e4558] [cursor=pointer]
+                    - button "Dashboard Task 1771909554711 Medium" [ref=e4559] [cursor=pointer]:
+                      - generic [ref=e4561] [cursor=pointer]: Dashboard Task 1771909554711
+                      - generic [ref=e4564] [cursor=pointer]: Medium
+                  - generic [ref=e4565]:
+                    - checkbox [ref=e4566] [cursor=pointer]
+                    - button "Count Test Task 1771909389750 Medium" [ref=e4567] [cursor=pointer]:
+                      - generic [ref=e4569] [cursor=pointer]: Count Test Task 1771909389750
+                      - generic [ref=e4572] [cursor=pointer]: Medium
+                  - generic [ref=e4573]:
+                    - checkbox [ref=e4574] [cursor=pointer]
+                    - button "E2E Test Task 1771909383249 Medium" [ref=e4575] [cursor=pointer]:
+                      - generic [ref=e4577] [cursor=pointer]: E2E Test Task 1771909383249
+                      - generic [ref=e4580] [cursor=pointer]: Medium
+                  - generic [ref=e4581]:
+                    - checkbox [ref=e4582] [cursor=pointer]
+                    - button "Priority Test Task 1771909383102 Medium" [ref=e4583] [cursor=pointer]:
+                      - generic [ref=e4585] [cursor=pointer]: Priority Test Task 1771909383102
+                      - generic [ref=e4588] [cursor=pointer]: Medium
+                  - generic [ref=e4589]:
+                    - checkbox [ref=e4590] [cursor=pointer]
+                    - button "Task to Edit 1771909381422 Medium" [ref=e4591] [cursor=pointer]:
+                      - generic [ref=e4593] [cursor=pointer]: Task to Edit 1771909381422
+                      - generic [ref=e4596] [cursor=pointer]: Medium
+                  - generic [ref=e4597]:
+                    - checkbox [ref=e4598] [cursor=pointer]
+                    - button "Count Test Task 1771909357996 Medium" [ref=e4599] [cursor=pointer]:
+                      - generic [ref=e4601] [cursor=pointer]: Count Test Task 1771909357996
+                      - generic [ref=e4604] [cursor=pointer]: Medium
+                  - generic [ref=e4605]:
+                    - checkbox [ref=e4606] [cursor=pointer]
+                    - button "Priority Test Task 1771909352362 Medium" [ref=e4607] [cursor=pointer]:
+                      - generic [ref=e4609] [cursor=pointer]: Priority Test Task 1771909352362
+                      - generic [ref=e4612] [cursor=pointer]: Medium
+                  - generic [ref=e4613]:
+                    - checkbox [ref=e4614] [cursor=pointer]
+                    - button "Task to Edit 1771909351929 Medium" [ref=e4615] [cursor=pointer]:
+                      - generic [ref=e4617] [cursor=pointer]: Task to Edit 1771909351929
+                      - generic [ref=e4620] [cursor=pointer]: Medium
+                  - generic [ref=e4621]:
+                    - checkbox [ref=e4622] [cursor=pointer]
+                    - button "E2E Test Task 1771909351816 Medium" [ref=e4623] [cursor=pointer]:
+                      - generic [ref=e4625] [cursor=pointer]: E2E Test Task 1771909351816
+                      - generic [ref=e4628] [cursor=pointer]: Medium
+                  - generic [ref=e4629]:
+                    - checkbox [ref=e4630] [cursor=pointer]
+                    - button "Count Test Task 1771909298347 Medium" [ref=e4631] [cursor=pointer]:
+                      - generic [ref=e4633] [cursor=pointer]: Count Test Task 1771909298347
+                      - generic [ref=e4636] [cursor=pointer]: Medium
+                  - generic [ref=e4637]:
+                    - checkbox [ref=e4638] [cursor=pointer]
+                    - button "E2E Test Task 1771909288769 Medium" [ref=e4639] [cursor=pointer]:
+                      - generic [ref=e4641] [cursor=pointer]: E2E Test Task 1771909288769
+                      - generic [ref=e4644] [cursor=pointer]: Medium
+                  - generic [ref=e4645]:
+                    - checkbox [ref=e4646] [cursor=pointer]
+                    - button "Task to Edit 1771909287998 Medium" [ref=e4647] [cursor=pointer]:
+                      - generic [ref=e4649] [cursor=pointer]: Task to Edit 1771909287998
+                      - generic [ref=e4652] [cursor=pointer]: Medium
+                  - generic [ref=e4653]:
+                    - checkbox [ref=e4654] [cursor=pointer]
+                    - button "Priority Test Task 1771909287580 Medium" [ref=e4655] [cursor=pointer]:
+                      - generic [ref=e4657] [cursor=pointer]: Priority Test Task 1771909287580
+                      - generic [ref=e4660] [cursor=pointer]: Medium
+                  - generic [ref=e4661]:
+                    - checkbox [ref=e4662] [cursor=pointer]
+                    - button "Count Test Task 1771909078454 Medium" [ref=e4663] [cursor=pointer]:
+                      - generic [ref=e4665] [cursor=pointer]: Count Test Task 1771909078454
+                      - generic [ref=e4668] [cursor=pointer]: Medium
+                  - generic [ref=e4669]:
+                    - checkbox [ref=e4670] [cursor=pointer]
+                    - button "High Priority Task 1771909068487 !high Medium" [ref=e4671] [cursor=pointer]:
+                      - generic [ref=e4673] [cursor=pointer]: High Priority Task 1771909068487 !high
+                      - generic [ref=e4676] [cursor=pointer]: Medium
+                  - generic [ref=e4677]:
+                    - checkbox [ref=e4678] [cursor=pointer]
+                    - button "E2E Test Task 1771909068408 Medium" [ref=e4679] [cursor=pointer]:
+                      - generic [ref=e4681] [cursor=pointer]: E2E Test Task 1771909068408
+                      - generic [ref=e4684] [cursor=pointer]: Medium
+                  - generic [ref=e4685]:
+                    - checkbox [ref=e4686] [cursor=pointer]
+                    - button "Task to Complete 1771909068288 Medium" [ref=e4687] [cursor=pointer]:
+                      - generic [ref=e4689] [cursor=pointer]: Task to Complete 1771909068288
+                      - generic [ref=e4692] [cursor=pointer]: Medium
+                  - generic [ref=e4693]:
+                    - checkbox [ref=e4694] [cursor=pointer]
+                    - button "Task to Edit 1771909066702 Medium" [ref=e4695] [cursor=pointer]:
+                      - generic [ref=e4697] [cursor=pointer]: Task to Edit 1771909066702
+                      - generic [ref=e4700] [cursor=pointer]: Medium
+                  - generic [ref=e4701]:
+                    - checkbox [ref=e4702] [cursor=pointer]
+                    - button "Dashboard Task 1771905615585 Medium" [ref=e4703] [cursor=pointer]:
+                      - generic [ref=e4705] [cursor=pointer]: Dashboard Task 1771905615585
+                      - generic [ref=e4708] [cursor=pointer]: Medium
+                  - generic [ref=e4709]:
+                    - checkbox [ref=e4710] [cursor=pointer]
+                    - button "Dashboard Task 1771905510918 Medium" [ref=e4711] [cursor=pointer]:
+                      - generic [ref=e4713] [cursor=pointer]: Dashboard Task 1771905510918
+                      - generic [ref=e4716] [cursor=pointer]: Medium
+                  - generic [ref=e4717]:
+                    - checkbox [ref=e4718] [cursor=pointer]
+                    - button "Dashboard Task 1771905387202 Medium" [ref=e4719] [cursor=pointer]:
+                      - generic [ref=e4721] [cursor=pointer]: Dashboard Task 1771905387202
+                      - generic [ref=e4724] [cursor=pointer]: Medium
+                  - generic [ref=e4725]:
+                    - checkbox [ref=e4726] [cursor=pointer]
+                    - button "Dashboard Task 1771905241012 Medium" [ref=e4727] [cursor=pointer]:
+                      - generic [ref=e4729] [cursor=pointer]: Dashboard Task 1771905241012
+                      - generic [ref=e4732] [cursor=pointer]: Medium
+              - generic [ref=e4734]:
+                - generic [ref=e4736]: ⚡ In Progress
+                - generic [ref=e4737]: "0"
+              - generic [ref=e4739]:
+                - generic [ref=e4741]: ⏸️ Waiting
+                - generic [ref=e4742]: "0"
+              - generic [ref=e4743]:
+                - generic [ref=e4744]:
+                  - generic [ref=e4746]: ✅ Done
+                  - generic [ref=e4747]: "47"
+                - generic [ref=e4748]:
+                  - generic [ref=e4749]:
+                    - checkbox [ref=e4750] [cursor=pointer]
+                    - button "Complete Me 1772233510759 Done Medium" [ref=e4751] [cursor=pointer]:
+                      - generic [ref=e4753] [cursor=pointer]: Complete Me 1772233510759
+                      - generic [ref=e4754] [cursor=pointer]:
+                        - generic [ref=e4755] [cursor=pointer]: Done
+                        - generic [ref=e4757] [cursor=pointer]: Medium
+                  - generic [ref=e4758]:
+                    - checkbox [ref=e4759] [cursor=pointer]
+                    - button "Completed 1772136929611 Done Medium" [ref=e4760] [cursor=pointer]:
+                      - generic [ref=e4762] [cursor=pointer]: Completed 1772136929611
+                      - generic [ref=e4763] [cursor=pointer]:
+                        - generic [ref=e4764] [cursor=pointer]: Done
+                        - generic [ref=e4766] [cursor=pointer]: Medium
+                  - generic [ref=e4767]:
+                    - checkbox [ref=e4768] [cursor=pointer]
+                    - button "Count Update 1772136926457 Done Medium" [ref=e4769] [cursor=pointer]:
+                      - generic [ref=e4771] [cursor=pointer]: Count Update 1772136926457
+                      - generic [ref=e4772] [cursor=pointer]:
+                        - generic [ref=e4773] [cursor=pointer]: Done
+                        - generic [ref=e4775] [cursor=pointer]: Medium
+                  - generic [ref=e4776]:
+                    - checkbox [ref=e4777] [cursor=pointer]
+                    - button "Done 1772136916753 Done Medium" [ref=e4778] [cursor=pointer]:
+                      - generic [ref=e4780] [cursor=pointer]: Done 1772136916753
+                      - generic [ref=e4781] [cursor=pointer]:
+                        - generic [ref=e4782] [cursor=pointer]: Done
+                        - generic [ref=e4784] [cursor=pointer]: Medium
+                  - generic [ref=e4785]:
+                    - checkbox [ref=e4786] [cursor=pointer]
+                    - button "Done Task 1772136664404 Done Medium" [ref=e4787] [cursor=pointer]:
+                      - generic [ref=e4789] [cursor=pointer]: Done Task 1772136664404
+                      - generic [ref=e4790] [cursor=pointer]:
+                        - generic [ref=e4791] [cursor=pointer]: Done
+                        - generic [ref=e4793] [cursor=pointer]: Medium
+                  - generic [ref=e4794]:
+                    - checkbox [ref=e4795] [cursor=pointer]
+                    - button "Done Task 1772136375921 Done Medium" [ref=e4796] [cursor=pointer]:
+                      - generic [ref=e4798] [cursor=pointer]: Done Task 1772136375921
+                      - generic [ref=e4799] [cursor=pointer]:
+                        - generic [ref=e4800] [cursor=pointer]: Done
+                        - generic [ref=e4802] [cursor=pointer]: Medium
+                  - generic [ref=e4803]:
+                    - checkbox [ref=e4804] [cursor=pointer]
+                    - button "Done Task 1772136095219 Done Medium" [ref=e4805] [cursor=pointer]:
+                      - generic [ref=e4807] [cursor=pointer]: Done Task 1772136095219
+                      - generic [ref=e4808] [cursor=pointer]:
+                        - generic [ref=e4809] [cursor=pointer]: Done
+                        - generic [ref=e4811] [cursor=pointer]: Medium
+                  - generic [ref=e4812]:
+                    - checkbox [ref=e4813] [cursor=pointer]
+                    - button "Done Task 1772135947772 Done Medium" [ref=e4814] [cursor=pointer]:
+                      - generic [ref=e4816] [cursor=pointer]: Done Task 1772135947772
+                      - generic [ref=e4817] [cursor=pointer]:
+                        - generic [ref=e4818] [cursor=pointer]: Done
+                        - generic [ref=e4820] [cursor=pointer]: Medium
+                  - generic [ref=e4821]:
+                    - checkbox [ref=e4822] [cursor=pointer]
+                    - button "Complete Me 1772134692082 Done Medium" [ref=e4823] [cursor=pointer]:
+                      - generic [ref=e4825] [cursor=pointer]: Complete Me 1772134692082
+                      - generic [ref=e4826] [cursor=pointer]:
+                        - generic [ref=e4827] [cursor=pointer]: Done
+                        - generic [ref=e4829] [cursor=pointer]: Medium
+                  - generic [ref=e4830]:
+                    - checkbox [ref=e4831] [cursor=pointer]
+                    - button "Toggle Task 1772133818369 Done Medium" [ref=e4832] [cursor=pointer]:
+                      - generic [ref=e4834] [cursor=pointer]: Toggle Task 1772133818369
+                      - generic [ref=e4835] [cursor=pointer]:
+                        - generic [ref=e4836] [cursor=pointer]: Done
+                        - generic [ref=e4838] [cursor=pointer]: Medium
+                  - generic [ref=e4839]:
+                    - checkbox [ref=e4840] [cursor=pointer]
+                    - button "Complete Me 1772133813651 Done Medium" [ref=e4841] [cursor=pointer]:
+                      - generic [ref=e4843] [cursor=pointer]: Complete Me 1772133813651
+                      - generic [ref=e4844] [cursor=pointer]:
+                        - generic [ref=e4845] [cursor=pointer]: Done
+                        - generic [ref=e4847] [cursor=pointer]: Medium
+                  - generic [ref=e4848]:
+                    - checkbox [ref=e4849] [cursor=pointer]
+                    - button "Task to Complete 1772057352792 Done Medium" [ref=e4850] [cursor=pointer]:
+                      - generic [ref=e4852] [cursor=pointer]: Task to Complete 1772057352792
+                      - generic [ref=e4853] [cursor=pointer]:
+                        - generic [ref=e4854] [cursor=pointer]: Done
+                        - generic [ref=e4856] [cursor=pointer]: Medium
+                  - generic [ref=e4857]:
+                    - checkbox [ref=e4858] [cursor=pointer]
+                    - button "Task to Complete 1772057130197 Done Medium" [ref=e4859] [cursor=pointer]:
+                      - generic [ref=e4861] [cursor=pointer]: Task to Complete 1772057130197
+                      - generic [ref=e4862] [cursor=pointer]:
+                        - generic [ref=e4863] [cursor=pointer]: Done
+                        - generic [ref=e4865] [cursor=pointer]: Medium
+                  - generic [ref=e4866]:
+                    - checkbox [ref=e4867] [cursor=pointer]
+                    - button "Task to Complete 1772055367528 Done Medium" [ref=e4868] [cursor=pointer]:
+                      - generic [ref=e4870] [cursor=pointer]: Task to Complete 1772055367528
+                      - generic [ref=e4871] [cursor=pointer]:
+                        - generic [ref=e4872] [cursor=pointer]: Done
+                        - generic [ref=e4874] [cursor=pointer]: Medium
+                  - generic [ref=e4875]:
+                    - checkbox [ref=e4876] [cursor=pointer]
+                    - button "Toggle Task 1771972804280 Done Medium" [ref=e4877] [cursor=pointer]:
+                      - generic [ref=e4879] [cursor=pointer]: Toggle Task 1771972804280
+                      - generic [ref=e4880] [cursor=pointer]:
+                        - generic [ref=e4881] [cursor=pointer]: Done
+                        - generic [ref=e4883] [cursor=pointer]: Medium
+                  - generic [ref=e4884]:
+                    - checkbox [ref=e4885] [cursor=pointer]
+                    - button "Task to Complete 1771972790512 Done Medium" [ref=e4886] [cursor=pointer]:
+                      - generic [ref=e4888] [cursor=pointer]: Task to Complete 1771972790512
+                      - generic [ref=e4889] [cursor=pointer]:
+                        - generic [ref=e4890] [cursor=pointer]: Done
+                        - generic [ref=e4892] [cursor=pointer]: Medium
+                  - generic [ref=e4893]:
+                    - checkbox [ref=e4894] [cursor=pointer]
+                    - button "Complete Me 1771972072624 Done Medium" [ref=e4895] [cursor=pointer]:
+                      - generic [ref=e4897] [cursor=pointer]: Complete Me 1771972072624
+                      - generic [ref=e4898] [cursor=pointer]:
+                        - generic [ref=e4899] [cursor=pointer]: Done
+                        - generic [ref=e4901] [cursor=pointer]: Medium
+                  - generic [ref=e4902]:
+                    - checkbox [ref=e4903] [cursor=pointer]
+                    - button "Complete Me 1771971793325 Done Medium" [ref=e4904] [cursor=pointer]:
+                      - generic [ref=e4906] [cursor=pointer]: Complete Me 1771971793325
+                      - generic [ref=e4907] [cursor=pointer]:
+                        - generic [ref=e4908] [cursor=pointer]: Done
+                        - generic [ref=e4910] [cursor=pointer]: Medium
+                  - generic [ref=e4911]:
+                    - checkbox [ref=e4912] [cursor=pointer]
+                    - button "Complete Me 1771969013924 Done Medium" [ref=e4913] [cursor=pointer]:
+                      - generic [ref=e4915] [cursor=pointer]: Complete Me 1771969013924
+                      - generic [ref=e4916] [cursor=pointer]:
+                        - generic [ref=e4917] [cursor=pointer]: Done
+                        - generic [ref=e4919] [cursor=pointer]: Medium
+                  - generic [ref=e4920]:
+                    - checkbox [ref=e4921] [cursor=pointer]
+                    - button "Toggle Task 1771968066073 Done Medium" [ref=e4922] [cursor=pointer]:
+                      - generic [ref=e4924] [cursor=pointer]: Toggle Task 1771968066073
+                      - generic [ref=e4925] [cursor=pointer]:
+                        - generic [ref=e4926] [cursor=pointer]: Done
+                        - generic [ref=e4928] [cursor=pointer]: Medium
+                  - generic [ref=e4929]:
+                    - checkbox [ref=e4930] [cursor=pointer]
+                    - button "Task to Complete 1771968050178 Done Medium" [ref=e4931] [cursor=pointer]:
+                      - generic [ref=e4933] [cursor=pointer]: Task to Complete 1771968050178
+                      - generic [ref=e4934] [cursor=pointer]:
+                        - generic [ref=e4935] [cursor=pointer]: Done
+                        - generic [ref=e4937] [cursor=pointer]: Medium
+                  - generic [ref=e4938]:
+                    - checkbox [ref=e4939] [cursor=pointer]
+                    - button "Toggle Task 1771967678602 Done Medium" [ref=e4940] [cursor=pointer]:
+                      - generic [ref=e4942] [cursor=pointer]: Toggle Task 1771967678602
+                      - generic [ref=e4943] [cursor=pointer]:
+                        - generic [ref=e4944] [cursor=pointer]: Done
+                        - generic [ref=e4946] [cursor=pointer]: Medium
+                  - generic [ref=e4947]:
+                    - checkbox [ref=e4948] [cursor=pointer]
+                    - button "Task to Complete 1771967655705 Done Medium" [ref=e4949] [cursor=pointer]:
+                      - generic [ref=e4951] [cursor=pointer]: Task to Complete 1771967655705
+                      - generic [ref=e4952] [cursor=pointer]:
+                        - generic [ref=e4953] [cursor=pointer]: Done
+                        - generic [ref=e4955] [cursor=pointer]: Medium
+                  - generic [ref=e4956]:
+                    - checkbox [ref=e4957] [cursor=pointer]
+                    - button "Task to Complete 1771967485735 Done Medium" [ref=e4958] [cursor=pointer]:
+                      - generic [ref=e4960] [cursor=pointer]: Task to Complete 1771967485735
+                      - generic [ref=e4961] [cursor=pointer]:
+                        - generic [ref=e4962] [cursor=pointer]: Done
+                        - generic [ref=e4964] [cursor=pointer]: Medium
+                  - generic [ref=e4965]:
+                    - checkbox [ref=e4966] [cursor=pointer]
+                    - button "Toggle Task 1771963878539 Done Medium" [ref=e4967] [cursor=pointer]:
+                      - generic [ref=e4969] [cursor=pointer]: Toggle Task 1771963878539
+                      - generic [ref=e4970] [cursor=pointer]:
+                        - generic [ref=e4971] [cursor=pointer]: Done
+                        - generic [ref=e4973] [cursor=pointer]: Medium
+                  - generic [ref=e4974]:
+                    - checkbox [ref=e4975] [cursor=pointer]
+                    - button "Task to Complete 1771963851236 Done Medium" [ref=e4976] [cursor=pointer]:
+                      - generic [ref=e4978] [cursor=pointer]: Task to Complete 1771963851236
+                      - generic [ref=e4979] [cursor=pointer]:
+                        - generic [ref=e4980] [cursor=pointer]: Done
+                        - generic [ref=e4982] [cursor=pointer]: Medium
+                  - generic [ref=e4983]:
+                    - checkbox [ref=e4984] [cursor=pointer]
+                    - button "Toggle Task 1771963292877 Done Medium" [ref=e4985] [cursor=pointer]:
+                      - generic [ref=e4987] [cursor=pointer]: Toggle Task 1771963292877
+                      - generic [ref=e4988] [cursor=pointer]:
+                        - generic [ref=e4989] [cursor=pointer]: Done
+                        - generic [ref=e4991] [cursor=pointer]: Medium
+                  - generic [ref=e4992]:
+                    - checkbox [ref=e4993] [cursor=pointer]
+                    - button "Task to Complete 1771963267712 Done Medium" [ref=e4994] [cursor=pointer]:
+                      - generic [ref=e4996] [cursor=pointer]: Task to Complete 1771963267712
+                      - generic [ref=e4997] [cursor=pointer]:
+                        - generic [ref=e4998] [cursor=pointer]: Done
+                        - generic [ref=e5000] [cursor=pointer]: Medium
+                  - generic [ref=e5001]:
+                    - checkbox [ref=e5002] [cursor=pointer]
+                    - button "Task to Complete 1771962710122 Done Medium" [ref=e5003] [cursor=pointer]:
+                      - generic [ref=e5005] [cursor=pointer]: Task to Complete 1771962710122
+                      - generic [ref=e5006] [cursor=pointer]:
+                        - generic [ref=e5007] [cursor=pointer]: Done
+                        - generic [ref=e5009] [cursor=pointer]: Medium
+                  - generic [ref=e5010]:
+                    - checkbox [ref=e5011] [cursor=pointer]
+                    - button "Toggle Task 1771962647535 Done Medium" [ref=e5012] [cursor=pointer]:
+                      - generic [ref=e5014] [cursor=pointer]: Toggle Task 1771962647535
+                      - generic [ref=e5015] [cursor=pointer]:
+                        - generic [ref=e5016] [cursor=pointer]: Done
+                        - generic [ref=e5018] [cursor=pointer]: Medium
+                  - generic [ref=e5019]:
+                    - checkbox [ref=e5020] [cursor=pointer]
+                    - button "Toggle Task 1771959705553 Done Medium" [ref=e5021] [cursor=pointer]:
+                      - generic [ref=e5023] [cursor=pointer]: Toggle Task 1771959705553
+                      - generic [ref=e5024] [cursor=pointer]:
+                        - generic [ref=e5025] [cursor=pointer]: Done
+                        - generic [ref=e5027] [cursor=pointer]: Medium
+                  - generic [ref=e5028]:
+                    - checkbox [ref=e5029] [cursor=pointer]
+                    - button "Toggle Task 1771959679078 Done Medium" [ref=e5030] [cursor=pointer]:
+                      - generic [ref=e5032] [cursor=pointer]: Toggle Task 1771959679078
+                      - generic [ref=e5033] [cursor=pointer]:
+                        - generic [ref=e5034] [cursor=pointer]: Done
+                        - generic [ref=e5036] [cursor=pointer]: Medium
+                  - generic [ref=e5037]:
+                    - checkbox [ref=e5038] [cursor=pointer]
+                    - button "Toggle Task 1771959361583 Done Medium" [ref=e5039] [cursor=pointer]:
+                      - generic [ref=e5041] [cursor=pointer]: Toggle Task 1771959361583
+                      - generic [ref=e5042] [cursor=pointer]:
+                        - generic [ref=e5043] [cursor=pointer]: Done
+                        - generic [ref=e5045] [cursor=pointer]: Medium
+                  - generic [ref=e5046]:
+                    - checkbox [ref=e5047] [cursor=pointer]
+                    - button "Toggle Task 1771959137124 Done Medium" [ref=e5048] [cursor=pointer]:
+                      - generic [ref=e5050] [cursor=pointer]: Toggle Task 1771959137124
+                      - generic [ref=e5051] [cursor=pointer]:
+                        - generic [ref=e5052] [cursor=pointer]: Done
+                        - generic [ref=e5054] [cursor=pointer]: Medium
+                  - generic [ref=e5055]:
+                    - checkbox [ref=e5056] [cursor=pointer]
+                    - button "Toggle Task 1771959064010 Done Medium" [ref=e5057] [cursor=pointer]:
+                      - generic [ref=e5059] [cursor=pointer]: Toggle Task 1771959064010
+                      - generic [ref=e5060] [cursor=pointer]:
+                        - generic [ref=e5061] [cursor=pointer]: Done
+                        - generic [ref=e5063] [cursor=pointer]: Medium
+                  - generic [ref=e5064]:
+                    - checkbox [ref=e5065] [cursor=pointer]
+                    - button "Toggle Task 1771959031201 Done Medium" [ref=e5066] [cursor=pointer]:
+                      - generic [ref=e5068] [cursor=pointer]: Toggle Task 1771959031201
+                      - generic [ref=e5069] [cursor=pointer]:
+                        - generic [ref=e5070] [cursor=pointer]: Done
+                        - generic [ref=e5072] [cursor=pointer]: Medium
+                  - generic [ref=e5073]:
+                    - checkbox [ref=e5074] [cursor=pointer]
+                    - button "Toggle Task 1771959001620 Done Medium" [ref=e5075] [cursor=pointer]:
+                      - generic [ref=e5077] [cursor=pointer]: Toggle Task 1771959001620
+                      - generic [ref=e5078] [cursor=pointer]:
+                        - generic [ref=e5079] [cursor=pointer]: Done
+                        - generic [ref=e5081] [cursor=pointer]: Medium
+                  - generic [ref=e5082]:
+                    - checkbox [ref=e5083] [cursor=pointer]
+                    - button "Toggle Task 1771958877028 Done Medium" [ref=e5084] [cursor=pointer]:
+                      - generic [ref=e5086] [cursor=pointer]: Toggle Task 1771958877028
+                      - generic [ref=e5087] [cursor=pointer]:
+                        - generic [ref=e5088] [cursor=pointer]: Done
+                        - generic [ref=e5090] [cursor=pointer]: Medium
+                  - generic [ref=e5091]:
+                    - checkbox [ref=e5092] [cursor=pointer]
+                    - button "Buy groceries 1771958865008 Done Medium" [ref=e5093] [cursor=pointer]:
+                      - generic [ref=e5095] [cursor=pointer]: Buy groceries 1771958865008
+                      - generic [ref=e5096] [cursor=pointer]:
+                        - generic [ref=e5097] [cursor=pointer]: Done
+                        - generic [ref=e5099] [cursor=pointer]: Medium
+                  - generic [ref=e5100]:
+                    - checkbox [ref=e5101] [cursor=pointer]
+                    - button "Toggle Task 1771958803741 Done Medium" [ref=e5102] [cursor=pointer]:
+                      - generic [ref=e5104] [cursor=pointer]: Toggle Task 1771958803741
+                      - generic [ref=e5105] [cursor=pointer]:
+                        - generic [ref=e5106] [cursor=pointer]: Done
+                        - generic [ref=e5108] [cursor=pointer]: Medium
+                  - generic [ref=e5109]:
+                    - checkbox [ref=e5110] [cursor=pointer]
+                    - button "Task to Complete 1771915667496 Done Medium" [ref=e5111] [cursor=pointer]:
+                      - generic [ref=e5113] [cursor=pointer]: Task to Complete 1771915667496
+                      - generic [ref=e5114] [cursor=pointer]:
+                        - generic [ref=e5115] [cursor=pointer]: Done
+                        - generic [ref=e5117] [cursor=pointer]: Medium
+                  - generic [ref=e5118]:
+                    - checkbox [ref=e5119] [cursor=pointer]
+                    - button "Task to Complete 1771911375371 Done Medium" [ref=e5120] [cursor=pointer]:
+                      - generic [ref=e5122] [cursor=pointer]: Task to Complete 1771911375371
+                      - generic [ref=e5123] [cursor=pointer]:
+                        - generic [ref=e5124] [cursor=pointer]: Done
+                        - generic [ref=e5126] [cursor=pointer]: Medium
+                  - generic [ref=e5127]:
+                    - checkbox [ref=e5128] [cursor=pointer]
+                    - button "Task to Complete 1771911188660 Done Medium" [ref=e5129] [cursor=pointer]:
+                      - generic [ref=e5131] [cursor=pointer]: Task to Complete 1771911188660
+                      - generic [ref=e5132] [cursor=pointer]:
+                        - generic [ref=e5133] [cursor=pointer]: Done
+                        - generic [ref=e5135] [cursor=pointer]: Medium
+                  - generic [ref=e5136]:
+                    - checkbox [ref=e5137] [cursor=pointer]
+                    - button "Task to Complete 1771909592834 Done Medium" [ref=e5138] [cursor=pointer]:
+                      - generic [ref=e5140] [cursor=pointer]: Task to Complete 1771909592834
+                      - generic [ref=e5141] [cursor=pointer]:
+                        - generic [ref=e5142] [cursor=pointer]: Done
+                        - generic [ref=e5144] [cursor=pointer]: Medium
+                  - generic [ref=e5145]:
+                    - checkbox [ref=e5146] [cursor=pointer]
+                    - button "Task to Complete 1771909383049 Done Medium" [ref=e5147] [cursor=pointer]:
+                      - generic [ref=e5149] [cursor=pointer]: Task to Complete 1771909383049
+                      - generic [ref=e5150] [cursor=pointer]:
+                        - generic [ref=e5151] [cursor=pointer]: Done
+                        - generic [ref=e5153] [cursor=pointer]: Medium
+                  - generic [ref=e5154]:
+                    - checkbox [ref=e5155] [cursor=pointer]
+                    - button "Task to Complete 1771909351131 Done Medium" [ref=e5156] [cursor=pointer]:
+                      - generic [ref=e5158] [cursor=pointer]: Task to Complete 1771909351131
+                      - generic [ref=e5159] [cursor=pointer]:
+                        - generic [ref=e5160] [cursor=pointer]: Done
+                        - generic [ref=e5162] [cursor=pointer]: Medium
+                  - generic [ref=e5163]:
+                    - checkbox [ref=e5164] [cursor=pointer]
+                    - button "Task to Complete 1771909288830 Done Medium" [ref=e5165] [cursor=pointer]:
+                      - generic [ref=e5167] [cursor=pointer]: Task to Complete 1771909288830
+                      - generic [ref=e5168] [cursor=pointer]:
+                        - generic [ref=e5169] [cursor=pointer]: Done
+                        - generic [ref=e5171] [cursor=pointer]: Medium
+            - generic [ref=e5173]:
+              - generic [ref=e5174]:
+                - heading "Edit Task" [level=2] [ref=e5175]
+                - button "Close" [ref=e5176]:
+                  - img [ref=e5177]
+              - generic [ref=e5180]:
+                - generic [ref=e5181]:
+                  - generic [ref=e5182]:
+                    - generic [ref=e5183]: Task Title
+                    - textbox "What needs to be done?" [active] [ref=e5184]: Task to Delete
+                  - generic [ref=e5185]:
+                    - generic [ref=e5186]: Description (optional)
+                    - textbox "Add more details..." [ref=e5187]
+                  - generic [ref=e5188]:
+                    - generic [ref=e5189]:
+                      - img [ref=e5190]
+                      - text: Priority
+                    - generic [ref=e5192]:
+                      - button "🔥 Urgent" [ref=e5193]:
+                        - img [ref=e5194]
+                        - text: 🔥 Urgent
+                      - button "⭐ Important" [ref=e5196]:
+                        - img [ref=e5197]
+                        - text: ⭐ Important
+                      - button "High" [ref=e5199]:
+                        - img [ref=e5200]
+                        - text: High
+                      - button "Medium" [ref=e5202]:
+                        - img [ref=e5203]
+                        - text: Medium
+                      - button "Low" [ref=e5205]:
+                        - img [ref=e5206]
+                        - text: Low
+                  - generic [ref=e5208]:
+                    - generic [ref=e5209]: Status
+                    - generic [ref=e5210]:
+                      - button "To Do" [ref=e5211]
+                      - button "In Progress" [ref=e5212]
+                      - button "Waiting" [ref=e5213]
+                      - button "Scheduled" [ref=e5214]
+                      - button "Done" [ref=e5215]
+                  - generic [ref=e5216]:
+                    - generic [ref=e5217]: Category
+                    - generic [ref=e5218]:
+                      - button "💼 Work" [ref=e5219]
+                      - button "🏠 Personal" [ref=e5220]
+                      - button "📚 Learning" [ref=e5221]
+                      - button "🎨 Creative" [ref=e5222]
+                      - button "💪 Health" [ref=e5223]
+                      - button "📌 Other" [ref=e5224]
+                  - generic [ref=e5225]:
+                    - generic [ref=e5226]:
+                      - img [ref=e5227]
+                      - text: Due Date (optional)
+                    - textbox [ref=e5229]
+                  - generic [ref=e5230]:
+                    - generic [ref=e5231]: Estimated Time (minutes, optional)
+                    - spinbutton [ref=e5232]: "25"
+                  - generic [ref=e5233]:
+                    - generic [ref=e5234]:
+                      - img [ref=e5235]
+                      - text: Recurrence
+                    - generic [ref=e5240]:
+                      - button "None" [ref=e5241]
+                      - button "Daily" [ref=e5242]
+                      - button "Weekly" [ref=e5243]
+                      - button "Monthly" [ref=e5244]
+                      - button "Yearly" [ref=e5245]
+                  - generic [ref=e5246]:
+                    - generic [ref=e5247]:
+                      - img [ref=e5248]
+                      - text: Tags (optional)
+                    - textbox "work, urgent, client" [ref=e5251]
+                    - paragraph [ref=e5252]: Separate tags with commas
+                  - generic [ref=e5253]:
+                    - generic [ref=e5254]:
+                      - img [ref=e5255]
+                      - text: Subtasks (optional)
+                    - textbox "Enter subtasks (one per line)" [ref=e5256]
+                    - paragraph [ref=e5257]: Press Enter after each subtask
+                  - generic [ref=e5258]:
+                    - generic [ref=e5259]:
+                      - img [ref=e5260]
+                      - text: Dependencies (optional)
+                    - generic [ref=e5263]:
+                      - generic [ref=e5264]:
+                        - img [ref=e5265]
+                        - text: Depends On (Blocked By)
+                      - button "Add blocking task..." [ref=e5269]:
+                        - img [ref=e5270]
+                        - text: Add blocking task...
+                    - paragraph [ref=e5273]: This task will be blocked until selected tasks are completed
+                  - generic [ref=e5275]:
+                    - checkbox "Set Reminder" [ref=e5276]
+                    - generic [ref=e5277]:
+                      - img [ref=e5278]
+                      - text: Set Reminder
+                  - generic [ref=e5282] [cursor=pointer]:
+                    - checkbox "Star this task" [ref=e5283]
+                    - generic [ref=e5284] [cursor=pointer]:
+                      - img [ref=e5285] [cursor=pointer]
+                      - text: Star this task
+                - generic [ref=e5287]:
+                  - button "Delete" [ref=e5288]
+                  - button "Cancel" [ref=e5289]
+                  - button "Update Task" [ref=e5290]
+          - button "Add Task" [ref=e5291] [cursor=pointer]:
+            - img [ref=e5292] [cursor=pointer]
+        - button "Quick capture" [ref=e5293]:
+          - img [ref=e5294]
+  - generic [ref=e5295]:
+    - img [ref=e5297]
+    - button "Open Tanstack query devtools" [ref=e5345] [cursor=pointer]:
+      - img [ref=e5346] [cursor=pointer]
+```

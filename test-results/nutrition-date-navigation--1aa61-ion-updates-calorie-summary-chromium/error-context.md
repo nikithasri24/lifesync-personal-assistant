@@ -1,0 +1,189 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: life weave
+          - generic [ref=e27]: Skillful Living
+        - button "Collapse sidebar" [ref=e28]:
+          - img [ref=e29]
+      - navigation "Main navigation" [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - heading "Main" [level=3] [ref=e35]
+            - list [ref=e36]:
+              - listitem [ref=e37]:
+                - link "Dashboard" [ref=e38] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e39] [cursor=pointer]
+                  - generic [ref=e42] [cursor=pointer]: Dashboard
+              - listitem [ref=e43]:
+                - link "AI Assistant" [ref=e44] [cursor=pointer]:
+                  - /url: /assistant
+                  - img [ref=e45] [cursor=pointer]
+                  - generic [ref=e47] [cursor=pointer]: AI Assistant
+              - listitem [ref=e48]:
+                - link "Calendar" [ref=e49] [cursor=pointer]:
+                  - /url: /calendar
+                  - img [ref=e50] [cursor=pointer]
+                  - generic [ref=e52] [cursor=pointer]: Calendar
+              - listitem [ref=e53]:
+                - link "Focus" [ref=e54] [cursor=pointer]:
+                  - /url: /focus
+                  - img [ref=e55] [cursor=pointer]
+                  - generic [ref=e58] [cursor=pointer]: Focus
+          - generic [ref=e59]:
+            - heading "Productivity" [level=3] [ref=e60]
+            - list [ref=e61]:
+              - listitem [ref=e62]:
+                - link "Habits" [ref=e63] [cursor=pointer]:
+                  - /url: /habits
+                  - img [ref=e64] [cursor=pointer]
+                  - generic [ref=e67] [cursor=pointer]: Habits
+              - listitem [ref=e68]:
+                - link "Tasks" [ref=e69] [cursor=pointer]:
+                  - /url: /todos
+                  - img [ref=e70] [cursor=pointer]
+                  - generic [ref=e74] [cursor=pointer]: Tasks
+              - listitem [ref=e75]:
+                - link "Notes" [ref=e76] [cursor=pointer]:
+                  - /url: /notes
+                  - img [ref=e77] [cursor=pointer]
+                  - generic [ref=e80] [cursor=pointer]: Notes
+          - generic [ref=e81]:
+            - heading "Wellbeing" [level=3] [ref=e82]
+            - list [ref=e83]:
+              - listitem [ref=e84]:
+                - link "Journal" [ref=e85] [cursor=pointer]:
+                  - /url: /journal
+                  - img [ref=e86] [cursor=pointer]
+                  - generic [ref=e88] [cursor=pointer]: Journal
+              - listitem [ref=e89]:
+                - link "Self Care" [ref=e90] [cursor=pointer]:
+                  - /url: /self-care
+                  - img [ref=e91] [cursor=pointer]
+                  - generic [ref=e94] [cursor=pointer]: Self Care
+              - listitem [ref=e95]:
+                - link "Nutrition" [ref=e96] [cursor=pointer]:
+                  - /url: /nutrition
+                  - img [ref=e97] [cursor=pointer]
+                  - generic [ref=e100] [cursor=pointer]: Nutrition
+                  - img [ref=e101] [cursor=pointer]
+          - generic [ref=e103]:
+            - heading "Personal" [level=3] [ref=e104]
+            - list [ref=e105]:
+              - listitem [ref=e106]:
+                - link "Travel" [ref=e107] [cursor=pointer]:
+                  - /url: /travel
+                  - img [ref=e108] [cursor=pointer]
+                  - generic [ref=e111] [cursor=pointer]: Travel
+              - listitem [ref=e112]:
+                - link "Visa Calculator" [ref=e113] [cursor=pointer]:
+                  - /url: /travel/visa
+                  - img [ref=e114] [cursor=pointer]
+                  - generic [ref=e116] [cursor=pointer]: Visa Calculator
+              - listitem [ref=e117]:
+                - link "Finances" [ref=e118] [cursor=pointer]:
+                  - /url: /finances
+                  - img [ref=e119] [cursor=pointer]
+                  - generic [ref=e121] [cursor=pointer]: Finances
+              - listitem [ref=e122]:
+                - link "Shopping" [ref=e123] [cursor=pointer]:
+                  - /url: /shopping
+                  - img [ref=e124] [cursor=pointer]
+                  - generic [ref=e128] [cursor=pointer]: Shopping
+              - listitem [ref=e129]:
+                - link "Meals" [ref=e130] [cursor=pointer]:
+                  - /url: /meals
+                  - img [ref=e131] [cursor=pointer]
+                  - generic [ref=e133] [cursor=pointer]: Meals
+              - listitem [ref=e134]:
+                - link "Goals" [ref=e135] [cursor=pointer]:
+                  - /url: /goals
+                  - img [ref=e136] [cursor=pointer]
+                  - generic [ref=e142] [cursor=pointer]: Goals
+              - listitem [ref=e143]:
+                - link "Shared" [ref=e144] [cursor=pointer]:
+                  - /url: /shared
+                  - img [ref=e145] [cursor=pointer]
+                  - generic [ref=e150] [cursor=pointer]: Shared
+              - listitem [ref=e151]:
+                - link "Together" [ref=e152] [cursor=pointer]:
+                  - /url: /together
+                  - img [ref=e153] [cursor=pointer]
+                  - generic [ref=e155] [cursor=pointer]: Together
+      - 'button "Switch theme. Current: Light" [ref=e157]':
+        - img [ref=e160]
+        - generic [ref=e166]: Light Mode
+    - main "nutrition page" [ref=e168]:
+      - heading "nutrition page" [level=1] [ref=e169]
+      - generic [ref=e170]:
+        - generic [ref=e172]:
+          - generic [ref=e173]:
+            - heading "🍽️" [level=1] [ref=e174]
+            - generic [ref=e175]: Track your meals & macros
+          - generic [ref=e177]:
+            - generic [ref=e178]:
+              - button "Previous day" [ref=e179]:
+                - img [ref=e180]
+              - generic [ref=e182]: Feb 27, 2026
+              - button "Next day" [ref=e183]:
+                - img [ref=e184]
+            - generic [ref=e186]:
+              - button "Take photo of food" [ref=e187]:
+                - img [ref=e188]
+                - generic [ref=e191]: Snap
+              - button "Search for food" [ref=e192]:
+                - img [ref=e193]
+                - generic [ref=e196]: Search
+              - button "Scan barcode" [ref=e197]:
+                - img [ref=e198]
+                - generic [ref=e203]: Barcode
+              - button "Quick add food" [ref=e204]:
+                - img [ref=e205]
+                - generic [ref=e206]: Quick
+            - generic [ref=e207]:
+              - generic [ref=e208]:
+                - generic [ref=e209]:
+                  - generic [ref=e210]:
+                    - generic [ref=e211]: 🌅
+                    - generic [ref=e212]: Breakfast
+                  - generic [ref=e213]: 150 cal
+                - generic [ref=e215] [cursor=pointer]:
+                  - generic [ref=e216] [cursor=pointer]: 🍽️
+                  - generic [ref=e217] [cursor=pointer]:
+                    - generic [ref=e218] [cursor=pointer]: Dated Food 1772234853901
+                    - generic [ref=e219] [cursor=pointer]: 1 serving
+                  - generic [ref=e220] [cursor=pointer]: 150 cal
+                - button "+ Add Food" [ref=e221] [cursor=pointer]
+              - generic [ref=e222]:
+                - generic [ref=e223]:
+                  - generic [ref=e224]:
+                    - generic [ref=e225]: 🌞
+                    - generic [ref=e226]: Lunch
+                  - generic [ref=e227]: 0 cal
+                - button "+ Add Food" [ref=e228] [cursor=pointer]
+              - generic [ref=e229]:
+                - generic [ref=e230]:
+                  - generic [ref=e231]:
+                    - generic [ref=e232]: 🌙
+                    - generic [ref=e233]: Dinner
+                  - generic [ref=e234]: 0 cal
+                - button "+ Add Food" [ref=e235] [cursor=pointer]
+              - generic [ref=e236]:
+                - generic [ref=e237]:
+                  - generic [ref=e238]:
+                    - generic [ref=e239]: 🍎
+                    - generic [ref=e240]: Snack
+                  - generic [ref=e241]: 0 cal
+                - button "+ Add Food" [ref=e242] [cursor=pointer]
+        - button "Quick capture" [ref=e243]:
+          - img [ref=e244]
+  - generic [ref=e245]:
+    - img [ref=e247]
+    - button "Open Tanstack query devtools" [ref=e295] [cursor=pointer]:
+      - img [ref=e296] [cursor=pointer]
+```

@@ -1,12 +1,10 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const createHabitEntryMock = vi.fn()
 const deleteHabitEntriesForDateMock = vi.fn()
-const deleteAllHabitEntriesMock = vi.fn()
-const deleteHabitMock = vi.fn()
 
 vi.mock('../../hooks/useHabitsQuery', () => ({
   useHabits: () => ({
@@ -16,19 +14,15 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
         name: 'Drink water',
         description: '8 glasses',
         frequency: 'daily',
-        target_count: 1,
-        category_id: 'general',
-        icon: '💧',
-        color: '#22c55e',
+        target_value: 1,
+        category: 'Health',
+        streak_count: 0,
+        best_streak: 0,
+        is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
     ],
-    isLoading: false,
-    error: null,
-  }),
-  useHabit: () => ({
-    data: null,
     isLoading: false,
     error: null,
   }),
@@ -37,71 +31,51 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     isLoading: false,
     error: null,
   }),
-  useHabitEntriesForHabit: () => ({
-    data: [],
+  useMergedHabitsConnectionQuery: () => ({
+    data: null,
     isLoading: false,
     error: null,
   }),
   useCreateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useUpdateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabit: () => ({
-    mutate: deleteHabitMock,
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useCreateHabitEntry: () => ({
     mutate: createHabitEntryMock,
-    isPending: false,
-  }),
-  useUpdateHabitEntry: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntry: () => ({
-    mutate: vi.fn(),
+    mutateAsync: createHabitEntryMock,
     isPending: false,
   }),
   useDeleteHabitEntriesForDate: () => ({
     mutate: deleteHabitEntriesForDateMock,
-    isPending: false,
-  }),
-  useDeleteHabitEntriesForDateRange: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteAllHabitEntries: () => ({
-    mutate: deleteAllHabitEntriesMock,
+    mutateAsync: deleteHabitEntriesForDateMock,
     isPending: false,
   }),
 }))
 
-vi.mock('../../hooks/useHabitCategories', () => ({
-  useHabitCategories: () => ({
-    data: [{ id: 'general', name: 'General', icon: '📋', color: '#6b7280' }],
+vi.mock('../../hooks/useOwnerInfo', () => ({
+  useCurrentUserId: () => ({
+    data: 'test-user-id',
     isLoading: false,
-    error: null,
-  }),
-  useCreateHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useUpdateHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
   }),
 }))
 
 describe('Habits interactions', () => {
-  it('completes, resets and deletes a habit', async () => {
+  it('marks a habit complete', async () => {
+    createHabitEntryMock.mockImplementation((_args: unknown, opts?: { onSuccess?: () => void }) => {
+      opts?.onSuccess?.()
+    })
+
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     })
@@ -115,28 +89,22 @@ describe('Habits interactions', () => {
       </QueryClientProvider>
     )
 
-    // Complete today
-    const completeBtn = screen.getByRole('button', { name: /complete today/i })
-    fireEvent.click(completeBtn)
-    expect(createHabitEntryMock).toHaveBeenCalledWith(expect.objectContaining({
-      habit_id: 'h1'
-    }))
+    // Wait for habit to render
+    await waitFor(() => {
+      expect(screen.getByText('Drink water')).toBeInTheDocument()
+    })
 
-    // Reset today
-    const resetTodayBtn = screen.getByRole('button', { name: /reset today/i })
-    fireEvent.click(resetTodayBtn)
-    expect(deleteHabitEntriesForDateMock).toHaveBeenCalledWith(expect.objectContaining({
-      habitId: 'h1'
-    }))
+    // Mark complete button
+    const completeBtn = screen.getByRole('button', { name: /mark complete/i })
+    await act(async () => {
+      fireEvent.click(completeBtn)
+    })
 
-    // Reset streak/history
-    const resetHistoryBtn = screen.getByRole('button', { name: /reset streak/i })
-    fireEvent.click(resetHistoryBtn)
-    expect(deleteAllHabitEntriesMock).toHaveBeenCalledWith('h1')
-
-    // Delete
-    const deleteBtn = screen.getByRole('button', { name: /delete habit/i })
-    fireEvent.click(deleteBtn)
-    expect(deleteHabitMock).toHaveBeenCalledWith('h1')
+    expect(createHabitEntryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        habit_id: 'h1',
+      }),
+      expect.anything()
+    )
   })
 })

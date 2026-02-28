@@ -1,38 +1,27 @@
-import { render, screen, within, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-// Mutable habits variable used by the mock to simulate store updates
-let habitsVar = [
-  {
-    id: 'h1',
-    name: 'Plan day',
-    description: '',
-    frequency: 'daily' as const,
-    target_count: 1,
-    category_id: 'work',
-    icon: '📋',
-    color: '#22c55e',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-]
-
-const updateHabitMock = vi.fn(async ({ id, updates }: { id: string; updates: any }) => {
-  habitsVar = habitsVar.map((h) => (h.id === id ? { ...h, ...updates } : h))
-})
+const updateHabitMock = vi.fn()
 
 vi.mock('../../hooks/useHabitsQuery', () => ({
   useHabits: () => ({
-    get data() {
-      return habitsVar
-    },
-    isLoading: false,
-    error: null,
-  }),
-  useHabit: () => ({
-    data: null,
+    data: [
+      {
+        id: 'h1',
+        name: 'Plan day',
+        description: '',
+        frequency: 'daily' as const,
+        target_value: 1,
+        category: 'Work',
+        streak_count: 0,
+        best_streak: 0,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ],
     isLoading: false,
     error: null,
   }),
@@ -41,74 +30,49 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     isLoading: false,
     error: null,
   }),
-  useHabitEntriesForHabit: () => ({
-    data: [],
+  useMergedHabitsConnectionQuery: () => ({
+    data: null,
     isLoading: false,
     error: null,
   }),
   useCreateHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useUpdateHabit: () => ({
     mutate: updateHabitMock,
+    mutateAsync: updateHabitMock,
     isPending: false,
   }),
   useDeleteHabit: () => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useCreateHabitEntry: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useUpdateHabitEntry: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntry: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
   useDeleteHabitEntriesForDate: () => ({
     mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitEntriesForDateRange: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteAllHabitEntries: () => ({
-    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
 }))
 
-vi.mock('../../hooks/useHabitCategories', () => ({
-  useHabitCategories: () => ({
-    data: [
-      { id: 'work', name: 'Work', icon: '💼', color: '#3b82f6' },
-      { id: 'health', name: 'Health', icon: '💪', color: '#10b981' },
-    ],
+vi.mock('../../hooks/useOwnerInfo', () => ({
+  useCurrentUserId: () => ({
+    data: 'test-user-id',
     isLoading: false,
-    error: null,
-  }),
-  useCreateHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useUpdateHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-  useDeleteHabitCategory: () => ({
-    mutate: vi.fn(),
-    isPending: false,
   }),
 }))
 
 describe('Habits category label updates after edit', () => {
-  it('updates category label to new category after saving', async () => {
+  it('opens edit modal and saves updated category', async () => {
+    updateHabitMock.mockResolvedValue({})
+
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     })
@@ -121,19 +85,45 @@ describe('Habits category label updates after edit', () => {
       </QueryClientProvider>
     )
 
-    // Open edit for the card
-    const card = screen.getByText('Plan day').closest('article') as HTMLElement
-    expect(within(card).getByText(/Work \u2022|Work •/)).toBeInTheDocument()
-    fireEvent.click(within(card).getByRole('button', { name: /^Edit$/ }))
-
-    // Change Category to Health and save
-    const editCategory = within(card).getAllByLabelText('Category')[0] as HTMLSelectElement
-    fireEvent.change(editCategory, { target: { value: 'health' } })
-    fireEvent.click(within(card).getByRole('button', { name: /save changes/i }))
-
-    // After update, component re-renders (local state changes) and reflects new category label
+    // Wait for habit to render
     await waitFor(() => {
-      expect(within(card).getByText(/Health \u2022|Health •/)).toBeInTheDocument()
+      expect(screen.getByText('Plan day')).toBeInTheDocument()
+    })
+
+    // Initial category should be visible
+    expect(screen.getByText(/Work/)).toBeInTheDocument()
+
+    // Click on habit to open edit modal
+    await act(async () => {
+      fireEvent.click(screen.getByText('Plan day'))
+    })
+
+    // Edit modal should open
+    await waitFor(() => {
+      expect(screen.getByText('Edit Habit')).toBeInTheDocument()
+    })
+
+    // Change the category field - find the category input and update it
+    const categorySelect = screen.getByLabelText(/Category/i)
+    await act(async () => {
+      fireEvent.change(categorySelect, { target: { value: 'Fitness' } })
+    })
+
+    // Save
+    const updateButton = screen.getByRole('button', { name: /update habit/i })
+    await act(async () => {
+      fireEvent.click(updateButton)
+    })
+
+    await waitFor(() => {
+      expect(updateHabitMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'h1',
+          updates: expect.objectContaining({
+            category: 'Fitness',
+          }),
+        })
+      )
     })
   })
 })

@@ -16,17 +16,20 @@ describe('useTheme', () => {
   beforeEach(() => {
     // Reset localStorage
     localStorage.clear()
-    
+
+    // Simulate the v2 migration already completed so hook reads saved theme normally
+    localStorage.setItem('lifesync-theme-migration-v2', 'true')
+
     // Reset document classes
     document.documentElement.className = ''
-    
+
     // Mock matchMedia
     mockMediaQuery = {
       matches: false,
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     }
-    
+
     mockMatchMedia.mockReturnValue(mockMediaQuery)
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -39,37 +42,40 @@ describe('useTheme', () => {
   })
 
   describe('Initial State', () => {
-    it('starts with system theme when no saved preference', () => {
+    it('starts with light theme when no saved preference', () => {
       const { result } = renderHook(() => useTheme())
-      
-      expect(result.current.theme).toBe('system')
-      expect(result.current.currentTheme).toBe('light') // default system theme
+
+      // The hook defaults to 'light' when no theme preference is saved
+      expect(result.current.theme).toBe('light')
+      expect(result.current.currentTheme).toBe('light')
     })
 
     it('starts with saved theme from localStorage', () => {
       localStorage.setItem('lifesync-theme', 'dark')
-      
+
       const { result } = renderHook(() => useTheme())
-      
+
       expect(result.current.theme).toBe('dark')
       expect(result.current.currentTheme).toBe('dark')
     })
 
-    it('detects system dark mode preference', () => {
+    it('starts with system theme when explicitly saved', () => {
+      localStorage.setItem('lifesync-theme', 'system')
       mockMediaQuery.matches = true
-      
+
       const { result } = renderHook(() => useTheme())
-      
+
       expect(result.current.theme).toBe('system')
       expect(result.current.currentTheme).toBe('dark')
     })
 
     it('handles invalid saved theme gracefully', () => {
       localStorage.setItem('lifesync-theme', 'invalid-theme')
-      
+
       const { result } = renderHook(() => useTheme())
-      
-      expect(result.current.theme).toBe('system')
+
+      // Falls back to 'light' when saved theme is invalid
+      expect(result.current.theme).toBe('light')
     })
   })
 
@@ -211,33 +217,37 @@ describe('useTheme', () => {
     })
 
     it('updates system theme when media query changes', () => {
+      // Set theme to 'system' so media query changes affect currentTheme
+      localStorage.setItem('lifesync-theme', 'system')
       const { result } = renderHook(() => useTheme())
-      
+
       // Get the change handler
       const changeHandler = mockMediaQuery.addEventListener.mock.calls[0][1]
-      
+
       // Simulate system theme change to dark
       act(() => {
         changeHandler({ matches: true })
       })
-      
+
       expect(result.current.currentTheme).toBe('dark')
     })
 
     it('updates system theme when media query changes to light', () => {
+      // Set theme to 'system' so media query changes affect currentTheme
+      localStorage.setItem('lifesync-theme', 'system')
       mockMediaQuery.matches = true // Start with dark
       const { result } = renderHook(() => useTheme())
-      
+
       expect(result.current.currentTheme).toBe('dark')
-      
+
       // Get the change handler
       const changeHandler = mockMediaQuery.addEventListener.mock.calls[0][1]
-      
+
       // Simulate system theme change to light
       act(() => {
         changeHandler({ matches: false })
       })
-      
+
       expect(result.current.currentTheme).toBe('light')
     })
 
@@ -332,11 +342,11 @@ describe('useTheme', () => {
 
     it('handles corrupted localStorage data', () => {
       localStorage.setItem('lifesync-theme', '{invalid json}')
-      
+
       const { result } = renderHook(() => useTheme())
-      
-      // Should fallback to system theme
-      expect(result.current.theme).toBe('system')
+
+      // Should fallback to light theme (not a valid Theme value)
+      expect(result.current.theme).toBe('light')
     })
   })
 

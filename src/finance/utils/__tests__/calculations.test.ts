@@ -53,7 +53,7 @@ describe('calculations', () => {
     it('should handle liabilities', () => {
       const accounts = [
         { balance: 10000, type: 'checking' },
-        { balance: -5000, type: 'credit_card' },
+        { balance: 5000, type: 'credit', liability: true },
       ];
       const result = calculateNetWorth(accounts);
       expect(result.totalLiabilities).toBe(5000);
@@ -65,8 +65,8 @@ describe('calculations', () => {
       const accounts = [
         { balance: 20000, type: 'checking' },
         { balance: 100000, type: 'investment' },
-        { balance: -3000, type: 'credit_card' },
-        { balance: -200000, type: 'loan' },
+        { balance: 3000, type: 'credit', liability: true },
+        { balance: 200000, type: 'loan', liability: true },
       ];
       const result = calculateNetWorth(accounts);
       expect(result.totalAssets).toBe(120000);
@@ -332,8 +332,9 @@ describe('calculations', () => {
 
   describe('calculateCreditUtilization', () => {
     it('should calculate excellent utilization', () => {
+      // Implementation checks type === 'credit' (not 'credit_card')
       const accounts = [
-        { balance: -500, creditLimit: 10000, type: 'credit_card' },
+        { balance: 500, creditLimit: 10000, type: 'credit' },
       ];
       const result = calculateCreditUtilization(accounts);
       expect(result.utilizationRate).toBe(5);
@@ -342,7 +343,7 @@ describe('calculations', () => {
 
     it('should calculate high utilization', () => {
       const accounts = [
-        { balance: -8000, creditLimit: 10000, type: 'credit_card' },
+        { balance: 8000, creditLimit: 10000, type: 'credit' },
       ];
       const result = calculateCreditUtilization(accounts);
       expect(result.utilizationRate).toBe(80);
@@ -351,8 +352,8 @@ describe('calculations', () => {
 
     it('should handle multiple credit cards', () => {
       const accounts = [
-        { balance: -2000, creditLimit: 10000, type: 'credit_card' },
-        { balance: -3000, creditLimit: 10000, type: 'credit_card' },
+        { balance: 2000, creditLimit: 10000, type: 'credit' },
+        { balance: 3000, creditLimit: 10000, type: 'credit' },
       ];
       const result = calculateCreditUtilization(accounts);
       expect(result.totalBalance).toBe(5000);
@@ -362,7 +363,7 @@ describe('calculations', () => {
 
     it('should ignore non-credit accounts', () => {
       const accounts = [
-        { balance: -1000, creditLimit: 10000, type: 'credit_card' },
+        { balance: 1000, creditLimit: 10000, type: 'credit' },
         { balance: 5000, type: 'checking' },
       ];
       const result = calculateCreditUtilization(accounts);
