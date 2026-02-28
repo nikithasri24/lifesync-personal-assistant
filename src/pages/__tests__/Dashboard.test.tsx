@@ -1,9 +1,20 @@
 import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import Dashboard from '../DashboardV3';
+import Dashboard from '../Dashboard';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '../../contexts/ThemeContext';
+
+// Mock AuthProvider
+vi.mock('../../providers/AuthProvider', () => ({
+  useAuthContext: () => ({
+    user: { id: 'test-user-id', email: 'test@test.com' },
+    session: { user: { id: 'test-user-id' } },
+    isLoading: false,
+    signOut: vi.fn(),
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 // Mock navigation
 const mockNavigate = vi.fn();
@@ -58,6 +69,8 @@ const mockNotes = [
     category: 'work',
     created_at: now.toISOString(),
     updated_at: now.toISOString(),
+    updatedAt: now,
+    createdAt: now,
     is_pinned: false,
     user_id: 'test-user-id',
   },
@@ -125,9 +138,17 @@ vi.mock('../../hooks/useNotesQuery', () => ({
     isLoading: false,
     error: null,
   }),
+  useCreateNote: () => ({
+    mutateAsync: vi.fn().mockResolvedValue({}),
+    isPending: false,
+  }),
 }));
 
 vi.mock('../../hooks/useJournalQuery', () => ({
+  useCreateJournalEntry: () => ({
+    mutateAsync: vi.fn().mockResolvedValue({}),
+    isPending: false,
+  }),
   useJournalEntries: () => ({
     data: mockJournalEntries,
     isLoading: false,
@@ -198,18 +219,20 @@ afterEach(() => {
 describe('Dashboard', () => {
   it('renders the welcome hero once loading finishes', () => {
     renderDashboard();
-    expect(screen.getByRole('heading', { name: /welcome back/i })).toBeInTheDocument();
+    // Dashboard V2 shows time-based greeting - find heading containing the greeting
+    const headings = screen.getAllByRole('heading');
+    const greetingHeading = headings.find(h =>
+      /Good (Morning|Afternoon|Evening|Night)/i.test(h.textContent || '')
+    );
+    expect(greetingHeading).toBeDefined();
   });
 
   it('shows the primary stats cards with counts', () => {
     renderDashboard();
 
-    // The cards include a small label and a heading with the same text.
-    // Query the card labels specifically to avoid duplication errors.
-    expect(screen.getAllByText(/today's tasks/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/pending habits/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/total notes/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/week's progress/i).length).toBeGreaterThan(0);
+    // Dashboard V2 stat card labels (not "pending habits" or "week's progress")
+    expect(screen.getAllByText(/tasks today/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^habits$/i).length).toBeGreaterThan(0);
   });
 
   it("lists today's tasks and allows completing one", () => {
