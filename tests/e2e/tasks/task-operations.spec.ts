@@ -93,8 +93,8 @@ test.describe('Task Operations', () => {
     const editModal = page.getByRole('heading', { name: 'Edit Task' });
     await expect(editModal).toBeVisible({ timeout: 5000 });
 
-    // Cancel button should be present
-    const cancelButton = page.getByRole('button', { name: 'Cancel' });
+    // Cancel button — use exact match to avoid matching "Cancel Test..." task buttons
+    const cancelButton = page.getByRole('button', { name: /^Cancel$/ });
     await expect(cancelButton).toBeVisible();
 
     // Close the modal
