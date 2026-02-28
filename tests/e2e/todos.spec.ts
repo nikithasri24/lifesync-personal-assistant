@@ -12,14 +12,14 @@ test.describe('Tasks Page', () => {
   });
 
   test('should show filters', async ({ page }) => {
-    // Check for Show Filters button (may already be open)
+    // Filter button has emoji prefix: "🔍 Show Filters" / "🔍 Hide Filters"
     await expect(
-      page.getByText('Show Filters').or(page.getByText('Hide Filters'))
+      page.getByRole('button', { name: /show filters|hide filters/i })
     ).toBeVisible();
-    // Check for view mode tabs
-    await expect(page.getByText('Today')).toBeVisible();
-    await expect(page.getByText('Inbox')).toBeVisible();
-    await expect(page.getByText('Upcoming')).toBeVisible();
+    // View mode buttons have emoji prefixes: "📅 Today view", "📥 Inbox view", etc.
+    await expect(page.getByRole('button', { name: '📅 Today view' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '📥 Inbox view' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '🗓️ Upcoming view' })).toBeVisible();
   });
 
   test('should create a new task', async ({ page }) => {
