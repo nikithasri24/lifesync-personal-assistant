@@ -26,7 +26,7 @@ test.describe('Task Recurrence', () => {
     }
 
     // Switch to Inbox view for consistency
-    const inboxBtn = page.getByRole('button', { name: /Inbox.*view/i });
+    const inboxBtn = page.getByRole('button', { name: '📥 Inbox view' });
     if (await inboxBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await inboxBtn.click();
       await page.waitForTimeout(500);
@@ -54,12 +54,12 @@ test.describe('Task Recurrence', () => {
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
 
       // Set recurrence to Daily
-      const dailyBtn = page.getByRole('button', { name: /Daily/i }).first();
+      const dailyBtn = page.getByRole('button', { name: /^Daily$/ }).first();
       await dailyBtn.click();
       await page.waitForTimeout(300);
 
       // Save changes
-      const saveBtn = page.getByRole('button', { name: /Save/i }).first();
+      const saveBtn = page.getByRole('button', { name: /^Save$/ }).first();
       await saveBtn.click();
 
       // Wait for modal to close
@@ -85,12 +85,12 @@ test.describe('Task Recurrence', () => {
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
 
       // Set recurrence to Weekly
-      const weeklyBtn = page.getByRole('button', { name: /Weekly/i }).first();
+      const weeklyBtn = page.getByRole('button', { name: /^Weekly$/ }).first();
       await weeklyBtn.click();
       await page.waitForTimeout(300);
 
       // Save
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -115,12 +115,12 @@ test.describe('Task Recurrence', () => {
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
 
       // Set recurrence to Monthly
-      const monthlyBtn = page.getByRole('button', { name: /Monthly/i }).first();
+      const monthlyBtn = page.getByRole('button', { name: /^Monthly$/ }).first();
       await monthlyBtn.click();
       await page.waitForTimeout(300);
 
       // Save
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -145,12 +145,12 @@ test.describe('Task Recurrence', () => {
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
 
       // Set recurrence to Yearly
-      const yearlyBtn = page.getByRole('button', { name: /Yearly/i }).first();
+      const yearlyBtn = page.getByRole('button', { name: /^Yearly$/ }).first();
       await yearlyBtn.click();
       await page.waitForTimeout(300);
 
       // Save
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -176,9 +176,9 @@ test.describe('Task Recurrence', () => {
       await page.getByText(title).first().click();
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
-      await page.getByRole('button', { name: /Daily/i }).first().click();
+      await page.getByRole('button', { name: /^Daily$/ }).first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -216,9 +216,9 @@ test.describe('Task Recurrence', () => {
       await page.getByText(title).first().click();
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
-      await page.getByRole('button', { name: /Daily/i }).first().click();
+      await page.getByRole('button', { name: /^Daily$/ }).first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -230,9 +230,9 @@ test.describe('Task Recurrence', () => {
       await page.getByText(title).first().click();
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
-      await page.getByRole('button', { name: /Weekly/i }).first().click();
+      await page.getByRole('button', { name: /^Weekly$/ }).first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -255,9 +255,9 @@ test.describe('Task Recurrence', () => {
       await page.getByText(title).first().click();
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
-      await page.getByRole('button', { name: /Weekly/i }).first().click();
+      await page.getByRole('button', { name: /^Weekly$/ }).first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -269,9 +269,9 @@ test.describe('Task Recurrence', () => {
       await page.getByText(title).first().click();
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
-      await page.getByRole('button', { name: /None/i }).first().click();
+      await page.getByRole('button', { name: /^None$/ }).first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -296,9 +296,9 @@ test.describe('Task Recurrence', () => {
       await page.getByText(title).first().click();
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
-      await page.getByRole('button', { name: /Monthly/i }).first().click();
+      await page.getByRole('button', { name: /^Monthly$/ }).first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -326,7 +326,7 @@ test.describe('Task Recurrence', () => {
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
 
       // Monthly button should be selected (highlighted)
-      const monthlyBtn = page.getByRole('button', { name: /Monthly/i }).first();
+      const monthlyBtn = page.getByRole('button', { name: /^Monthly$/ }).first();
       await expect(monthlyBtn).toBeVisible();
     });
   });
@@ -346,9 +346,9 @@ test.describe('Task Recurrence', () => {
       await page.getByText(title).first().click();
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
-      await page.getByRole('button', { name: /Daily/i }).first().click();
+      await page.getByRole('button', { name: /^Daily$/ }).first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -382,9 +382,9 @@ test.describe('Task Recurrence', () => {
       await page.getByText(title).first().click();
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
-      await page.getByRole('button', { name: /Weekly/i }).first().click();
+      await page.getByRole('button', { name: /^Weekly$/ }).first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -400,7 +400,7 @@ test.describe('Task Recurrence', () => {
       }
 
       await page.waitForTimeout(300);
-      await page.getByRole('button', { name: /Save/i }).first().click();
+      await page.getByRole('button', { name: /^Save$/ }).first().click();
       await expect(page.getByRole('heading', { name: /edit task/i })).not.toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
 
