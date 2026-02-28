@@ -80,7 +80,12 @@ test.describe('Task Recurrence', () => {
       await page.waitForTimeout(500);
 
       // Open edit modal
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
 
@@ -110,7 +115,12 @@ test.describe('Task Recurrence', () => {
       await page.waitForTimeout(500);
 
       // Open edit modal
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
 
@@ -140,7 +150,12 @@ test.describe('Task Recurrence', () => {
       await page.waitForTimeout(500);
 
       // Open edit modal
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
 
@@ -173,7 +188,12 @@ test.describe('Task Recurrence', () => {
       await page.waitForTimeout(500);
 
       // Open edit and set to daily
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
       await page.getByRole('button', { name: /^Daily$/ }).first().click();
@@ -213,7 +233,12 @@ test.describe('Task Recurrence', () => {
       await page.waitForTimeout(500);
 
       // Set to daily first
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
       await page.getByRole('button', { name: /^Daily$/ }).first().click();
@@ -227,7 +252,12 @@ test.describe('Task Recurrence', () => {
       await expect(page.getByRole('button', { name: new RegExp(title) })).toBeVisible({ timeout: 3000 });
 
       // Change to weekly
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
       await page.getByRole('button', { name: /^Weekly$/ }).first().click();
@@ -252,7 +282,12 @@ test.describe('Task Recurrence', () => {
       await page.waitForTimeout(500);
 
       // Set to weekly
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
       await page.getByRole('button', { name: /^Weekly$/ }).first().click();
@@ -266,7 +301,12 @@ test.describe('Task Recurrence', () => {
       await expect(page.getByRole('button', { name: new RegExp(title) })).toBeVisible({ timeout: 3000 });
 
       // Remove recurrence by setting to None
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
       await page.getByRole('button', { name: /^None$/ }).first().click();
@@ -293,7 +333,12 @@ test.describe('Task Recurrence', () => {
       await page.waitForTimeout(500);
 
       // Set to monthly
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
       await page.getByRole('button', { name: /^Monthly$/ }).first().click();
@@ -321,7 +366,12 @@ test.describe('Task Recurrence', () => {
       await expect(page.getByRole('button', { name: new RegExp(title) })).toBeVisible({ timeout: 5000 });
 
       // Open task again and verify pattern is still Monthly
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
 
@@ -343,7 +393,12 @@ test.describe('Task Recurrence', () => {
       await page.waitForTimeout(500);
 
       // Set to daily
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
       await page.getByRole('button', { name: /^Daily$/ }).first().click();
@@ -379,7 +434,12 @@ test.describe('Task Recurrence', () => {
       await page.waitForTimeout(500);
 
       // Set to weekly
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
       await page.getByRole('button', { name: /^Weekly$/ }).first().click();
@@ -389,7 +449,12 @@ test.describe('Task Recurrence', () => {
       await page.waitForTimeout(500);
 
       // Change status to In Progress
-      await page.getByText(title).first().click();
+      // Click the task button (more reliable than getByText on huge lists)
+      {
+        const btn = page.getByRole('button', { name: new RegExp(title) });
+        await expect(btn).toBeVisible({ timeout: 10000 });
+        await btn.click();
+      }
       await page.waitForTimeout(500);
       await expect(page.getByRole('heading', { name: /edit task/i })).toBeVisible({ timeout: 5000 });
 
