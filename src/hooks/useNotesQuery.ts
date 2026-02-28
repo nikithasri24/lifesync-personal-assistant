@@ -5,7 +5,7 @@
  * Demonstrates the pattern for server state management
  */
 
-import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
   getNotes,
@@ -18,11 +18,14 @@ import {
   updateListItem,
   deleteListItem,
   getNotesMergedConnection,
+  getPagedNotes,
+  type NoteFilters,
   type CreateNoteInput,
   type UpdateNoteInput,
   type CreateListItemInput,
   type UpdateListItemInput,
 } from '@/api/notesAPI';
+import { DEFAULT_PAGE_SIZE, type PaginatedResult } from '@/types/pagination';
 import type { Note, ListItem } from '@/types';
 import { logger } from '@/services/logger';
 
@@ -60,6 +63,25 @@ export function useNotes() {
     queryFn: () => getNotes(),
     ...queryOptions.user,
   }) as UseQueryResult<Note[], Error>;
+}
+
+/**
+ * Get a paginated page of notes.
+ * Each page is cached separately. Uses keepPreviousData for smooth transitions.
+ *
+ * @param filters - Optional filters to apply
+ * @param page - 1-indexed page number (defaults to 1)
+ */
+export function usePagedNotes(
+  filters?: NoteFilters,
+  page = 1
+): UseQueryResult<PaginatedResult<Note>, Error> {
+  return useQuery({
+    queryKey: queryKeys.notes.list({ ...filters, page } as Record<string, unknown>),
+    queryFn: () => getPagedNotes(filters, { page, pageSize: DEFAULT_PAGE_SIZE }),
+    ...queryOptions.user,
+    placeholderData: keepPreviousData,
+  });
 }
 
 /**

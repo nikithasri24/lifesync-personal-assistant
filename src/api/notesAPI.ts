@@ -17,6 +17,7 @@ import type { Note, ListItem, NoteType } from '../types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
 import { logger } from '../services/logger';
+import { DEFAULT_PAGE_SIZE, type PaginationParams, type PaginatedResult } from '../types/pagination';
 
 // Database row types
 interface NoteRow {
@@ -231,6 +232,86 @@ export async function getNotes(filters?: NoteFilters): Promise<Note[]> {
       return notes;
     },
     { domain: 'NotesAPI', operation: 'getNotes', data: { filters } }
+  );
+}
+
+// =====================================================
+// PAGINATED NOTES QUERY
+// =====================================================
+
+/**
+ * Get a page of notes for the current user.
+ * Uses Supabase count: 'exact' + .range() for offset pagination.
+ * In merged mode, includes partner's notes.
+ *
+ * Note: searchQuery is applied client-side after fetching. Category/tag/type
+ * filters are applied server-side. When searchQuery is active, all matching
+ * records must be fetched; the page returned may have fewer than pageSize items.
+ */
+export async function getPagedNotes(
+  filters?: NoteFilters,
+  pagination: PaginationParams = { page: 1 }
+): Promise<PaginatedResult<Note>> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+      const mergedConnection = await getNotesMergedConnection();
+      const pageSize = pagination.pageSize ?? DEFAULT_PAGE_SIZE;
+      const offset = (pagination.page - 1) * pageSize;
+
+      let query = supabase
+        .from('notes')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false });
+
+      if (mergedConnection) {
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      if (filters?.category) query = query.eq('category', filters.category);
+      if (filters?.noteType) query = query.eq('note_type', filters.noteType);
+      if (filters?.tags && filters.tags.length > 0) query = query.contains('tags', filters.tags);
+
+      // Apply server-side pagination only when no search query
+      // (search requires client-side filtering, so we fetch all and paginate locally)
+      if (!filters?.searchQuery) {
+        const { data, count, error } = await query.range(offset, offset + pageSize - 1);
+        if (error) throw error;
+        const total = count ?? 0;
+        return {
+          items: (data || []).map(mapDbToNote),
+          total,
+          page: pagination.page,
+          pageSize,
+          totalPages: Math.ceil(total / pageSize),
+        };
+      }
+
+      // Search: fetch all matching records, filter client-side, then slice
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const searchLower = filters.searchQuery.toLowerCase();
+      const matched = (data || [])
+        .map(mapDbToNote)
+        .filter(
+          (note) =>
+            note.title.toLowerCase().includes(searchLower) ||
+            note.content.toLowerCase().includes(searchLower)
+        );
+
+      const total = matched.length;
+      return {
+        items: matched.slice(offset, offset + pageSize),
+        total,
+        page: pagination.page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      };
+    },
+    { domain: 'NotesAPI', operation: 'getPagedNotes', data: { filters, pagination } }
   );
 }
 

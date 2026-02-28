@@ -8,7 +8,9 @@
 
 import { useState, useMemo } from 'react';
 import { Plus } from 'lucide-react';
-import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useMergedNotesConnectionQuery } from '../hooks/useNotesQuery';
+import { usePagedNotes, useCreateNote, useUpdateNote, useDeleteNote, useMergedNotesConnectionQuery } from '../hooks/useNotesQuery';
+import { usePagination } from '../hooks/utilities/usePagination';
+import { PaginationV2 } from '../components/ui/PaginationV2';
 import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
 import { useQueries } from '@tanstack/react-query';
 import { getListItems } from '../api/notesAPI';
@@ -33,8 +35,12 @@ const NotesContent: React.FC = () => {
   const partnerName = usePartnerName(mergedConnection);
   const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
 
-  // React Query hooks - automatic loading, caching, and refetching
-  const { data: notes = [], isLoading, error } = useNotes();
+  // Pagination state
+  const { page, setPage, resetPage } = usePagination();
+
+  // React Query hooks - server-side paginated notes
+  const { data: pagedData, isLoading, error } = usePagedNotes(undefined, page);
+  const notes = pagedData?.items ?? [];
   const createMutation = useCreateNote();
   const updateMutation = useUpdateNote();
   const deleteMutation = useDeleteNote();
@@ -230,7 +236,7 @@ const NotesContent: React.FC = () => {
           <div className="mb-6">
             <OwnerFilter
               value={ownerFilter}
-              onChange={setOwnerFilter}
+              onChange={(v) => { setOwnerFilter(v); resetPage(); }}
               partnerName={partnerName}
             />
           </div>
@@ -267,7 +273,7 @@ const NotesContent: React.FC = () => {
         {/* Notes Count */}
         <div className="mb-4">
           <h2 className="text-lg font-bold" style={{ color: colors.text.primary }}>
-            All Notes ({filteredNotes.length})
+            All Notes ({pagedData?.total ?? filteredNotes.length})
           </h2>
         </div>
 
@@ -316,6 +322,17 @@ const NotesContent: React.FC = () => {
               );
             })}
           </div>
+        )}
+
+        {/* Pagination */}
+        {pagedData && pagedData.totalPages > 1 && (
+          <PaginationV2
+            currentPage={pagedData.page}
+            totalPages={pagedData.totalPages}
+            totalItems={pagedData.total}
+            pageSize={pagedData.pageSize}
+            onPageChange={setPage}
+          />
         )}
 
         {/* FAB (Floating Action Button) */}

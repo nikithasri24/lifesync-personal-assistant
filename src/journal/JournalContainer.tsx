@@ -9,7 +9,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Filter } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import type { JournalEntry } from '../types';
 import {
@@ -26,15 +26,15 @@ import { useModalState } from '@/hooks/useModalState';
 import { useToast } from '@/hooks/useToast';
 import { isSameDay } from '@/utils/dateUtils';
 import { SegmentedControlV2, FABV2, InputV2 } from '@/components/v2';
+import { usePagination } from '@/hooks/utilities/usePagination';
+import { PaginationV2 } from '@/components/ui/PaginationV2';
+import { DEFAULT_PAGE_SIZE } from '@/types/pagination';
 import {
   JournalHeaderV2,
   JournalEntryCardV2,
   JournalCalendarViewV2,
   JournalEntryModalV2,
 } from './components/v2';
-
-// Pagination constant
-const ENTRIES_PER_PAGE = 10;
 
 export const JournalContainer: React.FC = () => {
   const colors = useThemeColors();
@@ -43,20 +43,19 @@ export const JournalContainer: React.FC = () => {
   // Tab navigation
   const { activeTab, setActiveTab } = useJournalState();
 
-  // Pagination and selected date from Zustand
+  // Selected date from Zustand (pagination replaced with local hook)
   const {
     journalSelectedDate,
-    journalCurrentPage,
     setJournalSelectedDate,
-    setJournalCurrentPage,
   } = useComposedStore(
     useShallow((state) => ({
       journalSelectedDate: state.journalSelectedDate,
-      journalCurrentPage: state.journalCurrentPage,
       setJournalSelectedDate: state.setJournalSelectedDate,
-      setJournalCurrentPage: state.setJournalCurrentPage,
     }))
   );
+
+  // Pagination state
+  const { page, setPage, resetPage } = usePagination();
 
   // Modal state using useModalState hook
   const modals = useModalState({
@@ -86,15 +85,21 @@ export const JournalContainer: React.FC = () => {
 
   const typedEntries = entries as JournalEntry[];
 
-  // Pagination logic
-  const totalPages = Math.ceil(typedEntries.length / ENTRIES_PER_PAGE);
+  // Client-side pagination of fetched entries
+  const totalEntryPages = Math.ceil(typedEntries.length / DEFAULT_PAGE_SIZE);
   const paginatedEntries = useMemo(() => {
-    const startIndex = journalCurrentPage * ENTRIES_PER_PAGE;
-    return typedEntries.slice(startIndex, startIndex + ENTRIES_PER_PAGE);
-  }, [typedEntries, journalCurrentPage]);
+    const startIndex = (page - 1) * DEFAULT_PAGE_SIZE;
+    return typedEntries.slice(startIndex, startIndex + DEFAULT_PAGE_SIZE);
+  }, [typedEntries, page]);
 
   // Available tags
   const availableTags = useMemo(() => getAvailableTags(typedEntries), [typedEntries, getAvailableTags]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    resetPage();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedTags, filters.startDate, filters.endDate]);
 
   // Handle ?edit=<id> query parameter
   const [searchParams, setSearchParams] = useSearchParams();
@@ -292,40 +297,14 @@ export const JournalContainer: React.FC = () => {
                 ))}
 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => setJournalCurrentPage(Math.max(0, journalCurrentPage - 1))}
-                      disabled={journalCurrentPage === 0}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center font-bold transition-all disabled:opacity-30"
-                      style={{
-                        backgroundColor: 'rgba(212, 165, 116, 0.1)',
-                        color: '#C18B5E',
-                      }}
-                      aria-label="Previous page"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-
-                    <span className="text-sm font-semibold" style={{ color: colors.text.secondary }}>
-                      Page {journalCurrentPage + 1} of {totalPages}
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={() => setJournalCurrentPage(Math.min(totalPages - 1, journalCurrentPage + 1))}
-                      disabled={journalCurrentPage >= totalPages - 1}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center font-bold transition-all disabled:opacity-30"
-                      style={{
-                        backgroundColor: 'rgba(212, 165, 116, 0.1)',
-                        color: '#C18B5E',
-                      }}
-                      aria-label="Next page"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
+                {totalEntryPages > 1 && (
+                  <PaginationV2
+                    currentPage={page}
+                    totalPages={totalEntryPages}
+                    totalItems={typedEntries.length}
+                    pageSize={DEFAULT_PAGE_SIZE}
+                    onPageChange={setPage}
+                  />
                 )}
               </>
             )}

@@ -20,7 +20,7 @@
  * - Form state (quick add, editing)
  */
 
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { Plus, CheckSquare, Trash2, X } from 'lucide-react';
 import { useApiHealth } from '../hooks/useApiHealth';
 import {
@@ -58,6 +58,9 @@ import {
 
 import { TodosLoadingState } from '../todos/components/layout/TodosLoadingState';
 import { TodosErrorState } from '../todos/components/layout/TodosErrorState';
+import { usePagination } from '../hooks/utilities/usePagination';
+import { PaginationV2 } from '../components/ui/PaginationV2';
+import { DEFAULT_PAGE_SIZE } from '../types/pagination';
 
 // Import utilities
 import { transformApiTasks, transformApiProjects } from '../todos/utils';
@@ -132,6 +135,17 @@ const TodosContent: React.FC = () => {
   const [showStarredOnly, setShowStarredOnly] = useState(false);
 
   // ============================================================================
+  // Pagination State
+  // ============================================================================
+  const { page, setPage, resetPage } = usePagination();
+
+  // Reset to page 1 whenever any filter or view changes
+  useEffect(() => {
+    resetPage();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView, priorityFilter, statusFilter, projectFilter, searchQuery, showStarredOnly, ownerFilter]);
+
+  // ============================================================================
   // Modal State
   // ============================================================================
   const [showQuickAdd, setShowQuickAdd] = useState(false);
@@ -194,6 +208,14 @@ const TodosContent: React.FC = () => {
 
     return applyFilters(baseTasks, filters, searchQuery);
   }, [tasks, activeView, priorityFilter, statusFilter, projectFilter, searchQuery, showStarredOnly]);
+
+  // Paginate the filtered view tasks
+  const pagedViewTasks = useMemo(() => {
+    const startIndex = (page - 1) * DEFAULT_PAGE_SIZE;
+    return viewTasks.slice(startIndex, startIndex + DEFAULT_PAGE_SIZE);
+  }, [viewTasks, page]);
+
+  const totalTaskPages = Math.ceil(viewTasks.length / DEFAULT_PAGE_SIZE);
 
   // ============================================================================
   // Task Handlers
@@ -493,11 +515,12 @@ const TodosContent: React.FC = () => {
         <div className="mb-4 text-sm" style={{ color: colors.text.secondary }}>
           {taskCount} task{taskCount !== 1 ? 's' : ''}
           {completedCount > 0 && ` • ${completedCount} completed`}
+          {totalTaskPages > 1 && ` • page ${page} of ${totalTaskPages}`}
         </div>
 
         {/* Content Area - List View */}
         <TaskListViewV2
-          tasks={viewTasks}
+          tasks={pagedViewTasks}
           projects={projects}
           onTaskClick={handleTaskClick}
           onToggleStatus={handleToggleStatus}
@@ -516,6 +539,17 @@ const TodosContent: React.FC = () => {
           onToggleSubtask={handleToggleSubtask}
           allTasks={allTasks}
         />
+
+        {/* Pagination */}
+        {totalTaskPages > 1 && (
+          <PaginationV2
+            currentPage={page}
+            totalPages={totalTaskPages}
+            totalItems={viewTasks.length}
+            pageSize={DEFAULT_PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        )}
 
         {/* Quick Add Modal */}
         <QuickAddModalV2

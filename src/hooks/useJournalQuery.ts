@@ -5,7 +5,7 @@
  * for journal CRUD operations.
  */
 
-import { useQuery, useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseMutationResult } from '@tanstack/react-query';
 import type { JournalEntry } from '../types';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
@@ -14,10 +14,12 @@ import {
   createJournalEntry,
   updateJournalEntry,
   deleteJournalEntry,
+  getPagedJournalEntries,
   type CreateJournalEntryInput,
   type UpdateJournalEntryInput,
   type JournalEntryFilters,
 } from '@/api/journalAPI';
+import { DEFAULT_PAGE_SIZE, type PaginatedResult } from '@/types/pagination';
 import { logger } from '@/services/logger';
 
 // =====================================================
@@ -32,6 +34,25 @@ export function useJournalEntries(filters?: JournalEntryFilters): ReturnType<typ
     queryKey: queryKeys.journal.list(filters),
     queryFn: () => getJournalEntries(filters),
     ...queryOptions.user,
+  });
+}
+
+/**
+ * Get a paginated page of journal entries.
+ * Each page is cached separately. Uses keepPreviousData for smooth transitions.
+ *
+ * @param filters - Optional filters to apply
+ * @param page - 1-indexed page number (defaults to 1)
+ */
+export function usePagedJournalEntries(
+  filters?: JournalEntryFilters,
+  page = 1
+): ReturnType<typeof useQuery<PaginatedResult<JournalEntry>>> {
+  return useQuery<PaginatedResult<JournalEntry>>({
+    queryKey: queryKeys.journal.list({ ...filters, page } as Record<string, unknown>),
+    queryFn: () => getPagedJournalEntries(filters, { page, pageSize: DEFAULT_PAGE_SIZE }),
+    ...queryOptions.user,
+    placeholderData: keepPreviousData,
   });
 }
 

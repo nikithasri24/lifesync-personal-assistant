@@ -8,6 +8,7 @@ import type { JournalEntry, Attachment } from '../types';
 import type { Json } from '../types/database.types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { NotFoundError } from '../lib/errors';
+import { DEFAULT_PAGE_SIZE, type PaginationParams, type PaginatedResult } from '../types/pagination';
 
 // Database types (snake_case from Supabase)
 interface JournalEntryDB {
@@ -113,6 +114,79 @@ export async function getJournalEntries(filters?: JournalEntryFilters): Promise<
       return entries;
     },
     { domain: 'JournalAPI', operation: 'getJournalEntries', data: { filters } }
+  );
+}
+
+// =====================================================
+// PAGINATED JOURNAL QUERY
+// =====================================================
+
+/**
+ * Get a page of journal entries for the current user.
+ * Uses Supabase count: 'exact' + .range() for offset pagination.
+ *
+ * Note: searchQuery is applied client-side. Date range and tag filters
+ * are applied server-side.
+ */
+export async function getPagedJournalEntries(
+  filters?: JournalEntryFilters,
+  pagination: PaginationParams = { page: 1 }
+): Promise<PaginatedResult<JournalEntry>> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+      const pageSize = pagination.pageSize ?? DEFAULT_PAGE_SIZE;
+      const offset = (pagination.page - 1) * pageSize;
+
+      let query = supabase
+        .from('journal_entries')
+        .select('*', { count: 'exact' })
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (filters) {
+        if (filters.startDate) query = query.gte('created_at', filters.startDate.toISOString());
+        if (filters.endDate) query = query.lte('created_at', filters.endDate.toISOString());
+        if (filters.tags && filters.tags.length > 0) query = query.overlaps('tags', filters.tags);
+      }
+
+      // Apply server-side pagination only when no search query
+      if (!filters?.searchQuery) {
+        const { data, count, error } = await query.range(offset, offset + pageSize - 1);
+        if (error) throw error;
+        const total = count ?? 0;
+        return {
+          items: (data ?? []).map(mapDbToJournalEntry),
+          total,
+          page: pagination.page,
+          pageSize,
+          totalPages: Math.ceil(total / pageSize),
+        };
+      }
+
+      // Search: fetch all, filter client-side, then slice
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const searchLower = filters.searchQuery.toLowerCase();
+      const matched = (data ?? [])
+        .map(mapDbToJournalEntry)
+        .filter(
+          (entry) =>
+            entry.title.toLowerCase().includes(searchLower) ||
+            entry.content.toLowerCase().includes(searchLower)
+        );
+
+      const total = matched.length;
+      return {
+        items: matched.slice(offset, offset + pageSize),
+        total,
+        page: pagination.page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      };
+    },
+    { domain: 'JournalAPI', operation: 'getPagedJournalEntries', data: { filters, pagination } }
   );
 }
 

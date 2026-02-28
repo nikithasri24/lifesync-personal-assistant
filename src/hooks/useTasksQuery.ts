@@ -7,7 +7,7 @@
  * Merged Mode: When enabled, tasks hooks automatically include partner's tasks.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import type { TaskData, Project } from '../services/types';
 import { queryKeys, queryOptions } from '@/lib/react-query';
@@ -20,7 +20,9 @@ import {
   permanentlyDeleteTask,
   restoreTask,
   getTasksMergedConnection,
+  getPagedTasks,
 } from '@/api/tasksAPI';
+import { DEFAULT_PAGE_SIZE, type PaginatedResult } from '@/types/pagination';
 import {
   getProjects,
   getProject,
@@ -80,6 +82,25 @@ export function useTasks(filters?: TaskFilters): UseQueryResult<TaskData[], Erro
     queryKey: queryKeys.tasks.list(filters as Record<string, unknown> | undefined),
     queryFn: () => getTasks(filters),
     ...queryOptions.user,
+  });
+}
+
+/**
+ * Get a paginated page of tasks.
+ * Each page is cached separately. Uses keepPreviousData for smooth transitions.
+ *
+ * @param filters - Optional filters to apply (server-side)
+ * @param page - 1-indexed page number (defaults to 1)
+ */
+export function usePagedTasks(
+  filters?: TaskFilters,
+  page = 1
+): UseQueryResult<PaginatedResult<TaskData>, Error> {
+  return useQuery({
+    queryKey: queryKeys.tasks.list({ ...filters, page } as Record<string, unknown>),
+    queryFn: () => getPagedTasks(filters, { page, pageSize: DEFAULT_PAGE_SIZE }),
+    ...queryOptions.user,
+    placeholderData: keepPreviousData,
   });
 }
 
