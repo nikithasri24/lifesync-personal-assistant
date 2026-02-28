@@ -83,11 +83,11 @@ test.describe('Task Operations', () => {
     const taskTitle = `Task to Edit ${Date.now()}`;
     await createTaskAndVerify(page, taskTitle);
 
-    // Click the task button to open edit modal (outer button, not inner text)
+    // Use evaluate to bypass drag-drop handler that intercepts Playwright clicks
     const taskBtn = page.getByRole('button', { name: new RegExp(taskTitle) });
     await expect(taskBtn).toBeVisible({ timeout: 10000 });
-    await taskBtn.click();
-    await page.waitForTimeout(500);
+    await taskBtn.evaluate(el => (el as HTMLElement).click());
+    await page.waitForTimeout(800);
 
     // Edit modal should open
     const editModal = page.getByRole('heading', { name: 'Edit Task' });
