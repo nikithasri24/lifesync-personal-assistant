@@ -6,7 +6,7 @@
  */
 
 import { cacheAccessor } from '@/lib/cacheAccessor';
-import { getBills } from '@/api/billsAPI';
+import { getBillsDueInRange } from '@/api/billsAPI';
 import { logger } from '@/services/logger';
 import {
   startOfWeek, endOfWeek, addWeeks, format, parseISO,
@@ -26,40 +26,31 @@ export async function getWeeklyOverview(weekOffset = 0): Promise<WeeklyOverview>
   const targetWeekStart = startOfWeek(addWeeks(today, weekOffset), { weekStartsOn: 0 });
   const targetWeekEnd = endOfWeek(targetWeekStart, { weekStartsOn: 0 });
 
-  // Fetch all data in parallel using cache accessor
-  const [allEvents, allTasks, allGoals, allHabits, allBills] = await Promise.all([
-    cacheAccessor.getCalendarEvents(),
-    cacheAccessor.getTasks(),
-    cacheAccessor.getGoals(),
-    cacheAccessor.getHabits(),
-    getBills(),
+  const weekStartStr = format(targetWeekStart, 'yyyy-MM-dd');
+  const weekEndStr = format(targetWeekEnd, 'yyyy-MM-dd');
+
+  // Fetch with DB-level filters where the API supports them
+  const [allEvents, allTasks, activeGoals, activeHabits, billsInWeek] = await Promise.all([
+    // Calendar events scoped to the target week
+    cacheAccessor.getCalendarEvents({ startDate: weekStartStr, endDate: weekEndStr }),
+    // Tasks — status and deleted/archived all at DB level now
+    cacheAccessor.getTasks({ deleted: false, archived: false, statuses: ['todo', 'in_progress'] }),
+    // Goals — only in-progress, filtered at DB level
+    cacheAccessor.getGoals({ status: 'in-progress' }),
+    // Habits — only active, filtered at DB level
+    cacheAccessor.getHabits({ isActive: true }),
+    // Bills scoped to week + active-only, all at DB level
+    getBillsDueInRange(targetWeekStart, targetWeekEnd),
   ]);
 
-  // Filter events for the target week
-  const eventsInWeek = allEvents.filter(e => {
-    if (!e.start_time) return false;
-    const startTime = parseISO(e.start_time);
-    return startTime >= targetWeekStart && startTime <= targetWeekEnd;
-  }).sort((a, b) => {
+  // Events already scoped to week by DB query — just sort
+  const eventsInWeek = allEvents.sort((a, b) => {
     if (!a.start_time || !b.start_time) return 0;
     return parseISO(a.start_time).getTime() - parseISO(b.start_time).getTime();
   });
 
-  // Filter tasks for todo/in_progress status (not 'pending' which doesn't exist)
-  const pendingTasks = allTasks.filter(t => t.status === 'todo' || t.status === 'in_progress');
-
-  // Filter goals for in-progress status (not 'active' which doesn't exist)
-  const activeGoals = allGoals.filter(g => g.status === 'in-progress');
-
-  // Filter habits for active status
-  const activeHabits = allHabits.filter(h => h.is_active);
-
-  // Filter bills for the target week
-  const billsInWeek = allBills.filter(b => {
-    if (!b.is_active || !b.due_date) return false;
-    const dueDate = parseISO(b.due_date);
-    return dueDate >= targetWeekStart && dueDate <= targetWeekEnd;
-  });
+  // pendingTasks, activeGoals, activeHabits, billsInWeek all DB-filtered — no JS filter needed
+  const pendingTasks = allTasks;
 
   // Process events
   const events: WeekEvent[] = eventsInWeek.map(e => ({
@@ -192,32 +183,27 @@ export async function getWeeklyReview(weekOffset = -1): Promise<WeeklyReview> {
   const targetWeekStart = startOfWeek(addWeeks(today, weekOffset), { weekStartsOn: 0 });
   const targetWeekEnd = endOfWeek(targetWeekStart, { weekStartsOn: 0 });
 
-  // Fetch all data using cache accessor
-  const [allTasks, allFocusSessions] = await Promise.all([
-    cacheAccessor.getTasks(),
-    cacheAccessor.getFocusSessions(),
+  const weekStartStr = format(targetWeekStart, 'yyyy-MM-dd');
+  const weekEndStr = format(targetWeekEnd, 'yyyy-MM-dd');
+
+  // Fetch in parallel — all date filters pushed to DB
+  const [completedTasks, createdTasks, focusSessions] = await Promise.all([
+    // Completed tasks updated this week (status + updatedAfter at DB level)
+    cacheAccessor.getTasks({
+      deleted: false,
+      status: 'done',
+      updatedAfter: targetWeekStart.toISOString(),
+    }),
+    // Tasks created this week (createdAfter + createdBefore at DB level)
+    cacheAccessor.getTasks({
+      deleted: false,
+      createdAfter: weekStartStr,
+      createdBefore: weekEndStr,
+    }),
+    cacheAccessor.getFocusSessions({ startDate: weekStartStr, endDate: weekEndStr }),
   ]);
 
-  // Filter completed tasks for the target week
-  const completedTasks = allTasks.filter(t => {
-    if (t.status !== 'done' || !t.updated_at) return false; // 'done' not 'completed', use updated_at as proxy for completion
-    const completedAt = parseISO(t.updated_at);
-    return completedAt >= targetWeekStart && completedAt <= targetWeekEnd;
-  });
-
-  // Filter created tasks for the target week
-  const createdTasks = allTasks.filter(t => {
-    if (!t.created_at) return false;
-    const createdAt = parseISO(t.created_at);
-    return createdAt >= targetWeekStart && createdAt <= targetWeekEnd;
-  });
-
-  // Filter focus sessions for the target week
-  const focusSessions = allFocusSessions.filter(s => {
-    if (!s.started_at) return false;
-    const startedAt = parseISO(s.started_at);
-    return startedAt >= targetWeekStart && startedAt <= targetWeekEnd;
-  });
+  // focusSessions and both task sets already scoped to the week by DB queries
 
   // Note: habit_logs would need API support - skipping for now
   const habitLogs: unknown[] = [];

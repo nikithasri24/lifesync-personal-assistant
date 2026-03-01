@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { useProjectTracking } from './hooks/useProjectTracking';
 import type { Project } from '@/hooks/useProjectsQuery';
@@ -10,6 +10,9 @@ import { EmptyProjectsState } from '../projects/components/layout/EmptyProjectsS
 import { ProjectCard } from '../projects/components/layout/ProjectCard';
 import { FABV2 } from '@/components/v2/FABV2';
 import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
+import { usePagination } from '@/hooks/utilities/usePagination';
+import { PaginationV2 } from '@/components/ui/PaginationV2';
+import { DEFAULT_PAGE_SIZE } from '@/types/pagination';
 
 const ProjectTrackingContent: React.FC = () => {
   const hookResult = useProjectTracking();
@@ -45,6 +48,9 @@ const ProjectTrackingContent: React.FC = () => {
     closeModal
   } = hookResult;
 
+  const { page, setPage, resetPage } = usePagination();
+  useEffect(() => { resetPage(); }, [searchQuery, statusFilter, ownerFilter, resetPage]);
+
   if (loading) {
     return <ProjectsLoadingState />;
   }
@@ -77,33 +83,44 @@ const ProjectTrackingContent: React.FC = () => {
           onCreateClick={() => setShowCreateModal(true)}
         />
       ) : (
-        <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}>
-          {filteredProjects.map((project: Project) => {
-            const metrics = projectMetrics.find((m: { projectId: string }) => m.projectId === project.id) ?? {
-              projectId: project.id,
-              completedTasks: 0,
-              totalTasks: 0,
-              progress: 0,
-              tasks: []
-            };
-            const isExpanded = expandedProjectId === project.id;
+        <>
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}>
+            {filteredProjects.slice((page - 1) * DEFAULT_PAGE_SIZE, page * DEFAULT_PAGE_SIZE).map((project: Project) => {
+              const metrics = projectMetrics.find((m: { projectId: string }) => m.projectId === project.id) ?? {
+                projectId: project.id,
+                completedTasks: 0,
+                totalTasks: 0,
+                progress: 0,
+                tasks: []
+              };
+              const isExpanded = expandedProjectId === project.id;
 
-            return (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                metrics={metrics}
-                isExpanded={isExpanded}
-                onToggleExpand={() => setExpandedProjectId(isExpanded ? null : project.id)}
-                onEdit={() => openEditModal(project)}
-                onDelete={() => setDeleteConfirmId(project.id)}
-                showOwnerBadge={!!mergedConnection}
-                currentUserId={currentUserId ?? undefined}
-                partnerName={partnerName}
-              />
-            );
-          })}
-        </div>
+              return (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  metrics={metrics}
+                  isExpanded={isExpanded}
+                  onToggleExpand={() => setExpandedProjectId(isExpanded ? null : project.id)}
+                  onEdit={() => openEditModal(project)}
+                  onDelete={() => setDeleteConfirmId(project.id)}
+                  showOwnerBadge={!!mergedConnection}
+                  currentUserId={currentUserId ?? undefined}
+                  partnerName={partnerName}
+                />
+              );
+            })}
+          </div>
+          {filteredProjects.length > DEFAULT_PAGE_SIZE && (
+            <PaginationV2
+              currentPage={page}
+              totalPages={Math.ceil(filteredProjects.length / DEFAULT_PAGE_SIZE)}
+              totalItems={filteredProjects.length}
+              pageSize={DEFAULT_PAGE_SIZE}
+              onPageChange={setPage}
+            />
+          )}
+        </>
       )}
 
       {/* FAB */}

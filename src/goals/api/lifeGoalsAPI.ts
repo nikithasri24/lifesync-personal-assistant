@@ -28,6 +28,7 @@ import type {
 
 import { getMergedConnectionId, type MergedConnectionResult } from '../../shared/api/SharedDataProvider';
 import { logger } from '../../services/logger';
+import { DEFAULT_PAGE_SIZE, type PaginationParams, type PaginatedResult } from '../../types/pagination';
 
 // ==================== Merged Connection Cache ====================
 
@@ -212,24 +213,24 @@ interface UpdateLifeDreamData {
  *   - Shared goals (connection_id = mergedConnection)
  * In personal mode: fetches only goals by user_id
  */
-export async function getUserLifeGoals(): Promise<LifeGoal[]> {
+export async function getUserLifeGoals(filters?: { status?: GoalStatus }): Promise<LifeGoal[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
   const mergedConnection = await getGoalsMergedConnection();
-  logger.debug('Goals', 'getUserLifeGoals', { userId: user.id, mergedConnection });
+  logger.debug('Goals', 'getUserLifeGoals', { userId: user.id, mergedConnection, filters });
 
   if (mergedConnection) {
     // Merged mode: fetch personal goals from BOTH users AND shared goals
-    // My personal goals: user_id = me AND connection_id IS NULL
-    // Partner's personal goals: user_id = partner AND connection_id IS NULL
-    // Shared goals: connection_id = merged connection
-    const { data, error } = await supabase
+    let query = supabase
       .from('life_goals')
       .select('*')
       .or(`and(user_id.eq.${user.id},connection_id.is.null),and(user_id.eq.${mergedConnection.partnerId},connection_id.is.null),connection_id.eq.${mergedConnection.connectionId}`)
       .order('created_at', { ascending: false });
 
+    if (filters?.status) query = query.eq('status', filters.status);
+
+    const { data, error } = await query;
     if (error) throw error;
     const goals = (data ?? []).map((row) => mapDbToLifeGoal(row as LifeGoalRow));
     const myPersonalCount = goals.filter(g => !g.connectionId && g.userId === user.id).length;
@@ -239,15 +240,69 @@ export async function getUserLifeGoals(): Promise<LifeGoal[]> {
     return goals;
   } else {
     // Personal mode: fetch by user_id only
-    const { data, error } = await supabase
+    let query = supabase
       .from('life_goals')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
+    if (filters?.status) query = query.eq('status', filters.status);
+
+    const { data, error } = await query;
     if (error) throw error;
     return (data ?? []).map((row) => mapDbToLifeGoal(row as LifeGoalRow));
   }
+}
+
+/**
+ * Get a paginated page of life goals for the current user.
+ * Supports merged mode (personal goals from both users + shared goals).
+ */
+export async function getPagedLifeGoals(
+  pagination: PaginationParams = { page: 1 }
+): Promise<PaginatedResult<LifeGoal>> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const mergedConnection = await getGoalsMergedConnection();
+  const pageSize = pagination.pageSize ?? DEFAULT_PAGE_SIZE;
+  const offset = (pagination.page - 1) * pageSize;
+
+  if (mergedConnection) {
+    const { data, count, error } = await supabase
+      .from('life_goals')
+      .select('*', { count: 'exact' })
+      .or(`and(user_id.eq.${user.id},connection_id.is.null),and(user_id.eq.${mergedConnection.partnerId},connection_id.is.null),connection_id.eq.${mergedConnection.connectionId}`)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    if (error) throw error;
+    const total = count ?? 0;
+    return {
+      items: (data ?? []).map((row) => mapDbToLifeGoal(row as LifeGoalRow)),
+      total,
+      page: pagination.page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
+  const { data, count, error } = await supabase
+    .from('life_goals')
+    .select('*', { count: 'exact' })
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  if (error) throw error;
+  const total = count ?? 0;
+  return {
+    items: (data ?? []).map((row) => mapDbToLifeGoal(row as LifeGoalRow)),
+    total,
+    page: pagination.page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
 }
 
 /**

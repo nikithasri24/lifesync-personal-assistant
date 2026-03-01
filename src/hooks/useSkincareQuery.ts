@@ -11,12 +11,14 @@ import {
   useQuery,
   useMutation,
   useQueryClient,
+  keepPreviousData,
   type UseMutationResult,
   type UseQueryResult,
 } from '@tanstack/react-query';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
   getSkincareProducts,
+  getPagedSkincareProducts,
   createSkincareProduct,
   updateSkincareProduct,
   deleteSkincareProduct,
@@ -25,6 +27,7 @@ import {
 } from '@/api/skincareAPI';
 import { logger } from '@/services/logger';
 import type { SkincareProduct, SkincareWeeklyRoutine, SkincareWeeklyRoutineInput } from '@/skincare/types';
+import { DEFAULT_PAGE_SIZE, type PaginatedResult } from '@/types/pagination';
 
 // =====================================================
 // PRODUCTS QUERY HOOKS
@@ -45,6 +48,22 @@ export function useSkincareProducts(
     queryKey: queryKeys.skincare.products.list(filters),
     queryFn: () => getSkincareProducts(filters),
     ...queryOptions.user,
+  });
+}
+
+/**
+ * Get paginated skincare products.
+ * Use for the Products tab list; leave useSkincareProducts() for routine/schedule components.
+ */
+export function usePagedSkincareProducts(
+  filters?: SkincareProductFilters,
+  page = 1
+): UseQueryResult<PaginatedResult<SkincareProduct>, Error> {
+  return useQuery({
+    queryKey: queryKeys.skincare.products.list({ ...filters, page } as Record<string, unknown>),
+    queryFn: () => getPagedSkincareProducts(filters, { page, pageSize: DEFAULT_PAGE_SIZE }),
+    ...queryOptions.user,
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -1,4 +1,5 @@
-import { startOfWeek, endOfWeek, eachDayOfInterval, subDays, isToday, isSameDay } from 'date-fns';
+import { useState, useMemo } from 'react';
+import { startOfWeek, endOfWeek, eachDayOfInterval, subDays, isToday, isSameDay, subMonths, subYears } from 'date-fns';
 import { useHabits, useHabitEntries } from '../hooks/useHabitsQuery';
 import { useTasks } from '../hooks/useTasksQuery';
 import { useJournalEntries } from '../hooks/useJournalQuery';
@@ -9,6 +10,9 @@ import { KeyMetricsGrid } from '../analytics/components/KeyMetricsGrid';
 import { WeeklyProductivityChart } from '../analytics/components/WeeklyProductivityChart';
 import { HabitStreaksSection } from '../analytics/components/HabitStreaksSection';
 import { TaskInsightsSection } from '../analytics/components/TaskInsightsSection';
+import { useThemeColors } from '../hooks/useThemeColors';
+
+type Period = 'week' | 'month' | '3months' | 'year';
 
 interface Todo extends TaskData {
   completed: boolean;
@@ -33,12 +37,31 @@ interface DayProductivity {
 }
 
 export default function Analytics() {
-  const { data: habits = [] } = useHabits();
-  const { data: habitEntries = [] } = useHabitEntries();
-  const { data: tasks = [] } = useTasks();
-  const { data: journalEntries = [] } = useJournalEntries() as { data: Array<{ created_at?: string; id?: string }> };
+  const colors = useThemeColors();
+  const [period, setPeriod] = useState<Period>('month');
 
-  // Combine habits with their entries
+  // Derive date range from selected period
+  const { startDate, endDate } = useMemo(() => {
+    const end = new Date();
+    const start = new Date();
+    if (period === 'week') start.setDate(end.getDate() - 7);
+    else if (period === 'month') return { startDate: subMonths(end, 1), endDate: end };
+    else if (period === '3months') return { startDate: subMonths(end, 3), endDate: end };
+    else if (period === 'year') return { startDate: subYears(end, 1), endDate: end };
+    return { startDate: start, endDate: end };
+  }, [period]);
+
+  const { data: habits = [] } = useHabits();
+  const { data: habitEntries = [] } = useHabitEntries({
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: endDate.toISOString().split('T')[0],
+  });
+  const { data: tasks = [] } = useTasks();
+  const { data: journalEntries = [] } = useJournalEntries({ startDate, endDate }) as {
+    data: Array<{ created_at?: string; id?: string }>;
+  };
+
+  // Combine habits with their period-filtered entries
   const habitsWithEntries: HabitWithEntries[] = habits.map((habit): HabitWithEntries => ({
     ...habit,
     entries: habitEntries.filter((entry): boolean => entry.habit_id === habit.id),
@@ -66,7 +89,6 @@ export default function Analytics() {
         streak++;
         currentDate = subDays(currentDate, 1);
       } else if (isToday(currentDate)) {
-        // If today is not complete, check yesterday
         currentDate = subDays(currentDate, 1);
       } else {
         break;
@@ -76,7 +98,6 @@ export default function Analytics() {
     return streak;
   };
 
-  // Get habit statistics
   const habitStats: HabitStat[] = habitsWithEntries.map((habit): HabitStat => {
     const streak = calculateStreak(habit);
     const totalCompletions = habit.entries.length;
@@ -88,18 +109,13 @@ export default function Analytics() {
       return date >= weekStart && date <= weekEnd;
     }).length;
 
-    return {
-      ...habit,
-      streak,
-      totalCompletions,
-      thisWeekCompletions
-    };
+    return { ...habit, streak, totalCompletions, thisWeekCompletions };
   });
 
-  // Calculate productivity metrics
+  // Weekly productivity chart always shows current week (date-scoped data now)
   const thisWeek = eachDayOfInterval({
     start: startOfWeek(new Date()),
-    end: endOfWeek(new Date())
+    end: endOfWeek(new Date()),
   });
 
   const weeklyProductivity: DayProductivity[] = thisWeek.map((day): DayProductivity => {
@@ -123,14 +139,13 @@ export default function Analytics() {
       todos: dayTodos.length,
       habits: dayHabits,
       journal: dayJournal,
-      total: dayTodos.length + dayHabits + dayJournal
+      total: dayTodos.length + dayHabits + dayJournal,
     };
   });
 
   const totalProductivityScore = weeklyProductivity.reduce((sum: number, day): number => sum + day.total, 0);
   const avgDailyScore = Math.round(totalProductivityScore / 7);
 
-  // Get best performing habit
   const defaultHabit: HabitStat = habitStats[0] ?? {
     id: '',
     name: 'None',
@@ -139,23 +154,53 @@ export default function Analytics() {
     entries: [],
     streak: 0,
     totalCompletions: 0,
-    thisWeekCompletions: 0
+    thisWeekCompletions: 0,
   };
   const bestHabit = habitStats.reduce((best: HabitStat, current): HabitStat =>
-    current.streak > best.streak ? current : best
-  , defaultHabit);
+    current.streak > best.streak ? current : best,
+    defaultHabit
+  );
 
-  // Calculate completion rates
   const completedTodos = todos.filter((todo): boolean => todo.completed).length;
   const todoCompletionRate = todos.length > 0 ? Math.round((completedTodos / todos.length) * 100) : 0;
 
-  const overallHabitRate = habitsWithEntries.length > 0
-    ? Math.round(habitStats.reduce((sum: number, habit): number => sum + (habit.thisWeekCompletions / 7), 0) / habitsWithEntries.length * 100)
-    : 0;
+  const overallHabitRate =
+    habitsWithEntries.length > 0
+      ? Math.round(
+          (habitStats.reduce((sum: number, habit): number => sum + (habit.thisWeekCompletions / 7), 0) /
+            habitsWithEntries.length) *
+            100
+        )
+      : 0;
+
+  const periodLabels: Record<Period, string> = {
+    week: 'Week',
+    month: 'Month',
+    '3months': '3 Months',
+    year: 'Year',
+  };
 
   return (
     <PageLayoutV2 maxWidth="xl" spacing="normal">
       <AnalyticsHeader />
+
+      {/* Period Selector */}
+      <div className="mb-6 p-1 rounded-xl flex gap-1" style={{ backgroundColor: colors.bg.secondary }}>
+        {(['week', 'month', '3months', 'year'] as Period[]).map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setPeriod(p)}
+            className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
+              period === p ? 'bg-white shadow-sm' : ''
+            }`}
+            style={{ color: period === p ? '#C18B5E' : colors.text.secondary }}
+            aria-label={`Show ${periodLabels[p]} analytics`}
+          >
+            {periodLabels[p]}
+          </button>
+        ))}
+      </div>
 
       <KeyMetricsGrid
         totalProductivityScore={totalProductivityScore}

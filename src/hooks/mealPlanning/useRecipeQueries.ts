@@ -4,13 +4,14 @@
  * React Query hooks for recipe CRUD operations.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import * as mealPlanningAPI from '@/api/mealPlanningAPI';
 import type { RecipeData } from '@/services/types';
 import { logger } from '@/services/logger';
 import { mealPlanningKeys } from './keys';
 import type { Recipe, RecipeInput, RecipeUpdate } from './types';
 import { mapRecipeDataToRecipe, buildRecipeInsertPayload, buildRecipeUpdatePayload } from './mappers';
+import { DEFAULT_PAGE_SIZE, type PaginatedResult } from '@/types/pagination';
 
 /**
  * Fetch all recipes
@@ -24,6 +25,22 @@ export function useRecipesQuery(options?: { enabled?: boolean }) {
     },
     staleTime: 1000 * 60 * 10, // 10 minutes
     enabled: options?.enabled ?? true,
+  });
+}
+
+/**
+ * Fetch a paginated page of recipes.
+ * Use for the recipe library browse view; keep useRecipesQuery() for meal plan composer.
+ */
+export function usePagedRecipesQuery(page = 1): ReturnType<typeof useQuery<PaginatedResult<Recipe>>> {
+  return useQuery<PaginatedResult<Recipe>>({
+    queryKey: [...mealPlanningKeys.recipesList(), 'paged', page] as const,
+    queryFn: async () => {
+      const result = await mealPlanningAPI.getPagedRecipes({ page, pageSize: DEFAULT_PAGE_SIZE });
+      return { ...result, items: result.items.map(mapRecipeDataToRecipe) };
+    },
+    staleTime: 1000 * 60 * 10,
+    placeholderData: keepPreviousData,
   });
 }
 

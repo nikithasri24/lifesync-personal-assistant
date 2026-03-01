@@ -113,13 +113,12 @@ class LifeCoachService {
   }
 
   private async getTasksData(_userId: string, start: Date, end: Date) {
-    // Use cache accessor (benefits from React Query cache)
-    const tasks = await cacheAccessor.getTasks({ deleted: false, archived: false });
-
-    // Filter by date range
-    return tasks.filter(t => {
-      const createdAt = new Date(t.created_at!);
-      return createdAt >= start && createdAt <= end;
+    // created_at range pushed to DB — no JS filter needed
+    return cacheAccessor.getTasks({
+      deleted: false,
+      archived: false,
+      createdAfter: format(start, 'yyyy-MM-dd'),
+      createdBefore: format(end, 'yyyy-MM-dd'),
     });
   }
 
@@ -135,9 +134,8 @@ class LifeCoachService {
   }
 
   private async getGoalsData(_userId: string) {
-    // Use cache accessor (benefits from React Query cache)
-    const allGoals = await cacheAccessor.getGoals();
-    return allGoals.filter(g => g.status === 'in-progress');
+    // In-progress goals filtered at DB level — no JS filter needed
+    return cacheAccessor.getGoals({ status: 'in-progress' });
   }
 
   private async getFocusData(_userId: string, start: Date, end: Date) {

@@ -3,10 +3,13 @@
  * Recipe library with search and favorites
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Heart, Plus, Edit, Trash } from 'lucide-react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { Recipe } from '../../../types';
+import { PaginationV2 } from '../../../components/ui/PaginationV2';
+
+const RECIPES_PAGE_SIZE = 25;
 
 interface RecipesViewProps {
   recipes: Recipe[];
@@ -32,6 +35,13 @@ export function RecipesView({
   onAddRecipe,
 }: RecipesViewProps) {
   const colors = useThemeColors();
+  const [page, setPage] = useState(1);
+
+  // Reset to page 1 when search/favorites filter changes
+  React.useEffect(() => { setPage(1); }, [searchQuery, showFavoritesOnly]);
+
+  const totalPages = Math.ceil(recipes.length / RECIPES_PAGE_SIZE);
+  const pagedRecipes = recipes.slice((page - 1) * RECIPES_PAGE_SIZE, page * RECIPES_PAGE_SIZE);
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh', paddingBottom: '80px' }}>
@@ -112,7 +122,7 @@ export function RecipesView({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recipes.map((recipe) => (
+            {pagedRecipes.map((recipe) => (
               <div
                 key={recipe.id}
                 className="rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 active:scale-98"
@@ -224,6 +234,19 @@ export function RecipesView({
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-6 pb-4">
+          <PaginationV2
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={recipes.length}
+            pageSize={RECIPES_PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        </div>
+      )}
 
       {/* FAB for adding recipe */}
       <button

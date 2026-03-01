@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import type { FocusSessionData } from '../services/types';
 import type { Json } from '../types/database.types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { DEFAULT_PAGE_SIZE, type PaginationParams, type PaginatedResult } from '../types/pagination';
 
 // =====================================================
 // FOCUS SESSIONS CRUD OPERATIONS
@@ -42,6 +43,51 @@ export async function getFocusSessions(filters?: {
       return (data ?? []) as FocusSessionData[];
     },
     { domain: 'FocusAPI', operation: 'getFocusSessions', data: { filters } }
+  );
+}
+
+/**
+ * Get a paginated page of focus sessions.
+ * Passes through date-range and status filters so analytics hooks stay unaffected.
+ */
+export async function getPagedFocusSessions(
+  filters?: {
+    status?: FocusSessionData['status'];
+    startDate?: string;
+    endDate?: string;
+  },
+  pagination: PaginationParams = { page: 1 }
+): Promise<PaginatedResult<FocusSessionData>> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+      const pageSize = pagination.pageSize ?? DEFAULT_PAGE_SIZE;
+      const offset = (pagination.page - 1) * pageSize;
+
+      let query = supabase
+        .from('focus_sessions')
+        .select('*', { count: 'exact' })
+        .eq('user_id', user.id)
+        .order('started_at', { ascending: false });
+
+      if (filters) {
+        if (filters.status) query = query.eq('status', filters.status);
+        if (filters.startDate) query = query.gte('started_at', filters.startDate);
+        if (filters.endDate) query = query.lte('started_at', filters.endDate);
+      }
+
+      const { data, count, error } = await query.range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      const total = count ?? 0;
+      return {
+        items: (data ?? []) as FocusSessionData[],
+        total,
+        page: pagination.page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      };
+    },
+    { domain: 'FocusAPI', operation: 'getPagedFocusSessions', data: { filters, pagination } }
   );
 }
 

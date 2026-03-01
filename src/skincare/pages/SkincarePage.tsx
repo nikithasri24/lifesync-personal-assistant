@@ -23,10 +23,13 @@ import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
 import { ProductCardV2, ProductFormModalV2, CategoryCardV2 } from '../components/v2';
 import {
   useSkincareProducts,
+  usePagedSkincareProducts,
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
 } from '../../hooks/useSkincareQuery';
+import { usePagination } from '../../hooks/utilities/usePagination';
+import { PaginationV2 } from '../../components/ui/PaginationV2';
 import {
   usePersonalCareCategories,
   usePersonalCareItems,
@@ -47,7 +50,10 @@ const SelfCareContent: React.FC = () => {
   const [isInitialized, setIsInitialized] = React.useState(false);
 
   // ===== SKINCARE DATA =====
-  const { data: products = [], isLoading: productsLoading } = useSkincareProducts();
+  // Full list used by routine/schedule components; paged list used for the Products tab UI
+  const { data: products = [] } = useSkincareProducts();
+  const { page: productsPage, setPage: setProductsPage } = usePagination();
+  const { data: pagedProductsData, isLoading: productsLoading } = usePagedSkincareProducts(undefined, productsPage);
   const createProductMutation = useCreateProduct();
   const updateProductMutation = useUpdateProduct();
   const deleteProductMutation = useDeleteProduct();
@@ -336,7 +342,7 @@ const SelfCareContent: React.FC = () => {
               gap: '12px',
             }}
           >
-            {products.map((product) => (
+            {(pagedProductsData?.items ?? []).map((product) => (
               <ProductCardV2
                 key={product.id}
                 id={product.id}
@@ -349,6 +355,17 @@ const SelfCareContent: React.FC = () => {
               />
             ))}
           </div>
+
+          {/* Pagination */}
+          {pagedProductsData && pagedProductsData.totalPages > 1 && (
+            <PaginationV2
+              currentPage={pagedProductsData.page}
+              totalPages={pagedProductsData.totalPages}
+              totalItems={pagedProductsData.total}
+              pageSize={pagedProductsData.pageSize}
+              onPageChange={setProductsPage}
+            />
+          )}
 
           {products.length === 0 && (
             <div

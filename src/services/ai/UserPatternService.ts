@@ -67,12 +67,23 @@ class UserPatternService {
     const startDateObj = subDays(new Date(), days);
     const startDate = format(startDateObj, 'yyyy-MM-dd');
 
-    const allTasks = await cacheAccessor.getTasks({ deleted: false, archived: false });
-    const tasks = allTasks.filter(t =>
-      t.status === 'done' && t.updated_at && new Date(t.updated_at) >= startDateObj
-    );
-
-    const focusSessions = await cacheAccessor.getFocusSessions({ startDate });
+    // Both task queries and focus sessions pushed to DB — fetch in parallel
+    const [tasks, tasksCreatedInPeriod, focusSessions] = await Promise.all([
+      // Completed tasks updated within the period
+      cacheAccessor.getTasks({
+        deleted: false,
+        archived: false,
+        status: 'done',
+        updatedAfter: startDateObj.toISOString(),
+      }),
+      // All tasks created within the period (for completion rate denominator)
+      cacheAccessor.getTasks({
+        deleted: false,
+        archived: false,
+        createdAfter: startDate,
+      }),
+      cacheAccessor.getFocusSessions({ startDate }),
+    ]);
 
     // Analyze hour patterns
     const hourCounts: Record<number, number> = {};
@@ -109,14 +120,7 @@ class UserPatternService {
       }))
       .sort((a, b) => b.count - a.count);
 
-    // Calculate averages
     const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
-
-    // Get all tasks for completion rate
-    const allTasksInPeriod = await cacheAccessor.getTasks({ deleted: false, archived: false });
-    const tasksCreatedInPeriod = allTasksInPeriod.filter(t =>
-      t.created_at && new Date(t.created_at) >= startDateObj
-    );
 
     return {
       peakHours,
@@ -137,8 +141,8 @@ class UserPatternService {
     const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
     const endDate = format(new Date(), 'yyyy-MM-dd');
 
-    const allHabits = await cacheAccessor.getHabits();
-    const habits = allHabits.filter(h => h.is_active);
+    // Active habits filtered at DB level
+    const habits = await cacheAccessor.getHabits({ isActive: true });
     if (habits.length === 0) return [];
 
     const entries = await cacheAccessor.getHabitEntries({ startDate, endDate });

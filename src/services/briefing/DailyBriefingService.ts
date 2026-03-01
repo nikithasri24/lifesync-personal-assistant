@@ -74,17 +74,21 @@ export async function generateDailyBriefing(
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  // Fetch all data in parallel using cache accessor (benefits from React Query cache)
+  // Fetch all data in parallel — filters pushed to DB where possible
   const [allEvents, allTasks, allHabits, habitEntries, weatherResult] =
     await Promise.all([
-      // Calendar events for today
-      cacheAccessor.getCalendarEvents(),
+      // Calendar events for today only (DB-level date filter)
+      cacheAccessor.getCalendarEvents({ startDate: today, endDate: today }),
 
-      // All tasks (we'll filter for today/overdue)
-      cacheAccessor.getTasks(),
+      // Tasks due today or earlier, not yet done — all filters at DB level
+      cacheAccessor.getTasks({
+        deleted: false,
+        statuses: ['todo', 'in_progress'],
+        dueBefore: today,
+      }),
 
-      // Active habits
-      cacheAccessor.getHabits(),
+      // Active habits only (DB-level filter)
+      cacheAccessor.getHabits({ isActive: true }),
 
       // Today's habit entries
       cacheAccessor.getHabitEntriesForDate(today),
@@ -95,12 +99,8 @@ export async function generateDailyBriefing(
         : Promise.resolve(null),
     ]);
 
-  // Filter events for today
-  const todayStart = `${today}T00:00:00`;
-  const todayEnd = `${today}T23:59:59`;
-  const todayEvents = (allEvents || []).filter((e) =>
-    e.start_date >= todayStart && e.start_date <= todayEnd
-  );
+  // Events already scoped to today by the DB query — just alias
+  const todayEvents = allEvents || [];
 
   // Process events
   const events: BriefingEvent[] = todayEvents
@@ -134,14 +134,8 @@ export async function generateDailyBriefing(
     return sum + differenceInHours(parseISO(e.endTime), parseISO(e.startTime));
   }, 0);
 
-  // Filter tasks for today or overdue (not done, not deleted, with id)
-  const tasksForBriefing = (allTasks || []).filter((t) =>
-    t.id &&
-    t.status !== 'done' &&
-    !t.deleted &&
-    t.due_date &&
-    (t.due_date === today || isBefore(parseISO(t.due_date), new Date()))
-  );
+  // Tasks already filtered at DB: non-done, non-deleted, due_date <= today; just require id
+  const tasksForBriefing = (allTasks || []).filter((t) => t.id && t.due_date);
 
   // Process tasks
   const priorityTasks: BriefingTask[] = tasksForBriefing
@@ -174,8 +168,8 @@ export async function generateDailyBriefing(
     (t) => t.due_date && isBefore(parseISO(t.due_date), new Date()) && !isToday(parseISO(t.due_date))
   ).length;
 
-  // Process habits (filter for active only)
-  const activeHabits = (allHabits || []).filter((h) => h.is_active && h.id);
+  // Habits already filtered to active by the DB query; just ensure id is present
+  const activeHabits = (allHabits || []).filter((h) => h.id);
   const completedHabitIds = new Set((habitEntries || []).map((e) => e.habit_id));
   const habitsToComplete: BriefingHabit[] = activeHabits
     .map((h) => ({

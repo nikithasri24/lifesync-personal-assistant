@@ -3,8 +3,11 @@
  * Shows cities, states, roads, and all geographic details
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Plus, Calendar, MapPin, Clock } from 'lucide-react';
+import { PaginationV2 } from '@/components/ui/PaginationV2';
+
+const TRIPS_PAGE_SIZE = 25;
 import LeafletTravelMapV2 from '../components/LeafletTravelMapV2';
 import { travelAPI, listTrips, createTrip, updateTrip, deleteTrip, categorizeTrip } from '../api/data';
 import type { VisitStatus, CategorizedLocation, LocationVisitCategory, CategorizedTrip, Trip, TripInput } from '../types';
@@ -32,6 +35,9 @@ const TravelPageContent: React.FC = () => {
   const { showToast } = useToast();
   type CategorySelection = 'mine' | 'partner';
   const [categoryFilter, setCategoryFilter] = React.useState<CategorySelection[]>(['mine', 'partner']);
+
+  // Trips pagination
+  const [tripsPage, setTripsPage] = useState(1);
 
   // Trip editor state
   const [isTripEditorOpen, setIsTripEditorOpen] = React.useState(false);
@@ -682,33 +688,44 @@ const TravelPageContent: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {trips.map((trip) => {
-              const isOwnTrip = trip.userId === currentUserId;
-              const ownerDisplayName = trip.tripCategory === 'mine' ? 'Me' : (trip.tripCategory === 'partner' ? (partnerName || 'Partner') : 'Both');
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {trips.slice((tripsPage - 1) * TRIPS_PAGE_SIZE, tripsPage * TRIPS_PAGE_SIZE).map((trip) => {
+                  const isOwnTrip = trip.userId === currentUserId;
+                  const ownerDisplayName = trip.tripCategory === 'mine' ? 'Me' : (trip.tripCategory === 'partner' ? (partnerName || 'Partner') : 'Both');
 
-              return (
-                <TripCardV2
-                  key={trip.id}
-                  id={trip.id}
-                  name={trip.name}
-                  description={trip.description}
-                  startDate={trip.startDate}
-                  endDate={trip.endDate}
-                  status={trip.status as any}
-                  budget={trip.budget}
-                  currency={trip.currency}
-                  tags={trip.tags}
-                  onClick={() => handleEditTrip(trip)}
-                  showOwnerBadge={!!mergedConnection}
-                  owner={{
-                    isOwner: isOwnTrip,
-                    displayName: ownerDisplayName,
-                  }}
+                  return (
+                    <TripCardV2
+                      key={trip.id}
+                      id={trip.id}
+                      name={trip.name}
+                      description={trip.description}
+                      startDate={trip.startDate}
+                      endDate={trip.endDate}
+                      status={trip.status as any}
+                      budget={trip.budget}
+                      currency={trip.currency}
+                      tags={trip.tags}
+                      onClick={() => handleEditTrip(trip)}
+                      showOwnerBadge={!!mergedConnection}
+                      owner={{
+                        isOwner: isOwnTrip,
+                        displayName: ownerDisplayName,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              {trips.length > TRIPS_PAGE_SIZE && (
+                <PaginationV2
+                  currentPage={tripsPage}
+                  totalPages={Math.ceil(trips.length / TRIPS_PAGE_SIZE)}
+                  totalItems={trips.length}
+                  pageSize={TRIPS_PAGE_SIZE}
+                  onPageChange={setTripsPage}
                 />
-              );
-              })}
-            </div>
+              )}
+            </>
           )}
         </div>
 

@@ -6,7 +6,7 @@
  */
 
 import { cacheAccessor } from '@/lib/cacheAccessor';
-import { getBills } from '@/api/billsAPI';
+import { getBillsDueInRange } from '@/api/billsAPI';
 import { getImportantDates } from '@/api/importantDatesAPI';
 import { logger } from '@/services/logger';
 import { format, addDays, startOfWeek, endOfWeek, differenceInDays, parseISO, isValid } from 'date-fns';
@@ -94,11 +94,13 @@ class PredictionService {
       endDate: format(endDate, 'yyyy-MM-dd'),
     });
 
-    const tasks = await cacheAccessor.getTasks({ deleted: false, archived: false });
-    const tasksInRange = tasks.filter(t => {
-      if (!t.due_date) return false;
-      const dueDate = new Date(t.due_date);
-      return (t.status === 'todo' || t.status === 'in_progress') && dueDate >= ctx.today && dueDate <= endDate;
+    // All task filters pushed to DB
+    const tasksInRange = await cacheAccessor.getTasks({
+      deleted: false,
+      archived: false,
+      statuses: ['todo', 'in_progress'],
+      dueAfter: format(ctx.today, 'yyyy-MM-dd'),
+      dueBefore: format(endDate, 'yyyy-MM-dd'),
     });
 
     // Count items per day
@@ -146,9 +148,8 @@ class PredictionService {
     const predictions: Prediction[] = [];
     const today = format(ctx.today, 'yyyy-MM-dd');
 
-    // Use cache accessor (benefits from React Query cache)
-    const habits = await cacheAccessor.getHabits();
-    const activeHabits = habits.filter(h => h.is_active);
+    // Active habits filtered at DB level
+    const activeHabits = await cacheAccessor.getHabits({ isActive: true });
     const habitsWithStreaks = activeHabits.filter(h => (h.streak_count ?? 0) > 0);
 
     const todayEntries = await cacheAccessor.getHabitEntriesForDate(today);
@@ -181,9 +182,8 @@ class PredictionService {
     const predictions: Prediction[] = [];
     const endDate = addDays(ctx.today, ctx.lookAheadDays);
 
-    // Use cache accessor (benefits from React Query cache)
-    const goals = await cacheAccessor.getGoals();
-    const activeGoals = goals.filter(g => g.status === 'in-progress');
+    // In-progress goals filtered at DB level
+    const activeGoals = await cacheAccessor.getGoals({ status: 'in-progress' });
     const goalsInRange = activeGoals.filter(g => {
       if (!g.targetDate) return false;
       const targetDate = g.targetDate;
@@ -231,14 +231,9 @@ class PredictionService {
     const predictions: Prediction[] = [];
     const endDate = addDays(ctx.today, ctx.lookAheadDays);
 
-    // Use API layer instead of direct Supabase
-    const bills = await getBills();
-    const activeBills = bills.filter(b => b.is_active);
-    const billsInRange = activeBills.filter(b => {
-      if (!b.due_date || b.is_auto_pay) return false;
-      const dueDate = new Date(b.due_date);
-      return dueDate >= ctx.today && dueDate <= endDate;
-    });
+    // Bills scoped to date range + active-only at DB level; only auto-pay exclusion stays in JS
+    const allBillsDue = await getBillsDueInRange(ctx.today, endDate);
+    const billsInRange = allBillsDue.filter(b => !b.is_auto_pay);
 
     billsInRange.forEach(bill => {
       const daysUntil = differenceInDays(parseISO(bill.due_date!), ctx.today);
@@ -265,13 +260,12 @@ class PredictionService {
   private async predictBirthdaysUpcoming(ctx: PredictionContext): Promise<Prediction[]> {
     const predictions: Prediction[] = [];
 
-    // Use API layer instead of direct Supabase
+    // getImportantDates() defaults to activeOnly=true — no JS is_active filter needed
     const dates = await getImportantDates();
-    const activeDates = dates.filter(d => d.is_active);
 
     const thisYear = ctx.today.getFullYear();
 
-    activeDates.forEach(date => {
+    dates.forEach(date => {
       let nextOccurrence = new Date(thisYear, date.month - 1, date.day);
       if (nextOccurrence < ctx.today) {
         nextOccurrence = new Date(thisYear + 1, date.month - 1, date.day);

@@ -3,11 +3,14 @@
  * Following Together pattern with V2 components
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, MapPin } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useToast } from '@/hooks/useToast';
 import { useCurrentUserId, useMergedConnection, usePartnerName } from '@/hooks/useOwnerInfo';
+import { usePagination } from '@/hooks/utilities/usePagination';
+import { PaginationV2 } from '@/components/ui/PaginationV2';
+import { DEFAULT_PAGE_SIZE } from '@/types/pagination';
 import { logger } from '@/services/logger';
 import {
   useBucketListDestinations,
@@ -37,6 +40,10 @@ const BucketListPage: React.FC = () => {
   // Filter state
   const [filterView, setFilterView] = useState<FilterView>('wishlist');
   const [ownershipFilter, setOwnershipFilter] = useState<BucketListCategory_Ownership | 'all'>('all');
+
+  // Pagination
+  const { page, setPage, resetPage } = usePagination();
+  useEffect(() => { resetPage(); }, [filterView, ownershipFilter, resetPage]);
 
   // User info
   const { data: currentUserId } = useCurrentUserId();
@@ -303,8 +310,9 @@ const BucketListPage: React.FC = () => {
           )}
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDestinations.map((destination) => {
+          {filteredDestinations.slice((page - 1) * DEFAULT_PAGE_SIZE, page * DEFAULT_PAGE_SIZE).map((destination) => {
             const isOwnDestination = destination.userId === currentUserId;
             const ownerDisplayName =
               destination.ownershipCategory === 'mine'
@@ -339,6 +347,16 @@ const BucketListPage: React.FC = () => {
             );
           })}
         </div>
+        {filteredDestinations.length > DEFAULT_PAGE_SIZE && (
+          <PaginationV2
+            currentPage={page}
+            totalPages={Math.ceil(filteredDestinations.length / DEFAULT_PAGE_SIZE)}
+            totalItems={filteredDestinations.length}
+            pageSize={DEFAULT_PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        )}
+        </>
       )}
 
       {/* Form Modal */}

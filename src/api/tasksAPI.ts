@@ -62,12 +62,24 @@ export function clearTasksMergedConnectionCache(): void {
  */
 export async function getTasks(filters?: {
   status?: TaskData['status'];
+  /** Match any of the given statuses (e.g. ['todo', 'in_progress']). Overrides `status`. */
+  statuses?: TaskData['status'][];
   priority?: TaskData['priority'];
   category?: TaskData['category'];
   projectId?: string;
   starred?: boolean;
   archived?: boolean;
   deleted?: boolean;
+  /** Include only tasks whose due_date is on or before this date (ISO yyyy-MM-dd). */
+  dueBefore?: string;
+  /** Include only tasks whose due_date is on or after this date (ISO yyyy-MM-dd). */
+  dueAfter?: string;
+  /** Include only tasks created on or after this date (ISO yyyy-MM-dd). */
+  createdAfter?: string;
+  /** Include only tasks created on or before this date (ISO yyyy-MM-dd). */
+  createdBefore?: string;
+  /** Include only tasks whose updated_at is on or after this ISO timestamp. */
+  updatedAfter?: string;
 }): Promise<TaskData[]> {
   return apiCall(
     async () => {
@@ -91,13 +103,23 @@ export async function getTasks(filters?: {
 
       // Apply filters
       if (filters) {
-        if (filters.status) query = query.eq('status', filters.status);
+        // Multi-value status takes precedence over single-value status
+        if (filters.statuses && filters.statuses.length > 0) {
+          query = query.in('status', filters.statuses);
+        } else if (filters.status) {
+          query = query.eq('status', filters.status);
+        }
         if (filters.priority) query = query.eq('priority', filters.priority);
         if (filters.category) query = query.eq('category', filters.category);
         if (filters.projectId) query = query.eq('project_id', filters.projectId);
         if (filters.starred !== undefined) query = query.eq('starred', filters.starred);
         if (filters.archived !== undefined) query = query.eq('archived', filters.archived);
         if (filters.deleted !== undefined) query = query.eq('deleted', filters.deleted);
+        if (filters.dueBefore) query = query.lte('due_date', filters.dueBefore);
+        if (filters.dueAfter) query = query.gte('due_date', filters.dueAfter);
+        if (filters.createdAfter) query = query.gte('created_at', filters.createdAfter);
+        if (filters.createdBefore) query = query.lte('created_at', filters.createdBefore);
+        if (filters.updatedAfter) query = query.gte('updated_at', filters.updatedAfter);
       }
 
       const { data, error } = await query;
@@ -359,15 +381,7 @@ export async function getTasksForReminders(options?: {
  * In merged mode, fetches both user's and partner's tasks.
  */
 export async function getPagedTasks(
-  filters?: {
-    status?: TaskData['status'];
-    priority?: TaskData['priority'];
-    category?: TaskData['category'];
-    projectId?: string;
-    starred?: boolean;
-    archived?: boolean;
-    deleted?: boolean;
-  },
+  filters?: Parameters<typeof getTasks>[0],
   pagination: PaginationParams = { page: 1 }
 ): Promise<PaginatedResult<TaskData>> {
   return apiCall(
@@ -389,13 +403,22 @@ export async function getPagedTasks(
       }
 
       if (filters) {
-        if (filters.status) query = query.eq('status', filters.status);
+        if (filters.statuses && filters.statuses.length > 0) {
+          query = query.in('status', filters.statuses);
+        } else if (filters.status) {
+          query = query.eq('status', filters.status);
+        }
         if (filters.priority) query = query.eq('priority', filters.priority);
         if (filters.category) query = query.eq('category', filters.category);
         if (filters.projectId) query = query.eq('project_id', filters.projectId);
         if (filters.starred !== undefined) query = query.eq('starred', filters.starred);
         if (filters.archived !== undefined) query = query.eq('archived', filters.archived);
         if (filters.deleted !== undefined) query = query.eq('deleted', filters.deleted);
+        if (filters.dueBefore) query = query.lte('due_date', filters.dueBefore);
+        if (filters.dueAfter) query = query.gte('due_date', filters.dueAfter);
+        if (filters.createdAfter) query = query.gte('created_at', filters.createdAfter);
+        if (filters.createdBefore) query = query.lte('created_at', filters.createdBefore);
+        if (filters.updatedAfter) query = query.gte('updated_at', filters.updatedAfter);
       }
 
       const { data, count, error } = await query.range(offset, offset + pageSize - 1);

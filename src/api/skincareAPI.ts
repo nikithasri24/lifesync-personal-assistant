@@ -12,6 +12,7 @@ import type {
 import type { SkinConditionLog } from '../services/types';
 import { logger } from '../services/logger';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { DEFAULT_PAGE_SIZE, type PaginationParams, type PaginatedResult } from '../types/pagination';
 
 // =====================================================
 // SKINCARE PRODUCTS
@@ -79,6 +80,72 @@ export async function getSkincareProducts(filters?: {
       }));
     },
     { domain: 'SkincareAPI', operation: 'getSkincareProducts', data: { filters } }
+  );
+}
+
+/**
+ * Get a paginated page of skincare products.
+ * Category and in_use filters are applied server-side.
+ */
+export async function getPagedSkincareProducts(
+  filters?: {
+    category?: SkincareProduct['category'];
+    in_use?: boolean;
+  },
+  pagination: PaginationParams = { page: 1 }
+): Promise<PaginatedResult<SkincareProduct>> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+      const pageSize = pagination.pageSize ?? DEFAULT_PAGE_SIZE;
+      const offset = (pagination.page - 1) * pageSize;
+
+      let query = supabase
+        .from('skincare_products')
+        .select('*', { count: 'exact' })
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (filters) {
+        if (filters.category) query = query.eq('category', filters.category);
+        if (filters.in_use !== undefined) query = query.eq('in_use', filters.in_use);
+      }
+
+      const { data, count, error } = await query.range(offset, offset + pageSize - 1);
+      if (error) throw error;
+
+      const total = count ?? 0;
+      const items: SkincareProduct[] = (data ?? []).map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        name: row.name,
+        brand: row.brand || undefined,
+        category: row.category as SkincareProduct['category'],
+        productType: row.product_type || undefined,
+        usageTime: row.usage_time || [],
+        orderInRoutine: row.order_in_routine || undefined,
+        frequency: row.frequency || undefined,
+        skinConcerns: row.skin_concerns || undefined,
+        keyIngredients: row.key_ingredients || undefined,
+        notes: row.notes || undefined,
+        purchaseDate: row.purchase_date || undefined,
+        expiryDate: row.expiry_date || undefined,
+        price: row.price || undefined,
+        size: row.size || undefined,
+        whereToBuy: row.where_to_buy || undefined,
+        repurchase: row.repurchase || undefined,
+        currentlyUsing: row.currently_using,
+        startedUsingDate: row.started_using_date || undefined,
+        stoppedUsingDate: row.stopped_using_date || undefined,
+        rating: row.rating || undefined,
+        effectiveness: row.effectiveness || undefined,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+
+      return { items, total, page: pagination.page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    },
+    { domain: 'SkincareAPI', operation: 'getPagedSkincareProducts', data: { filters, pagination } }
   );
 }
 

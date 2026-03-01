@@ -1,11 +1,13 @@
-import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import {
   getFocusSessions,
+  getPagedFocusSessions,
   createFocusSession,
   updateFocusSession,
 } from '../api/focusAPI';
 import type { FocusSessionData } from '../services/types';
 import { logger } from '@/services/logger';
+import { DEFAULT_PAGE_SIZE, type PaginatedResult } from '@/types/pagination';
 
 // ==================== Query Keys ====================
 
@@ -22,6 +24,22 @@ export function useFocusSessions(): UseQueryResult<FocusSessionData[], Error> {
     queryKey: focusKeys.sessions(),
     queryFn: () => getFocusSessions(),
     staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * Paginated focus sessions.
+ * Use for session history lists; leave useFocusSessions() for stats/analytics.
+ */
+export function usePagedFocusSessions(
+  filters?: { status?: FocusSessionData['status']; startDate?: string; endDate?: string },
+  page = 1
+): UseQueryResult<PaginatedResult<FocusSessionData>, Error> {
+  return useQuery({
+    queryKey: [...focusKeys.sessions(), 'paged', { ...filters, page }] as const,
+    queryFn: () => getPagedFocusSessions(filters, { page, pageSize: DEFAULT_PAGE_SIZE }),
+    staleTime: 1000 * 60 * 5,
+    placeholderData: keepPreviousData,
   });
 }
 

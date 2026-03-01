@@ -28,12 +28,24 @@ function DashboardContent() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  // Data fetching
+  // Date caps: only load data relevant to what the dashboard actually shows
+  const today = new Date().toISOString().split('T')[0];
+  const weekStart = (() => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday as start of week
+    return new Date(now.getFullYear(), now.getMonth(), diff).toISOString().split('T')[0];
+  })();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
+
+  // Data fetching — scoped to what the dashboard needs
   const tasksQuery = useTasks();
   const habitsQuery = useHabits({ isActive: true });
-  const habitEntriesQuery = useHabitEntries();
+  // Habit entries: only this week (dashboard shows weekly progress)
+  const habitEntriesQuery = useHabitEntries({ startDate: weekStart, endDate: today });
   const notesQuery = useNotes();
-  const journalQuery = useJournalEntries();
+  // Journal entries: only last 30 days (dashboard shows recent entries)
+  const journalQuery = useJournalEntries({ startDate: thirtyDaysAgo, endDate: new Date() });
 
   const tasks: Task[] = (tasksQuery as { data: Task[] }).data ?? [];
   const habits: Habit[] = (habitsQuery as unknown as { data: Habit[] }).data ?? [];
@@ -64,7 +76,6 @@ function DashboardContent() {
   const [completedHabits, setCompletedHabits] = useState<Set<string>>(new Set());
 
   // Filter today's tasks
-  const today = new Date().toISOString().split('T')[0];
   const todayTasks = tasks.filter(t =>
     t.due_date && t.due_date.startsWith(today) && t.status !== 'done'
   ).slice(0, 5);

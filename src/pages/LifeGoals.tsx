@@ -33,6 +33,9 @@ import { FilterBar, type StatusFilter, type OwnershipFilter } from '../goals/com
 import { FABV2 } from '@/components/v2/FABV2';
 import { Plus } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { usePagination } from '@/hooks/utilities/usePagination';
+import { PaginationV2 } from '@/components/ui/PaginationV2';
+import { DEFAULT_PAGE_SIZE } from '@/types/pagination';
 
 // Import V2 components
 import { GoalsHeaderV2, GoalFormModalV2, DreamFormModalV2 } from '../goals/components/v2';
@@ -96,6 +99,15 @@ const LifeGoalsContent: React.FC = () => {
   const [goalOwnershipFilter, setGoalOwnershipFilter] = useState<OwnershipFilter>('all');
   const [dreamStatusFilter, setDreamStatusFilter] = useState<StatusFilter>('all');
   const [dreamOwnershipFilter, setDreamOwnershipFilter] = useState<OwnershipFilter>('all');
+
+  // Pagination state for Goals and Dreams tabs
+  const { page: goalsPage, setPage: setGoalsPage, resetPage: resetGoalsPage } = usePagination();
+  const { page: dreamsPage, setPage: setDreamsPage, resetPage: resetDreamsPage } = usePagination();
+
+  // Reset goal page when filters change
+  useEffect(() => { resetGoalsPage(); }, [goalStatusFilter, goalOwnershipFilter, resetGoalsPage]);
+  // Reset dream page when filters change
+  useEffect(() => { resetDreamsPage(); }, [dreamStatusFilter, dreamOwnershipFilter, resetDreamsPage]);
 
   const goalStats = useMemo(() => {
     const completed = goals.filter((goal) => goal.status === 'completed').length;
@@ -460,7 +472,7 @@ const LifeGoalsContent: React.FC = () => {
               itemType="goals"
             />
             <GoalList
-              goals={filteredGoals}
+              goals={filteredGoals.slice((goalsPage - 1) * DEFAULT_PAGE_SIZE, goalsPage * DEFAULT_PAGE_SIZE)}
               expandedGoalId={expandedGoalId}
               editingProgress={editingProgress}
               progressValue={progressValue}
@@ -477,6 +489,15 @@ const LifeGoalsContent: React.FC = () => {
               partnerId={partnerId}
               partnerName={partnerName}
             />
+            {filteredGoals.length > DEFAULT_PAGE_SIZE && (
+              <PaginationV2
+                currentPage={goalsPage}
+                totalPages={Math.ceil(filteredGoals.length / DEFAULT_PAGE_SIZE)}
+                totalItems={filteredGoals.length}
+                pageSize={DEFAULT_PAGE_SIZE}
+                onPageChange={setGoalsPage}
+              />
+            )}
             </>
           )}
           {activeTab === 'dreams' && (
@@ -491,7 +512,7 @@ const LifeGoalsContent: React.FC = () => {
               itemType="dreams"
             />
             <DreamList
-              dreams={filteredDreams}
+              dreams={filteredDreams.slice((dreamsPage - 1) * DEFAULT_PAGE_SIZE, dreamsPage * DEFAULT_PAGE_SIZE)}
               onMarkAchieved={handleMarkDreamAchieved}
               onUndoAchieved={handleUndoDreamAchieved}
               onDelete={handleDeleteDream}
@@ -500,6 +521,15 @@ const LifeGoalsContent: React.FC = () => {
               partnerId={partnerId}
               partnerName={partnerName}
             />
+            {filteredDreams.length > DEFAULT_PAGE_SIZE && (
+              <PaginationV2
+                currentPage={dreamsPage}
+                totalPages={Math.ceil(filteredDreams.length / DEFAULT_PAGE_SIZE)}
+                totalItems={filteredDreams.length}
+                pageSize={DEFAULT_PAGE_SIZE}
+                onPageChange={setDreamsPage}
+              />
+            )}
             </>
           )}
         </section>

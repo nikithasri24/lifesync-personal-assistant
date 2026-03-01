@@ -22,6 +22,7 @@ import {
   validateArrayWithFilter,
 } from '../schemas/mealPlanning';
 import { sanitizeInput, sanitizeText } from '../utils/sanitize';
+import { DEFAULT_PAGE_SIZE, type PaginationParams, type PaginatedResult } from '../types/pagination';
 
 // Cache for merged connection to avoid repeated checks within same session
 let cachedMergedConnection: MergedConnectionResult | null | undefined = undefined;
@@ -893,6 +894,49 @@ export async function getRecipes(): Promise<RecipeData[]> {
       return validateArrayWithFilter<RecipeData>(RecipeDataArraySchema.element, data ?? [], 'getRecipes (personal)');
     },
     { domain: 'MealPlanningAPI', operation: 'getRecipes' }
+  );
+}
+
+/**
+ * Get a paginated page of recipes for the current user.
+ * Supports merged mode (shared recipes via connection_id).
+ */
+export async function getPagedRecipes(
+  pagination: PaginationParams = { page: 1 }
+): Promise<PaginatedResult<RecipeData>> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+      const mergedConnection = await getMealsMergedConnection();
+      const pageSize = pagination.pageSize ?? DEFAULT_PAGE_SIZE;
+      const offset = (pagination.page - 1) * pageSize;
+
+      let query;
+      if (mergedConnection) {
+        query = supabase
+          .from('recipes')
+          .select('*', { count: 'exact' })
+          .eq('connection_id', mergedConnection.connectionId)
+          .order('created_at', { ascending: false });
+      } else {
+        query = supabase
+          .from('recipes')
+          .select('*', { count: 'exact' })
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+      }
+
+      const { data, count, error } = await query.range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      const total = count ?? 0;
+      const validated = validateArrayWithFilter<RecipeData>(
+        RecipeDataArraySchema.element,
+        data ?? [],
+        'getPagedRecipes'
+      );
+      return { items: validated, total, page: pagination.page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    },
+    { domain: 'MealPlanningAPI', operation: 'getPagedRecipes', data: { pagination } }
   );
 }
 

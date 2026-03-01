@@ -3,10 +3,11 @@
  * React Query hooks for AI conversation management
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query';
 import {
   getConversations,
+  getPagedConversations,
   getConversation,
   createConversation,
   updateConversation,
@@ -15,6 +16,7 @@ import {
 } from '@/api/conversationsAPI';
 import type { Conversation, ConversationMessage } from '@/types/infrastructure';
 import { logger } from '@/services/logger';
+import { DEFAULT_PAGE_SIZE, type PaginatedResult } from '@/types/pagination';
 
 /**
  * Query: Get all conversations
@@ -28,6 +30,22 @@ export function useConversations(filters?: {
     queryKey: queryKeys.conversations.list(filters),
     queryFn: () => getConversations(filters),
     staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * Query: Get paginated list of conversations.
+ * Replaces the soft limit: true pagination with keepPreviousData.
+ */
+export function usePagedConversations(
+  filters?: { startDate?: Date; endDate?: Date },
+  page = 1
+): ReturnType<typeof useQuery<PaginatedResult<Conversation>>> {
+  return useQuery<PaginatedResult<Conversation>>({
+    queryKey: queryKeys.conversations.list({ ...filters, page } as Record<string, unknown>),
+    queryFn: () => getPagedConversations(filters, { page, pageSize: DEFAULT_PAGE_SIZE }),
+    staleTime: 1000 * 60 * 5,
+    placeholderData: keepPreviousData,
   });
 }
 

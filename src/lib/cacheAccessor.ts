@@ -148,11 +148,11 @@ export function createCacheAccessor(client: QueryClient = defaultQueryClient) {
     },
 
     // ===== GOALS =====
-    getGoals: async (options?: CacheOptions) => {
-      return fetchWithCache<LifeGoal[], undefined>(
-        queryKeys.goals.list(),
+    getGoals: async (filters?: Parameters<typeof getUserLifeGoals>[0], options?: CacheOptions) => {
+      return fetchWithCache<LifeGoal[], typeof filters>(
+        queryKeys.goals.list(filters),
         getUserLifeGoals,
-        undefined,
+        filters,
         options
       );
     },

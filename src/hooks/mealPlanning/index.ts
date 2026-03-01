@@ -59,6 +59,7 @@ export {
 // Recipe hooks
 export {
   useRecipesQuery,
+  usePagedRecipesQuery,
   useCreateRecipeMutation,
   useUpdateRecipeMutation,
   useDeleteRecipeMutation,
