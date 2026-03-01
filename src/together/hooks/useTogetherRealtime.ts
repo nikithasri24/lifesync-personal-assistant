@@ -17,20 +17,18 @@ export function useTogetherRealtime(userId: string | undefined, partnerId: strin
   const { showToast } = useToast();
 
   useEffect(() => {
-    console.log('[🔴REALTIME🔴] Hook running!', { userId, partnerId });
+    logger.debug('Together', 'Hook running', { userId, partnerId });
 
     if (!userId || !partnerId) {
-      console.log('[🔴REALTIME🔴] SKIPPING - missing user or partner');
       logger.debug('Together', 'Skipping real-time setup - missing user or partner', { userId, partnerId });
       return;
     }
 
-    console.log('[🔴REALTIME🔴] Setting up subscriptions...', new Date().toISOString());
     logger.info('Together', 'Setting up real-time subscriptions', { userId, partnerId });
 
     // Add keepalive heartbeat to prevent disconnections
     const heartbeatInterval = setInterval(() => {
-      console.log('[🔴REALTIME🔴] ⏱️ Heartbeat - subscriptions still active', new Date().toISOString());
+      logger.debug('Together', 'Heartbeat - subscriptions still active');
     }, 30000); // Every 30 seconds
 
     // Subscribe to ALL partner messages changes
@@ -53,27 +51,13 @@ export function useTogetherRealtime(userId: string | undefined, partnerId: strin
           });
 
           // Show toast for incoming messages (not sent by current user)
-          console.log('[🔴REALTIME🔴] 💌 Message event received:', {
-            eventType: payload.eventType,
-            senderId: payload.new?.sender_id,
-            recipientId: payload.new?.recipient_id,
-            currentUserId: userId,
-            partnerId: partnerId,
-            title: payload.new?.title,
-            status: payload.new?.status
-          });
-
           const isIncomingMessage = payload.eventType === 'INSERT' &&
                                     payload.new?.sender_id !== userId &&
                                     payload.new?.recipient_id === userId;
 
-          console.log('[🔴REALTIME🔴] 💌 Is incoming message?', isIncomingMessage);
-
           if (isIncomingMessage) {
             const messageTitle = payload.new?.title || 'New Message';
             const status = payload.new?.status;
-
-            console.log('[🔴REALTIME🔴] 💌 Showing toast for incoming message:', { messageTitle, status });
 
             if (status === 'revealed' || status === 'draft') {
               // Immediate message
@@ -89,20 +73,14 @@ export function useTogetherRealtime(userId: string | undefined, partnerId: strin
         }
       )
       .subscribe((status, err) => {
-        console.log('[🔴REALTIME🔴] 💌 Messages subscription status:', status, err);
         logger.info('Together', 'Messages channel subscription status', { status, error: err });
 
-        if (status === 'SUBSCRIBED') {
-          console.log('[🔴REALTIME🔴] ✅ Messages subscription ACTIVE!');
-          logger.info('Together', '✅ Real-time messages subscription ACTIVE!');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('[🔴REALTIME🔴] ❌ Messages ERROR:', err);
+        if (status === 'CHANNEL_ERROR') {
           logger.error('Together', '❌ Messages channel ERROR - realtime may not be enabled in Supabase', { error: err });
         } else if (status === 'TIMED_OUT') {
-          console.error('[🔴REALTIME🔴] ⏱️ Messages TIMED OUT');
           logger.error('Together', '⏱️ Messages channel TIMED OUT');
         } else if (status === 'CLOSED') {
-          console.log('[🔴REALTIME🔴] 🚪 Messages channel CLOSED');
+          logger.debug('Together', 'Messages channel closed');
         }
       });
 
@@ -134,12 +112,7 @@ export function useTogetherRealtime(userId: string | undefined, partnerId: strin
         }
       )
       .subscribe((status) => {
-        console.log('[🔴REALTIME🔴] 🎉 Milestones subscription status:', status);
         logger.info('Together', 'Milestones channel subscription status', { status });
-        if (status === 'SUBSCRIBED') {
-          console.log('[🔴REALTIME🔴] ✅ Milestones subscription ACTIVE!');
-          logger.info('Together', '✅ Real-time milestones subscription ACTIVE!');
-        }
       });
 
     // Subscribe to ALL achievement rewards changes
@@ -173,17 +146,11 @@ export function useTogetherRealtime(userId: string | undefined, partnerId: strin
         }
       )
       .subscribe((status) => {
-        console.log('[🔴REALTIME🔴] 🏆 Rewards subscription status:', status);
         logger.info('Together', 'Rewards channel subscription status', { status });
-        if (status === 'SUBSCRIBED') {
-          console.log('[🔴REALTIME🔴] ✅ Rewards subscription ACTIVE!');
-          logger.info('Together', '✅ Real-time rewards subscription ACTIVE!');
-        }
       });
 
     // Cleanup subscriptions on unmount
     return () => {
-      console.log('[🔴REALTIME🔴] 🧹 CLEANUP - Unsubscribing all channels', new Date().toISOString());
       logger.debug('Together', 'Cleaning up real-time subscriptions');
       clearInterval(heartbeatInterval);
       void messagesChannel.unsubscribe();

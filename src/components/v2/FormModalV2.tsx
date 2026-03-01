@@ -37,6 +37,7 @@ import React, { useEffect, ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useDraftStorage } from '@/hooks/useDraftStorage';
+import { logger } from '@/services/logger';
 
 export interface FormModalV2Props<T extends Record<string, any>> {
   /** Whether the modal is open */
@@ -174,8 +175,7 @@ export function FormModalV2<T extends Record<string, any>>({
     if (validate) {
       const error = validate(formState);
       if (error) {
-        // You could show this error via toast - for now just console
-        console.warn('Validation error:', error);
+        logger.warn('Form', 'Validation error', { error });
         return;
       }
     }
