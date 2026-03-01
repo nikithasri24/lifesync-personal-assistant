@@ -3,7 +3,7 @@
  * Detailed view of a credit card with benefits, offers, and tracking
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Gift, Percent, Shield, Calendar } from 'lucide-react';
 import type { Account } from '../../types';
 import { formatCurrency } from '../../utils/currency';
@@ -20,7 +20,15 @@ type TabType = 'overview' | 'benefits' | 'offers' | 'statements';
 
 export const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({ card, onClose }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const utilization = card.creditLimit ? (Math.abs(card.balance) / card.creditLimit) * 100 : 0;
   const available = (card.creditLimit || 0) - Math.abs(card.balance);
 
@@ -32,13 +40,29 @@ export const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({ 
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div 
-        className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+    <div
+      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backdropFilter: 'blur(4px)',
+        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full lg:max-w-4xl bg-white dark:bg-gray-800 lg:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col"
+        style={{ maxHeight: '90vh' }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Drag handle (mobile only) */}
+        <div className="lg:hidden pt-2 flex-shrink-0">
+          <div className="w-9 h-1 rounded-full mx-auto bg-gray-300" />
+        </div>
+
         {/* Header */}
-        <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 p-6 border-b border-primary/10">
+        <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 p-6 border-b border-primary/10 flex-shrink-0">
           <div className="flex items-start justify-between mb-4">
             <div>
               <h2 className="text-2xl font-bold text-primary mb-1">{card.name}</h2>
@@ -51,6 +75,7 @@ export const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({ 
             <button
               onClick={onClose}
               className="rounded-lg p-2 hover:bg-primary/20 transition-colors"
+              aria-label="Close"
             >
               <X className="h-5 w-5 text-primary" />
             </button>
