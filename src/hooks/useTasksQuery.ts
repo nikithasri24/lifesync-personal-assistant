@@ -9,7 +9,7 @@
 
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
-import type { TaskData, Project } from '../services/types';
+import type { TaskData } from '../services/types';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
   getTasks,
@@ -23,13 +23,6 @@ import {
   getPagedTasks,
 } from '@/api/tasksAPI';
 import { DEFAULT_PAGE_SIZE, type PaginatedResult } from '@/types/pagination';
-import {
-  getProjects,
-  getProject,
-  createProject,
-  updateProject,
-  deleteProject,
-} from '@/api/projectsAPI';
 import { logger } from '@/services/logger';
 // import { recordTaskCompletion } from '@/services/gamification'; // Gamification removed
 import { dataEvents } from '@/lib/dataEvents';
@@ -427,152 +420,12 @@ export function useRestoreTask(): UseMutationResult<TaskData, Error, string, unk
   });
 }
 
-// =====================================================
-// PROJECTS QUERY HOOKS
-// =====================================================
-
-export interface ProjectFilters {
-  status?: Project['status'];
-  priority?: Project['priority'];
-  tags?: string[];
-}
-
-/**
- * Get all projects with optional filters
- */
-export function useProjects(filters?: ProjectFilters): UseQueryResult<Project[], Error> {
-  return useQuery({
-    queryKey: [...queryKeys.tasks.all, 'projects', filters] as const,
-    queryFn: () => getProjects(filters),
-    ...queryOptions.user,
-  });
-}
-
-/**
- * Get a single project by ID
- */
-export function useProject(id: string | null): UseQueryResult<Project, Error> {
-  return useQuery({
-    queryKey: [...queryKeys.tasks.all, 'projects', 'detail', id] as const,
-    queryFn: () => getProject(id ?? ''),
-    enabled: !!id,
-    ...queryOptions.user,
-  });
-}
-
-// =====================================================
-// PROJECTS MUTATION HOOKS
-// =====================================================
-
-type CreateProjectInput = Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'milestones'>;
-type UpdateProjectInput = Partial<Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'milestones'>>;
-
-/**
- * Create a new project
- */
-export function useCreateProject(): UseMutationResult<Project, Error, CreateProjectInput, unknown> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (input: CreateProjectInput) => {
-      logger.debug('Projects', 'Creating project', { name: input.name, status: input.status });
-      const result = await createProject(input);
-      return result;
-    },
-    onSuccess: (newProject) => {
-      logger.info('Projects', 'Project created successfully', { id: newProject.id, name: newProject.name });
-
-      // Invalidate all project queries
-      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
-
-      // Optimistically add to cache
-      queryClient.setQueryData<Project[]>(
-        [...queryKeys.tasks.all, 'projects', undefined] as const,
-        (old) => {
-          return old ? [newProject, ...old] : [newProject];
-        }
-      );
-    },
-    onError: (error: Error) => {
-      logger.error('Projects', 'Failed to create project', { error: error.message });
-    },
-  });
-}
-
-/**
- * Update an existing project
- */
-export function useUpdateProject(): UseMutationResult<Project, Error, { id: string; updates: UpdateProjectInput }, unknown> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: UpdateProjectInput }) => {
-      logger.debug('Projects', 'Updating project', { id, updates });
-      const result = await updateProject(id, updates);
-      return result;
-    },
-    onMutate: ({ id, updates }) => {
-      logger.debug('Projects', 'Optimistic update: updating project', { id, updates });
-    },
-    onSuccess: (updatedProject) => {
-      logger.info('Projects', 'Project updated successfully', { id: updatedProject.id, name: updatedProject.name });
-
-      // Invalidate all project queries
-      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
-
-      // Update the specific project detail cache
-      queryClient.setQueryData(
-        [...queryKeys.tasks.all, 'projects', 'detail', updatedProject.id] as const,
-        updatedProject
-      );
-
-      // Optimistically update in list caches
-      queryClient.setQueryData<Project[]>(
-        [...queryKeys.tasks.all, 'projects', undefined] as const,
-        (old) => {
-          return old?.map((project) =>
-            project.id === updatedProject.id ? updatedProject : project
-          );
-        }
-      );
-    },
-    onError: (error: Error, { id }) => {
-      logger.error('Projects', 'Failed to update project', { error: error.message, id });
-    },
-  });
-}
-
-/**
- * Delete a project
- */
-export function useDeleteProject(): UseMutationResult<void, Error, string, unknown> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      logger.debug('Projects', 'Deleting project', { id });
-      const result = await deleteProject(id);
-      return result;
-    },
-    onSuccess: (_data, deletedId) => {
-      logger.info('Projects', 'Project deleted successfully', { id: deletedId });
-
-      // Invalidate all project queries
-      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
-
-      // Remove from cache
-      queryClient.removeQueries({ queryKey: [...queryKeys.tasks.all, 'projects', 'detail', deletedId] });
-
-      // Optimistically remove from list caches
-      queryClient.setQueryData<Project[]>(
-        [...queryKeys.tasks.all, 'projects', undefined] as const,
-        (old) => {
-          return old?.filter((project) => project.id !== deletedId);
-        }
-      );
-    },
-    onError: (error: Error, id) => {
-      logger.error('Projects', 'Failed to delete project', { error: error.message, id });
-    },
-  });
-}
+// Project hooks live in useProjectsQuery.ts.
+// Legacy names re-exported here for backward compatibility.
+export {
+  useProjects,
+  useProject,
+  useCreateProject,
+  useUpdateProject,
+  useDeleteProject,
+} from './useProjectsQuery';

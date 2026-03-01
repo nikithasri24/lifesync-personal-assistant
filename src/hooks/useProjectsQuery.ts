@@ -375,3 +375,19 @@ export function useDeleteProjectMilestoneMutation(): ReturnType<typeof useMutati
     },
   });
 }
+
+// =====================================================
+// LEGACY ALIASES (previously in useTasksQuery.ts)
+// Kept for backward compatibility — prefer the *Query / *Mutation names above.
+// =====================================================
+
+/** @deprecated Use useProjectsQuery instead */
+export const useProjects = useProjectsQuery;
+/** @deprecated Use useProjectQuery instead */
+export const useProject = useProjectQuery;
+/** @deprecated Use useCreateProjectMutation instead */
+export const useCreateProject = useCreateProjectMutation;
+/** @deprecated Use useUpdateProjectMutation instead */
+export const useUpdateProject = useUpdateProjectMutation;
+/** @deprecated Use useDeleteProjectMutation instead */
+export const useDeleteProject = useDeleteProjectMutation;

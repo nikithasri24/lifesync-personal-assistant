@@ -11,11 +11,13 @@ import {
   useDeleteTask,
   useRestoreTask,
   usePermanentlyDeleteTask,
+} from './useTasksQuery';
+import {
   useProjects,
   useCreateProject,
   useUpdateProject,
   useDeleteProject,
-} from './useTasksQuery';
+} from './useProjectsQuery';
 
 export interface UseApiTasksReturn {
   tasks: TaskData[];
