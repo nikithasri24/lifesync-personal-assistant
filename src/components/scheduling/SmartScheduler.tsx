@@ -73,13 +73,13 @@ export function SmartScheduler({ task, onSchedule, className = '' }: SmartSchedu
             <h3 className="font-semibold text-primary">Smart Scheduler</h3>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handlePrevDay} className="p-1 hover:bg-tertiary rounded transition-colors">
+            <button onClick={handlePrevDay} className="p-1 hover:bg-tertiary rounded transition-colors" aria-label="Previous day">
               <ChevronLeft className="w-5 h-5 text-secondary" />
             </button>
             <span className="text-sm font-medium text-primary min-w-[120px] text-center">
               {format(selectedDate, 'EEE, MMM d')}
             </span>
-            <button onClick={handleNextDay} className="p-1 hover:bg-tertiary rounded transition-colors">
+            <button onClick={handleNextDay} className="p-1 hover:bg-tertiary rounded transition-colors" aria-label="Next day">
               <ChevronRight className="w-5 h-5 text-secondary" />
             </button>
           </div>

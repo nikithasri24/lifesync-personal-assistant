@@ -119,7 +119,7 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
           <Camera className="w-5 h-5 text-[#C18B5E]" />
           Scan Barcode
         </h3>
-        <button onClick={onCancel} className="p-1 hover:bg-gray-200 rounded-lg">
+        <button onClick={onCancel} className="p-1 hover:bg-gray-200 rounded-lg" aria-label="Cancel">
           <X className="w-5 h-5" />
         </button>
       </div>

@@ -125,7 +125,7 @@ export function FoodSearch({ onSelectFood, onClose }: FoodSearchProps): React.Re
           <Search className="w-5 h-5 text-[#C18B5E]" />
           Search Food Database
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-lg">
+        <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-lg" aria-label="Close">
           <X className="w-5 h-5" />
         </button>
       </div>

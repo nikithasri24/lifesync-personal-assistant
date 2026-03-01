@@ -42,7 +42,7 @@ export const BenefitEditor: React.FC<BenefitEditorProps> = ({ benefit, onSave, o
           <h3 className="text-xl font-bold text-primary">
             {benefit ? 'Edit Benefit' : 'Add Benefit'}
           </h3>
-          <button onClick={onCancel} className="p-1 hover:bg-primary/20 rounded transition-colors">
+          <button onClick={onCancel} className="p-1 hover:bg-primary/20 rounded transition-colors" aria-label="Close">
             <X className="h-5 w-5 text-primary" />
           </button>
         </div>

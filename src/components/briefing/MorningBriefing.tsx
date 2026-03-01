@@ -442,7 +442,7 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               {planStep === 'slots' && (
-                <button onClick={handleBackToSelect} className="p-1 hover:bg-purple-100 rounded">
+                <button onClick={handleBackToSelect} className="p-1 hover:bg-purple-100 rounded" aria-label="Back">
                   <ChevronLeft className="w-4 h-4 text-purple-600" />
                 </button>
               )}

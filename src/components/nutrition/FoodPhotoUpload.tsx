@@ -106,7 +106,7 @@ export function FoodPhotoUpload({ onAnalysisComplete, onCancel }: FoodPhotoUploa
           <Camera className="w-5 h-5 text-[#C18B5E]" />
           Snap Your Meal
         </h3>
-        <button onClick={onCancel} className="p-1.5 hover:bg-gray-100 rounded-lg">
+        <button onClick={onCancel} className="p-1.5 hover:bg-gray-100 rounded-lg" aria-label="Cancel">
           <X className="w-5 h-5 text-gray-500" />
         </button>
       </div>

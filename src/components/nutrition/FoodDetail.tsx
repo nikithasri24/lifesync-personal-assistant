@@ -61,7 +61,7 @@ export function FoodDetail({ product, mealType: initialMealType, onLog, onBack }
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
         <button onClick={onBack} className="text-[#C18B5E] font-medium text-sm">← Back</button>
-        <button onClick={onBack} className="p-1 hover:bg-gray-200 rounded-lg">
+        <button onClick={onBack} className="p-1 hover:bg-gray-200 rounded-lg" aria-label="Close">
           <X className="w-5 h-5" />
         </button>
       </div>
