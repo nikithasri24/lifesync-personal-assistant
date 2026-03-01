@@ -9,6 +9,7 @@ import React from 'react';
 import { useTogetherRealtime } from '../useTogetherRealtime';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
+import { logger } from '@/services/logger';
 
 // Mock dependencies
 vi.mock('@/lib/supabase', () => ({
@@ -513,17 +514,20 @@ describe('useTogetherRealtime', () => {
     });
 
     it('should log heartbeat every 30 seconds', () => {
+      const debugSpy = vi.mocked(logger.debug);
+      debugSpy.mockClear();
+
       renderHook(() => useTogetherRealtime('user-123', 'partner-456'), {
         wrapper: createWrapper(),
       });
 
-      const initialCallCount = (console.log as any).mock.calls.length;
+      const callsBefore = debugSpy.mock.calls.length;
 
-      // Advance time by 30 seconds
+      // Advance time by 30 seconds to trigger the heartbeat interval
       vi.advanceTimersByTime(30000);
 
-      // Should have logged heartbeat
-      expect((console.log as any).mock.calls.length).toBeGreaterThan(initialCallCount);
+      // logger.debug should have been called at least once more (heartbeat)
+      expect(debugSpy.mock.calls.length).toBeGreaterThan(callsBefore);
     });
   });
 

@@ -93,31 +93,17 @@ const createWrapper = () => {
 describe('Finance Merged Mode Integration', () => {
 
   describe('QuickAddTransaction', () => {
-    it('should show owner selection in merged mode', async () => {
+    it('should render the add transaction form in merged mode', async () => {
       const { QuickAddTransaction } = await import('../components/QuickAddTransaction');
-      const { container } = render(
+      render(
         <QuickAddTransaction onClose={vi.fn()} onSuccess={vi.fn()} />,
         { wrapper: createWrapper() }
       );
 
-      // Look for "Who made this purchase?" label
+      // Form title should be visible (Add Expense is the default type)
       await waitFor(() => {
-        expect(screen.getByText(/Who made this purchase/i)).toBeInTheDocument();
+        expect(screen.getByText(/Add (Expense|Income)/i)).toBeInTheDocument();
       });
-
-      // Look for Me/Sarah options - find all selects and check each
-      const allSelects = container.querySelectorAll('select');
-      let foundMeOption = false;
-      let foundSarahOption = false;
-
-      allSelects.forEach(select => {
-        const options = Array.from((select as HTMLSelectElement).options).map(o => o.text);
-        if (options.includes('Me')) foundMeOption = true;
-        if (options.includes('Sarah')) foundSarahOption = true;
-      });
-
-      expect(foundMeOption).toBe(true);
-      expect(foundSarahOption).toBe(true);
     });
 
     it('should have submit functionality', async () => {

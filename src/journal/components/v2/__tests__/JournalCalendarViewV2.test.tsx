@@ -326,10 +326,12 @@ describe('JournalCalendarViewV2', () => {
         />
       );
 
-      // Today should be highlighted with gradient background
+      // Today should be highlighted with gradient background.
+      // Use getAllByText because the day number may appear more than once
+      // (e.g. in both the grid cell and an adjacent month overlap).
       const today = new Date().getDate();
-      const todayButton = screen.getByText(String(today));
-      expect(todayButton).toBeInTheDocument();
+      const todayElements = screen.getAllByText(String(today));
+      expect(todayElements.length).toBeGreaterThan(0);
     });
   });
 
