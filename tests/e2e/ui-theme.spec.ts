@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Theme and UI Features', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test.describe('Theme Toggle', () => {
@@ -56,7 +56,7 @@ test.describe('Theme and UI Features', () => {
 
         // Reload page
         await page.reload();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // Theme should persist
         const newThemeClass = await html.getAttribute('class');
@@ -110,7 +110,7 @@ test.describe('Theme and UI Features', () => {
 
         if (await navLink.isVisible()) {
           await navLink.click();
-          await page.waitForLoadState('networkidle');
+          await page.waitForLoadState('domcontentloaded');
 
           // Navigation should occur
           await expect(page.locator('body')).toBeVisible();
@@ -137,7 +137,7 @@ test.describe('Theme and UI Features', () => {
       // Set mobile viewport
       await page.setViewportSize({ width: 375, height: 667 });
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for mobile menu button (hamburger)
       const mobileMenuButton = page.locator('[data-testid="mobile-menu"]').or(
@@ -160,7 +160,7 @@ test.describe('Theme and UI Features', () => {
       // Set tablet viewport
       await page.setViewportSize({ width: 768, height: 1024 });
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Page should be responsive
       await expect(page.locator('body')).toBeVisible();
@@ -170,7 +170,7 @@ test.describe('Theme and UI Features', () => {
       // Set desktop viewport
       await page.setViewportSize({ width: 1920, height: 1080 });
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Page should be responsive
       await expect(page.locator('body')).toBeVisible();
@@ -188,7 +188,7 @@ test.describe('Theme and UI Features', () => {
       );
 
       // Eventually page should load
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(page.locator('body')).toBeVisible();
     });
 
@@ -203,7 +203,7 @@ test.describe('Theme and UI Features', () => {
       );
 
       // Eventually content should load
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(page.locator('body')).toBeVisible();
     });
   });
@@ -213,7 +213,7 @@ test.describe('Theme and UI Features', () => {
       // Perform an action that triggers a toast
       // Navigate to todos and try to create a task
       await page.goto('/todos');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const addTaskButton = page.getByRole('button', { name: /add task/i }).first();
       if (await addTaskButton.isVisible()) {
@@ -255,7 +255,7 @@ test.describe('Theme and UI Features', () => {
       // Restore online
       await page.context().setOffline(false);
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // App should recover
       await expect(page.locator('body')).toBeVisible();
@@ -302,7 +302,7 @@ test.describe('Theme and UI Features', () => {
     test('should open and close modals', async ({ page }) => {
       // Try to open a modal (e.g., create task)
       await page.goto('/todos');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const addButton = page.getByRole('button', { name: /add task/i }).first();
       if (await addButton.isVisible()) {
@@ -336,7 +336,7 @@ test.describe('Theme and UI Features', () => {
 
       // Reload
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const newClass = await html.getAttribute('class');
 

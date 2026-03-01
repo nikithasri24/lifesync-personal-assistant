@@ -4,7 +4,7 @@ test.describe('Retirement Account Tracking', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to finances page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click on Finances in navigation
     await page.click('text=Finances');

@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Task Sorting - Priority', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -83,7 +83,7 @@ test.describe('Task Sorting - Priority', () => {
 test.describe('Task Sorting - Due Date', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -180,7 +180,7 @@ test.describe('Task Sorting - Due Date', () => {
 test.describe('Task Organization - Status Sections', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -299,7 +299,7 @@ test.describe('Task Organization - Status Sections', () => {
 test.describe('Task Organization - Grouping', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {

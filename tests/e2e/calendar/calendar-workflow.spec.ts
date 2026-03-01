@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Calendar - Page Structure', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
   });
 
@@ -56,7 +56,7 @@ test.describe('Calendar - Page Structure', () => {
 test.describe('Calendar - View Switching', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
   });
 
@@ -121,7 +121,7 @@ test.describe('Calendar - View Switching', () => {
 test.describe('Calendar - Navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
     // Navigate to month view for consistent date display
     await page.getByRole('button', { name: 'View month' }).click();
@@ -183,7 +183,7 @@ test.describe('Calendar - Navigation', () => {
 test.describe('Calendar - Month View', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
     await page.getByRole('button', { name: 'View month' }).click();
     await page.waitForTimeout(500);
@@ -221,7 +221,7 @@ test.describe('Calendar - Month View', () => {
 test.describe('Calendar - Day View', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
     await page.getByRole('button', { name: 'View day' }).click();
     await page.waitForTimeout(500);
@@ -259,7 +259,7 @@ test.describe('Calendar - Day View', () => {
 test.describe('Calendar - Event Creation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
   });
 

@@ -22,7 +22,7 @@ test.describe('Navigation', () => {
   test('can navigate from Dashboard to Tasks @critical @smoke', async ({ page }) => {
     // Start on dashboard
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify we're on dashboard
     await expect(page.getByRole('heading', { name: /good (morning|afternoon|evening)/i })).toBeVisible();
@@ -39,7 +39,7 @@ test.describe('Navigation', () => {
   test('can navigate from Tasks to Habits @critical', async ({ page }) => {
     // Start on Tasks
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click Habits link
     const habitsLink = page.getByRole('link', { name: /habits/i });
@@ -64,7 +64,7 @@ test.describe('Navigation', () => {
     for (const item of navItems) {
       const link = page.getByRole('link', { name: item.name });
       await link.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Verify URL changed (use RegExp for flexible matching)
       const currentURL = page.url();
@@ -88,7 +88,7 @@ test.describe('Navigation', () => {
       // Use exact name matching
       const link = page.locator(`a:has-text("${item.name}")`).first();
       await link.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       expect(page.url()).toContain(item.url);
       await page.waitForTimeout(300);
@@ -109,7 +109,7 @@ test.describe('Navigation', () => {
     for (const item of personalItems) {
       const link = page.locator(`a:has-text("${item.name}")`).first();
       await link.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       expect(page.url()).toContain(item.url);
       await page.waitForTimeout(300);
@@ -118,7 +118,7 @@ test.describe('Navigation', () => {
 
   test('sidebar is visible on desktop @p1', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Sidebar should be visible (complementary landmark)
     const sidebar = page.getByRole('complementary').or(page.getByRole('navigation'));
@@ -131,7 +131,7 @@ test.describe('Navigation', () => {
   test('can return to Dashboard from any page @p0', async ({ page }) => {
     // Navigate to a different page
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click Dashboard link
     const dashboardLink = page.getByRole('link', { name: /dashboard/i });
@@ -155,7 +155,7 @@ test.describe('Navigation', () => {
 
     // Use browser back button
     await page.goBack();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should be back on Tasks
     expect(page.url()).toContain('/todos');
@@ -163,7 +163,7 @@ test.describe('Navigation', () => {
 
   test('navigation links have correct icons @p1', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigation items should have icons (images or SVG elements)
     const tasksLink = page.getByRole('link', { name: /tasks/i });

@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Nutrition Date Navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 
@@ -133,7 +133,7 @@ test.describe('Nutrition Date Navigation', () => {
 test.describe('Nutrition Date-Specific Data', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 
@@ -270,7 +270,7 @@ test.describe('Nutrition Date-Specific Data', () => {
 test.describe('Nutrition Date Display', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 

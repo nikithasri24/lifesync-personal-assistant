@@ -36,7 +36,7 @@ test.describe('Inline edit task title', () => {
 
       // Reload and verify persistence
       await page.reload()
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('domcontentloaded')
       await expect(page.getByText(newTitle).first()).toBeVisible()
     }
   })

@@ -3,17 +3,17 @@ import { test, expect } from '@playwright/test';
 test.describe('Journal Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Journal
     const journalLink = page.locator('[data-testid="nav-journal"]').or(page.getByText('Journal'));
 
     if (await journalLink.first().isVisible()) {
       await journalLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/journal');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -398,7 +398,7 @@ test.describe('Journal Module', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Journal should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

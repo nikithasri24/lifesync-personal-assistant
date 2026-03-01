@@ -26,7 +26,7 @@ test.describe('Habit Operations', () => {
     // Login and navigate to Habits page
     await loginAsAccount1(page);
     await page.goto('/habits');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('can create a new habit via FAB @critical @smoke', async ({ page }) => {

@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Focus - Page Structure', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/focus');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 
@@ -69,7 +69,7 @@ test.describe('Focus - Page Structure', () => {
 test.describe('Focus - Preset Selection', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/focus');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 
@@ -135,7 +135,7 @@ test.describe('Focus - Preset Selection', () => {
 test.describe('Focus - Timer Controls', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/focus');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
     // Select Pomodoro preset to start
@@ -239,7 +239,7 @@ test.describe('Focus - Timer Controls', () => {
 test.describe('Focus - Countdown Verification', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/focus');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 

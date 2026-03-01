@@ -11,7 +11,7 @@ import { Page, expect } from '@playwright/test';
  */
 export async function navigateTo(page: Page, path: string): Promise<void> {
   await page.goto(path);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /**
@@ -25,7 +25,7 @@ export async function navigateViaSidebar(
     .locator('[data-testid="sidebar"]')
     .getByRole('link', { name: new RegExp(menuItemName, 'i') });
   await menuItem.click();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /**
@@ -70,7 +70,7 @@ export async function verifyCurrentPage(
  */
 export async function goBack(page: Page): Promise<void> {
   await page.goBack();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /**

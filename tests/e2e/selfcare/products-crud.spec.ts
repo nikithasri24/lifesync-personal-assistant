@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Selfcare Products - Create Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/selfcare');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
     // Navigate to Products tab
@@ -122,7 +122,7 @@ test.describe('Selfcare Products - Create Operations', () => {
 test.describe('Selfcare Products - Read Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/selfcare');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
     await page.getByRole('tab', { name: '🧴 Products' }).click();
     await page.waitForTimeout(500);
@@ -171,7 +171,7 @@ test.describe('Selfcare Products - Read Operations', () => {
 test.describe('Selfcare Products - Update Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/selfcare');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
     await page.getByRole('tab', { name: '🧴 Products' }).click();
     await page.waitForTimeout(500);
@@ -249,7 +249,7 @@ test.describe('Selfcare Products - Update Operations', () => {
 test.describe('Selfcare Products - Delete Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/selfcare');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
     await page.getByRole('tab', { name: '🧴 Products' }).click();
     await page.waitForTimeout(500);
@@ -281,7 +281,7 @@ test.describe('Selfcare Products - Delete Operations', () => {
 test.describe('Selfcare Products - Validation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/selfcare');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
     await page.getByRole('tab', { name: '🧴 Products' }).click();
     await page.waitForTimeout(500);

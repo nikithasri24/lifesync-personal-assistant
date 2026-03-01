@@ -3,14 +3,14 @@ import { test, expect } from '@playwright/test';
 test.describe('Data Sync and Offline Mode', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test.describe('Online Sync', () => {
     test('should sync data when online', async ({ page }) => {
       // Create a task
       await page.goto('/todos');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const addButton = page.getByRole('button', { name: /add task/i }).first();
       if (await addButton.isVisible()) {
@@ -48,15 +48,15 @@ test.describe('Data Sync and Offline Mode', () => {
       // Create new tab
       const page2 = await context.newPage();
       await page2.goto('/');
-      await page2.waitForLoadState('networkidle');
+      await page2.waitForLoadState('domcontentloaded');
 
       // Create data in first tab
       await page.goto('/todos');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Check if data appears in second tab
       await page2.goto('/todos');
-      await page2.waitForLoadState('networkidle');
+      await page2.waitForLoadState('domcontentloaded');
 
       // Both tabs should show same data
       await expect(page.locator('body')).toBeVisible();
@@ -81,7 +81,7 @@ test.describe('Data Sync and Offline Mode', () => {
       // Go back online
       await page.context().setOffline(false);
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Should retry sync
       await expect(page.locator('body')).toBeVisible();
@@ -91,7 +91,7 @@ test.describe('Data Sync and Offline Mode', () => {
   test.describe('Offline Mode', () => {
     test('should work offline', async ({ page }) => {
       // Load the app online first
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Go offline
       await page.context().setOffline(true);
@@ -127,7 +127,7 @@ test.describe('Data Sync and Offline Mode', () => {
 
     test('should queue changes while offline', async ({ page }) => {
       // Load app
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Go offline
       await page.context().setOffline(true);
@@ -157,7 +157,7 @@ test.describe('Data Sync and Offline Mode', () => {
       // Go back online
       await page.context().setOffline(false);
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Changes should sync
       await expect(page.locator('body')).toBeVisible();
@@ -166,7 +166,7 @@ test.describe('Data Sync and Offline Mode', () => {
     test('should cache data for offline use', async ({ page }) => {
       // Load data while online
       await page.goto('/todos');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Go offline
       await page.context().setOffline(true);
@@ -184,7 +184,7 @@ test.describe('Data Sync and Offline Mode', () => {
 
     test('should handle offline navigation', async ({ page }) => {
       // Load app
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Go offline
       await page.context().setOffline(true);
@@ -204,7 +204,7 @@ test.describe('Data Sync and Offline Mode', () => {
 
     test('should sync when coming back online', async ({ page }) => {
       // Load app
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Go offline
       await page.context().setOffline(true);
@@ -248,7 +248,7 @@ test.describe('Data Sync and Offline Mode', () => {
     test('should persist data locally', async ({ page }) => {
       // Create data
       await page.goto('/todos');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const addButton = page.getByRole('button', { name: /add task/i }).first();
       if (await addButton.isVisible()) {
@@ -267,7 +267,7 @@ test.describe('Data Sync and Offline Mode', () => {
 
             // Reload page
             await page.reload();
-            await page.waitForLoadState('networkidle');
+            await page.waitForLoadState('domcontentloaded');
 
             // Data should persist
             const taskExists = await page.getByText(testTaskTitle).isVisible();
@@ -375,7 +375,7 @@ test.describe('Data Sync and Offline Mode', () => {
   test.describe('Network Recovery', () => {
     test('should recover from network interruption', async ({ page }) => {
       // Start online
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Simulate network interruption
       await page.context().setOffline(true);

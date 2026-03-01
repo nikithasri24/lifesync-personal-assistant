@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Skincare Tracker', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Skincare
     const skincareLink = page.locator('[data-testid="nav-skincare"]').or(
@@ -12,10 +12,10 @@ test.describe('Skincare Tracker', () => {
 
     if (await skincareLink.first().isVisible()) {
       await skincareLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/skincare');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -296,7 +296,7 @@ test.describe('Skincare Tracker', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Skincare page should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

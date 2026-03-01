@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Notifications System', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test.describe('Browser Notifications', () => {
@@ -13,7 +13,7 @@ test.describe('Notifications System', () => {
 
       // Navigate to habits (which has reminder functionality)
       await page.goto('/habits');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for notification settings
       const notificationToggle = page.locator('[data-testid="enable-notifications"]').or(
@@ -44,7 +44,7 @@ test.describe('Notifications System', () => {
       // Don't grant permissions - test graceful degradation
 
       await page.goto('/habits');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // App should still function without notifications
       await expect(page.locator('body')).toBeVisible();
@@ -201,7 +201,7 @@ test.describe('Notifications System', () => {
       await context.grantPermissions(['notifications']);
 
       await page.goto('/habits');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Find a habit
       const habit = page.locator('[data-testid*="habit"]').first();
@@ -225,7 +225,7 @@ test.describe('Notifications System', () => {
       await context.grantPermissions(['notifications']);
 
       await page.goto('/habits');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const habit = page.locator('[data-testid*="habit"]').first();
 
@@ -246,7 +246,7 @@ test.describe('Notifications System', () => {
       await context.grantPermissions(['notifications']);
 
       await page.goto('/todos');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const task = page.locator('[data-testid*="task"]').first();
 
@@ -267,7 +267,7 @@ test.describe('Notifications System', () => {
       await context.grantPermissions(['notifications']);
 
       await page.goto('/habits');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const habit = page.locator('[data-testid*="habit"]').first();
 

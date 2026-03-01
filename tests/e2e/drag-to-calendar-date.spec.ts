@@ -11,7 +11,7 @@ test.describe('Drag task to calendar date', () => {
   test('task is draggable in calendar day view', async ({ page }) => {
     // Go to Todos and create a task with today's date
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Close mobile sidebar if open (backdrop blocks clicks on mobile)
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
@@ -44,7 +44,7 @@ test.describe('Drag task to calendar date', () => {
 
     // Navigate to Calendar - cache invalidation should trigger refetch
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for React Query to refetch tasks (it should see stale cache and refetch)
     await page.waitForTimeout(3000);
@@ -71,7 +71,7 @@ test.describe('Drag task to calendar date', () => {
 
   test('calendar day cells accept drops in month view', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
     // Switch to Month view (should be default)

@@ -6,7 +6,7 @@ test.describe('Habits E2E', () => {
 
     // Navigate to Habits
     await page.goto('/habits')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Ensure page has loaded
     await expect(page.locator('main')).toBeVisible()
@@ -49,7 +49,7 @@ test.describe('Habits E2E', () => {
 
   test('frequency labels display correctly', async ({ page }) => {
     await page.goto('/habits')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Ensure page has loaded
     await expect(page.locator('main')).toBeVisible()
@@ -81,7 +81,7 @@ test.describe('Habits E2E', () => {
 
   test('daily habit with multi-target shows progress indicator', async ({ page }) => {
     await page.goto('/habits')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Create daily habit with target 3
     await page.getByRole('button', { name: 'Create new habit' }).click()
@@ -102,7 +102,7 @@ test.describe('Habits E2E', () => {
 
   test('weekly and monthly multi-target habits show correct labels', async ({ page }) => {
     await page.goto('/habits')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Create weekly habit with target 2
     await page.getByRole('button', { name: 'Create new habit' }).click()

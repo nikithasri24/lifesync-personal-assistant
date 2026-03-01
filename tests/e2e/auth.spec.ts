@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Authentication Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should load the application', async ({ page }) => {
@@ -14,7 +14,7 @@ test.describe('Authentication Flow', () => {
   test('should handle auth gate for protected routes', async ({ page }) => {
     // Try to navigate to a protected route
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should either show auth form or allow access if logged in
     const bodyVisible = await page.locator('body').isVisible();
@@ -27,7 +27,7 @@ test.describe('Authentication Flow', () => {
 
     // Reload the page
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should maintain session
     await expect(page.locator('body')).toBeVisible();
@@ -67,7 +67,7 @@ test.describe('Authentication Flow', () => {
 
     for (const route of protectedRoutes) {
       await page.goto(route);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Should either show auth or the page content
       const bodyVisible = await page.locator('body').isVisible();
@@ -87,7 +87,7 @@ test.describe('Authentication Flow', () => {
     // Restore online
     await page.context().setOffline(false);
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should recover and load properly
     await expect(page.locator('body')).toBeVisible();
@@ -96,7 +96,7 @@ test.describe('Authentication Flow', () => {
   test('should maintain user-specific data isolation', async ({ page }) => {
     // Navigate to todos
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check that data is scoped to user
     // This is verified by the fact that the page loads without errors

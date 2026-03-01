@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Goals Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Goals (general goals, not Life Goals)
     const goalsLink = page.locator('[data-testid="nav-goals"]').or(
@@ -12,10 +12,10 @@ test.describe('Goals Module', () => {
 
     if (await goalsLink.first().isVisible()) {
       await goalsLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/goals');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -316,7 +316,7 @@ test.describe('Goals Module', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Goals page should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

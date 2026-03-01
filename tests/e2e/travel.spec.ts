@@ -3,17 +3,17 @@ import { test, expect } from '@playwright/test';
 test.describe('Travel Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Travel
     const travelLink = page.locator('[data-testid="nav-travel"]').or(page.getByText('Travel'));
 
     if (await travelLink.first().isVisible()) {
       await travelLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/travel');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -236,7 +236,7 @@ test.describe('Travel Module', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Travel map should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

@@ -1,1283 +1,148 @@
+/**
+ * SupabaseApi — thin composition layer implementing FinanceAPI.
+ *
+ * Delegates every method to the appropriate domain-specific API class.
+ * Domain implementations live in the sibling files:
+ *   institutionsAPI  →  listInstitutions
+ *   accountsAPI      →  accounts CRUD
+ *   transactionsAPI  →  transactions CRUD
+ *   budgetsAPI       →  budgets + budget templates
+ *   categoriesAPI    →  listCategories
+ *   goalsAPI         →  net worth + goals CRUD
+ *   creditCardsAPI   →  benefits / category bonuses / welcome bonuses / card offers
+ *   insuranceLoansAPI→  loans + insurance + retirement
+ *   recurringAPI     →  recurring transactions + pending transactions
+ */
+
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { FinanceAPI } from './api';
-import { AuthenticationError } from '@/lib/errors';
 import type {
-  Institution,
   Account,
-  Transaction,
-  Budget,
-  BudgetTemplate,
-  BudgetTemplateInput,
-  Category,
-  NetPoint,
-  Goal,
   TxnQuery,
-  Paginated,
   TransactionInput,
+  BudgetTemplateInput,
   GoalInput,
-  GoalProgressPoint,
-  CardBenefit,
   CardBenefitInput,
-  CardCategoryBonus,
   CardCategoryBonusInput,
-  WelcomeBonus,
   WelcomeBonusInput,
-  CardOffer,
   CardOfferInput,
-  Loan,
   LoanInput,
-  LoanPayment,
   LoanPaymentInput,
-  InsurancePolicy,
   InsurancePolicyInput,
-  RetirementAccountWithStats,
   RetirementAccountMetadataInput,
-  RetirementContribution,
   RetirementContributionInput,
-  RetirementPerformance,
   RetirementPerformanceInput,
-  ContributionRoom,
-  RecurringTransaction,
   RecurringTransactionInput,
-  PendingTransaction,
 } from '../types';
+import { AccountsAPI } from './accountsAPI';
+import { BudgetsAPI } from './budgetsAPI';
+import { CategoriesAPI } from './categoriesAPI';
+import { CreditCardsAPI } from './creditCardsAPI';
+import { GoalsAPI } from './goalsAPI';
+import { InstitutionsAPI } from './institutionsAPI';
+import { InsuranceLoansAPI } from './insuranceLoansAPI';
+import { TransactionsAPI } from './transactionsAPI';
 import * as recurringAPI from './recurringAPI';
 
-/**
- * Supabase implementation of FinanceAPI
- */
 export class SupabaseApi implements FinanceAPI {
-  private client: SupabaseClient;
+  private institutions: InstitutionsAPI;
+  private accounts: AccountsAPI;
+  private transactions: TransactionsAPI;
+  private budgets: BudgetsAPI;
+  private categories: CategoriesAPI;
+  private goals: GoalsAPI;
+  private creditCards: CreditCardsAPI;
+  private insuranceLoans: InsuranceLoansAPI;
 
   constructor(client: SupabaseClient) {
-    this.client = client;
+    this.institutions = new InstitutionsAPI(client);
+    this.accounts = new AccountsAPI(client);
+    this.transactions = new TransactionsAPI(client);
+    this.budgets = new BudgetsAPI(client);
+    this.categories = new CategoriesAPI(client);
+    this.goals = new GoalsAPI(client);
+    this.creditCards = new CreditCardsAPI(client);
+    this.insuranceLoans = new InsuranceLoansAPI(client);
   }
 
-  private async getUserId(): Promise<string> {
-    const { data: { user }, error } = await this.client.auth.getUser();
-    if (error || !user) throw new AuthenticationError('Not authenticated', { error });
-    return user.id;
-  }
-
-  // =====================================================
-  // INSTITUTIONS
-  // =====================================================
-
-  async listInstitutions(): Promise<Institution[]> {
-    const userId = await this.getUserId();
-    const { data, error } = await this.client
-      .from('finance_institutions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('name');
-
-    if (error) throw error;
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      name: row.name,
-      logoUrl: row.logo_url,
-    }));
-  }
-
-  // =====================================================
-  // ACCOUNTS
-  // =====================================================
-
-  async listAccounts(): Promise<Account[]> {
-    // Don't filter by user_id - let RLS handle access control
-    // This allows viewing partner's accounts in merged mode
-    const { data, error } = await this.client
-      .from('finance_accounts')
-      .select('*')
-      .order('name');
-
-    if (error) throw error;
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      institutionId: row.institution_id,
-      name: row.name,
-      type: row.type,
-      balance: parseFloat(row.balance),
-      lastUpdatedISO: row.last_updated_at,
-      liability: row.liability,
-      creditLimit: row.credit_limit ? parseFloat(row.credit_limit) : undefined,
-      apr: row.apr ? parseFloat(row.apr) : undefined,
-      paymentDueDay: row.payment_due_day,
-      minimumPayment: row.minimum_payment ? parseFloat(row.minimum_payment) : undefined,
-      statementBalance: row.statement_balance ? parseFloat(row.statement_balance) : undefined,
-      statementDate: row.statement_date,
-      annualFee: row.annual_fee ? parseFloat(row.annual_fee) : undefined,
-      annualFeeDueDate: row.annual_fee_due_date,
-      rewardsBalance: row.rewards_balance ? parseFloat(row.rewards_balance) : undefined,
-      rewardsType: row.rewards_type,
-      baseRewardsRate: row.base_rewards_rate ? parseFloat(row.base_rewards_rate) : undefined,
-    }));
-  }
-
-  async updateAccount(accountId: string, updates: Partial<Account>): Promise<void> {
-    const userId = await this.getUserId();
-    const dbUpdates: Record<string, unknown> = {};
-
-    if (updates.name !== undefined) dbUpdates.name = updates.name;
-    if (updates.balance !== undefined) dbUpdates.balance = updates.balance;
-    if (updates.institutionId !== undefined) dbUpdates.institution_id = updates.institutionId;
-    if (updates.userId !== undefined) dbUpdates.user_id = updates.userId; // Allow ownership transfer
-    if (updates.creditLimit !== undefined) dbUpdates.credit_limit = updates.creditLimit;
-    if (updates.apr !== undefined) dbUpdates.apr = updates.apr;
-    if (updates.paymentDueDay !== undefined) dbUpdates.payment_due_day = updates.paymentDueDay;
-    if (updates.minimumPayment !== undefined) dbUpdates.minimum_payment = updates.minimumPayment;
-    if (updates.statementBalance !== undefined) dbUpdates.statement_balance = updates.statementBalance;
-    if (updates.statementDate !== undefined) dbUpdates.statement_date = updates.statementDate;
-    if (updates.annualFee !== undefined) dbUpdates.annual_fee = updates.annualFee;
-    if (updates.annualFeeDueDate !== undefined) dbUpdates.annual_fee_due_date = updates.annualFeeDueDate;
-    if (updates.rewardsBalance !== undefined) dbUpdates.rewards_balance = updates.rewardsBalance;
-    if (updates.rewardsType !== undefined) dbUpdates.rewards_type = updates.rewardsType;
-    if (updates.baseRewardsRate !== undefined) dbUpdates.base_rewards_rate = updates.baseRewardsRate;
-
-    dbUpdates.updated_at = new Date().toISOString();
-
-    // Don't filter by user_id when updating - allow updating partner's accounts in merged mode
-    // RLS will handle access control
-    const { error } = await this.client
-      .from('finance_accounts')
-      .update(dbUpdates)
-      .eq('id', accountId);
-
-    if (error) throw error;
-  }
-
-  async upsertAccount(account: { id?: string; name: string; type: string; balance: number; institutionId?: string; userId?: string }): Promise<void> {
-    const currentUserId = await this.getUserId();
-
-    if (account.id) {
-      // Update existing
-      await this.updateAccount(account.id, {
-        name: account.name,
-        balance: account.balance,
-        institutionId: account.institutionId,
-        userId: account.userId, // Allow ownership transfer
-      });
-    } else {
-      // Insert new - use provided userId or default to current user
-      const { error } = await this.client
-        .from('finance_accounts')
-        .insert({
-          user_id: account.userId ?? currentUserId,
-          name: account.name,
-          type: account.type,
-          balance: account.balance,
-          institution_id: account.institutionId,
-        });
-
-      if (error) throw error;
-    }
-  }
-
-  async deleteAccount(accountId: string): Promise<void> {
-    const userId = await this.getUserId();
-    const { error } = await this.client
-      .from('finance_accounts')
-      .delete()
-      .eq('id', accountId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-  }
-
-  // =====================================================
-  // TRANSACTIONS
-  // =====================================================
-
-  async listTransactions(params: TxnQuery): Promise<Paginated<Transaction>> {
-    // Don't filter by user_id - let RLS handle access control
-    // This allows viewing partner's transactions in merged mode
-    let query = this.client
-      .from('finance_transactions')
-      .select('*');
-
-    // Apply filters
-    if (params.fromISO) query = query.gte('date', params.fromISO);
-    if (params.toISO) query = query.lte('date', params.toISO);
-    if (params.accountIds?.length) query = query.in('account_id', params.accountIds);
-    if (params.categoryIds?.length) query = query.in('category_id', params.categoryIds);
-    if (params.type) query = query.eq('type', params.type);
-    if (params.text) query = query.ilike('description', `%${params.text}%`);
-
-    // Cursor-based pagination
-    // Cursor format: "date:id" (e.g., "2024-01-15:abc123")
-    if (params.cursor) {
-      try {
-        const [cursorDate, cursorId] = params.cursor.split(':');
-        if (cursorDate && cursorId) {
-          // For descending order, get rows where (date < cursorDate) OR (date = cursorDate AND id < cursorId)
-          query = query.or(`date.lt.${cursorDate},and(date.eq.${cursorDate},id.lt.${cursorId})`);
-        }
-      } catch (e) {
-        // Invalid cursor format - ignore and start from beginning
-      }
-    }
-
-    // Order by date DESC, then by id DESC for consistent pagination
-    query = query.order('date', { ascending: false }).order('id', { ascending: false });
-
-    // Fetch limit + 1 to determine if there are more results
-    const limit = params.limit || 100;
-    query = query.limit(limit + 1);
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    const rows = data || [];
-    const hasMore = rows.length > limit;
-    const itemsToReturn = hasMore ? rows.slice(0, limit) : rows;
-
-    const items = itemsToReturn.map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      accountId: row.account_id,
-      dateISO: row.date,
-      description: row.description,
-      categoryId: row.category_id,
-      amount: parseFloat(row.amount),
-      type: row.type,
-      notes: row.notes,
-      merchantName: row.merchant_name,
-      confidenceScore: row.confidence_score ? parseFloat(row.confidence_score) : undefined,
-      suggestedCategoryId: row.suggested_category_id,
-      categorizationRuleId: row.categorization_rule_id,
-    }));
-
-    // Generate next cursor if there are more results
-    let nextCursor: string | undefined;
-    if (hasMore && items.length > 0) {
-      const lastItem = items[items.length - 1];
-      nextCursor = `${lastItem.dateISO}:${lastItem.id}`;
-    }
-
-    return { items, nextCursor };
-  }
-
-  async upsertTransaction(txn: TransactionInput): Promise<void> {
-    const currentUserId = await this.getUserId();
-
-    if (txn.id) {
-      // Update existing
-      const { error } = await this.client
-        .from('finance_transactions')
-        .update({
-          account_id: txn.accountId,
-          date: txn.dateISO,
-          description: txn.description,
-          category_id: txn.categoryId,
-          amount: txn.amount,
-          type: txn.type,
-          notes: txn.notes,
-          merchant_name: txn.merchantName,
-          confidence_score: txn.confidenceScore,
-          suggested_category_id: txn.suggestedCategoryId,
-          categorization_rule_id: txn.categorizationRuleId,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', txn.id)
-        .eq('user_id', currentUserId);
-
-      if (error) throw error;
-    } else {
-      // Insert new - use provided userId or default to current user
-      const { error } = await this.client
-        .from('finance_transactions')
-        .insert({
-          user_id: txn.userId ?? currentUserId,
-          account_id: txn.accountId,
-          date: txn.dateISO,
-          description: txn.description,
-          category_id: txn.categoryId,
-          amount: txn.amount,
-          type: txn.type,
-          notes: txn.notes,
-          merchant_name: txn.merchantName,
-          confidence_score: txn.confidenceScore,
-          suggested_category_id: txn.suggestedCategoryId,
-          categorization_rule_id: txn.categorizationRuleId,
-        });
-
-      if (error) throw error;
-    }
-  }
-
-  async deleteTransaction(id: string): Promise<void> {
-    const userId = await this.getUserId();
-    const { error } = await this.client
-      .from('finance_transactions')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-  }
-
-  // =====================================================
-  // BUDGETS
-  // =====================================================
-
-  async listBudgets(monthISO: string): Promise<Budget[]> {
-    const userId = await this.getUserId();
-    const month = monthISO.slice(0, 7); // YYYY-MM
-
-    const { data, error } = await this.client
-      .from('finance_budgets')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('month', month);
-
-    if (error) throw error;
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      categoryId: row.category_id,
-      month: row.month,
-      limit: parseFloat(row.limit_amount),
-    }));
-  }
-
-  async upsertBudget(budget: { categoryId: string; month: string; limit: number }): Promise<void> {
-    const userId = await this.getUserId();
-    const month = budget.month.slice(0, 7); // YYYY-MM
-
-    const { error } = await this.client
-      .from('finance_budgets')
-      .upsert({
-        user_id: userId,
-        category_id: budget.categoryId,
-        month,
-        limit_amount: budget.limit,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id,category_id,month',
-      });
-
-    if (error) throw error;
-  }
-
-  async deleteBudget(categoryId: string, month: string): Promise<void> {
-    const userId = await this.getUserId();
-    const monthStr = month.slice(0, 7); // YYYY-MM
-
-    const { error } = await this.client
-      .from('finance_budgets')
-      .delete()
-      .eq('user_id', userId)
-      .eq('category_id', categoryId)
-      .eq('month', monthStr);
-
-    if (error) throw error;
-  }
-
-  async listBudgetTemplates(): Promise<BudgetTemplate[]> {
-    const userId = await this.getUserId();
-    const { data, error } = await this.client
-      .from('finance_budget_templates')
-      .select('*')
-      .eq('user_id', userId);
-
-    if (error) throw error;
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      categoryId: row.category_id,
-      defaultAmount: parseFloat(row.default_amount),
-    }));
-  }
-
-  async upsertBudgetTemplate(template: BudgetTemplateInput): Promise<void> {
-    const userId = await this.getUserId();
-
-    const { error } = await this.client
-      .from('finance_budget_templates')
-      .upsert({
-        id: template.id,
-        user_id: userId,
-        category_id: template.categoryId,
-        default_amount: template.defaultAmount,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id,category_id',
-      });
-
-    if (error) throw error;
-  }
-
-  async deleteBudgetTemplate(categoryId: string): Promise<void> {
-    const userId = await this.getUserId();
-    const { error} = await this.client
-      .from('finance_budget_templates')
-      .delete()
-      .eq('user_id', userId)
-      .eq('category_id', categoryId);
-
-    if (error) throw error;
-  }
-
-  async initializeBudgetsFromTemplates(month: string): Promise<number> {
-    const templates = await this.listBudgetTemplates();
-    const monthStr = month.slice(0, 7); // YYYY-MM
-
-    let count = 0;
-    for (const template of templates) {
-      try {
-        await this.upsertBudget({
-          categoryId: template.categoryId,
-          month: monthStr,
-          limit: template.defaultAmount,
-        });
-        count++;
-      } catch (error) {
-        // Skip if budget already exists
-      }
-    }
-
-    return count;
-  }
-
-  // =====================================================
-  // CATEGORIES
-  // =====================================================
-
-  async listCategories(): Promise<Category[]> {
-    const userId = await this.getUserId();
-    const { data, error } = await this.client
-      .from('finance_categories')
-      .select('*')
-      .eq('user_id', userId)
-      .order('name');
-
-    if (error) throw error;
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      name: row.name,
-      parentId: row.parent_id,
-      icon: row.icon,
-      color: row.color,
-    }));
-  }
-
-  // =====================================================
-  // NET WORTH
-  // =====================================================
-
-  async listNetWorth(): Promise<NetPoint[]> {
-    // Calculate net worth from accounts
-    const accounts = await this.listAccounts();
-
-    // Group by month and calculate assets/liabilities
-    const monthMap = new Map<string, { assets: number; liabilities: number }>();
-
-    for (const account of accounts) {
-      const month = account.lastUpdatedISO.slice(0, 7); // YYYY-MM
-      const existing = monthMap.get(month) || { assets: 0, liabilities: 0 };
-
-      if (account.liability) {
-        existing.liabilities += account.balance;
-      } else {
-        existing.assets += account.balance;
-      }
-
-      monthMap.set(month, existing);
-    }
-
-    return Array.from(monthMap.entries())
-      .map(([month, values]) => ({
-        month,
-        assets: values.assets,
-        liabilities: values.liabilities,
-      }))
-      .sort((a, b) => a.month.localeCompare(b.month));
-  }
-
-  // =====================================================
-  // GOALS
-  // =====================================================
-
-  async listGoals(): Promise<Goal[]> {
-    // Don't filter by user_id - let RLS handle access control
-    // This allows viewing partner's goals in merged mode
-    const { data, error } = await this.client
-      .from('finance_goals')
-      .select('*')
-      .order('due_date');
-
-    if (error) throw error;
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      connectionId: row.connection_id,
-      name: row.name,
-      targetAmount: parseFloat(row.target_amount),
-      currentAmount: parseFloat(row.current_amount),
-      startingAmount: parseFloat(row.starting_amount),
-      dueDateISO: row.due_date,
-      type: row.type,
-      linkedCategoryId: row.linked_category_id,
-      linkedAccountId: row.linked_account_id,
-      trackNetworth: row.track_networth,
-      isShared: !!row.connection_id, // Helper flag for UI
-      createdAtISO: row.created_at,
-      updatedAtISO: row.updated_at,
-    }));
-  }
-
-  async upsertGoal(goal: GoalInput): Promise<void> {
-    const userId = await this.getUserId();
-
-    if (goal.id) {
-      // Update existing
-      const { error } = await this.client
-        .from('finance_goals')
-        .update({
-          name: goal.name,
-          target_amount: goal.targetAmount,
-          current_amount: goal.currentAmount,
-          starting_amount: goal.startingAmount,
-          due_date: goal.dueDateISO,
-          type: goal.type,
-          linked_category_id: goal.linkedCategoryId,
-          linked_account_id: goal.linkedAccountId,
-          track_networth: goal.trackNetworth,
-          connection_id: goal.connectionId,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', goal.id)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-    } else {
-      // Insert new - for shared goals, use connectionId
-      const { error } = await this.client
-        .from('finance_goals')
-        .insert({
-          user_id: userId,
-          connection_id: goal.connectionId,
-          name: goal.name,
-          target_amount: goal.targetAmount,
-          current_amount: goal.currentAmount,
-          starting_amount: goal.startingAmount,
-          due_date: goal.dueDateISO,
-          type: goal.type,
-          linked_category_id: goal.linkedCategoryId,
-          linked_account_id: goal.linkedAccountId,
-          track_networth: goal.trackNetworth,
-        });
-
-      if (error) throw error;
-    }
-  }
-
-  async deleteGoal(goalId: string): Promise<void> {
-    const userId = await this.getUserId();
-    const { error } = await this.client
-      .from('finance_goals')
-      .delete()
-      .eq('id', goalId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-  }
-
-  async getGoalProgressHistory(goalId: string): Promise<GoalProgressPoint[]> {
-    const userId = await this.getUserId();
-    const { data, error } = await this.client
-      .from('finance_goal_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('goal_id', goalId)
-      .order('date', { ascending: true });
-
-    if (error) throw error;
-    return (data || []).map(row => ({
-      dateISO: row.date,
-      amount: parseFloat(row.amount),
-      note: row.note,
-    }));
-  }
-
-  async syncGoalFromAccount(goalId: string): Promise<void> {
-    const userId = await this.getUserId();
-
-    // Get goal
-    const { data: goalData, error: goalError } = await this.client
-      .from('finance_goals')
-      .select('*')
-      .eq('id', goalId)
-      .eq('user_id', userId)
-      .single();
-
-    if (goalError) throw goalError;
-    if (!goalData.linked_account_id) return;
-
-    // Get account balance
-    const { data: accountData, error: accountError } = await this.client
-      .from('finance_accounts')
-      .select('balance')
-      .eq('id', goalData.linked_account_id)
-      .eq('user_id', userId)
-      .single();
-
-    if (accountError) throw accountError;
-
-    // Update goal
-    const { error: updateError } = await this.client
-      .from('finance_goals')
-      .update({
-        current_amount: accountData.balance,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', goalId)
-      .eq('user_id', userId);
-
-    if (updateError) throw updateError;
-  }
-
-  // =====================================================
-  // CREDIT CARD FEATURES
-  // =====================================================
-
-  async listCardBenefits(accountId: string): Promise<CardBenefit[]> {
-    const userId = await this.getUserId();
-    const { data, error } = await this.client
-      .from('finance_card_benefits')
-      .select('*')
-      .eq('account_id', accountId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      accountId: row.account_id,
-      benefitType: row.benefit_type,
-      name: row.name,
-      description: row.description,
-      value: row.value ? parseFloat(row.value) : undefined,
-      frequency: row.frequency,
-      usedAmount: row.used_amount ? parseFloat(row.used_amount) : 0,
-      resetDate: row.reset_date,
-      active: row.active,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }));
-  }
-
-  async upsertCardBenefit(accountId: string, benefit: CardBenefitInput): Promise<void> {
-    const userId = await this.getUserId();
-
-    const row = {
-      id: benefit.id,
-      user_id: userId,
-      account_id: accountId,
-      benefit_type: benefit.benefitType,
-      name: benefit.name,
-      description: benefit.description,
-      value: benefit.value,
-      frequency: benefit.frequency,
-      used_amount: benefit.usedAmount,
-      reset_date: benefit.resetDate,
-      active: benefit.active,
-    };
-
-    const { error } = await this.client
-      .from('finance_card_benefits')
-      .upsert(row);
-
-    if (error) throw error;
-  }
-
-  async deleteCardBenefit(benefitId: string): Promise<void> {
-    const userId = await this.getUserId();
-    const { error } = await this.client
-      .from('finance_card_benefits')
-      .delete()
-      .eq('id', benefitId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-  }
-
-  async listCategoryBonuses(accountId: string): Promise<CardCategoryBonus[]> {
-    const userId = await this.getUserId();
-    const { data, error } = await this.client
-      .from('finance_card_category_bonuses')
-      .select('*')
-      .eq('account_id', accountId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      accountId: row.account_id,
-      category: row.category,
-      rewardsRate: parseFloat(row.rewards_rate),
-      isRotating: row.is_rotating,
-      startDate: row.start_date,
-      endDate: row.end_date,
-      createdAt: row.created_at,
-    }));
-  }
-
-  async upsertCategoryBonus(accountId: string, bonus: CardCategoryBonusInput): Promise<void> {
-    const userId = await this.getUserId();
-
-    const row = {
-      id: bonus.id,
-      user_id: userId,
-      account_id: accountId,
-      category: bonus.category,
-      rewards_rate: bonus.rewardsRate,
-      is_rotating: bonus.isRotating,
-      start_date: bonus.startDate,
-      end_date: bonus.endDate,
-    };
-
-    const { error } = await this.client
-      .from('finance_card_category_bonuses')
-      .upsert(row);
-
-    if (error) throw error;
-  }
-
-  async listWelcomeBonuses(accountId: string): Promise<WelcomeBonus[]> {
-    const userId = await this.getUserId();
-    const { data, error } = await this.client
-      .from('finance_welcome_bonuses')
-      .select('*')
-      .eq('account_id', accountId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      accountId: row.account_id,
-      bonusAmount: parseFloat(row.bonus_amount),
-      requiredSpend: parseFloat(row.required_spend),
-      currentSpend: parseFloat(row.current_spend),
-      deadline: row.deadline,
-      completed: row.completed,
-      completedDate: row.completed_date,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }));
-  }
-
-  async upsertWelcomeBonus(accountId: string, bonus: WelcomeBonusInput): Promise<void> {
-    const userId = await this.getUserId();
-
-    const row = {
-      id: bonus.id,
-      user_id: userId,
-      account_id: accountId,
-      bonus_amount: bonus.bonusAmount,
-      required_spend: bonus.requiredSpend,
-      current_spend: bonus.currentSpend,
-      deadline: bonus.deadline,
-      completed: bonus.completed,
-      completed_date: bonus.completedDate,
-    };
-
-    const { error } = await this.client
-      .from('finance_welcome_bonuses')
-      .upsert(row);
-
-    if (error) throw error;
-  }
-
-  async listCardOffers(accountId: string): Promise<CardOffer[]> {
-    const userId = await this.getUserId();
-    const { data, error } = await this.client
-      .from('finance_card_offers')
-      .select('*')
-      .eq('account_id', accountId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      accountId: row.account_id,
-      merchant: row.merchant,
-      offerType: row.offer_type,
-      offerAmount: parseFloat(row.offer_amount),
-      requiredSpend: row.required_spend ? parseFloat(row.required_spend) : undefined,
-      expirationDate: row.expiration_date,
-      activated: row.activated,
-      activatedDate: row.activated_date,
-      redeemed: row.redeemed,
-      redeemedDate: row.redeemed_date,
-      createdAt: row.created_at,
-    }));
-  }
-
-  async upsertCardOffer(accountId: string, offer: CardOfferInput): Promise<void> {
-    const userId = await this.getUserId();
-
-    const row = {
-      id: offer.id,
-      user_id: userId,
-      account_id: accountId,
-      merchant: offer.merchant,
-      offer_type: offer.offerType,
-      offer_amount: offer.offerAmount,
-      required_spend: offer.requiredSpend,
-      expiration_date: offer.expirationDate,
-      activated: offer.activated,
-      activated_date: offer.activatedDate,
-      redeemed: offer.redeemed,
-      redeemed_date: offer.redeemedDate,
-    };
-
-    const { error } = await this.client
-      .from('finance_card_offers')
-      .upsert(row);
-
-    if (error) throw error;
-  }
-
-  // =====================================================
-  // LOANS
-  // =====================================================
-
-  async listLoans(): Promise<Loan[]> {
-    // Don't filter by user_id - let RLS handle access control
-    // This allows viewing partner's loans in merged mode
-    const { data, error } = await this.client
-      .from('finance_loans_with_stats')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      accountId: row.account_id,
-      loanName: row.loan_name,
-      loanType: row.loan_type,
-      status: row.status,
-      principalAmount: parseFloat(row.principal_amount),
-      currentBalance: parseFloat(row.current_balance),
-      interestRate: parseFloat(row.interest_rate),
-      monthlyPayment: parseFloat(row.monthly_payment),
-      extraPayment: parseFloat(row.extra_payment),
-      targetPayoffDate: row.target_payoff_date,
-      startDate: row.start_date,
-      firstPaymentDate: row.first_payment_date,
-      lender: row.lender,
-      loanNumber: row.loan_number,
-      termMonths: row.term_months,
-      notes: row.notes,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      // Calculated fields from the view
-      totalPaid: row.total_paid ? parseFloat(row.total_paid) : undefined,
-      interestPaid: row.interest_paid ? parseFloat(row.interest_paid) : undefined,
-      principalPaid: row.principal_paid ? parseFloat(row.principal_paid) : undefined,
-      remainingPayments: row.remaining_payments || undefined,
-      projectedPayoffDate: row.projected_payoff_date || undefined,
-    }));
-  }
-
-  async upsertLoan(loan: LoanInput): Promise<void> {
-    const userId = await this.getUserId();
-
-    const row = {
-      id: loan.id,
-      user_id: userId,
-      account_id: loan.accountId,
-      loan_name: loan.loanName,
-      loan_type: loan.loanType,
-      status: loan.status,
-      principal_amount: loan.principalAmount,
-      current_balance: loan.currentBalance,
-      interest_rate: loan.interestRate,
-      monthly_payment: loan.monthlyPayment,
-      extra_payment: loan.extraPayment,
-      target_payoff_date: loan.targetPayoffDate,
-      start_date: loan.startDate,
-      first_payment_date: loan.firstPaymentDate,
-      lender: loan.lender,
-      loan_number: loan.loanNumber,
-      term_months: loan.termMonths,
-      notes: loan.notes,
-    };
-
-    const { error } = await this.client
-      .from('finance_loans')
-      .upsert(row);
-
-    if (error) throw error;
-  }
-
-  async deleteLoan(loanId: string): Promise<void> {
-    const userId = await this.getUserId();
-    const { error } = await this.client
-      .from('finance_loans')
-      .delete()
-      .eq('id', loanId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-  }
-
-  async listLoanPayments(loanId: string): Promise<LoanPayment[]> {
-    const userId = await this.getUserId();
-    const { data, error } = await this.client
-      .from('finance_loan_payments')
-      .select('*')
-      .eq('loan_id', loanId)
-      .eq('user_id', userId)
-      .order('payment_date', { ascending: false });
-
-    if (error) throw error;
-
-    return (data || []).map(row => ({
-      id: row.id,
-      loanId: row.loan_id,
-      paymentDate: row.payment_date,
-      amount: parseFloat(row.amount),
-      principalAmount: parseFloat(row.principal_amount),
-      interestAmount: parseFloat(row.interest_amount),
-      extraAmount: parseFloat(row.extra_amount),
-      balanceAfter: parseFloat(row.balance_after),
-      transactionId: row.transaction_id,
-      notes: row.notes,
-      createdAt: row.created_at,
-    }));
-  }
-
-  async upsertLoanPayment(loanId: string, payment: LoanPaymentInput): Promise<void> {
-    const userId = await this.getUserId();
-
-    const row = {
-      id: payment.id,
-      user_id: userId,
-      loan_id: loanId,
-      payment_date: payment.paymentDate,
-      amount: payment.amount,
-      principal_amount: payment.principalAmount,
-      interest_amount: payment.interestAmount,
-      extra_amount: payment.extraAmount,
-      balance_after: payment.balanceAfter,
-      transaction_id: payment.transactionId,
-      notes: payment.notes,
-    };
-
-    const { error } = await this.client
-      .from('finance_loan_payments')
-      .upsert(row);
-
-    if (error) throw error;
-  }
-
-  async deleteLoanPayment(paymentId: string): Promise<void> {
-    const userId = await this.getUserId();
-    const { error } = await this.client
-      .from('finance_loan_payments')
-      .delete()
-      .eq('id', paymentId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-  }
-
-  // =====================================================
-  // INSURANCE TRACKING
-  // =====================================================
-
-  async listInsurancePolicies(): Promise<InsurancePolicy[]> {
-    const { data, error } = await this.client
-      .from('finance_insurance_policies')
-      .select('*')
-      .order('policy_name');
-
-    if (error) throw error;
-
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      policyName: row.policy_name,
-      policyNumber: row.policy_number || undefined,
-      provider: row.provider,
-      type: row.type,
-      status: row.status,
-      coverageAmount: row.coverage_amount ? parseFloat(row.coverage_amount) : undefined,
-      deductible: row.deductible ? parseFloat(row.deductible) : undefined,
-      premiumAmount: parseFloat(row.premium_amount),
-      premiumFrequency: row.premium_frequency,
-      startDate: row.start_date,
-      endDate: row.end_date || undefined,
-      renewalDate: row.renewal_date || undefined,
-      nextPaymentDate: row.next_payment_date || undefined,
-      agentName: row.agent_name || undefined,
-      agentPhone: row.agent_phone || undefined,
-      agentEmail: row.agent_email || undefined,
-      notes: row.notes || undefined,
-      documents: row.documents || undefined,
-      autoRenew: row.auto_renew,
-      renewalReminderDays: row.renewal_reminder_days,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      claimCount: row.claim_count,
-      totalClaimsPaid: row.total_claims_paid ? parseFloat(row.total_claims_paid) : undefined,
-      beneficiaryCount: row.beneficiary_count,
-      lastPaymentDate: row.last_payment_date || undefined,
-    }));
-  }
-
-  async upsertInsurancePolicy(policy: InsurancePolicyInput): Promise<void> {
-    const userId = await this.getUserId();
-
-    const row = {
-      id: policy.id,
-      user_id: userId,
-      policy_name: policy.policyName,
-      policy_number: policy.policyNumber,
-      provider: policy.provider,
-      type: policy.type,
-      status: policy.status,
-      coverage_amount: policy.coverageAmount,
-      deductible: policy.deductible,
-      premium_amount: policy.premiumAmount,
-      premium_frequency: policy.premiumFrequency,
-      start_date: policy.startDate,
-      end_date: policy.endDate,
-      renewal_date: policy.renewalDate,
-      next_payment_date: policy.nextPaymentDate,
-      agent_name: policy.agentName,
-      agent_phone: policy.agentPhone,
-      agent_email: policy.agentEmail,
-      notes: policy.notes,
-      documents: policy.documents,
-      auto_renew: policy.autoRenew,
-      renewal_reminder_days: policy.renewalReminderDays,
-    };
-
-    const { error } = await this.client
-      .from('finance_insurance_policies')
-      .upsert(row);
-
-    if (error) throw error;
-  }
-
-  async deleteInsurancePolicy(policyId: string): Promise<void> {
-    const userId = await this.getUserId();
-    const { error } = await this.client
-      .from('finance_insurance_policies')
-      .delete()
-      .eq('id', policyId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-  }
-
-  // =====================================================
-  // RETIREMENT ACCOUNTS (Stub implementations - to be completed later)
-  // =====================================================
-
-  async listRetirementAccounts(): Promise<RetirementAccountWithStats[]> {
-    return [];
-  }
-
-  async getRetirementAccount(_accountId: string): Promise<RetirementAccountWithStats | null> {
-    return null;
-  }
-
-  async upsertRetirementAccountMetadata(metadata: RetirementAccountMetadataInput): Promise<void> {
-    const row = {
-      id: metadata.id,
-      account_id: metadata.accountId,
-      tax_treatment: metadata.taxTreatment,
-      annual_contribution_limit: metadata.annualContributionLimit,
-      catch_up_limit: metadata.catchUpLimit,
-      current_year_contributions: metadata.currentYearContributions,
-      contribution_year: metadata.contributionYear,
-      has_employer_match: metadata.hasEmployerMatch,
-      employer_match_percentage: metadata.employerMatchPercentage,
-      employer_match_limit: metadata.employerMatchLimit,
-      employer_match_type: metadata.employerMatchType,
-      employer_contributions_ytd: metadata.employerContributionsYTD,
-      has_vesting_schedule: metadata.hasVestingSchedule,
-      vesting_schedule_type: metadata.vestingScheduleType,
-      vesting_cliff_years: metadata.vestingCliffYears,
-      vesting_graded_years: metadata.vestingGradedYears,
-      vesting_percentage: metadata.vestingPercentage,
-      unvested_balance: metadata.unvestedBalance,
-      allocation: metadata.allocation,
-      is_family_coverage: metadata.isFamilyCoverage,
-      notes: metadata.notes,
-    };
-
-    const { error } = await this.client
-      .from('finance_retirement_account_metadata')
-      .upsert(row);
-
-    if (error) throw error;
-  }
-
-  async deleteRetirementAccountMetadata(accountId: string): Promise<void> {
-    const { error } = await this.client
-      .from('finance_retirement_account_metadata')
-      .delete()
-      .eq('account_id', accountId);
-
-    if (error) throw error;
-  }
-
-  async listRetirementContributions(retirementAccountId: string): Promise<RetirementContribution[]> {
-    const { data, error } = await this.client
-      .from('finance_retirement_contributions')
-      .select('*')
-      .eq('retirement_account_id', retirementAccountId)
-      .order('contribution_date', { ascending: false });
-
-    if (error) throw error;
-
-    return (data || []).map(row => ({
-      id: row.id,
-      retirementAccountId: row.retirement_account_id,
-      contributionDate: row.contribution_date,
-      amount: parseFloat(row.amount),
-      contributionType: row.contribution_type,
-      contributionYear: row.contribution_year,
-      transactionId: row.transaction_id || undefined,
-      notes: row.notes || undefined,
-      createdAt: row.created_at,
-    }));
-  }
-
-  async addRetirementContribution(contribution: RetirementContributionInput): Promise<void> {
-    const row = {
-      id: contribution.id,
-      retirement_account_id: contribution.retirementAccountId,
-      contribution_date: contribution.contributionDate,
-      amount: contribution.amount,
-      contribution_type: contribution.contributionType,
-      contribution_year: contribution.contributionYear,
-      transaction_id: contribution.transactionId,
-      notes: contribution.notes,
-    };
-
-    const { error } = await this.client
-      .from('finance_retirement_contributions')
-      .insert(row);
-
-    if (error) throw error;
-  }
-
-  async deleteRetirementContribution(contributionId: string): Promise<void> {
-    const { error } = await this.client
-      .from('finance_retirement_contributions')
-      .delete()
-      .eq('id', contributionId);
-
-    if (error) throw error;
-  }
-
-  async calculateContributionRoom(_retirementAccountId: string, _annualIncome: number): Promise<ContributionRoom> {
-    return {
-      employeeRoom: 0,
-      employerRoom: 0,
-      totalLimit: 0,
-      isOver50: false,
-    };
-  }
-
-  async listRetirementPerformance(retirementAccountId: string): Promise<RetirementPerformance[]> {
-    const { data, error } = await this.client
-      .from('finance_retirement_performance')
-      .select('*')
-      .eq('retirement_account_id', retirementAccountId)
-      .order('snapshot_date', { ascending: false });
-
-    if (error) throw error;
-
-    return (data || []).map(row => ({
-      id: row.id,
-      retirementAccountId: row.retirement_account_id,
-      snapshotDate: row.snapshot_date,
-      balance: parseFloat(row.balance),
-      totalContributions: parseFloat(row.total_contributions),
-      totalGains: parseFloat(row.total_gains),
-      rateOfReturn: row.rate_of_return ? parseFloat(row.rate_of_return) : undefined,
-      allocationSnapshot: row.allocation_snapshot || undefined,
-      createdAt: row.created_at,
-    }));
-  }
-
-  async recordRetirementPerformance(performance: RetirementPerformanceInput): Promise<void> {
-    const row = {
-      id: performance.id,
-      retirement_account_id: performance.retirementAccountId,
-      snapshot_date: performance.snapshotDate,
-      balance: performance.balance,
-      total_contributions: performance.totalContributions,
-      total_gains: performance.totalGains,
-      rate_of_return: performance.rateOfReturn,
-      allocation_snapshot: performance.allocationSnapshot,
-    };
-
-    const { error } = await this.client
-      .from('finance_retirement_performance')
-      .insert(row);
-
-    if (error) throw error;
-  }
-
-  async calculateVestedBalance(_retirementAccountId: string, _employmentYears: number): Promise<number> {
-    return 0;
-  }
-
-  // Recurring transactions
-  async listRecurringTransactions(): Promise<RecurringTransaction[]> {
-    return recurringAPI.listRecurringTransactions();
-  }
-
-  async upsertRecurringTransaction(input: RecurringTransactionInput): Promise<RecurringTransaction> {
-    return recurringAPI.upsertRecurringTransaction(input);
-  }
-
-  async deleteRecurringTransaction(id: string): Promise<void> {
-    return recurringAPI.deleteRecurringTransaction(id);
-  }
-
-  // Pending transactions
-  async listPendingTransactions(): Promise<PendingTransaction[]> {
-    return recurringAPI.listPendingTransactions();
-  }
-
-  async approvePendingTransaction(pendingId: string, overrides?: Partial<TransactionInput>): Promise<void> {
-    return recurringAPI.approvePendingTransaction(pendingId, overrides);
-  }
-
-  async skipPendingTransaction(pendingId: string): Promise<void> {
-    return recurringAPI.skipPendingTransaction(pendingId);
-  }
-
-  async deletePendingTransaction(pendingId: string): Promise<void> {
-    return recurringAPI.deletePendingTransaction(pendingId);
-  }
-
-  async generatePendingTransactions(): Promise<number> {
-    return recurringAPI.generatePendingTransactions();
-  }
+  // ── Institutions ──────────────────────────────────────────────────────────
+  listInstitutions() { return this.institutions.listInstitutions(); }
+
+  // ── Accounts ──────────────────────────────────────────────────────────────
+  listAccounts() { return this.accounts.listAccounts(); }
+  updateAccount(accountId: string, updates: Partial<Account>) { return this.accounts.updateAccount(accountId, updates); }
+  upsertAccount(account: { id?: string; name: string; type: string; balance: number; institutionId?: string; userId?: string }) { return this.accounts.upsertAccount(account); }
+  deleteAccount(accountId: string) { return this.accounts.deleteAccount(accountId); }
+
+  // ── Transactions ──────────────────────────────────────────────────────────
+  listTransactions(params: TxnQuery) { return this.transactions.listTransactions(params); }
+  upsertTransaction(txn: TransactionInput) { return this.transactions.upsertTransaction(txn); }
+  deleteTransaction(id: string) { return this.transactions.deleteTransaction(id); }
+
+  // ── Budgets ───────────────────────────────────────────────────────────────
+  listBudgets(monthISO: string) { return this.budgets.listBudgets(monthISO); }
+  upsertBudget(budget: { categoryId: string; month: string; limit: number }) { return this.budgets.upsertBudget(budget); }
+  deleteBudget(categoryId: string, month: string) { return this.budgets.deleteBudget(categoryId, month); }
+  listBudgetTemplates() { return this.budgets.listBudgetTemplates(); }
+  upsertBudgetTemplate(template: BudgetTemplateInput) { return this.budgets.upsertBudgetTemplate(template); }
+  deleteBudgetTemplate(categoryId: string) { return this.budgets.deleteBudgetTemplate(categoryId); }
+  initializeBudgetsFromTemplates(month: string) { return this.budgets.initializeBudgetsFromTemplates(month); }
+
+  // ── Categories ────────────────────────────────────────────────────────────
+  listCategories() { return this.categories.listCategories(); }
+
+  // ── Net Worth + Goals ─────────────────────────────────────────────────────
+  listNetWorth() { return this.goals.listNetWorth(); }
+  listGoals() { return this.goals.listGoals(); }
+  upsertGoal(goal: GoalInput) { return this.goals.upsertGoal(goal); }
+  deleteGoal(goalId: string) { return this.goals.deleteGoal(goalId); }
+  getGoalProgressHistory(goalId: string) { return this.goals.getGoalProgressHistory(goalId); }
+  syncGoalFromAccount(goalId: string) { return this.goals.syncGoalFromAccount(goalId); }
+
+  // ── Credit Cards ──────────────────────────────────────────────────────────
+  listCardBenefits(accountId: string) { return this.creditCards.listCardBenefits(accountId); }
+  upsertCardBenefit(accountId: string, benefit: CardBenefitInput) { return this.creditCards.upsertCardBenefit(accountId, benefit); }
+  deleteCardBenefit(benefitId: string) { return this.creditCards.deleteCardBenefit(benefitId); }
+  listCategoryBonuses(accountId: string) { return this.creditCards.listCategoryBonuses(accountId); }
+  upsertCategoryBonus(accountId: string, bonus: CardCategoryBonusInput) { return this.creditCards.upsertCategoryBonus(accountId, bonus); }
+  listWelcomeBonuses(accountId: string) { return this.creditCards.listWelcomeBonuses(accountId); }
+  upsertWelcomeBonus(accountId: string, bonus: WelcomeBonusInput) { return this.creditCards.upsertWelcomeBonus(accountId, bonus); }
+  listCardOffers(accountId: string) { return this.creditCards.listCardOffers(accountId); }
+  upsertCardOffer(accountId: string, offer: CardOfferInput) { return this.creditCards.upsertCardOffer(accountId, offer); }
+
+  // ── Loans ─────────────────────────────────────────────────────────────────
+  listLoans() { return this.insuranceLoans.listLoans(); }
+  upsertLoan(loan: LoanInput) { return this.insuranceLoans.upsertLoan(loan); }
+  deleteLoan(loanId: string) { return this.insuranceLoans.deleteLoan(loanId); }
+  listLoanPayments(loanId: string) { return this.insuranceLoans.listLoanPayments(loanId); }
+  upsertLoanPayment(loanId: string, payment: LoanPaymentInput) { return this.insuranceLoans.upsertLoanPayment(loanId, payment); }
+  deleteLoanPayment(paymentId: string) { return this.insuranceLoans.deleteLoanPayment(paymentId); }
+
+  // ── Insurance ─────────────────────────────────────────────────────────────
+  listInsurancePolicies() { return this.insuranceLoans.listInsurancePolicies(); }
+  upsertInsurancePolicy(policy: InsurancePolicyInput) { return this.insuranceLoans.upsertInsurancePolicy(policy); }
+  deleteInsurancePolicy(policyId: string) { return this.insuranceLoans.deleteInsurancePolicy(policyId); }
+
+  // ── Retirement ────────────────────────────────────────────────────────────
+  listRetirementAccounts() { return this.insuranceLoans.listRetirementAccounts(); }
+  getRetirementAccount(accountId: string) { return this.insuranceLoans.getRetirementAccount(accountId); }
+  upsertRetirementAccountMetadata(metadata: RetirementAccountMetadataInput) { return this.insuranceLoans.upsertRetirementAccountMetadata(metadata); }
+  deleteRetirementAccountMetadata(accountId: string) { return this.insuranceLoans.deleteRetirementAccountMetadata(accountId); }
+  listRetirementContributions(retirementAccountId: string) { return this.insuranceLoans.listRetirementContributions(retirementAccountId); }
+  addRetirementContribution(contribution: RetirementContributionInput) { return this.insuranceLoans.addRetirementContribution(contribution); }
+  deleteRetirementContribution(contributionId: string) { return this.insuranceLoans.deleteRetirementContribution(contributionId); }
+  calculateContributionRoom(retirementAccountId: string, annualIncome: number) { return this.insuranceLoans.calculateContributionRoom(retirementAccountId, annualIncome); }
+  listRetirementPerformance(retirementAccountId: string) { return this.insuranceLoans.listRetirementPerformance(retirementAccountId); }
+  recordRetirementPerformance(performance: RetirementPerformanceInput) { return this.insuranceLoans.recordRetirementPerformance(performance); }
+  calculateVestedBalance(retirementAccountId: string, employmentYears: number) { return this.insuranceLoans.calculateVestedBalance(retirementAccountId, employmentYears); }
+
+  // ── Recurring + Pending ───────────────────────────────────────────────────
+  listRecurringTransactions() { return recurringAPI.listRecurringTransactions(); }
+  upsertRecurringTransaction(input: RecurringTransactionInput) { return recurringAPI.upsertRecurringTransaction(input); }
+  deleteRecurringTransaction(id: string) { return recurringAPI.deleteRecurringTransaction(id); }
+  listPendingTransactions() { return recurringAPI.listPendingTransactions(); }
+  approvePendingTransaction(pendingId: string, overrides?: Partial<TransactionInput>) { return recurringAPI.approvePendingTransaction(pendingId, overrides); }
+  skipPendingTransaction(pendingId: string) { return recurringAPI.skipPendingTransaction(pendingId); }
+  deletePendingTransaction(pendingId: string) { return recurringAPI.deletePendingTransaction(pendingId); }
+  generatePendingTransactions() { return recurringAPI.generatePendingTransactions(); }
 }

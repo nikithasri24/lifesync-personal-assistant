@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Project Tracking', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Project Tracking
     const projectLink = page.locator('[data-testid="nav-projects"]').or(
@@ -12,10 +12,10 @@ test.describe('Project Tracking', () => {
 
     if (await projectLink.first().isVisible()) {
       await projectLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/projects');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -340,7 +340,7 @@ test.describe('Project Tracking', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Projects page should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

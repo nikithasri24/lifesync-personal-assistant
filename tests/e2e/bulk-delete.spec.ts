@@ -4,7 +4,7 @@ test.describe('Bulk delete functionality', () => {
   test('can select tasks and access delete button', async ({ page }) => {
     // Navigate to Todos page for bulk operations
     await page.goto('/todos')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Create two tasks
     const addBtn = page.getByRole('button', { name: /Add Task/i }).first()

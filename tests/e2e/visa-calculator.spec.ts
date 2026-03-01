@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Visa Calculator', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Visa Calculator (might be under Travel section)
     const visaLink = page.locator('[data-testid="nav-visa"]').or(
@@ -12,11 +12,11 @@ test.describe('Visa Calculator', () => {
 
     if (await visaLink.first().isVisible()) {
       await visaLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       // Try navigating via travel page
       await page.goto('/travel/visa');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -262,7 +262,7 @@ test.describe('Visa Calculator', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Visa calculator should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

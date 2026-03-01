@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Task Filters - Search', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Close mobile sidebar if open
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
@@ -170,7 +170,7 @@ test.describe('Task Filters - Search', () => {
 test.describe('Task Filters - Priority', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -326,7 +326,7 @@ test.describe('Task Filters - Priority', () => {
 test.describe('Task Filters - Status', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -475,7 +475,7 @@ test.describe('Task Filters - Status', () => {
 test.describe('Task Filters - Starred', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -581,7 +581,7 @@ test.describe('Task Filters - Starred', () => {
 test.describe('Task Filters - Combined Filters', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {

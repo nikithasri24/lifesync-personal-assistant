@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('AI Assistant', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to AI Assistant
     const assistantLink = page.locator('[data-testid="nav-assistant"]').or(
@@ -12,10 +12,10 @@ test.describe('AI Assistant', () => {
 
     if (await assistantLink.first().isVisible()) {
       await assistantLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/assistant');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -280,7 +280,7 @@ test.describe('AI Assistant', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Assistant should adapt to mobile (mobile-first design)
     await expect(page.locator('body')).toBeVisible();

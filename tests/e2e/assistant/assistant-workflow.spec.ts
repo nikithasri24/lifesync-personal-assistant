@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Assistant - Page Structure', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/assistant');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
   });
 
@@ -51,7 +51,7 @@ test.describe('Assistant - Page Structure', () => {
 test.describe('Assistant - Empty State', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/assistant');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
   });
 
@@ -87,7 +87,7 @@ test.describe('Assistant - Empty State', () => {
 test.describe('Assistant - Sending Messages', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/assistant');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
   });
 
@@ -158,7 +158,7 @@ test.describe('Assistant - Sending Messages', () => {
 test.describe('Assistant - New Chat', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/assistant');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
   });
 
@@ -182,7 +182,7 @@ test.describe('Assistant - New Chat', () => {
 test.describe('Assistant - Starter Prompt Interaction', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/assistant');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
 
     // Start a fresh chat to ensure empty state
@@ -220,7 +220,7 @@ test.describe('Assistant - Starter Prompt Interaction', () => {
 test.describe('Assistant - Input Behavior', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/assistant');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(800);
   });
 

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Tasks Page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display tasks page', async ({ page }) => {

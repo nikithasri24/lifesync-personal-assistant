@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Meal Planning Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Meal Planning
     const mealPlanningLink = page.locator('[data-testid="nav-meal-planning"]').or(
@@ -12,10 +12,10 @@ test.describe('Meal Planning Module', () => {
 
     if (await mealPlanningLink.first().isVisible()) {
       await mealPlanningLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/meal-planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -380,7 +380,7 @@ test.describe('Meal Planning Module', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Meal planning should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

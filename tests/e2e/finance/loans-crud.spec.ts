@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Finance Loans - Create Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/finances');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Close mobile sidebar if open
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
@@ -161,7 +161,7 @@ test.describe('Finance Loans - Create Operations', () => {
 test.describe('Finance Loans - Update Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/finances');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -313,7 +313,7 @@ test.describe('Finance Loans - Update Operations', () => {
 test.describe('Finance Loans - Delete Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/finances');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -378,7 +378,7 @@ test.describe('Finance Loans - Delete Operations', () => {
 test.describe('Finance Loans - Display & Tracking', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/finances');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -451,7 +451,7 @@ test.describe('Finance Loans - Display & Tracking', () => {
 test.describe('Finance Loans - Edge Cases', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/finances');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {

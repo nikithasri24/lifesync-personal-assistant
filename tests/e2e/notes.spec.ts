@@ -3,17 +3,17 @@ import { test, expect } from '@playwright/test';
 test.describe('Notes Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Notes
     const notesLink = page.locator('[data-testid="nav-notes"]').or(page.getByText('Notes'));
 
     if (await notesLink.first().isVisible()) {
       await notesLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/notes');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -278,7 +278,7 @@ test.describe('Notes Module', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Notes should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

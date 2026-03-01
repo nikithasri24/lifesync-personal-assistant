@@ -28,7 +28,7 @@ export async function loginAs(
   password: string
 ): Promise<void> {
   await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
   // Check if already authenticated by looking for main dashboard content
   const isDashboard = await page.getByRole('heading', { name: /good (morning|afternoon|evening)/i })
@@ -46,7 +46,7 @@ export async function loginAs(
 
   // Wait for redirect to dashboard - look for dashboard heading
   await page.waitForURL('/', { timeout: 10000 });
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
   // Verify we're actually on dashboard
   await page.getByRole('heading', { name: /good (morning|afternoon|evening)/i }).waitFor({ timeout: 5000 });

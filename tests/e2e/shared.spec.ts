@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Shared/Collaboration Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Shared
     const sharedLink = page.locator('[data-testid="nav-shared"]').or(
@@ -12,10 +12,10 @@ test.describe('Shared/Collaboration Module', () => {
 
     if (await sharedLink.first().isVisible()) {
       await sharedLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/shared');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -341,7 +341,7 @@ test.describe('Shared/Collaboration Module', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Shared page should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

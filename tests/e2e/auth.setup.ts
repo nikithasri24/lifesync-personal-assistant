@@ -5,7 +5,7 @@ const authFile = 'playwright/.auth/user.json';
 setup('authenticate', async ({ page }) => {
   // Navigate to the app
   await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
   // Check if we're already logged in
   const isLoggedIn = await page.locator('[data-testid="nav-shopping"]').isVisible().catch(() => false);
@@ -37,7 +37,7 @@ setup('authenticate', async ({ page }) => {
   await signInButton.click();
 
   // Wait for successful login (navigation to dashboard or any protected route)
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
   // Verify we're logged in by checking for navigation elements
   const navElement = page.locator('[data-testid="nav-shopping"]').or(

@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Task Bulk Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Close mobile sidebar if open
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();

@@ -4,7 +4,7 @@ test.describe('Complete task flow', () => {
   test('marks a task as completed and appears in Completed view', async ({ page }) => {
     // Navigate to Dashboard
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Quick add
     const addBtn = page.getByRole('button', { name: /Add task|Add to /i }).first()
@@ -19,7 +19,7 @@ test.describe('Complete task flow', () => {
 
     // Navigate to Todos page to edit the task
     await page.goto('/todos')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     await page.waitForTimeout(1000)
 
     // Switch to List view to see all tasks

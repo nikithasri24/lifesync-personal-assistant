@@ -16,7 +16,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Task Recurrence', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Close mobile sidebar if open
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
@@ -352,7 +352,7 @@ test.describe('Task Recurrence', () => {
 
       // Reload page
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
       // Switch back to Inbox view after reload

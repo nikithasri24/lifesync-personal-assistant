@@ -5,7 +5,7 @@ test.describe('Habits - add a habit', () => {
     const habitName = `Walk ${Date.now()}`
 
     await page.goto('/habits')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Open the add habit modal using the FAB
     await page.getByRole('button', { name: 'Create new habit' }).click()

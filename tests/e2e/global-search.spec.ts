@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Global Search', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should have global search input', async ({ page }) => {
@@ -336,7 +336,7 @@ test.describe('Global Search', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const searchInput = page.locator('[data-testid="global-search"]').or(
       page.getByPlaceholder(/search/i).first()

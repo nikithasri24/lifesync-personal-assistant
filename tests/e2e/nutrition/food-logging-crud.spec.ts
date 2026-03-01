@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Nutrition Food Logging - Create Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 
@@ -177,7 +177,7 @@ test.describe('Nutrition Food Logging - Create Operations', () => {
 test.describe('Nutrition Food Logging - Read Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 
@@ -236,7 +236,7 @@ test.describe('Nutrition Food Logging - Read Operations', () => {
 test.describe('Nutrition Food Logging - Update Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
     // Create a test food entry to edit
@@ -352,7 +352,7 @@ test.describe('Nutrition Food Logging - Update Operations', () => {
 test.describe('Nutrition Food Logging - Delete Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
     // Create a test food entry to delete
@@ -390,7 +390,7 @@ test.describe('Nutrition Food Logging - Delete Operations', () => {
 test.describe('Nutrition Food Logging - Edge Cases', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 

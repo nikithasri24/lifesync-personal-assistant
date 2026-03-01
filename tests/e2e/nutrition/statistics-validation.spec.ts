@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Nutrition Statistics - Calorie Summary', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 
@@ -101,7 +101,7 @@ test.describe('Nutrition Statistics - Calorie Summary', () => {
 test.describe('Nutrition Statistics - Macro Progress', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 
@@ -164,7 +164,7 @@ test.describe('Nutrition Statistics - Macro Progress', () => {
 test.describe('Nutrition Meal Type Distribution', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 
@@ -250,7 +250,7 @@ test.describe('Nutrition Meal Type Distribution', () => {
 test.describe('Nutrition Form Validation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nutrition');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 

@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Selfcare Setup - Tab Navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/selfcare');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 
@@ -48,7 +48,7 @@ test.describe('Selfcare Setup - Tab Navigation', () => {
 test.describe('Selfcare Setup - Category Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/selfcare');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
     await page.getByRole('tab', { name: '⚙️ Setup' }).click();
     await page.waitForTimeout(500);
@@ -97,7 +97,7 @@ test.describe('Selfcare Setup - Category Management', () => {
 test.describe('Selfcare Setup - Item Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/selfcare');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
     await page.getByRole('tab', { name: '⚙️ Setup' }).click();
     await page.waitForTimeout(500);
@@ -161,7 +161,7 @@ test.describe('Selfcare Setup - Item Management', () => {
 test.describe('Selfcare - Page Structure', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/selfcare');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
   });
 

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Data Export and Import', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test.describe('Export Functionality', () => {
@@ -41,7 +41,7 @@ test.describe('Data Export and Import', () => {
 
     test('should export tasks only', async ({ page }) => {
       await page.goto('/todos');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for export button in tasks page
       const exportButton = page.locator('[data-testid="export-tasks"]').or(
@@ -123,7 +123,7 @@ test.describe('Data Export and Import', () => {
 
     test('should export habits data', async ({ page }) => {
       await page.goto('/habits');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const exportButton = page.locator('[data-testid="export-habits"]').or(
         page.getByRole('button', { name: /export/i }).first()
@@ -144,7 +144,7 @@ test.describe('Data Export and Import', () => {
 
     test('should export notes', async ({ page }) => {
       await page.goto('/notes');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const exportButton = page.getByRole('button', { name: /export/i }).first();
 
@@ -158,7 +158,7 @@ test.describe('Data Export and Import', () => {
 
     test('should export financial data', async ({ page }) => {
       await page.goto('/finances');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const exportButton = page.getByRole('button', { name: /export/i }).first();
 

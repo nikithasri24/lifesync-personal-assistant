@@ -51,7 +51,7 @@ test.describe('Task Operations', () => {
     // Login and navigate to Tasks page
     await loginAsAccount1(page);
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('can create a new task via FAB @critical @smoke', async ({ page }) => {

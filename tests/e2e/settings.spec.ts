@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Settings and Preferences', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to settings
     const settingsLink = page.locator('[data-testid="nav-settings"]').or(
@@ -12,10 +12,10 @@ test.describe('Settings and Preferences', () => {
 
     if (await settingsLink.isVisible()) {
       await settingsLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/settings');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -426,7 +426,7 @@ test.describe('Settings and Preferences', () => {
 
         // Reload page
         await page.reload();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // Navigate back to settings
         const settingsLink = page.getByRole('button', { name: /settings/i }).first();

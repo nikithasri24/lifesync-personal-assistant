@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Star toggle persistence', () => {
   test('starred state persists after reload', async ({ page }) => {
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Quick add
     const addBtn = page.getByRole('button', { name: /Add task|Add to /i }).first()
@@ -17,7 +17,7 @@ test.describe('Star toggle persistence', () => {
 
     // Navigate to Todos page to edit the task
     await page.goto('/todos')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     await page.waitForTimeout(1000)
 
     // Switch to List view to see all tasks
@@ -56,7 +56,7 @@ test.describe('Star toggle persistence', () => {
 
     // Reload and verify star persists
     await page.reload()
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Click the Starred filter again after reload
     if (await starredFilter.first().isVisible({ timeout: 2000 }).catch(() => false)) {

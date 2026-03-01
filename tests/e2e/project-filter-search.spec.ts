@@ -6,7 +6,7 @@ test.describe('Project filter combined with search', () => {
 
     // Create project via the Projects page
     await page.goto('/projects')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     const createButton = page.locator('[data-testid="create-project"]').or(
       page.getByRole('button').filter({ hasText: /new project|add project|create/i }).first()

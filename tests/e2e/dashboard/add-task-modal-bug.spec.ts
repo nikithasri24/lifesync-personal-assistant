@@ -17,7 +17,7 @@ test.describe('Dashboard Add Task Modal - Bug Fix', () => {
 
     // Navigate to dashboard
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('modal renders all required form fields @critical @bug-qa-1', async ({ page }) => {

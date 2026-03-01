@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Task Views - Today View', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -107,7 +107,7 @@ test.describe('Task Views - Today View', () => {
 test.describe('Task Views - Inbox View', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -190,7 +190,7 @@ test.describe('Task Views - Inbox View', () => {
 test.describe('Task Views - Upcoming View', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -252,7 +252,7 @@ test.describe('Task Views - Upcoming View', () => {
 test.describe('Task Views - List View', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -357,7 +357,7 @@ test.describe('Task Views - List View', () => {
 test.describe('Task Views - View Persistence', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -405,7 +405,7 @@ test.describe('Task Views - View Persistence', () => {
 test.describe('Task Views - Empty States', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {

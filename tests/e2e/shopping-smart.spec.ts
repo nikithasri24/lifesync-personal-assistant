@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Shopping Smart Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Shopping Smart
     const shoppingLink = page.locator('[data-testid="nav-shopping"]').or(
@@ -12,10 +12,10 @@ test.describe('Shopping Smart Module', () => {
 
     if (await shoppingLink.first().isVisible()) {
       await shoppingLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/shopping');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -414,7 +414,7 @@ test.describe('Shopping Smart Module', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Shopping should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

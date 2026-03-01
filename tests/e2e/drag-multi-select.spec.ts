@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Multi-select drag', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Close mobile sidebar if open (backdrop blocks clicks on mobile)
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
@@ -196,7 +196,7 @@ test.describe('Multi-select drag', () => {
 
     // Reload page
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
     // Ensure we're in List view after reload

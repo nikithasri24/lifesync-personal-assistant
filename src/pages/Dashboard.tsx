@@ -28,15 +28,25 @@ function DashboardContent() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  // Date caps: only load data relevant to what the dashboard actually shows
-  const today = new Date().toISOString().split('T')[0];
-  const weekStart = (() => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday as start of week
-    return new Date(now.getFullYear(), now.getMonth(), diff).toISOString().split('T')[0];
-  })();
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
+  // Date caps: only load data relevant to what the dashboard actually shows.
+  // Memoized so the query keys are stable across re-renders (Date objects with
+  // different milliseconds would otherwise invalidate the React Query cache on
+  // every render and keep isLoading permanently true).
+  const { today, weekStart, thirtyDaysAgo, now } = useMemo(() => {
+    const todayDate = new Date();
+    const todayStr = todayDate.toISOString().split('T')[0];
+    const day = todayDate.getDay();
+    const diff = todayDate.getDate() - day + (day === 0 ? -6 : 1);
+    const weekStartStr = new Date(todayDate.getFullYear(), todayDate.getMonth(), diff)
+      .toISOString()
+      .split('T')[0];
+    const thirtyAgo = new Date(Date.now() - 30 * 86_400_000);
+    // Set to start-of-day so the key is stable within the same calendar day
+    thirtyAgo.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(todayDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    return { today: todayStr, weekStart: weekStartStr, thirtyDaysAgo: thirtyAgo, now: endOfDay };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Data fetching — scoped to what the dashboard needs
   const tasksQuery = useTasks();
@@ -45,7 +55,7 @@ function DashboardContent() {
   const habitEntriesQuery = useHabitEntries({ startDate: weekStart, endDate: today });
   const notesQuery = useNotes();
   // Journal entries: only last 30 days (dashboard shows recent entries)
-  const journalQuery = useJournalEntries({ startDate: thirtyDaysAgo, endDate: new Date() });
+  const journalQuery = useJournalEntries({ startDate: thirtyDaysAgo, endDate: now });
 
   const tasks: Task[] = (tasksQuery as { data: Task[] }).data ?? [];
   const habits: Habit[] = (habitsQuery as unknown as { data: Habit[] }).data ?? [];

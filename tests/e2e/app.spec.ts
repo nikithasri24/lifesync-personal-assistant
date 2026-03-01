@@ -6,7 +6,7 @@ test.describe('LifeSync Application', () => {
     await page.goto('/')
     
     // Wait for the app to load
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
   })
 
   test('loads the main application', async ({ page }) => {
@@ -59,7 +59,7 @@ test.describe('LifeSync Application', () => {
 
       if (await navLink.isVisible()) {
         await navLink.click()
-        await page.waitForLoadState('networkidle')
+        await page.waitForLoadState('domcontentloaded')
 
         // Check that page content loads
         await expect(page.locator('main')).toBeVisible()
@@ -71,7 +71,7 @@ test.describe('LifeSync Application', () => {
     // Test mobile viewport
     await page.setViewportSize({ width: 375, height: 667 })
     await page.reload()
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     
     // App should still be functional
     await expect(page.locator('main')).toBeVisible()
@@ -79,7 +79,7 @@ test.describe('LifeSync Application', () => {
     // Test tablet viewport
     await page.setViewportSize({ width: 768, height: 1024 })
     await page.reload()
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     
     // App should still be functional
     await expect(page.locator('main')).toBeVisible()
@@ -87,7 +87,7 @@ test.describe('LifeSync Application', () => {
     // Test desktop viewport
     await page.setViewportSize({ width: 1920, height: 1080 })
     await page.reload()
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     
     // App should still be functional
     await expect(page.locator('main')).toBeVisible()
@@ -105,7 +105,7 @@ test.describe('LifeSync Application', () => {
     // Restore online
     await page.context().setOffline(false)
     await page.reload()
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // App should recover and show content
     await expect(page.locator('body')).toBeVisible()
@@ -141,7 +141,7 @@ test.describe('LifeSync Application', () => {
     })
     
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     
     // Filter out known acceptable errors
     const significantErrors = consoleErrors.filter(error =>

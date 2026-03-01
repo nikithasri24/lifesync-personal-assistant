@@ -16,7 +16,7 @@ test.describe('Tasks Page FAB Visibility', () => {
     // Login and navigate to Tasks page
     await loginAsAccount1(page);
     await page.goto('/todos');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('FAB is visible in viewport @critical @bug-qa-2', async ({ page }) => {

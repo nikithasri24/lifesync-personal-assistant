@@ -3,13 +3,13 @@ import { test, expect } from '@playwright/test'
 test.describe('Focus Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     
     // Navigate to focus page
     const focusNav = page.locator('[data-testid="nav-focus"]').first()
     if (await focusNav.isVisible()) {
       await focusNav.click()
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('domcontentloaded')
     }
   })
 

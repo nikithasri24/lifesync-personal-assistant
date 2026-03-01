@@ -3,17 +3,17 @@ import { test, expect } from '@playwright/test';
 test.describe('Finances Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Finances
     const financesLink = page.locator('[data-testid="nav-finances"]').or(page.getByText('Finances'));
 
     if (await financesLink.first().isVisible()) {
       await financesLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/finances');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -396,7 +396,7 @@ test.describe('Finances Module', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Finances should adapt to mobile
     await expect(page.locator('body')).toBeVisible();

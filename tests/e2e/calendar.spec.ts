@@ -3,16 +3,16 @@ import { test, expect } from '@playwright/test';
 test.describe('Calendar Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Calendar
     const calendarLink = page.locator('[data-testid="nav-calendar"]').or(page.getByText('Calendar'));
     if (await calendarLink.first().isVisible()) {
       await calendarLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/calendar');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -183,7 +183,7 @@ test.describe('Calendar Module', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Calendar should still be visible and functional
     await expect(page.locator('body')).toBeVisible();

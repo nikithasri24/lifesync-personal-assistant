@@ -8,17 +8,17 @@ import { test, expect } from '@playwright/test';
 test.describe('Together Module', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to Together page
     const togetherLink = page.locator('[data-testid="nav-together"]').or(page.getByText('Together'));
 
     if (await togetherLink.first().isVisible()) {
       await togetherLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       await page.goto('/together');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 

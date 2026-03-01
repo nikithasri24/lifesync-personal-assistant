@@ -34,22 +34,22 @@ test.describe('LifeSync Dashboard', () => {
   test('should navigate between sections', async ({ page }) => {
     // Navigate to Habits
     await page.getByRole('link', { name: 'Habits' }).first().click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('main')).toBeVisible();
 
     // Navigate to Tasks
     await page.getByRole('link', { name: 'Tasks' }).first().click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.getByText(/Organize and track your to-dos/i)).toBeVisible();
 
     // Navigate to Notes
     await page.getByRole('link', { name: 'Notes' }).first().click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('main')).toBeVisible();
 
     // Navigate back to Dashboard
     await page.getByRole('link', { name: 'Dashboard' }).first().click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.getByText(/Good (morning|afternoon|evening)/i)).toBeVisible();
   });
 
