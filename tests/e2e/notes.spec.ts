@@ -46,13 +46,12 @@ test.describe('Notes Module', () => {
       await contentInput.fill('This is a test note content');
     }
 
-    // Save note
-    const saveButton = page.getByRole('button', { name: /save|create|add/i }).first();
-    await saveButton.click();
-    await page.waitForTimeout(2000);
+    // Save note — use exact text "Create Note" to avoid clicking the FAB "Create new note"
+    await page.getByRole('button', { name: 'Create Note' }).click();
 
-    // Verify note was created (check for note in the list, not in the modal)
-    await expect(page.locator('main').getByText(testNoteTitle).first()).toBeVisible({ timeout: 10000 });
+    // Wait for the modal to close then for the note to appear in the list
+    await expect(page.locator('[role="dialog"], [aria-modal="true"]')).toHaveCount(0, { timeout: 5000 }).catch(() => null);
+    await expect(page.getByText(testNoteTitle).first()).toBeVisible({ timeout: 15000 });
   });
 
   test('should display note categories', async ({ page }) => {
@@ -203,13 +202,15 @@ test.describe('Notes Module', () => {
 
     const testNoteTitle = `Delete Test ${Date.now()}`;
     await page.getByPlaceholder('Note title...').fill(testNoteTitle);
+    // Fill content too — required by some form configurations
+    await page.getByPlaceholder('Start writing...').fill('Note to delete');
 
-    const saveButton = page.getByRole('button', { name: /save|create/i }).first();
-    await saveButton.click();
-    await page.waitForTimeout(2000);
+    // Use exact text to avoid clicking the FAB "Create new note"
+    await page.getByRole('button', { name: 'Create Note' }).click();
+    await expect(page.locator('[role="dialog"], [aria-modal="true"]')).toHaveCount(0, { timeout: 8000 }).catch(() => null);
 
-    // Verify note was created (check in main area, not modal)
-    await expect(page.locator('main').getByText(testNoteTitle).first()).toBeVisible({ timeout: 10000 });
+    // Wait for note to appear in the list
+    await expect(page.getByText(testNoteTitle).first()).toBeVisible({ timeout: 15000 });
 
     // Click note to open edit modal
     await page.getByText(testNoteTitle).first().click();

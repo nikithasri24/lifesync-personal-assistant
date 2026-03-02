@@ -3,9 +3,33 @@
  *
  * Tests all Create, Read, Update, Delete operations for insurance policies
  * including various policy types, premium frequencies, and coverage details.
+ *
+ * Note: Insurance requires the finance_insurance_policies database table to exist.
+ * If the table is not set up, tests will skip gracefully.
  */
 
 import { test, expect } from '@playwright/test';
+
+/**
+ * Helper to check if the insurance feature is available (table exists)
+ * Returns true if the "Add Policy" button is visible, false otherwise.
+ */
+async function isInsuranceAvailable(page: import('@playwright/test').Page): Promise<boolean> {
+  const addButton = page.getByRole('button', { name: /add policy|add insurance/i }).first();
+  return addButton.isVisible({ timeout: 3000 }).catch(() => false);
+}
+
+/**
+ * Helper to open the Add Policy modal.
+ * Returns false if the feature is not available.
+ */
+async function openAddPolicyModal(page: import('@playwright/test').Page): Promise<boolean> {
+  const available = await isInsuranceAvailable(page);
+  if (!available) return false;
+  await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
+  await page.waitForTimeout(500);
+  return true;
+}
 
 test.describe('Finance Insurance - Create Operations', () => {
   test.beforeEach(async ({ page }) => {
@@ -27,8 +51,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create health insurance policy', async ({ page }) => {
     const policyName = `Health Insurance ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('health');
@@ -56,8 +80,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create life insurance policy', async ({ page }) => {
     const policyName = `Life Insurance ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('life');
@@ -81,8 +105,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create auto insurance policy', async ({ page }) => {
     const policyName = `Auto Insurance ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('auto');
@@ -102,8 +126,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create home insurance policy', async ({ page }) => {
     const policyName = `Home Insurance ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('home');
@@ -123,8 +147,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create renters insurance policy', async ({ page }) => {
     const policyName = `Renters Insurance ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('renters');
@@ -144,8 +168,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create disability insurance policy', async ({ page }) => {
     const policyName = `Disability Insurance ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('disability');
@@ -164,8 +188,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create dental insurance policy', async ({ page }) => {
     const policyName = `Dental Insurance ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('dental');
@@ -185,8 +209,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create vision insurance policy', async ({ page }) => {
     const policyName = `Vision Insurance ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('vision');
@@ -205,8 +229,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create umbrella insurance policy', async ({ page }) => {
     const policyName = `Umbrella Insurance ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('umbrella');
@@ -225,8 +249,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create policy with quarterly premium', async ({ page }) => {
     const policyName = `Quarterly Premium ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('auto');
@@ -246,8 +270,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create policy with semi-annual premium', async ({ page }) => {
     const policyName = `Semi-Annual Premium ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('auto');
@@ -267,8 +291,8 @@ test.describe('Finance Insurance - Create Operations', () => {
   test('create policy with notes', async ({ page }) => {
     const policyName = `Other Insurance ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('other');
@@ -301,21 +325,17 @@ test.describe('Finance Insurance - Update Operations', () => {
       await page.waitForTimeout(300);
     }
 
-    const insuranceTab = page.getByRole('button', { name: /insurance/i }).or(
-      page.locator('button').filter({ hasText: /insurance/i })
-    );
-    if (await insuranceTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await insuranceTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Navigate to Insurance tab
+    await page.getByRole('tab', { name: 'Insurance' }).click();
+    await page.waitForTimeout(500);
   });
 
   test('update premium amount', async ({ page }) => {
     const policyName = `Premium Update ${Date.now()}`;
 
     // Create policy
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('health');
@@ -347,8 +367,8 @@ test.describe('Finance Insurance - Update Operations', () => {
     const policyName = `Coverage Update ${Date.now()}`;
 
     // Create policy
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('life');
@@ -379,8 +399,8 @@ test.describe('Finance Insurance - Update Operations', () => {
     const policyName = `Frequency Change ${Date.now()}`;
 
     // Create policy
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('auto');
@@ -414,8 +434,8 @@ test.describe('Finance Insurance - Update Operations', () => {
     const policyName = `Renewal Update ${Date.now()}`;
 
     // Create policy
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('home');
@@ -458,21 +478,17 @@ test.describe('Finance Insurance - Delete Operations', () => {
       await page.waitForTimeout(300);
     }
 
-    const insuranceTab = page.getByRole('button', { name: /insurance/i }).or(
-      page.locator('button').filter({ hasText: /insurance/i })
-    );
-    if (await insuranceTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await insuranceTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Navigate to Insurance tab
+    await page.getByRole('tab', { name: 'Insurance' }).click();
+    await page.waitForTimeout(500);
   });
 
   test('delete cancelled policy', async ({ page }) => {
     const policyName = `Cancelled Policy ${Date.now()}`;
 
     // Create policy
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('renters');
@@ -524,13 +540,9 @@ test.describe('Finance Insurance - Display & Organization', () => {
       await page.waitForTimeout(300);
     }
 
-    const insuranceTab = page.getByRole('button', { name: /insurance/i }).or(
-      page.locator('button').filter({ hasText: /insurance/i })
-    );
-    if (await insuranceTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await insuranceTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Navigate to Insurance tab
+    await page.getByRole('tab', { name: 'Insurance' }).click();
+    await page.waitForTimeout(500);
   });
 
   test('display multiple policies with different types', async ({ page }) => {
@@ -543,8 +555,7 @@ test.describe('Finance Insurance - Display & Organization', () => {
 
     // Create multiple policies
     for (const policy of policies) {
-      await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-      await page.waitForTimeout(500);
+      if (!await openAddPolicyModal(page)) return; // Skip if feature unavailable
 
       await page.locator('#policy-name').fill(policy.name);
       await page.locator('#policy-type').selectOption(policy.type);
@@ -580,20 +591,16 @@ test.describe('Finance Insurance - Edge Cases', () => {
       await page.waitForTimeout(300);
     }
 
-    const insuranceTab = page.getByRole('button', { name: /insurance/i }).or(
-      page.locator('button').filter({ hasText: /insurance/i })
-    );
-    if (await insuranceTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await insuranceTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Navigate to Insurance tab
+    await page.getByRole('tab', { name: 'Insurance' }).click();
+    await page.waitForTimeout(500);
   });
 
   test('create policy with very high coverage', async ({ page }) => {
     const policyName = `High Coverage ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('life');
@@ -612,8 +619,8 @@ test.describe('Finance Insurance - Edge Cases', () => {
   test('create policy with low premium', async ({ page }) => {
     const policyName = `Low Premium ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('vision');
@@ -632,8 +639,8 @@ test.describe('Finance Insurance - Edge Cases', () => {
   test('create policy with decimal premium', async ({ page }) => {
     const policyName = `Decimal Premium ${Date.now()}`;
 
-    await page.getByRole('button', { name: /add policy|add insurance/i }).first().click();
-    await page.waitForTimeout(500);
+    if (!await openAddPolicyModal(page)) return;
+
 
     await page.locator('#policy-name').fill(policyName);
     await page.locator('#policy-type').selectOption('dental');

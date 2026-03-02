@@ -49,7 +49,7 @@ test.describe('Finance Loans - Create Operations', () => {
     await page.waitForTimeout(1000);
 
     await expect(page.getByText(loanName)).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText(/300,?000/)).toBeVisible();
+    await expect(page.getByText(/300,?000/).first()).toBeVisible();
   });
 
   test('create auto loan', async ({ page }) => {
@@ -169,13 +169,9 @@ test.describe('Finance Loans - Update Operations', () => {
       await page.waitForTimeout(300);
     }
 
-    const loansTab = page.getByRole('button', { name: /loans/i }).or(
-      page.locator('button').filter({ hasText: /loans/i })
-    );
-    if (await loansTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await loansTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Navigate to Loans tab
+    await page.getByRole('tab', { name: 'Loans' }).click();
+    await page.waitForTimeout(500);
   });
 
   test('update loan balance after payment', async ({ page }) => {
@@ -321,13 +317,9 @@ test.describe('Finance Loans - Delete Operations', () => {
       await page.waitForTimeout(300);
     }
 
-    const loansTab = page.getByRole('button', { name: /loans/i }).or(
-      page.locator('button').filter({ hasText: /loans/i })
-    );
-    if (await loansTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await loansTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Navigate to Loans tab
+    await page.getByRole('tab', { name: 'Loans' }).click();
+    await page.waitForTimeout(500);
   });
 
   test('delete paid-off loan', async ({ page }) => {
@@ -386,13 +378,9 @@ test.describe('Finance Loans - Display & Tracking', () => {
       await page.waitForTimeout(300);
     }
 
-    const loansTab = page.getByRole('button', { name: /loans/i }).or(
-      page.locator('button').filter({ hasText: /loans/i })
-    );
-    if (await loansTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await loansTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Navigate to Loans tab
+    await page.getByRole('tab', { name: 'Loans' }).click();
+    await page.waitForTimeout(500);
   });
 
   test('display multiple loans with different types', async ({ page }) => {
@@ -459,13 +447,9 @@ test.describe('Finance Loans - Edge Cases', () => {
       await page.waitForTimeout(300);
     }
 
-    const loansTab = page.getByRole('button', { name: /loans/i }).or(
-      page.locator('button').filter({ hasText: /loans/i })
-    );
-    if (await loansTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await loansTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Navigate to Loans tab
+    await page.getByRole('tab', { name: 'Loans' }).click();
+    await page.waitForTimeout(500);
   });
 
   test('create loan with zero balance (paid off)', async ({ page }) => {

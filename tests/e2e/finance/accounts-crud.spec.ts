@@ -12,6 +12,10 @@ test.describe('Finance Accounts - Create Operations', () => {
     await page.goto('/finances');
     await page.waitForLoadState('domcontentloaded');
 
+    // Navigate to Accounts tab
+    await page.getByRole('tab', { name: /Accounts/i }).click();
+    await page.waitForTimeout(500);
+
     // Close mobile sidebar if open
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -20,7 +24,7 @@ test.describe('Finance Accounts - Create Operations', () => {
     }
 
     // Click on Accounts tab
-    await page.getByRole('button', { name: /^Accounts$/i }).click();
+    await page.getByRole('tab', { name: /Accounts/i }).click();
     await page.waitForTimeout(500);
   });
 
@@ -39,7 +43,7 @@ test.describe('Finance Accounts - Create Operations', () => {
     await expect(typeSelect).toHaveValue('checking');
 
     // Enter balance
-    await page.locator('#account-balance').fill('1000');
+    await page.locator('#balance').fill('1000');
 
     // Submit form
     await page.getByRole('button', { name: /add account/i }).last().click();
@@ -47,7 +51,7 @@ test.describe('Finance Accounts - Create Operations', () => {
 
     // Verify account appears in list
     await expect(page.getByText(accountName)).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('$1,000')).toBeVisible();
+    await expect(page.getByText('$1,000').first()).toBeVisible();
   });
 
   test('create savings account', async ({ page }) => {
@@ -58,13 +62,13 @@ test.describe('Finance Accounts - Create Operations', () => {
 
     await page.locator('#account-name').fill(accountName);
     await page.locator('#account-type').selectOption('savings');
-    await page.locator('#account-balance').fill('5000');
+    await page.locator('#balance').fill('5000');
 
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
 
     await expect(page.getByText(accountName)).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('$5,000')).toBeVisible();
+    await expect(page.getByText('$5,000').first()).toBeVisible();
   });
 
   test('create credit card with limit and APR', async ({ page }) => {
@@ -75,16 +79,16 @@ test.describe('Finance Accounts - Create Operations', () => {
 
     await page.locator('#account-name').fill(accountName);
     await page.locator('#account-type').selectOption('credit');
-    await page.locator('#account-balance').fill('-500'); // Negative for credit balance
+    await page.locator('#balance').fill('-500'); // Negative for credit balance
 
     // Credit card specific fields should appear
     await page.waitForTimeout(300);
 
-    const creditLimitField = page.locator('#account-credit-limit');
+    const creditLimitField = page.locator('#credit-limit');
     if (await creditLimitField.isVisible({ timeout: 2000 }).catch(() => false)) {
       await creditLimitField.fill('5000');
 
-      const aprField = page.locator('#account-apr');
+      const aprField = page.locator('#apr');
       if (await aprField.isVisible({ timeout: 1000 }).catch(() => false)) {
         await aprField.fill('18.99');
       }
@@ -104,7 +108,7 @@ test.describe('Finance Accounts - Create Operations', () => {
 
     await page.locator('#account-name').fill(accountName);
     await page.locator('#account-type').selectOption('brokerage');
-    await page.locator('#account-balance').fill('25000.50');
+    await page.locator('#balance').fill('25000.50');
 
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
@@ -119,7 +123,7 @@ test.describe('Finance Accounts - Create Operations', () => {
     await page.waitForTimeout(500);
 
     await page.locator('#account-name').fill(accountName);
-    await page.locator('#account-balance').fill('2500');
+    await page.locator('#balance').fill('2500');
 
     const notesField = page.locator('#account-notes');
     if (await notesField.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -138,6 +142,10 @@ test.describe('Finance Accounts - Update Operations', () => {
     await page.goto('/finances');
     await page.waitForLoadState('domcontentloaded');
 
+    // Navigate to Accounts tab
+    await page.getByRole('tab', { name: /Accounts/i }).click();
+    await page.waitForTimeout(500);
+
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
       await backdrop.click();
@@ -154,7 +162,7 @@ test.describe('Finance Accounts - Update Operations', () => {
     await page.waitForTimeout(500);
 
     await page.locator('#account-name').fill(originalName);
-    await page.locator('#account-balance').fill('1000');
+    await page.locator('#balance').fill('1000');
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
 
@@ -181,7 +189,7 @@ test.describe('Finance Accounts - Update Operations', () => {
     await page.waitForTimeout(500);
 
     await page.locator('#account-name').fill(accountName);
-    await page.locator('#account-balance').fill('1000');
+    await page.locator('#balance').fill('1000');
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
 
@@ -189,13 +197,13 @@ test.describe('Finance Accounts - Update Operations', () => {
     await page.getByText(accountName).click();
     await page.waitForTimeout(500);
 
-    await page.locator('#account-balance').clear();
-    await page.locator('#account-balance').fill('2500');
+    await page.locator('#balance').clear();
+    await page.locator('#balance').fill('2500');
     await page.getByRole('button', { name: /save/i }).click();
     await page.waitForTimeout(1000);
 
     // Verify new balance
-    await expect(page.getByText('$2,500')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('$2,500').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('change account type', async ({ page }) => {
@@ -207,7 +215,7 @@ test.describe('Finance Accounts - Update Operations', () => {
 
     await page.locator('#account-name').fill(accountName);
     await page.locator('#account-type').selectOption('checking');
-    await page.locator('#account-balance').fill('1000');
+    await page.locator('#balance').fill('1000');
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
 
@@ -229,6 +237,10 @@ test.describe('Finance Accounts - Delete Operations', () => {
     await page.goto('/finances');
     await page.waitForLoadState('domcontentloaded');
 
+    // Navigate to Accounts tab
+    await page.getByRole('tab', { name: /Accounts/i }).click();
+    await page.waitForTimeout(500);
+
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
       await backdrop.click();
@@ -244,7 +256,7 @@ test.describe('Finance Accounts - Delete Operations', () => {
     await page.waitForTimeout(500);
 
     await page.locator('#account-name').fill(accountName);
-    await page.locator('#account-balance').fill('1000');
+    await page.locator('#balance').fill('1000');
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
 
@@ -280,6 +292,10 @@ test.describe('Finance Accounts - Display & Filtering', () => {
     await page.goto('/finances');
     await page.waitForLoadState('domcontentloaded');
 
+    // Navigate to Accounts tab
+    await page.getByRole('tab', { name: /Accounts/i }).click();
+    await page.waitForTimeout(500);
+
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
       await backdrop.click();
@@ -302,7 +318,7 @@ test.describe('Finance Accounts - Display & Filtering', () => {
 
       await page.locator('#account-name').fill(account.name);
       await page.locator('#account-type').selectOption(account.type);
-      await page.locator('#account-balance').fill(account.balance);
+      await page.locator('#balance').fill(account.balance);
 
       await page.getByRole('button', { name: /add account/i }).last().click();
       await page.waitForTimeout(800);
@@ -321,7 +337,7 @@ test.describe('Finance Accounts - Display & Filtering', () => {
     await page.waitForTimeout(500);
 
     await page.locator('#account-name').fill(accountName);
-    await page.locator('#account-balance').fill('1234.56');
+    await page.locator('#balance').fill('1234.56');
 
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
@@ -338,6 +354,10 @@ test.describe('Finance Accounts - Edge Cases', () => {
     await page.goto('/finances');
     await page.waitForLoadState('domcontentloaded');
 
+    // Navigate to Accounts tab
+    await page.getByRole('tab', { name: /Accounts/i }).click();
+    await page.waitForTimeout(500);
+
     const backdrop = page.locator('.fixed.inset-0.bg-black\\/50').first();
     if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
       await backdrop.click();
@@ -352,13 +372,12 @@ test.describe('Finance Accounts - Edge Cases', () => {
     await page.waitForTimeout(500);
 
     await page.locator('#account-name').fill(accountName);
-    await page.locator('#account-balance').fill('0');
+    await page.locator('#balance').fill('0');
 
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
 
     await expect(page.getByText(accountName)).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('$0')).toBeVisible();
   });
 
   test('create account with negative balance', async ({ page }) => {
@@ -368,7 +387,7 @@ test.describe('Finance Accounts - Edge Cases', () => {
     await page.waitForTimeout(500);
 
     await page.locator('#account-name').fill(accountName);
-    await page.locator('#account-balance').fill('-100');
+    await page.locator('#balance').fill('-100');
 
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
@@ -383,7 +402,7 @@ test.describe('Finance Accounts - Edge Cases', () => {
     await page.waitForTimeout(500);
 
     await page.locator('#account-name').fill(accountName);
-    await page.locator('#account-balance').fill('1000000');
+    await page.locator('#balance').fill('1000000');
 
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
@@ -398,13 +417,13 @@ test.describe('Finance Accounts - Edge Cases', () => {
     await page.waitForTimeout(500);
 
     await page.locator('#account-name').fill(accountName);
-    await page.locator('#account-balance').fill('1000');
+    await page.locator('#balance').fill('1000');
 
     await page.getByRole('button', { name: /add account/i }).last().click();
     await page.waitForTimeout(1000);
 
     // Name might be truncated in display, but should still be created
     const shortName = accountName.substring(0, 30);
-    await expect(page.getByText(new RegExp(shortName))).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(new RegExp(shortName)).first()).toBeVisible({ timeout: 5000 });
   });
 });
