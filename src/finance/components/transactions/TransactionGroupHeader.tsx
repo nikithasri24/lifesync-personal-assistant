@@ -15,6 +15,7 @@ interface TransactionGroupHeaderProps {
   budgetLimit?: number;
   isCollapsed: boolean;
   onToggle: () => void;
+  isIncome?: boolean;
 }
 
 export const TransactionGroupHeader: React.FC<TransactionGroupHeaderProps> = ({
@@ -25,6 +26,7 @@ export const TransactionGroupHeader: React.FC<TransactionGroupHeaderProps> = ({
   budgetLimit,
   isCollapsed,
   onToggle,
+  isIncome = false,
 }) => {
   return (
     <div className="bg-slate-100">
@@ -69,8 +71,8 @@ export const TransactionGroupHeader: React.FC<TransactionGroupHeaderProps> = ({
             </div>
           ) : (
             <div>
-              <p className="font-semibold text-rose-600">
-                {formatCurrency(total)}
+              <p className={`font-semibold ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {isIncome ? '+' : ''}{formatCurrency(total)}
               </p>
               <p className="text-xs text-slate-500 italic">No budget set</p>
             </div>

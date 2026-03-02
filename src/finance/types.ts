@@ -31,9 +31,11 @@ export type Account = {
   balance: number;
   lastUpdatedISO: string;
   liability?: boolean;
+  isArchived?: boolean;
   // Credit card specific fields
   creditLimit?: number;
   apr?: number;
+  promoAprEndDate?: string; // ISO date — when 0% promo APR expires
   paymentDueDay?: number; // Day of month (1-31)
   minimumPayment?: number;
   statementBalance?: number;
@@ -67,6 +69,8 @@ export type Transaction = {
   amount: number;
   type: TxnType;
   notes?: string;
+  tags?: string[]; // e.g. ['channel trip', 'vacation']
+  transferId?: string; // Links both legs of a transfer (same UUID on debit + credit)
   // Categorization support
   merchantName?: string;
   confidenceScore?: number; // 0-1, null = manually categorized
@@ -144,6 +148,7 @@ export type TxnQuery = {
   accountIds?: string[];
   categoryIds?: string[];
   type?: TxnType;
+  tag?: string; // filter by tag (exact match)
   cursor?: string; // pagination cursor (impl-defined)
   limit?: number;
 };

@@ -43,11 +43,12 @@ export interface FinanceAPI {
   listInstitutions(): Promise<Institution[]>;
   listAccounts(): Promise<Account[]>;
   updateAccount(accountId: string, updates: Partial<Account>): Promise<void>;
-  upsertAccount(account: { id?: string; name: string; type: string; balance: number; institutionId?: string }): Promise<void>;
+  upsertAccount(account: { id?: string; name: string; type: string; balance: number; institutionId?: string; isArchived?: boolean; creditLimit?: number; apr?: number; promoAprEndDate?: string; notes?: string }): Promise<void>;
   deleteAccount(accountId: string): Promise<void>;
   listTransactions(params: TxnQuery): Promise<Paginated<Transaction>>;
   upsertTransaction(txn: TransactionInput): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
+  createTransfer(params: { fromAccountId: string; toAccountId: string; amount: number; dateISO: string; notes?: string }): Promise<string>;
   listBudgets(monthISO: string): Promise<Budget[]>;
   upsertBudget(budget: { categoryId: string; month: string; limit: number }): Promise<void>;
   deleteBudget(categoryId: string, month: string): Promise<void>;

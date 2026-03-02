@@ -58,11 +58,13 @@ export function useGroupedTransactions({
         (a, b) => new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime()
       );
 
-      // Calculate group total (spent amount - only debits for budget comparison)
-      const spent = Math.abs(txns.reduce(
-        (sum, txn) => sum + (txn.type === 'debit' ? txn.amount : 0),
-        0
-      ));
+      // Calculate group total: sum debits OR credits depending on what the group contains
+      const hasCredits = txns.some(txn => txn.type === 'credit');
+      const hasDebits = txns.some(txn => txn.type === 'debit');
+      const spent = Math.abs(txns.reduce((sum, txn) => {
+        if (hasCredits && !hasDebits) return sum + txn.amount;         // income-only group
+        return sum + (txn.type === 'debit' ? txn.amount : 0);          // expense or mixed group
+      }, 0));
 
       // Get budget for this category
       const budget = categoryId ? budgets.find((b) => b.categoryId === categoryId) : undefined;

@@ -78,6 +78,7 @@ export class SupabaseApi implements FinanceAPI {
   listTransactions(params: TxnQuery) { return this.transactions.listTransactions(params); }
   upsertTransaction(txn: TransactionInput) { return this.transactions.upsertTransaction(txn); }
   deleteTransaction(id: string) { return this.transactions.deleteTransaction(id); }
+  createTransfer(params: { fromAccountId: string; toAccountId: string; amount: number; dateISO: string; notes?: string }) { return this.transactions.createTransfer(params); }
 
   // ── Budgets ───────────────────────────────────────────────────────────────
   listBudgets(monthISO: string) { return this.budgets.listBudgets(monthISO); }

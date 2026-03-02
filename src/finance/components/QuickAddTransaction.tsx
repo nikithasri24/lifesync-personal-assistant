@@ -5,11 +5,14 @@
  */
 
 import React from 'react';
+import { Mic, MicOff } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
-import { useUpsertTransactionMutation, useAccountsQuery, useCategoriesQuery, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
+import { useUpsertTransactionMutation, useCreateTransferMutation, useAccountsQuery, useCategoriesQuery } from '@/hooks/useFinanceQuery';
 import { useAuth } from '@/hooks/useAuth';
+import { useVoiceInput } from '@/shopping/hooks/useVoiceInput';
+import { parseTransactionVoice } from '@/finance/utils/parseTransactionVoice';
 
 interface QuickAddTransactionProps {
   onClose: () => void;
@@ -19,20 +22,17 @@ interface QuickAddTransactionProps {
 export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClose, onSuccess }) => {
   const { showToast } = useToast();
   const upsertTransactionMutation = useUpsertTransactionMutation();
+  const createTransferMutation = useCreateTransferMutation();
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
-
-  // Get partner info from merged connection
-  const partnerName = React.useMemo(() => {
-    if (!mergedConnection || !user) return undefined;
-    return mergedConnection.partnerName;
-  }, [mergedConnection, user]);
-
-  const partnerId = React.useMemo(() => {
-    if (!mergedConnection || !user) return undefined;
-    return mergedConnection.partnerId;
-  }, [mergedConnection, user]);
-
+  const { isListening, startVoiceInput, stopVoiceInput } = useVoiceInput();
+  const [voiceTranscript, setVoiceTranscript] = React.useState('');
+  const [mode, setMode] = React.useState<'transaction' | 'transfer'>('transaction');
+  const [transferData, setTransferData] = React.useState({
+    toAccountId: '',
+    amount: '',
+    date: new Date().toISOString().split('T')[0],
+    notes: '',
+  });
   // Use React Query hooks for data fetching
   const { data: accounts = [] } = useAccountsQuery();
   const { data: categories = [] } = useCategoriesQuery();
@@ -48,10 +48,12 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
     userId: user?.id ?? '' // Default to current user
   });
 
-  // Set default account when accounts load
+  // Set default account: use last-used account from localStorage, else first account
   React.useEffect(() => {
     if (accounts.length > 0 && !formData.accountId) {
-      setFormData(prev => ({ ...prev, accountId: accounts[0].id }));
+      const lastUsed = localStorage.getItem('finance_last_account_id');
+      const defaultId = (lastUsed && accounts.find(a => a.id === lastUsed)) ? lastUsed : accounts[0].id;
+      setFormData(prev => ({ ...prev, accountId: defaultId }));
     }
   }, [accounts, formData.accountId]);
 
@@ -99,14 +101,37 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
     }
   }, [formData.type, categories]);
 
+  const handleTransferSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
+    if (!formData.accountId || !transferData.toAccountId) {
+      showToast('Select both accounts', 'error');
+      return;
+    }
+    if (formData.accountId === transferData.toAccountId) {
+      showToast('From and To accounts must be different', 'error');
+      return;
+    }
+    try {
+      await createTransferMutation.mutateAsync({
+        fromAccountId: formData.accountId,
+        toAccountId: transferData.toAccountId,
+        amount: parseFloat(transferData.amount),
+        dateISO: transferData.date,
+        notes: transferData.notes || undefined,
+      });
+      showToast('Transfer recorded! ↔️', 'success');
+      onSuccess();
+      onClose();
+    } catch (error) {
+      showToast('Failed to create transfer', 'error');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
     try {
       logger.debug('QuickAddTransaction', 'Submitting transaction', {
-        userId: formData.userId,
-        currentUserId: user?.id,
-        partnerId,
         accountId: formData.accountId,
         description: formData.description,
         amount: formData.amount,
@@ -130,9 +155,6 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
       const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       logger.error('QuickAddTransaction', error instanceof Error ? error : new Error(String(error)), {
         errorMessage,
-        userId: formData.userId,
-        currentUserId: user?.id,
-        partnerId,
         accountId: formData.accountId,
       });
       showToast(`Failed to add transaction: ${errorMessage}`, 'error');
@@ -171,16 +193,57 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
     }));
   }, []);
 
+  const handleVoiceInput = () => {
+    if (isListening) {
+      stopVoiceInput();
+      return;
+    }
+    setVoiceTranscript('');
+    startVoiceInput((transcript) => {
+      setVoiceTranscript(transcript);
+      const parsed = parseTransactionVoice(transcript);
+      setFormData(prev => ({
+        ...prev,
+        ...(parsed.amount && { amount: parsed.amount }),
+        ...(parsed.description && { description: parsed.description }),
+        ...(parsed.type && { type: parsed.type }),
+        ...(parsed.categoryHint && {
+          categoryId: categories.find(c =>
+            c.name.toLowerCase().includes(parsed.categoryHint!.toLowerCase())
+          )?.id ?? prev.categoryId,
+        }),
+      }));
+    });
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full flex flex-col overflow-hidden" style={{ maxHeight: '90vh' }}>
         {/* Header - Fixed */}
         <div className="p-6 border-b border-slate-200 flex-shrink-0">
+          <div className="flex gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => setMode('transaction')}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${mode === 'transaction' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              Transaction
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('transfer')}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${mode === 'transfer' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              ↔ Transfer
+            </button>
+          </div>
           <h2 className="text-2xl font-semibold text-slate-900">
-            {formData.type === 'credit' ? 'Add Income' : 'Add Expense'}
+            {mode === 'transfer' ? 'Transfer Between Accounts' : formData.type === 'credit' ? 'Add Income' : 'Add Expense'}
           </h2>
           <p className="text-sm text-slate-600 mt-1">
-            {formData.type === 'credit'
+            {mode === 'transfer'
+              ? 'Move money between your accounts — not counted as income or expense'
+              : formData.type === 'credit'
               ? 'Record income, salary, or other money received'
               : 'Record expenses, purchases, or money spent'}
           </p>
@@ -188,6 +251,72 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
 
         {/* Content - Scrollable */}
         <div className="p-6 overflow-y-auto flex-1">
+          {/* Transfer Form */}
+          {mode === 'transfer' && (
+            <form id="add-transaction-form" onSubmit={(e) => { void handleTransferSubmit(e); }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">From Account</label>
+                <select
+                  value={formData.accountId}
+                  onChange={(e) => {
+                    localStorage.setItem('finance_last_account_id', e.target.value);
+                    setFormData({ ...formData, accountId: e.target.value });
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">To Account</label>
+                <select
+                  value={transferData.toAccountId}
+                  onChange={(e) => setTransferData({ ...transferData, toAccountId: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select destination account</option>
+                  {accounts.filter(a => a.id !== formData.accountId).map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Amount</label>
+                <input
+                  type="number" step="0.01" min="0.01"
+                  value={transferData.amount}
+                  onChange={(e) => setTransferData({ ...transferData, amount: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00" required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                <input
+                  type="date"
+                  value={transferData.date}
+                  onChange={(e) => setTransferData({ ...transferData, date: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Notes (optional)</label>
+                <input
+                  type="text"
+                  value={transferData.notes}
+                  onChange={(e) => setTransferData({ ...transferData, notes: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. Monthly savings"
+                />
+              </div>
+            </form>
+          )}
+
+          {/* Transaction Form */}
+          {mode === 'transaction' && (
           <form id="add-transaction-form" onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
             {/* Account */}
             <div>
@@ -196,7 +325,10 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
               </label>
               <select
                 value={formData.accountId}
-                onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+                onChange={(e) => {
+                  localStorage.setItem('finance_last_account_id', e.target.value);
+                  setFormData({ ...formData, accountId: e.target.value });
+                }}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
                 required
               >
@@ -266,14 +398,34 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Description
               </label>
-              <input
-                type="text"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-                placeholder="e.g., STARBUCKS #1234"
-                required
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  placeholder="e.g., STARBUCKS #1234"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={handleVoiceInput}
+                  className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 transition-colors flex-shrink-0"
+                  style={{ color: isListening ? '#EF4444' : '#94A3B8' }}
+                  aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
+                >
+                  {isListening
+                    ? <MicOff className="w-5 h-5 animate-pulse" />
+                    : <Mic className="w-5 h-5" />
+                  }
+                </button>
+              </div>
+              {isListening && (
+                <p className="mt-1 text-xs text-red-400 animate-pulse">Listening… speak now</p>
+              )}
+              {!isListening && voiceTranscript && (
+                <p className="mt-1 text-xs text-slate-400">Heard: "{voiceTranscript}"</p>
+              )}
             </div>
 
             {/* Amount */}
@@ -328,26 +480,6 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
               />
             </div>
 
-            {/* Owner Selection - only in merged mode */}
-            {mergedConnection && user && partnerId && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Who made this purchase?
-                </label>
-                <select
-                  value={formData.userId}
-                  onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-                >
-                  <option value={user.id}>Me</option>
-                  <option value={partnerId}>{partnerName || 'Partner'}</option>
-                </select>
-                <p className="mt-1 text-xs text-slate-500">
-                  This determines who owns this transaction
-                </p>
-              </div>
-            )}
-
             {/* Notes (optional) */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -362,19 +494,26 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
               />
             </div>
           </form>
+          )}
         </div>
 
         {/* Footer - Fixed */}
         <div className="p-6 border-t border-slate-200 flex justify-between flex-shrink-0 bg-white">
-          <Button variant="ghost" onClick={onClose} disabled={upsertTransactionMutation.isPending}>
+          <Button variant="ghost" onClick={onClose} disabled={upsertTransactionMutation.isPending || createTransferMutation.isPending}>
             Cancel
           </Button>
           <Button
             type="submit"
             form="add-transaction-form"
-            disabled={upsertTransactionMutation.isPending || !formData.accountId}
+            disabled={
+              mode === 'transfer'
+                ? createTransferMutation.isPending || !formData.accountId || !transferData.toAccountId || !transferData.amount
+                : upsertTransactionMutation.isPending || !formData.accountId
+            }
           >
-            {upsertTransactionMutation.isPending ? 'Adding...' : 'Add Transaction'}
+            {mode === 'transfer'
+              ? (createTransferMutation.isPending ? 'Transferring...' : 'Record Transfer')
+              : (upsertTransactionMutation.isPending ? 'Adding...' : 'Add Transaction')}
           </Button>
         </div>
       </div>

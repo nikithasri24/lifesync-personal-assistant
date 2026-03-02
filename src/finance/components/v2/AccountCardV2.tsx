@@ -12,18 +12,27 @@ interface Account {
   balance: number;
   institutionId?: string;
   creditLimit?: number;
+  apr?: number;
+  promoAprEndDate?: string;
   liability?: boolean;
+}
+
+interface MonthlySnapshot {
+  income: number;
+  expenses: number;
+  net: number;
 }
 
 interface AccountCardV2Props {
   account: Account;
-  onClick: () => void;
+  onClick?: () => void;
   showOwnerBadge?: boolean;
   owner?: {
     isOwner: boolean;
     displayName: string;
   };
   institutionName?: string;
+  monthlySnapshot?: MonthlySnapshot;
 }
 
 const formatCurrency = (amount: number): string => {
@@ -59,6 +68,7 @@ export const AccountCardV2: React.FC<AccountCardV2Props> = ({
   showOwnerBadge = false,
   owner,
   institutionName,
+  monthlySnapshot,
 }) => {
   const utilization =
     account.type === 'credit' && account.creditLimit
@@ -68,7 +78,7 @@ export const AccountCardV2: React.FC<AccountCardV2Props> = ({
   return (
     <div
       onClick={onClick}
-      className="relative cursor-pointer transition-transform hover:scale-[1.01] active:scale-[0.98]"
+      className={`relative transition-transform ${onClick ? 'cursor-pointer hover:scale-[1.01] active:scale-[0.98]' : 'opacity-75'}`}
       style={{
         background: 'white',
         borderRadius: '16px',
@@ -126,6 +136,66 @@ export const AccountCardV2: React.FC<AccountCardV2Props> = ({
           {institutionName}
         </div>
       )}
+
+      {/* Monthly Snapshot */}
+      {monthlySnapshot && (
+        <div
+          style={{
+            marginTop: '10px',
+            paddingTop: '10px',
+            borderTop: '1px solid #E8DCC8',
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: '#9B8B7A', marginBottom: '2px' }}>IN</div>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: '#4CAF50' }}>
+              +{formatCurrency(monthlySnapshot.income)}
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: '#9B8B7A', marginBottom: '2px' }}>OUT</div>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: '#E57373' }}>
+              -{formatCurrency(monthlySnapshot.expenses)}
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: '#9B8B7A', marginBottom: '2px' }}>NET</div>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: monthlySnapshot.net >= 0 ? '#4CAF50' : '#E57373' }}>
+              {monthlySnapshot.net >= 0 ? '+' : ''}{formatCurrency(monthlySnapshot.net)}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 0% Promo APR expiry badge */}
+      {account.promoAprEndDate && (() => {
+        const endDate = new Date(account.promoAprEndDate);
+        const now = new Date();
+        const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const monthStr = endDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+        const isExpiringSoon = daysLeft <= 90;
+        const isExpired = daysLeft < 0;
+
+        return (
+          <div style={{
+            marginTop: '8px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '3px 8px',
+            borderRadius: '8px',
+            fontSize: '11px',
+            fontWeight: 600,
+            background: isExpired ? '#FEE2E2' : isExpiringSoon ? '#FEF3C7' : '#DCFCE7',
+            color: isExpired ? '#DC2626' : isExpiringSoon ? '#D97706' : '#16A34A',
+          }}>
+            {isExpired ? '⚠️' : isExpiringSoon ? '⏰' : '✅'}
+            {isExpired ? `0% APR expired ${monthStr}` : `0% APR ends ${monthStr}`}
+          </div>
+        );
+      })()}
 
       {/* Credit Card Utilization */}
       {account.type === 'credit' && account.creditLimit && (

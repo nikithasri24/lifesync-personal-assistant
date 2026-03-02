@@ -58,6 +58,7 @@ const TransactionsPageGrouped: React.FC = () => {
     fromISO: filters.fromISO,
     toISO: filters.toISO,
     type: filters.type,
+    tag: filters.tag,
     limit: 500,
   });
   const { data: categories = [], isLoading: categoriesLoading, refetch: refetchCategories } = useCategoriesQuery();
@@ -273,6 +274,7 @@ const TransactionsPageGrouped: React.FC = () => {
                     budgetLimit={group.budgetLimit}
                     isCollapsed={collapsed}
                     onToggle={() => toggleGroup(group.categoryId)}
+                    isIncome={group.transactions.every(t => t.type === 'credit')}
                   />
 
                   {!collapsed && (

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Edit2, Save, X, Trash2 } from 'lucide-react';
+import { Edit2, Save, X, Trash2, ArrowLeftRight } from 'lucide-react';
 import type { Transaction, Category } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { logger } from '../../../services/logger';
@@ -150,29 +150,48 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
     );
   }
 
+  const isTransfer = !!transaction.transferId;
+
   return (
-    <tr className="border-b border-slate-200 hover:bg-slate-50 transition-colors group">
+    <tr className={`border-b border-slate-200 hover:bg-slate-50 transition-colors group ${isTransfer ? 'bg-blue-50/40' : ''}`}>
       <td className="px-4 py-3 text-sm text-slate-700">
         {new Date(transaction.dateISO).toLocaleDateString()}
       </td>
       <td className="px-4 py-3">
         <div>
-          <div className="font-medium text-slate-900 text-sm">{transaction.description}</div>
+          <div className="font-medium text-slate-900 text-sm flex items-center gap-1.5">
+            {isTransfer && <ArrowLeftRight className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />}
+            {transaction.description}
+          </div>
           {transaction.merchantName && transaction.merchantName !== transaction.description && (
             <div className="text-xs text-slate-600">{transaction.merchantName}</div>
           )}
           {transaction.notes && (
             <div className="text-xs text-slate-500 mt-0.5 italic">{transaction.notes}</div>
           )}
+          {transaction.tags && transaction.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {transaction.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-violet-100 text-violet-700"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-right font-medium">
         <span
           className={
-            transaction.type === 'credit' ? 'text-emerald-600' : 'text-rose-600'
+            isTransfer
+              ? 'text-blue-600'
+              : transaction.type === 'credit' ? 'text-emerald-600' : 'text-rose-600'
           }
         >
-          {transaction.type === 'credit' ? '+' : '-'}
+          {isTransfer ? '↔' : transaction.type === 'credit' ? '+' : '-'}
           {formatCurrency(transaction.amount)}
         </span>
       </td>
@@ -218,6 +237,7 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
     prevProps.transaction.notes === nextProps.transaction.notes &&
     prevProps.transaction.userId === nextProps.transaction.userId &&
     prevProps.transaction.merchantName === nextProps.transaction.merchantName &&
+    prevProps.transaction.transferId === nextProps.transaction.transferId &&
     prevProps.categories.length === nextProps.categories.length
   );
 });

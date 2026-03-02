@@ -64,6 +64,25 @@ export function useUpsertTransactionMutation(): UseMutationResult<void, Error, T
   });
 }
 
+export function useCreateTransferMutation(): UseMutationResult<string, Error, { fromAccountId: string; toAccountId: string; amount: number; dateISO: string; notes?: string }, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<string, Error, { fromAccountId: string; toAccountId: string; amount: number; dateISO: string; notes?: string }>({
+    mutationFn: async (params) => {
+      logger.debug('Finance', 'Creating transfer', params);
+      const api = await getFinanceAPI();
+      return api.createTransfer(params);
+    },
+    onSuccess: (transferId) => {
+      logger.info('Finance', 'Transfer created', { transferId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.all });
+    },
+    onError: (error) => {
+      logger.error('Finance', 'Failed to create transfer', { error: error.message });
+    },
+  });
+}
+
 export function useDeleteTransactionMutation(): UseMutationResult<void, Error, string, unknown> {
   const queryClient = useQueryClient();
 

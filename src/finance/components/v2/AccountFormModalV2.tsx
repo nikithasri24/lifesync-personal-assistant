@@ -16,8 +16,10 @@ interface AccountFormModalV2Props {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: AccountFormData) => void | Promise<void>;
+  onDelete?: () => void | Promise<void>;
   initialData?: Partial<AccountFormData>;
   isPending?: boolean;
+  deletePending?: boolean;
 }
 
 export interface AccountFormData {
@@ -27,7 +29,9 @@ export interface AccountFormData {
   balance: number;
   creditLimit?: number;
   apr?: number;
+  promoAprEndDate?: string;
   notes?: string;
+  isArchived?: boolean;
 }
 
 interface AccountFormState {
@@ -36,13 +40,16 @@ interface AccountFormState {
   balance: string;
   creditLimit: string;
   apr: string;
+  promoAprEndDate: string;
   notes: string;
+  isArchived: boolean;
 }
 
 const ACCOUNT_TYPES = [
   { value: 'checking', label: 'Checking', emoji: '💳' },
   { value: 'savings', label: 'Savings', emoji: '🏦' },
   { value: 'credit', label: 'Credit Card', emoji: '💳' },
+  { value: 'loan', label: 'Loan', emoji: '🏠' },
   { value: 'brokerage', label: 'Brokerage', emoji: '📈' },
   { value: 'investment', label: 'Investment', emoji: '📊' },
   { value: '401k', label: '401(k)', emoji: '🏢' },
@@ -55,8 +62,10 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
   isOpen,
   onClose,
   onSave,
+  onDelete,
   initialData,
   isPending = false,
+  deletePending = false,
 }) => {
   const defaultFormData: AccountFormState = {
     name: '',
@@ -64,7 +73,9 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
     balance: '0',
     creditLimit: '',
     apr: '',
+    promoAprEndDate: '',
     notes: '',
+    isArchived: false,
   };
 
   const initialFormData: AccountFormState | undefined = initialData ? {
@@ -73,7 +84,9 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
     balance: initialData.balance?.toString() || '0',
     creditLimit: initialData.creditLimit?.toString() || '',
     apr: initialData.apr?.toString() || '',
+    promoAprEndDate: initialData.promoAprEndDate || '',
     notes: initialData.notes || '',
+    isArchived: initialData.isArchived ?? false,
   } : undefined;
 
   return (
@@ -84,9 +97,11 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
       defaultData={defaultFormData}
       initialData={initialFormData}
       draftKey={initialData ? undefined : 'finance_account_modal_draft'}
-      isPending={isPending}
+      isPending={isPending || deletePending}
       submitText={initialData ? 'Save Changes' : 'Add Account'}
       isEditing={!!initialData}
+      showDelete={!!initialData && !!onDelete}
+      onDelete={onDelete}
       onSubmit={async (formData) => {
         const accountData: AccountFormData = {
           name: formData.name.trim(),
@@ -95,6 +110,8 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
           creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
           apr: formData.apr ? parseFloat(formData.apr) : undefined,
           notes: formData.notes.trim() || undefined,
+          promoAprEndDate: formData.promoAprEndDate || undefined,
+          isArchived: formData.isArchived,
         };
         await onSave(accountData);
       }}
@@ -191,7 +208,41 @@ export const AccountFormModalV2: React.FC<AccountFormModalV2Props> = ({
                     placeholder="0.00"
                   />
                 </div>
+
+                {/* Promo APR end date — shown when APR is 0 */}
+                {(formState.apr === '0' || formState.apr === '' || parseFloat(formState.apr) === 0) && (
+                  <div>
+                    <label htmlFor="promo-apr-end" className="block text-sm font-semibold text-gray-900 mb-2">
+                      0% Promo APR ends
+                      <span className="ml-2 text-xs font-normal text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">optional</span>
+                    </label>
+                    <input
+                      id="promo-apr-end"
+                      type="month"
+                      value={formState.promoAprEndDate ? formState.promoAprEndDate.slice(0, 7) : ''}
+                      onChange={(e) => setFormState({ ...formState, promoAprEndDate: e.target.value ? `${e.target.value}-01` : '' })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">The month your promotional 0% APR expires</p>
+                  </div>
+                )}
               </>
+            )}
+
+            {/* Archive toggle — edit mode only */}
+            {initialData && (
+              <label className="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">Archive account</div>
+                  <div className="text-xs text-gray-500">Hidden from main view, still tracked</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={formState.isArchived}
+                  onChange={(e) => setFormState({ ...formState, isArchived: e.target.checked })}
+                  className="w-5 h-5 text-terracotta-400 rounded focus:ring-terracotta-300"
+                />
+              </label>
             )}
 
             {/* Notes */}

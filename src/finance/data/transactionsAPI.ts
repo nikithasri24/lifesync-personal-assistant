@@ -38,6 +38,7 @@ export class TransactionsAPI {
     if (params.categoryIds?.length) query = query.in('category_id', params.categoryIds);
     if (params.type) query = query.eq('type', params.type);
     if (params.text) query = query.ilike('description', `%${params.text}%`);
+    if (params.tag) query = query.contains('tags', [params.tag]);
 
     // Cursor-based pagination
     // Cursor format: "date:id" (e.g., "2024-01-15:abc123")
@@ -78,6 +79,8 @@ export class TransactionsAPI {
       type: row.type,
       notes: row.notes,
       merchantName: row.merchant_name,
+      tags: (row.tags as string[] | null) ?? [],
+      transferId: row.transfer_id ?? undefined,
       confidenceScore: row.confidence_score ? parseFloat(row.confidence_score) : undefined,
       suggestedCategoryId: row.suggested_category_id,
       categorizationRuleId: row.categorization_rule_id,
@@ -108,6 +111,8 @@ export class TransactionsAPI {
           amount: txn.amount,
           type: txn.type,
           notes: txn.notes,
+          ...(txn.tags !== undefined ? { tags: txn.tags } : {}),
+          transfer_id: txn.transferId ?? null,
           merchant_name: txn.merchantName,
           confidence_score: txn.confidenceScore,
           suggested_category_id: txn.suggestedCategoryId,
@@ -131,6 +136,8 @@ export class TransactionsAPI {
           amount: txn.amount,
           type: txn.type,
           notes: txn.notes,
+          ...(txn.tags !== undefined ? { tags: txn.tags } : {}),
+          transfer_id: txn.transferId ?? null,
           merchant_name: txn.merchantName,
           confidence_score: txn.confidenceScore,
           suggested_category_id: txn.suggestedCategoryId,
@@ -139,6 +146,56 @@ export class TransactionsAPI {
 
       if (error) throw error;
     }
+  }
+
+  async createTransfer(params: {
+    fromAccountId: string;
+    toAccountId: string;
+    amount: number;
+    dateISO: string;
+    notes?: string;
+  }): Promise<string> {
+    const userId = await this.getUserId();
+
+    // Fetch account names for descriptions
+    const { data: accounts } = await this.client
+      .from('finance_accounts')
+      .select('id, name')
+      .in('id', [params.fromAccountId, params.toAccountId]);
+
+    const fromName = accounts?.find(a => a.id === params.fromAccountId)?.name ?? 'account';
+    const toName = accounts?.find(a => a.id === params.toAccountId)?.name ?? 'account';
+    const transferId = randomUUID();
+
+    const { error } = await this.client.from('finance_transactions').insert([
+      {
+        user_id: userId,
+        account_id: params.fromAccountId,
+        description: `Transfer to ${toName}`,
+        amount: params.amount,
+        type: 'debit',
+        date: params.dateISO,
+        transfer_id: transferId,
+        notes: params.notes ?? null,
+        tags: [],
+        merchant_name: `TRANSFER TO ${String(toName).toUpperCase()}`,
+      },
+      {
+        user_id: userId,
+        account_id: params.toAccountId,
+        description: `Transfer from ${fromName}`,
+        amount: params.amount,
+        type: 'credit',
+        date: params.dateISO,
+        transfer_id: transferId,
+        notes: params.notes ?? null,
+        tags: [],
+        merchant_name: `TRANSFER FROM ${String(fromName).toUpperCase()}`,
+      },
+    ]);
+
+    if (error) throw error;
+    return transferId;
   }
 
   async deleteTransaction(id: string): Promise<void> {
