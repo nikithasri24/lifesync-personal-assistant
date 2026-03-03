@@ -5,11 +5,12 @@
 
 import React from 'react';
 import { EditableTransactionRow } from './EditableTransactionRow';
-import type { Transaction, Category } from '../../types';
+import type { Transaction, Category, Account } from '../../types';
 
 interface TransactionGroupTableProps {
   transactions: Transaction[];
   categories: Category[];
+  accounts: Account[];
   onUpdate: () => void;
   onDelete: () => void;
   currentUserId?: string;
@@ -19,6 +20,7 @@ interface TransactionGroupTableProps {
 export const TransactionGroupTable: React.FC<TransactionGroupTableProps> = ({
   transactions,
   categories,
+  accounts,
   onUpdate,
   onDelete,
   currentUserId,
@@ -49,6 +51,7 @@ export const TransactionGroupTable: React.FC<TransactionGroupTableProps> = ({
               key={txn.id}
               transaction={txn}
               categories={categories}
+              accounts={accounts}
               onUpdate={onUpdate}
               onDelete={onDelete}
               currentUserId={currentUserId}

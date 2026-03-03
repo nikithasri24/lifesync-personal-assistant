@@ -1,12 +1,13 @@
 import React from 'react';
 import { Card } from '../components/Card';
 import SankeyChart from '../components/visualizations/SankeyChart';
-import { AccountModal } from '../components/AccountModal';
 import { formatCurrency } from '../utils/currency';
-import { currentMonth, monthRange, toMonth, formatMonth } from '../utils/date';
+import { currentMonth, monthRange, formatMonth } from '../utils/date';
+import { filterTransfers } from '../utils/cashFlowCalculator';
 import { useFinanceMetrics, type FinanceMetrics } from '../hooks/useFinanceMetrics';
 import {
   useTransactionsQuery,
+  useTransactionMonthsQuery,
   useAccountsQuery,
   useCategoriesQuery,
   useBudgetsQuery,
@@ -14,7 +15,6 @@ import {
 import { useCurrentUserId, useMergedConnection, usePartnerName } from '@/hooks/useOwnerInfo';
 import { logger } from '@/services/logger';
 import type { Transaction, Account } from '../types';
-import { Pencil, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { OwnerBadge } from '../../components/common/OwnerBadge';
 import { SplitMetricCard } from '../components/SplitMetricCard';
@@ -25,9 +25,6 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 const DashboardPage: React.FC = () => {
   const colors = useThemeColors();
   const [month, setMonth] = React.useState(currentMonth());
-  const [showAccountModal, setShowAccountModal] = React.useState(false);
-  const [editingAccount, setEditingAccount] = React.useState<Account | undefined>(undefined);
-
   // Auth and merged connection (using standardized hooks)
   const { user } = useAuth();
   const { data: currentUserId } = useCurrentUserId();
@@ -43,7 +40,7 @@ const DashboardPage: React.FC = () => {
     toISO: to,
     limit: 200  // Reduced from 500 - only need 1 month
   });
-  const { data: accounts = [], isLoading: accountsLoading, refetch: refetchAccounts } = useAccountsQuery();
+  const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
   const { data: budgets = [], isLoading: budgetsLoading } = useBudgetsQuery(month);
   const filters = useFinanceFilters();
@@ -67,8 +64,12 @@ const DashboardPage: React.FC = () => {
     return accounts;
   }, [accounts, mergedConnection, filters.ownerFilter, user]);
 
-  // Transactions are already filtered by date from query
-  const monthTxns: Transaction[] = filteredTxns;
+  // Transactions are already filtered by date from query.
+  // Also strip inter-account transfers (Credit Card Payments etc.) to avoid double-counting.
+  const monthTxns: Transaction[] = React.useMemo(
+    () => filterTransfers(filteredTxns, categories),
+    [filteredTxns, categories]
+  );
 
   // Debug logging
   React.useEffect((): void => {
@@ -125,25 +126,6 @@ const DashboardPage: React.FC = () => {
       .filter((t: Transaction): boolean => t.type === 'debit' && t.userId !== user.id)
       .reduce((s: number, t: Transaction): number => s + t.amount, 0);
   }, [monthTxns, user]);
-
-  // Net worth split by owner
-  const myNetWorth = React.useMemo(() => {
-    if (!user) return 0;
-    return accounts
-      .filter((a: Account) => a.userId === user.id)
-      .reduce((sum: number, a: Account) => {
-        return sum + (a.liability ? -a.balance : a.balance);
-      }, 0);
-  }, [accounts, user]);
-
-  const partnerNetWorth = React.useMemo(() => {
-    if (!user) return 0;
-    return accounts
-      .filter((a: Account) => a.userId !== user.id)
-      .reduce((sum: number, a: Account) => {
-        return sum + (a.liability ? -a.balance : a.balance);
-      }, 0);
-  }, [accounts, user]);
 
   // Debug income calculation
   React.useEffect((): void => {
@@ -261,10 +243,8 @@ const DashboardPage: React.FC = () => {
     })
     .slice(0, 5);
 
-  // Get months from transactions and ensure current month is included
-  const monthsInTx: string[] = Array.from(
-    new Set([...filteredTxns.map((t: Transaction): string => toMonth(t.dateISO)), currentMonth()])
-  ).sort();
+  // Fetch distinct months that actually have transactions — lightweight query (date column only)
+  const { data: monthsInTx = [currentMonth()] } = useTransactionMonthsQuery();
 
 
 
@@ -283,16 +263,27 @@ const DashboardPage: React.FC = () => {
                 Overview of your financial health and activity
               </p>
             </div>
-            {/* Owner Filter - integrated in header for merged mode */}
-            {mergedConnection && (
-              <div className="flex-shrink-0">
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {/* Month Selector - always visible in header */}
+              <select
+                className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+                value={month}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => setMonth(e.target.value)}
+                aria-label="Select month"
+              >
+                {monthsInTx.map((m: string) => (
+                  <option key={m} value={m}>{formatMonth(m)}</option>
+                ))}
+              </select>
+              {/* Owner Filter - merged mode only */}
+              {mergedConnection && (
                 <OwnerFilter
                   value={filters.ownerFilter}
                   onChange={filters.setOwnerFilter}
                   partnerName={partnerName}
                 />
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -308,10 +299,9 @@ const DashboardPage: React.FC = () => {
                `${partnerName}'s Overview`}
               <span className="text-sm font-normal text-slate-500">({month})</span>
             </h2>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               {loading ? (
                 <>
-                  <div className="rounded-xl bg-slate-100 animate-pulse h-48"></div>
                   <div className="rounded-xl bg-slate-100 animate-pulse h-48"></div>
                   <div className="rounded-xl bg-slate-100 animate-pulse h-48"></div>
                 </>
@@ -331,13 +321,6 @@ const DashboardPage: React.FC = () => {
                     partnerName={partnerName}
                     colorScheme="expense"
                   />
-                  <SplitMetricCard
-                    title="Net Worth"
-                    myValue={myNetWorth}
-                    partnerValue={partnerNetWorth}
-                    partnerName={partnerName}
-                    colorScheme="networth"
-                  />
                 </>
               ) : (
                 <>
@@ -351,21 +334,16 @@ const DashboardPage: React.FC = () => {
                       {formatCurrency(filters.ownerFilter === 'mine' ? myExpense : partnerExpense)}
                     </div>
                   </Card>
-                  <Card title="Net Worth">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {formatCurrency(filters.ownerFilter === 'mine' ? myNetWorth : partnerNetWorth)}
-                    </div>
-                  </Card>
                 </>
               )}
             </div>
           </div>
         )}
 
-        {/* Money Flow Visualization - Moved to top */}
+        {/* Money Flow Visualization */}
         <Card
           title="Money Flow Visualization"
-          description="Visual representation of income sources flowing to expense categories"
+          description={`Income sources flowing to expense categories · ${formatMonth(month)}`}
         >
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -375,7 +353,14 @@ const DashboardPage: React.FC = () => {
             <div className="pt-2 w-full">
               <div className="w-full overflow-x-auto">
                 <div className="min-w-[600px]">
-                  <SankeyChart data={metrics.sankeyData} width={800} height={400} />
+                  <SankeyChart
+                    data={metrics.sankeyData}
+                    categoryColors={Object.fromEntries(
+                      categories.filter(c => c.color).map(c => [c.name, c.color!])
+                    )}
+                    width={800}
+                    height={480}
+                  />
                 </div>
               </div>
             </div>
@@ -384,19 +369,6 @@ const DashboardPage: React.FC = () => {
               <div className="text-sm text-slate-500">No cash flow data for this period</div>
             </div>
           )}
-        </Card>
-
-        {/* Month Selector - Full Width */}
-        <Card title="Month" actions={
-          <select className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={month} onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => setMonth(e.target.value)}>
-            {monthsInTx.map((m: string) => (
-              <option key={m} value={m}>
-                {formatMonth(m)}
-              </option>
-            ))}
-          </select>
-        }>
-          <div className="h-2"></div>
         </Card>
 
         {/* Simple Cash Flow Card for Non-Merged Mode */}
@@ -429,67 +401,6 @@ const DashboardPage: React.FC = () => {
             )}
           </Card>
         )}
-
-        {/* Accounts Snapshot - Full Width */}
-        <Card
-          title="Accounts Snapshot"
-          actions={
-            <button
-              onClick={() => {
-                setEditingAccount(undefined);
-                setShowAccountModal(true);
-              }}
-              className="flex items-center gap-1 rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-800 transition-colors"
-              aria-label="Add account"
-            >
-              <Plus size={16} />
-              Add Account
-            </button>
-          }
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {filteredAccounts.length === 0 ? (
-              <div className="col-span-full text-center py-6 text-slate-500">
-                {filters.ownerFilter === 'all' ? 'No accounts yet. Click "Add Account" to create one.' : 'No accounts for this owner filter.'}
-              </div>
-            ) : (
-              filteredAccounts.map((a) => (
-                <div key={a.id} className="rounded-lg bg-slate-50 px-4 py-3 group hover:bg-slate-100 transition-colors">
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <div className="font-medium text-slate-900">{a.name}</div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="font-semibold text-slate-900">
-                        {formatCurrency(a.liability ? -a.balance : a.balance)}
-                      </div>
-                      <button
-                        onClick={() => {
-                          setEditingAccount(a);
-                          setShowAccountModal(true);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded transition-opacity"
-                        title="Edit account"
-                        aria-label="Edit account"
-                      >
-                        <Pencil size={14} className="text-slate-600" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs text-slate-500">{a.type}</div>
-                    {mergedConnection && user && (
-                      <OwnerBadge
-                        userId={a.userId}
-                        currentUserId={user.id}
-                        partnerName={partnerName}
-                        size="sm"
-                      />
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
 
         {/* Budget Progress - Full Width */}
         <Card title="Budget Progress (Top 5 Categories)">
@@ -591,19 +502,6 @@ const DashboardPage: React.FC = () => {
         </Card>
         </div>
 
-        {/* Account Modal */}
-        {showAccountModal && (
-          <AccountModal
-            account={editingAccount}
-            onClose={() => {
-              setShowAccountModal(false);
-              setEditingAccount(undefined);
-            }}
-            onSuccess={() => {
-              void refetchAccounts();
-            }}
-          />
-        )}
       </div>
     </div>
   );

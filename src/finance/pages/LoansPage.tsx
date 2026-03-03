@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { LoanCardV2, LoanFormModalV2, type LoanFormData } from '@/finance/components/v2';
 import { LoanPaymentModal } from '../components/loans/LoanPaymentModal';
-import type { Loan, LoanPaymentInput } from '../types';
+import type { Loan, LoanInput, LoanPaymentInput } from '../types';
 import {
   useLoansQuery,
   useUpsertLoanMutation,
@@ -53,20 +53,28 @@ const LoansPage: React.FC = () => {
   };
 
   const handleSaveLoan = async (formData: LoanFormData) => {
+    const today = new Date().toISOString().split('T')[0];
     try {
       await upsertLoanMutation.mutateAsync({
+        // Spread existing loan to preserve all required DB fields on edit
+        ...(selectedLoan ? selectedLoan : {}),
         id: selectedLoan?.id,
-        name: formData.name,
-        loanType: formData.loanType,
+        loanName: formData.name,
+        loanType: formData.loanType as Loan['loanType'],
         principalAmount: formData.principalAmount,
         currentBalance: formData.currentBalance,
         interestRate: formData.interestRate,
         monthlyPayment: formData.monthlyPayment,
-        nextPaymentDate: formData.nextPaymentDate,
-        loanTerm: formData.loanTerm,
+        termMonths: formData.loanTerm,
         notes: formData.notes,
         userId: selectedLoan?.userId || user?.id,
-      });
+        // Required DB fields — preserved from existing loan on edit, defaulted on create
+        status: selectedLoan?.status ?? 'active',
+        extraPayment: selectedLoan?.extraPayment ?? 0,
+        startDate: selectedLoan?.startDate ?? today,
+        firstPaymentDate: selectedLoan?.firstPaymentDate ?? today,
+        targetPayoffDate: selectedLoan?.targetPayoffDate ?? today,
+      } as LoanInput);
       setShowModal(false);
       setSelectedLoan(null);
     } catch (error) {
@@ -228,12 +236,11 @@ const LoansPage: React.FC = () => {
                 key={loan.id}
                 loan={{
                   id: loan.id,
-                  name: loan.name,
+                  name: loan.loanName,
                   principalAmount: loan.principalAmount,
                   currentBalance: loan.currentBalance,
                   interestRate: loan.interestRate,
                   monthlyPayment: loan.monthlyPayment,
-                  nextPaymentDate: loan.nextPaymentDate,
                   loanType: loan.loanType,
                 }}
                 onClick={() => handleEditLoan(loan)}
@@ -249,14 +256,13 @@ const LoansPage: React.FC = () => {
         onClose={handleCloseModal}
         onSave={handleSaveLoan}
         initialData={selectedLoan ? {
-          name: selectedLoan.name,
+          name: selectedLoan.loanName,
           loanType: selectedLoan.loanType || 'personal',
           principalAmount: selectedLoan.principalAmount,
           currentBalance: selectedLoan.currentBalance,
           interestRate: selectedLoan.interestRate,
           monthlyPayment: selectedLoan.monthlyPayment,
-          nextPaymentDate: selectedLoan.nextPaymentDate,
-          loanTerm: selectedLoan.loanTerm,
+          loanTerm: selectedLoan.termMonths,
           notes: selectedLoan.notes,
         } : undefined}
         isPending={upsertLoanMutation.isPending}

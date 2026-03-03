@@ -16,6 +16,8 @@ export interface SankeyNode {
 
 interface SankeyChartProps {
   data: SankeyNode[];
+  /** Colors keyed by category name, sourced from the DB Category.color field */
+  categoryColors?: Record<string, string>;
   width?: number;
   height?: number;
   className?: string;
@@ -38,183 +40,179 @@ interface ProcessedLink {
   sourceY: number;
   targetY: number;
   color: string;
+  linkHatSrc: number;
+  linkHatTgt: number;
 }
 
-// Color palette for different node types
-interface ColorConfig {
-  income: string;
-  expenses: string;
-  savings: string;
-  categories: Record<string, string>;
-}
-
-const COLORS: ColorConfig = {
-  income: '#3b82f6',      // Blue
-  expenses: '#ef4444',    // Red
-  savings: '#10b981',     // Green
-  categories: {
-    'Housing': '#f59e0b',           // Amber
-    'Food & Dining': '#ec4899',     // Pink
-    'Transportation': '#8b5cf6',    // Purple
-    'Bills & Utilities': '#06b6d4', // Cyan
-    'Shopping': '#f97316',          // Orange
-    'Entertainment': '#a855f7',     // Purple
-    'Health & Fitness': '#14b8a6',  // Teal
-    'Groceries': '#84cc16',         // Lime
-    'Travel & Lifestyle': '#6366f1', // Indigo
-    'Financial': '#0ea5e9',         // Sky
-    'Auto & Transport': '#7c3aed',  // Violet
-    'default': '#64748b',           // Slate
-  },
+// Special-node colors that aren't user-defined categories
+const SPECIAL_COLORS: Record<string, string> = {
+  income:          '#3b82f6', // blue  — income source bars
+  'Total Income':  '#3b82f6',
+  savings:         '#10b981', // green — savings bar
+  'Savings':       '#10b981',
+  'Other':         '#94a3b8', // slate — grouped tail categories
+  default:         '#64748b',
 };
+
+// Layout constants
+const LEFT_PAD  = 170; // room for income source labels (left of nodes)
+const RIGHT_PAD = 200; // room for expense category labels (right of nodes)
+const TOP_PAD   = 24;
+const BOT_PAD   = 24;
+const NODE_W    = 16;
+const NODE_GAP  = 10;  // vertical gap between sibling nodes
+const MIN_NODE_H = 6;  // minimum visible height for tiny categories
 
 const SankeyChart: React.FC<SankeyChartProps> = ({
   data,
+  categoryColors = {},
   width = 800,
-  height = 400,
+  height = 480,
   className = '',
 }) => {
   const { nodes, links } = useMemo(() => {
-    if (!data || data.length === 0) {
-      return { nodes: [], links: [] };
-    }
+    if (!data || data.length === 0) return { nodes: [], links: [] };
 
-    // Build node list
+    // ── gather nodes & values ──────────────────────────────────────────────
     const nodeIds = new Set<string>();
-    const nodeValues = new Map<string, number>();
-
+    const outgoing = new Map<string, number>();
+    const incoming = new Map<string, number>();
     for (const link of data) {
       nodeIds.add(link.source);
       nodeIds.add(link.target);
-
-      // Sum values for each node
-      nodeValues.set(
-        link.source,
-        (nodeValues.get(link.source) ?? 0) + link.value
-      );
-      nodeValues.set(
-        link.target,
-        (nodeValues.get(link.target) ?? 0) + link.value
-      );
+      outgoing.set(link.source, (outgoing.get(link.source) ?? 0) + link.value);
+      incoming.set(link.target, (incoming.get(link.target) ?? 0) + link.value);
     }
-
-    // Determine node levels (source -> middle -> target)
-    const levels = new Map<string, number>();
-
-    // Special nodes
-    const isIncomeSource = (id: string): boolean => {
-      return data.some(d => d.source === id && d.target === 'Total Income');
-    };
-    const isTotalIncome = (id: string): boolean => id === 'Total Income';
-    const isSavings = (id: string): boolean => id === 'Savings';
-    const isExpenseCategory = (id: string): boolean => {
-      return data.some(d => d.source === 'Total Income' && d.target === id) && !isSavings(id);
-    };
-
-    // Assign levels
+    // Display value per node:
+    //   income sources → how much they send out (= their income amount)
+    //   Total Income   → how much flows IN (actual income, not doubled by expenses)
+    //   expense nodes  → how much flows in (what was allocated to them)
+    const nodeValues = new Map<string, number>();
     for (const id of nodeIds) {
-      if (isIncomeSource(id)) {
-        levels.set(id, 0); // Left column
-      } else if (isTotalIncome(id)) {
-        levels.set(id, 1); // Middle column
-      } else if (isExpenseCategory(id) || isSavings(id)) {
-        levels.set(id, 2); // Right column
-      }
+      const out = outgoing.get(id) ?? 0;
+      const inc = incoming.get(id) ?? 0;
+      nodeValues.set(id, id === 'Total Income' ? inc : (out || inc));
     }
 
-    // Group nodes by level
+    // ── assign levels ──────────────────────────────────────────────────────
+    const isIncomeSource = (id: string) => data.some(d => d.source === id && d.target === 'Total Income');
+    const isTotalIncome  = (id: string) => id === 'Total Income';
+    const isSavings      = (id: string) => id === 'Savings';
+    const isExpense      = (id: string) => data.some(d => d.source === 'Total Income' && d.target === id) && !isSavings(id);
+
+    const levels = new Map<string, number>();
+    for (const id of nodeIds) {
+      if (isIncomeSource(id))            levels.set(id, 0);
+      else if (isTotalIncome(id))        levels.set(id, 1);
+      else if (isExpense(id) || isSavings(id)) levels.set(id, 2);
+    }
+
     const nodesByLevel = new Map<number, string[]>();
     for (const [id, level] of levels) {
-      const existing = nodesByLevel.get(level) ?? [];
-      nodesByLevel.set(level, [...existing, id]);
+      nodesByLevel.set(level, [...(nodesByLevel.get(level) ?? []), id]);
     }
 
-    // Layout parameters
-    const padding = 40;
-    const nodePadding = 20;
-    const _nodeWidth = 20;
-    const levelCount = Math.max(...levels.values()) + 1;
-    const levelWidth = (width - 2 * padding) / (levelCount + 1);
+    // ── column X positions ─────────────────────────────────────────────────
+    const innerW = width - LEFT_PAD - RIGHT_PAD;
+    const colX = [
+      LEFT_PAD,                                  // level 0: income sources
+      LEFT_PAD + innerW / 2 - NODE_W / 2,        // level 1: total income (centered)
+      width - RIGHT_PAD - NODE_W,                 // level 2: expense categories
+    ];
 
-    // Calculate node heights based on values
-    const totalValue = Math.max(...nodeValues.values());
-    const availableHeight = height - 2 * padding;
+    const availH = height - TOP_PAD - BOT_PAD;
 
+    // ── position nodes — each column scaled independently ──────────────────
+    // This prevents overflow when expenses exceed income (deficit months).
+    // Every column fills exactly availH regardless of absolute values.
     const processedNodes: ProcessedNode[] = [];
     const nodeMap = new Map<string, ProcessedNode>();
 
-    // Position nodes
-    for (let level = 0; level <= 2; level++) {
-      const levelNodes = nodesByLevel.get(level) ?? [];
-      const _totalLevelValue = levelNodes.reduce(
-        (sum, id) => sum + (nodeValues.get(id) ?? 0),
-        0
-      );
+    for (let lvl = 0; lvl <= 2; lvl++) {
+      const ids = nodesByLevel.get(lvl) ?? [];
+      const gapTotal = NODE_GAP * Math.max(0, ids.length - 1);
+      const heightPool = availH - gapTotal;
 
-      let currentY = padding;
-      const levelX = padding + level * levelWidth;
+      // Sum of display values in this column
+      const colTotal = ids.reduce((s, id) => s + (nodeValues.get(id) ?? 0), 0);
 
-      for (const id of levelNodes) {
+      let curY = TOP_PAD;
+
+      for (const id of ids) {
         const value = nodeValues.get(id) ?? 0;
-        const nodeHeight = (value / totalValue) * availableHeight * 0.8;
+        // Scale proportionally within the column so they always fill availH
+        const nodeH = colTotal > 0
+          ? Math.max(MIN_NODE_H, (value / colTotal) * heightPool)
+          : MIN_NODE_H;
 
-        // Determine color
-        let color = COLORS.categories.default;
-        if (isIncomeSource(id) || isTotalIncome(id)) {
-          color = COLORS.income;
-        } else if (isSavings(id)) {
-          color = COLORS.savings;
-        } else if (isExpenseCategory(id)) {
-          color = COLORS.categories[id] ?? COLORS.categories.default;
-        }
+        let color = SPECIAL_COLORS.default;
+        if (isIncomeSource(id) || isTotalIncome(id)) color = SPECIAL_COLORS.income;
+        else if (isSavings(id)) color = SPECIAL_COLORS.savings;
+        else color = categoryColors[id] ?? SPECIAL_COLORS[id] ?? SPECIAL_COLORS.default;
 
         const node: ProcessedNode = {
-          id,
-          x: levelX,
-          y: currentY,
-          height: nodeHeight,
-          value,
-          color,
-          level,
+          id, x: colX[lvl], y: curY, height: nodeH, value, color, level: lvl,
         };
-
         processedNodes.push(node);
         nodeMap.set(id, node);
-
-        currentY += nodeHeight + nodePadding;
+        curY += nodeH + NODE_GAP;
       }
     }
 
-    // Create links
+    // ── create links ───────────────────────────────────────────────────────
+    // Use the actual outgoing total for each source to proportion link heights.
+    // This ensures links never overflow the source bar even in deficit months.
     const processedLinks: ProcessedLink[] = [];
-    const linkOffsets = new Map<string, number>(); // Track Y offset for each node
+    const linkOffsets = new Map<string, number>();
 
     for (const link of data) {
-      const sourceNode = nodeMap.get(link.source);
-      const targetNode = nodeMap.get(link.target);
+      const src = nodeMap.get(link.source);
+      const tgt = nodeMap.get(link.target);
+      if (!src || !tgt) continue;
 
-      if (!sourceNode || !targetNode) continue;
+      const srcOutgoing = outgoing.get(link.source) ?? src.value;
+      const tgtIncoming = incoming.get(link.target) ?? tgt.value;
+      const srcOff = linkOffsets.get(link.source) ?? 0;
+      const tgtOff = linkOffsets.get(link.target) ?? 0;
 
-      const linkHeight = (link.value / sourceNode.value) * sourceNode.height;
-
-      const sourceOffset = linkOffsets.get(link.source) ?? 0;
-      const targetOffset = linkOffsets.get(link.target) ?? 0;
+      // Link height proportional to share of the source's total outgoing
+      const linkHatSrc = (link.value / srcOutgoing) * src.height;
+      // Link height proportional to share of the target's total incoming
+      const linkHatTgt = (link.value / tgtIncoming) * tgt.height;
 
       processedLinks.push({
-        source: sourceNode,
-        target: targetNode,
-        value: link.value,
-        sourceY: sourceNode.y + sourceOffset,
-        targetY: targetNode.y + targetOffset,
-        color: sourceNode.color,
+        source: src, target: tgt, value: link.value,
+        sourceY: src.y + srcOff, targetY: tgt.y + tgtOff,
+        color: src.color,
+        linkHatSrc,
+        linkHatTgt,
       });
 
-      linkOffsets.set(link.source, sourceOffset + linkHeight);
-      linkOffsets.set(link.target, targetOffset + linkHeight);
+      linkOffsets.set(link.source, srcOff + linkHatSrc);
+      linkOffsets.set(link.target, tgtOff + linkHatTgt);
     }
 
     return { nodes: processedNodes, links: processedLinks };
   }, [data, width, height]);
+
+  // ── label collision avoidance for right column ─────────────────────────
+  // Compute label Y positions, pushing down when nodes are too close together
+  const rightLabelYs = useMemo(() => {
+    const rightNodes = nodes.filter(n => n.level === 2);
+    const LINE_H = 13; // px per text line
+    const positions: Map<string, { nameY: number; valueY: number; show: boolean }> = new Map();
+
+    let minNextY = -Infinity;
+    for (const node of rightNodes) {
+      const midY = node.y + node.height / 2;
+      const nameY = Math.max(midY - LINE_H / 2, minNextY);
+      const valueY = nameY + LINE_H;
+      const show = nameY < node.y + node.height + 20; // don't show if wildly displaced
+      positions.set(node.id, { nameY, valueY, show });
+      minNextY = valueY + 4;
+    }
+    return positions;
+  }, [nodes]);
 
   if (nodes.length === 0) {
     return (
@@ -226,36 +224,29 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
 
   return (
     <div className={`relative ${className}`}>
-      <svg width={width} height={height} className="overflow-visible">
+      <svg width={width} height={height}>
         {/* Links */}
-        <g className="links">
+        <g>
           {links.map((link, i) => {
-            const sourceX = link.source.x + 20;
-            const targetX = link.target.x;
-            const sourceY = link.sourceY;
-            const targetY = link.targetY;
-            const linkHeight = (link.value / link.source.value) * link.source.height;
-
-            // Cubic bezier path for smooth flow
-            const controlPointOffset = (targetX - sourceX) / 2;
-            const path = `
-              M ${sourceX} ${sourceY}
-              C ${sourceX + controlPointOffset} ${sourceY},
-                ${targetX - controlPointOffset} ${targetY},
-                ${targetX} ${targetY}
-              L ${targetX} ${targetY + linkHeight}
-              C ${targetX - controlPointOffset} ${targetY + linkHeight},
-                ${sourceX + controlPointOffset} ${sourceY + linkHeight},
-                ${sourceX} ${sourceY + linkHeight}
-              Z
-            `;
-
+            const sx = link.source.x + NODE_W;
+            const tx = link.target.x;
+            const sy = link.sourceY;
+            const ty = link.targetY;
+            const sh = link.linkHatSrc; // height at source end
+            const th = link.linkHatTgt; // height at target end
+            const cp = (tx - sx) * 0.5;
+            // Tapered bezier: different heights at source vs target ends
+            const path = [
+              `M ${sx} ${sy}`,
+              `C ${sx + cp} ${sy}, ${tx - cp} ${ty}, ${tx} ${ty}`,
+              `L ${tx} ${ty + th}`,
+              `C ${tx - cp} ${ty + th}, ${sx + cp} ${sy + sh}, ${sx} ${sy + sh}`,
+              'Z',
+            ].join(' ');
             return (
               <path
-                key={`link-${i}`}
-                d={path}
-                fill={link.color}
-                opacity={0.3}
+                key={i} d={path}
+                fill={link.color} opacity={0.22}
                 stroke="none"
                 className="transition-opacity hover:opacity-50"
               />
@@ -263,43 +254,69 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
           })}
         </g>
 
-        {/* Nodes */}
-        <g className="nodes">
-          {nodes.map((node, i) => (
-            <g key={`node-${i}`} className="group cursor-pointer">
-              <rect
-                x={node.x}
-                y={node.y}
-                width={20}
-                height={node.height}
-                fill={node.color}
-                rx={3}
-                className="transition-all group-hover:brightness-110"
-              />
-              <text
-                x={node.level === 0 ? node.x - 8 : node.level === 2 ? node.x + 28 : node.x + 10}
-                y={node.y + node.height / 2}
-                dy="0.35em"
-                textAnchor={node.level === 0 ? 'end' : node.level === 2 ? 'start' : 'middle'}
-                fill="#ffffff"
-                fontSize="12"
-                fontWeight="700"
-              >
-                {node.id}
-              </text>
-              <text
-                x={node.level === 0 ? node.x - 8 : node.level === 2 ? node.x + 28 : node.x + 10}
-                y={node.y + node.height / 2 + 12}
-                dy="0.35em"
-                textAnchor={node.level === 0 ? 'end' : node.level === 2 ? 'start' : 'middle'}
-                fill="#ffffff"
-                fontSize="14"
-                fontWeight="600"
-              >
-                {formatCurrency(node.value)}
-              </text>
-            </g>
-          ))}
+        {/* Nodes + Labels */}
+        <g>
+          {nodes.map((node, i) => {
+            const midY = node.y + node.height / 2;
+            const isLeft   = node.level === 0;
+            const isMiddle = node.level === 1;
+            const isRight  = node.level === 2;
+
+            // Label positioning
+            const labelX  = isLeft ? node.x - 10 : isRight ? node.x + NODE_W + 10 : node.x + NODE_W / 2;
+            const anchor   = isLeft ? 'end' : isRight ? 'start' : 'middle';
+
+            // Middle node: white text inside bar
+            if (isMiddle) {
+              return (
+                <g key={i}>
+                  <rect x={node.x} y={node.y} width={NODE_W} height={node.height} fill={node.color} rx={3} />
+                  <text x={labelX} y={midY - 7} dy="0.35em" textAnchor={anchor} fill="#ffffff" fontSize="11" fontWeight="600">
+                    Total Income
+                  </text>
+                  <text x={labelX} y={midY + 7} dy="0.35em" textAnchor={anchor} fill="#dbeafe" fontSize="11" fontWeight="700">
+                    {formatCurrency(node.value)}
+                  </text>
+                </g>
+              );
+            }
+
+            // Left (income sources): two lines centered on mid
+            if (isLeft) {
+              return (
+                <g key={i}>
+                  <rect x={node.x} y={node.y} width={NODE_W} height={node.height} fill={node.color} rx={3} />
+                  <text x={labelX} y={midY - 7} dy="0.35em" textAnchor={anchor} fill="#1e293b" fontSize="11" fontWeight="600">
+                    {node.id}
+                  </text>
+                  <text x={labelX} y={midY + 7} dy="0.35em" textAnchor={anchor} fill={node.color} fontSize="11" fontWeight="700">
+                    {formatCurrency(node.value)}
+                  </text>
+                </g>
+              );
+            }
+
+            // Right (expense categories): collision-avoided positions
+            const pos = rightLabelYs.get(node.id);
+            if (!pos?.show) {
+              return (
+                <g key={i}>
+                  <rect x={node.x} y={node.y} width={NODE_W} height={node.height} fill={node.color} rx={3} />
+                </g>
+              );
+            }
+            return (
+              <g key={i}>
+                <rect x={node.x} y={node.y} width={NODE_W} height={node.height} fill={node.color} rx={3} />
+                <text x={labelX} y={pos.nameY} dy="0.35em" textAnchor={anchor} fill="#1e293b" fontSize="11" fontWeight="600">
+                  {node.id}
+                </text>
+                <text x={labelX} y={pos.valueY} dy="0.35em" textAnchor={anchor} fill={node.color} fontSize="11" fontWeight="700">
+                  {formatCurrency(node.value)}
+                </text>
+              </g>
+            );
+          })}
         </g>
       </svg>
     </div>

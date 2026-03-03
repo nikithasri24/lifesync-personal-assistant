@@ -46,6 +46,7 @@ export interface FinanceAPI {
   upsertAccount(account: { id?: string; name: string; type: string; balance: number; institutionId?: string; isArchived?: boolean; creditLimit?: number; apr?: number; promoAprEndDate?: string; notes?: string }): Promise<void>;
   deleteAccount(accountId: string): Promise<void>;
   listTransactions(params: TxnQuery): Promise<Paginated<Transaction>>;
+  listTransactionMonths(): Promise<string[]>;
   upsertTransaction(txn: TransactionInput): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
   createTransfer(params: { fromAccountId: string; toAccountId: string; amount: number; dateISO: string; notes?: string }): Promise<string>;

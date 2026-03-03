@@ -96,6 +96,21 @@ export class TransactionsAPI {
     return { items, nextCursor };
   }
 
+  async listTransactionMonths(): Promise<string[]> {
+    const { data, error } = await this.client
+      .from('finance_transactions')
+      .select('date');
+
+    if (error) throw error;
+
+    const months = new Set<string>();
+    for (const row of data ?? []) {
+      if (row.date) months.add((row.date as string).slice(0, 7));
+    }
+
+    return Array.from(months).sort();
+  }
+
   async upsertTransaction(txn: TransactionInput): Promise<void> {
     const currentUserId = await this.getUserId();
 

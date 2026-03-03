@@ -4,15 +4,18 @@
  */
 
 import React, { useState } from 'react';
-import { Edit2, Save, X, Trash2, ArrowLeftRight } from 'lucide-react';
-import type { Transaction, Category } from '../../types';
+import ReactDOM from 'react-dom';
+import { Edit2, Trash2, ArrowLeftRight } from 'lucide-react';
+import type { Transaction, Category, Account } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { logger } from '../../../services/logger';
 import { useUpsertTransactionMutation, useDeleteTransactionMutation } from '@/hooks/useFinanceQuery';
+import { TransactionFormModalV2, type TransactionFormData } from '../v2/TransactionFormModalV2';
 
 interface EditableTransactionRowProps {
   transaction: Transaction;
   categories: Category[];
+  accounts: Account[];
   onUpdate: () => void;
   onDelete: () => void;
   currentUserId?: string;
@@ -22,68 +25,43 @@ interface EditableTransactionRowProps {
 export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
   transaction,
   categories,
+  accounts,
   onUpdate,
   onDelete,
   currentUserId,
   partnerName,
 }) => {
-  // Check if current user owns this transaction
   const isOwnTransaction = !currentUserId || transaction.userId === currentUserId;
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({
-    description: transaction.description,
-    amount: transaction.amount.toString(),
-    categoryId: transaction.categoryId ?? '',
-    dateISO: transaction.dateISO.split('T')[0],
-    type: transaction.type,
-    notes: transaction.notes ?? '',
-  });
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const upsertTransactionMutation = useUpsertTransactionMutation();
   const deleteTransactionMutation = useDeleteTransactionMutation();
 
-  const handleEdit = (): void => {
-    setIsEditing(true);
-    setEditData({
-      description: transaction.description,
-      amount: transaction.amount.toString(),
-      categoryId: transaction.categoryId ?? '',
-      dateISO: transaction.dateISO.split('T')[0],
-      type: transaction.type,
-      notes: transaction.notes ?? '',
-    });
-  };
-
-  const handleCancel = (): void => {
-    setIsEditing(false);
-  };
-
-  const handleSave = async (): Promise<void> => {
+  const handleSave = async (formData: TransactionFormData): Promise<void> => {
     try {
       await upsertTransactionMutation.mutateAsync({
         id: transaction.id,
-        accountId: transaction.accountId,
         userId: transaction.userId,
-        description: editData.description,
-        amount: parseFloat(editData.amount),
-        categoryId: editData.categoryId || undefined,
-        dateISO: new Date(editData.dateISO).toISOString(),
-        type: editData.type as 'debit' | 'credit',
-        notes: editData.notes || undefined,
+        accountId: formData.accountId,
+        description: formData.description,
+        amount: formData.amount,
+        categoryId: formData.categoryId,
+        dateISO: formData.dateISO,
+        type: formData.type,
+        notes: formData.notes,
+        merchantName: formData.merchantName,
+        tags: formData.tags,
       });
-
-      setIsEditing(false);
+      setIsEditModalOpen(false);
       onUpdate();
     } catch (error) {
       logger.error('EditableTransactionRow', error instanceof Error ? error : new Error(String(error)), { context: 'handleSave', transactionId: transaction.id });
-      // eslint-disable-next-line no-alert
-      alert('Failed to update transaction');
+      throw error;
     }
   };
 
   const handleDelete = async (): Promise<void> => {
     // eslint-disable-next-line no-alert
     if (!confirm('Delete this transaction?')) return;
-
     try {
       await deleteTransactionMutation.mutateAsync(transaction.id);
       onDelete();
@@ -94,65 +72,10 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
     }
   };
 
-  if (isEditing) {
-    return (
-      <tr className="border-b border-primary/10 bg-blue-50/30">
-        <td className="px-4 py-3">
-          <input
-            type="date"
-            value={editData.dateISO}
-            onChange={(e) => setEditData({ ...editData, dateISO: e.target.value })}
-            className="w-full px-2 py-1 text-sm border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-          />
-        </td>
-        <td className="px-4 py-3">
-          <input
-            type="text"
-            value={editData.description}
-            onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-            placeholder="Description"
-            className="w-full px-2 py-1 text-sm border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-          />
-        </td>
-        <td className="px-4 py-3">
-          <input
-            type="number"
-            step="0.01"
-            value={editData.amount}
-            onChange={(e) => setEditData({ ...editData, amount: e.target.value })}
-            placeholder="Amount"
-            className="w-full px-2 py-1 text-sm border border-primary/20 rounded text-right focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-          />
-        </td>
-        <td className="px-4 py-3">
-          <div className="flex items-center gap-2 justify-end">
-            <button
-              onClick={() => {
-                void handleSave();
-              }}
-              disabled={upsertTransactionMutation.isPending}
-              className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors disabled:opacity-50"
-              title="Save"
-            >
-              <Save className="h-4 w-4" />
-            </button>
-            <button
-              onClick={handleCancel}
-              disabled={upsertTransactionMutation.isPending}
-              className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
-              title="Cancel"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </td>
-      </tr>
-    );
-  }
-
   const isTransfer = !!transaction.transferId;
 
   return (
+    <>
     <tr className={`border-b border-slate-200 hover:bg-slate-50 transition-colors group ${isTransfer ? 'bg-blue-50/40' : ''}`}>
       <td className="px-4 py-3 text-sm text-slate-700">
         {new Date(transaction.dateISO).toLocaleDateString()}
@@ -199,7 +122,7 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
         {isOwnTransaction ? (
           <div className="flex items-center gap-1.5 justify-end">
             <button
-              onClick={handleEdit}
+              onClick={() => setIsEditModalOpen(true)}
               className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-all hover:scale-110"
               title="Edit transaction"
               aria-label="Edit transaction"
@@ -207,9 +130,7 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
               <Edit2 className="h-5 w-5" />
             </button>
             <button
-              onClick={() => {
-                void handleDelete();
-              }}
+              onClick={() => { void handleDelete(); }}
               className="p-1.5 text-rose-600 hover:bg-rose-100 rounded transition-all hover:scale-110"
               title="Delete transaction"
               aria-label="Delete transaction"
@@ -223,7 +144,32 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
           </div>
         )}
       </td>
+
     </tr>
+    {/* Portal to avoid invalid <tr> > <div> nesting */}
+    {isEditModalOpen && ReactDOM.createPortal(
+      <TransactionFormModalV2
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSave={handleSave}
+        isPending={upsertTransactionMutation.isPending}
+        accounts={accounts.map(a => ({ id: a.id, name: a.name }))}
+        categories={categories.map(c => ({ id: c.id, name: c.name, icon: c.icon }))}
+        initialData={{
+          dateISO: transaction.dateISO,
+          description: transaction.description,
+          amount: transaction.amount,
+          type: transaction.type,
+          accountId: transaction.accountId,
+          categoryId: transaction.categoryId,
+          notes: transaction.notes,
+          merchantName: transaction.merchantName,
+          tags: transaction.tags,
+        }}
+      />,
+      document.body
+    )}
+    </>
   );
 }, (prevProps, nextProps) => {
   // Custom equality check - only re-render if these specific props change
@@ -238,7 +184,8 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
     prevProps.transaction.userId === nextProps.transaction.userId &&
     prevProps.transaction.merchantName === nextProps.transaction.merchantName &&
     prevProps.transaction.transferId === nextProps.transaction.transferId &&
-    prevProps.categories.length === nextProps.categories.length
+    prevProps.categories.length === nextProps.categories.length &&
+    prevProps.accounts.length === nextProps.accounts.length
   );
 });
 

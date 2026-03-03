@@ -81,7 +81,7 @@ export class InsuranceLoansAPI {
   async upsertLoan(loan: LoanInput): Promise<void> {
     const userId = await this.getUserId();
 
-    const row = {
+    const rawRow = {
       id: loan.id,
       user_id: userId,
       account_id: loan.accountId,
@@ -101,6 +101,9 @@ export class InsuranceLoansAPI {
       term_months: loan.termMonths,
       notes: loan.notes,
     };
+
+    // Strip undefined values so partial updates don't null out existing DB columns
+    const row = Object.fromEntries(Object.entries(rawRow).filter(([, v]) => v !== undefined));
 
     const { error } = await this.client
       .from('finance_loans')

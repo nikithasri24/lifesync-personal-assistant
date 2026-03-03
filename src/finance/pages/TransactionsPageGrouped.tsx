@@ -17,6 +17,7 @@ import { OwnerFilter } from '../components/OwnerFilter';
 import {
   useTransactionsQuery,
   useCategoriesQuery,
+  useAccountsQuery,
   useBudgetsQuery,
   useBudgetTemplatesQuery,
   useFinanceMergedConnectionQuery,
@@ -24,6 +25,7 @@ import {
 import { useGroupedTransactions } from '../hooks/useGroupedTransactions';
 import { useBudgetSummary } from '../hooks/useBudgetSummary';
 import { formatCurrency } from '../utils/currency';
+import { filterTransfers } from '../utils/cashFlowCalculator';
 import useFinanceFilters from '../store/useFinanceFilters';
 import { getFinanceAPI } from '../data';
 import { useAuth } from '@/hooks/useAuth';
@@ -62,6 +64,7 @@ const TransactionsPageGrouped: React.FC = () => {
     limit: 500,
   });
   const { data: categories = [], isLoading: categoriesLoading, refetch: refetchCategories } = useCategoriesQuery();
+  const { data: accounts = [] } = useAccountsQuery();
   const { data: budgets = [], isLoading: budgetsLoading, refetch: refetchBudgets } = useBudgetsQuery(currentMonth);
   const { data: budgetTemplatesList = [], isLoading: templatesLoading, refetch: refetchTemplates } = useBudgetTemplatesQuery();
 
@@ -149,8 +152,10 @@ const TransactionsPageGrouped: React.FC = () => {
     return collapsedGroups.has(key);
   };
 
+  // Exclude inter-account transfers (e.g. Credit Card Payments) from the total
+  // so it reflects real income vs. spending, not double-counted transfers.
   const grandTotal = Array.isArray(filteredTransactions)
-    ? filteredTransactions.reduce(
+    ? filterTransfers(filteredTransactions, categories).reduce(
         (sum, txn) => sum + (txn.type === 'credit' ? txn.amount : -txn.amount),
         0
       )
@@ -281,6 +286,7 @@ const TransactionsPageGrouped: React.FC = () => {
                     <TransactionGroupTable
                       transactions={group.transactions}
                       categories={categories}
+                      accounts={accounts}
                       onUpdate={loadData}
                       onDelete={loadData}
                       currentUserId={user?.id}

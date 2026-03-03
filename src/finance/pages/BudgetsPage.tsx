@@ -18,10 +18,12 @@ import {
 import { currentMonth, monthRange } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
 import { OwnerFilter } from '../components/OwnerFilter';
-import { BudgetCardV2, BudgetFormModalV2, type BudgetFormData } from '@/finance/components/v2';
+import { BudgetFormModalV2, type BudgetFormData } from '@/finance/components/v2';
+import { OwnerBadge } from '@/components/common/OwnerBadge';
 import useFinanceFilters from '../store/useFinanceFilters';
 import type { Budget, Transaction } from '../types';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTransactionMonthsQuery } from '@/hooks/useFinanceQuery';
 
 const BudgetsPage: React.FC = () => {
   const [month, setMonth] = React.useState(currentMonth());
@@ -38,17 +40,17 @@ const BudgetsPage: React.FC = () => {
     return mergedConnection.partnerName;
   }, [mergedConnection, user]);
 
-  // Calculate month range early for query filtering
+  // Month date range
   const { from, to } = React.useMemo(() => monthRange(month), [month]);
 
-  // Queries - fetch only current month's debit transactions
   const { data: budgets = [], isLoading: budgetsLoading } = useBudgetsQuery(month);
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
-  const { data: transactions = [], isLoading: txnsLoading } = useTransactionsQuery({
+
+  const { data: ytdTransactions = [], isLoading: txnsLoading } = useTransactionsQuery({
     fromISO: from,
     toISO: to,
-    type: 'debit',  // Only need expenses for budgets
-    limit: 300      // Reduced from 1000
+    type: 'debit',
+    limit: 500,
   });
 
   // Mutations
@@ -58,39 +60,24 @@ const BudgetsPage: React.FC = () => {
 
   const loading = budgetsLoading || categoriesLoading || txnsLoading;
 
-  // Transactions are pre-filtered by query (current month, debit only)
-  const monthTxns = transactions;
+  const filteredYtdTxns = React.useMemo(() => {
+    if (!mergedConnection || filters.ownerFilter === 'all') return ytdTransactions;
+    if (filters.ownerFilter === 'mine') return ytdTransactions.filter(t => t.userId === user?.id);
+    if (filters.ownerFilter === 'partner') return ytdTransactions.filter(t => t.userId !== user?.id);
+    return ytdTransactions;
+  }, [ytdTransactions, mergedConnection, filters.ownerFilter, user]);
 
-  // Calculate spending by category
-  const spendingByCategory = React.useMemo(() => {
+  const ytdSpendingByCategory = React.useMemo(() => {
     const map = new Map<string, number>();
-    monthTxns.forEach((t: Transaction) => {
-      if (t.categoryId) {
-        map.set(t.categoryId, (map.get(t.categoryId) || 0) + t.amount);
-      }
+    filteredYtdTxns.forEach((t: Transaction) => {
+      if (t.categoryId) map.set(t.categoryId, (map.get(t.categoryId) || 0) + t.amount);
     });
     return map;
-  }, [monthTxns]);
+  }, [filteredYtdTxns]);
 
-  // Calculate spending by category and user
-  const spendingByCategoryAndUser = React.useMemo(() => {
-    const map = new Map<string, { total: number; mySpending: number; partnerSpending: number }>();
-    monthTxns.forEach((t: Transaction) => {
-      if (t.categoryId) {
-        const current = map.get(t.categoryId) || { total: 0, mySpending: 0, partnerSpending: 0 };
-        current.total += t.amount;
-        if (user && t.userId === user.id) {
-          current.mySpending += t.amount;
-        } else {
-          current.partnerSpending += t.amount;
-        }
-        map.set(t.categoryId, current);
-      }
-    });
-    return map;
-  }, [monthTxns, user]);
+  const monthTxns = ytdTransactions;
 
-  // Get recent transactions for a category
+  // Get recent transactions for a category (from current month only)
   const getRecentTransactions = (categoryId: string, limit: number = 2) => {
     return monthTxns
       .filter((t: Transaction) => t.categoryId === categoryId)
@@ -125,11 +112,9 @@ const BudgetsPage: React.FC = () => {
   const handleSaveBudget = async (budgetData: { categoryId: string; limit: number; userId?: string }) => {
     try {
       await upsertBudget.mutateAsync({
-        id: editingBudget?.id,
         month,
         categoryId: budgetData.categoryId,
         limit: budgetData.limit,
-        userId: budgetData.userId,
       });
       handleCloseEditor();
     } catch (error) {
@@ -137,9 +122,9 @@ const BudgetsPage: React.FC = () => {
     }
   };
 
-  const handleDeleteBudget = async (budgetId: string) => {
+  const handleDeleteBudget = async (_budgetId: string) => {
     try {
-      await deleteBudget.mutateAsync(budgetId);
+      await deleteBudget.mutateAsync({ categoryId: editingBudget!.categoryId, month });
       handleCloseEditor();
     } catch (error) {
       logger.error('Finance', 'Failed to delete budget', { error, budgetId });
@@ -147,48 +132,9 @@ const BudgetsPage: React.FC = () => {
   };
 
   // Filter transactions by owner (if filter is active)
-  const filteredMonthTxns = React.useMemo(() => {
-    if (!mergedConnection || filters.ownerFilter === 'all') return monthTxns;
-    if (filters.ownerFilter === 'mine') return monthTxns.filter(t => t.userId === user?.id);
-    if (filters.ownerFilter === 'partner') return monthTxns.filter(t => t.userId !== user?.id);
-    return monthTxns;
-  }, [monthTxns, mergedConnection, filters.ownerFilter, user]);
+  // YTD spending is already owner-filtered — use directly as the spending source
+  const filteredSpendingByCategory = ytdSpendingByCategory;
 
-  // Recalculate spending based on filtered transactions
-  const filteredSpendingByCategory = React.useMemo(() => {
-    const map = new Map<string, number>();
-    filteredMonthTxns.forEach((t: Transaction) => {
-      if (t.categoryId) {
-        map.set(t.categoryId, (map.get(t.categoryId) || 0) + t.amount);
-      }
-    });
-    return map;
-  }, [filteredMonthTxns]);
-
-  // Group budgets by type (household vs personal) - using filtered data
-  const { householdBudgets, myBudgets, partnerBudgets } = React.useMemo(() => {
-    const household: Budget[] = [];
-    const mine: Budget[] = [];
-    const partner: Budget[] = [];
-
-    budgets.forEach((budget) => {
-      const spending = spendingByCategoryAndUser.get(budget.categoryId);
-
-      // If both users have spending in this category, it's household
-      if (spending && spending.mySpending > 0 && spending.partnerSpending > 0) {
-        household.push(budget);
-      } else if (spending && spending.mySpending > 0) {
-        mine.push(budget);
-      } else if (spending && spending.partnerSpending > 0) {
-        partner.push(budget);
-      } else {
-        // No spending yet, default to household
-        household.push(budget);
-      }
-    });
-
-    return { householdBudgets: household, myBudgets: mine, partnerBudgets: partner };
-  }, [budgets, spendingByCategoryAndUser]);
 
   // Handle delete budget
   const handleDelete = async (categoryId: string) => {
@@ -197,14 +143,9 @@ const BudgetsPage: React.FC = () => {
     }
   };
 
-  // Get available months from transactions
-  const monthsInTx = React.useMemo(() => {
-    const months = new Set<string>();
-    transactions.forEach((t: Transaction) => {
-      months.add(t.dateISO.slice(0, 7));
-    });
-    return Array.from(months).sort().reverse();
-  }, [transactions]);
+  // Months with actual transaction data — use the lightweight dedicated query
+  // (can't derive from transactions since they're already filtered to the selected month)
+  const { data: monthsInTx = [currentMonth()] } = useTransactionMonthsQuery();
 
   const colors = useThemeColors();
 
@@ -222,9 +163,9 @@ const BudgetsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center justify-between mb-6">
+        {/* Controls row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="flex items-center gap-3">
-            {/* Owner Filter - only show in merged mode */}
             {mergedConnection && (
               <OwnerFilter
                 value={filters.ownerFilter}
@@ -233,422 +174,137 @@ const BudgetsPage: React.FC = () => {
               />
             )}
             <select
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-          >
-            {monthsInTx.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+              aria-label="Select month"
+            >
+              {[...monthsInTx].reverse().map((m) => (
+                <option key={m} value={m}>{new Date(m + '-02').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</option>
+              ))}
+            </select>
+          </div>
           <button
             onClick={() => handleOpenEditor()}
-            className="flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-white text-sm transition-opacity"
+            style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
             aria-label="Add budget"
           >
             <Plus size={16} />
             Add Budget
           </button>
-          </div>
         </div>
 
         {loading ? (
-        <div className="text-center py-12 text-slate-500">Loading budgets...</div>
-      ) : (
-        <div className="space-y-8">
-          {/* Household Budgets */}
-          {mergedConnection && householdBudgets.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 mb-4">
-                Household Budgets (Combined Spending)
-              </h2>
-              <div className="space-y-4">
-                {householdBudgets.map((budget) => {
-                  const spent = filteredSpendingByCategory.get(budget.categoryId) || 0;
-                  const remaining = budget.limit - spent;
-                  const percentage = budget.limit > 0 ? (spent / budget.limit) * 100 : 0;
-                  const isOverBudget = spent > budget.limit;
-                  const recentTxns = getRecentTransactions(budget.categoryId, 2);
+          <div className="space-y-2">
+            {[1,2,3,4,5].map(i => <div key={i} className="h-10 rounded-lg bg-gray-100 animate-pulse" />)}
+          </div>
+        ) : budgets.length === 0 ? (
+          <div className="p-8 rounded-xl border-2 border-dashed text-center" style={{ borderColor: colors.border.medium }}>
+            <div className="text-4xl mb-3">📊</div>
+            <p className="font-medium mb-2" style={{ color: colors.text.primary }}>
+              No budgets for {new Date(month + '-02').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </p>
+            <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>Set limits to track where your money goes</p>
+            <button
+              onClick={() => handleOpenEditor()}
+              className="px-4 py-2 rounded-xl font-semibold text-white text-sm"
+              style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
+            >
+              Create Your First Budget
+            </button>
+          </div>
+        ) : (() => {
+          const allBudgets = budgets.map(b => {
+            const spent = filteredSpendingByCategory.get(b.categoryId) || 0;
+            const pct   = b.limit > 0 ? (spent / b.limit) * 100 : 0;
+            const cat   = categories.find(c => c.id === b.categoryId);
+            return { ...b, spent, pct, remaining: b.limit - spent, catName: cat?.name || 'Unknown', catIcon: cat?.icon || '' };
+          }).sort((a, b) => b.pct - a.pct);
 
-                  // Create visual block progress bar (20 blocks total)
-                  const filledBlocks = Math.min(20, Math.round((percentage / 100) * 20));
-                  const emptyBlocks = 20 - filledBlocks;
-                  const blockBar = '█'.repeat(filledBlocks) + '░'.repeat(emptyBlocks);
+          const totalBudget = allBudgets.reduce((s, b) => s + b.limit, 0);
+          const totalSpent  = allBudgets.reduce((s, b) => s + b.spent, 0);
+          const overallPct  = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+          return (
+            <div className="space-y-5">
+              {/* Summary */}
+              <div>
+                <div className="flex items-baseline justify-between mb-2">
+                  <p className="text-sm" style={{ color: colors.text.secondary }}>
+                    <span className="font-bold text-base" style={{ color: colors.text.primary }}>{formatCurrency(totalSpent)}</span>
+                    {' spent · '}
+                    <span className="font-semibold" style={{ color: '#10b981' }}>{formatCurrency(totalBudget - totalSpent)} left</span>
+                    {' · of '}{formatCurrency(totalBudget)}
+                  </p>
+                  <span className="text-sm font-bold" style={{ color: overallPct > 100 ? '#ef4444' : '#C18B5E' }}>
+                    {Math.round(overallPct)}% · {daysLeft}d left
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, overallPct)}%`,
+                      background: overallPct > 100 ? '#ef4444' : 'linear-gradient(90deg, #D4A574 0%, #C18B5E 100%)',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* List */}
+              <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: colors.bg.white, border: `1px solid ${colors.border.light}` }}>
+                {allBudgets.map((budget, idx) => {
+                  const isOver    = budget.pct > 100;
+                  const isWarning = budget.pct >= 80 && !isOver;
+                  const barBg     = isOver ? '#ef4444' : isWarning ? '#f59e0b' : 'linear-gradient(90deg, #D4A574 0%, #C18B5E 100%)';
+                  const pctColor  = isOver ? '#ef4444' : isWarning ? '#d97706' : colors.text.secondary;
+                  const leftColor = isOver ? '#ef4444' : budget.remaining > 0 ? '#10b981' : '#6b7280';
 
                   return (
-                    <div key={budget.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                      {/* Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-semibold text-slate-900">
-                              {getCategoryName(budget.categoryId)}
-                            </h3>
-                            <span className="px-2 py-0.5 text-xs font-medium text-slate-600 bg-slate-100 rounded">
-                              Household
-                            </span>
-                          </div>
-                          <div className="text-sm text-slate-600">
-                            {formatCurrency(spent)} / {formatCurrency(budget.limit)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="mb-3">
-                        <span className={`font-mono text-sm tracking-tight ${
-                          isOverBudget ? 'text-rose-500' : 'text-blue-500'
-                        }`}>
-                          {blockBar}
+                    <div
+                      key={budget.id}
+                      className="flex items-center gap-3 px-4 py-4 cursor-pointer hover:bg-gray-50/80 transition-colors"
+                      style={{ borderBottom: idx < allBudgets.length - 1 ? `1px solid ${colors.border.light}` : 'none' }}
+                      onClick={() => handleOpenEditor(budget)}
+                    >
+                      {/* Icon + name */}
+                      <div className="flex items-center gap-2 flex-shrink-0 w-40">
+                        {budget.catIcon && <span className="text-sm leading-none">{budget.catIcon}</span>}
+                        <span className="text-sm font-medium truncate" style={{ color: colors.text.primary }}>
+                          {budget.catName}
                         </span>
-                        <span className={`ml-2 text-sm font-semibold ${
-                          isOverBudget ? 'text-rose-600' : 'text-slate-700'
-                        }`}>
-                          {Math.round(percentage)}%
-                        </span>
+                        {isOver && <span className="text-xs flex-shrink-0">⚠️</span>}
                       </div>
 
-                      {/* Status */}
-                      <div className="text-sm text-slate-600 mb-3">
-                        {formatCurrency(remaining)} remaining • {daysLeft} days left
+                      {/* Progress bar — single-div hard-stop gradient avoids h-full=0 bug */}
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className="w-full h-2 rounded-full"
+                          style={{
+                            background: `linear-gradient(to right, ${isOver ? '#ef4444' : isWarning ? '#f59e0b' : '#C18B5E'} ${Math.min(100, budget.pct)}%, #e5e7eb ${Math.min(100, budget.pct)}%)`,
+                          }}
+                        />
                       </div>
 
-                      {/* Recent Transactions */}
-                      {recentTxns.length > 0 && (
-                        <div className="text-sm text-slate-600 mb-3">
-                          <span className="font-medium">Recent: </span>
-                          {recentTxns.map((txn, idx) => (
-                            <span key={txn.id}>
-                              {txn.description} {formatCurrency(txn.amount)}
-                              {user && mergedConnection && (
-                                <span className="ml-1">
-                                  <OwnerBadge
-                                    userId={txn.userId}
-                                    currentUserId={user.id}
-                                    partnerName={partnerName}
-                                    size="sm"
-                                  />
-                                </span>
-                              )}
-                              {idx < recentTxns.length - 1 && ', '}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      {/* % */}
+                      <span className="text-xs font-bold w-9 text-right flex-shrink-0" style={{ color: pctColor }}>
+                        {Math.round(budget.pct)}%
+                      </span>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 justify-end">
-                        <button
-                          onClick={() => handleOpenEditor(budget)}
-                          className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 rounded transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(budget.categoryId)}
-                          className="px-3 py-1.5 text-sm text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      {/* Remaining */}
+                      <span className="text-xs font-medium w-24 text-right flex-shrink-0" style={{ color: leftColor }}>
+                        {isOver
+                          ? `${formatCurrency(Math.abs(budget.remaining))} over`
+                          : `${formatCurrency(budget.remaining)} left`}
+                      </span>
                     </div>
                   );
                 })}
               </div>
             </div>
-          )}
-
-          {/* Personal Budgets (My Spending Only) */}
-          {mergedConnection && myBudgets.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 mb-4">
-                Personal Budgets (My Spending Only)
-              </h2>
-              <div className="space-y-4">
-                {myBudgets.map((budget) => {
-                  const spending = spendingByCategoryAndUser.get(budget.categoryId);
-                  const spent = spending?.mySpending || 0;
-                  const remaining = budget.limit - spent;
-                  const percentage = budget.limit > 0 ? (spent / budget.limit) * 100 : 0;
-                  const isOverBudget = spent > budget.limit;
-                  const recentTxns = getRecentTransactions(budget.categoryId, 2)
-                    .filter((t) => user && t.userId === user.id);
-
-                  // Create visual block progress bar (20 blocks total)
-                  const filledBlocks = Math.min(20, Math.round((percentage / 100) * 20));
-                  const emptyBlocks = 20 - filledBlocks;
-                  const blockBar = '█'.repeat(filledBlocks) + '░'.repeat(emptyBlocks);
-
-                  return (
-                    <div key={budget.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                      {/* Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-semibold text-slate-900">
-                              {getCategoryName(budget.categoryId)}
-                            </h3>
-                            {user && (
-                              <OwnerBadge
-                                userId={user.id}
-                                currentUserId={user.id}
-                                partnerName={partnerName}
-                                size="sm"
-                              />
-                            )}
-                          </div>
-                          <div className="text-sm text-slate-600">
-                            {formatCurrency(spent)} / {formatCurrency(budget.limit)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="mb-3">
-                        <span className={`font-mono text-sm tracking-tight ${
-                          isOverBudget ? 'text-rose-500' : 'text-blue-500'
-                        }`}>
-                          {blockBar}
-                        </span>
-                        <span className={`ml-2 text-sm font-semibold ${
-                          isOverBudget ? 'text-rose-600' : 'text-slate-700'
-                        }`}>
-                          {Math.round(percentage)}%
-                        </span>
-                      </div>
-
-
-                      {/* Status */}
-                      <div className="text-sm text-slate-600 mb-3">
-                        {formatCurrency(remaining)} remaining • {daysLeft} days left
-                      </div>
-
-                      {/* Recent Transactions */}
-                      {recentTxns.length > 0 && (
-                        <div className="text-sm text-slate-600 mb-3">
-                          <span className="font-medium">Recent: </span>
-                          {recentTxns.map((txn, idx) => (
-                            <span key={txn.id}>
-                              {txn.description} {formatCurrency(txn.amount)}
-                              {idx < recentTxns.length - 1 && ', '}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 justify-end">
-                        <button
-                          onClick={() => handleOpenEditor(budget)}
-                          className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 rounded transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(budget.categoryId)}
-                          className="px-3 py-1.5 text-sm text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Partner's Personal Budgets */}
-          {mergedConnection && partnerBudgets.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 mb-4">
-                Partner's Personal Budgets ({partnerName}'s Spending Only)
-              </h2>
-              <div className="space-y-4">
-                {partnerBudgets.map((budget) => {
-                  const spending = spendingByCategoryAndUser.get(budget.categoryId);
-                  const spent = spending?.partnerSpending || 0;
-                  const remaining = budget.limit - spent;
-                  const percentage = budget.limit > 0 ? (spent / budget.limit) * 100 : 0;
-                  const isOverBudget = spent > budget.limit;
-                  const recentTxns = getRecentTransactions(budget.categoryId, 2)
-                    .filter((t) => user && t.userId !== user.id);
-
-                  // Create visual block progress bar (20 blocks total)
-                  const filledBlocks = Math.min(20, Math.round((percentage / 100) * 20));
-                  const emptyBlocks = 20 - filledBlocks;
-                  const blockBar = '█'.repeat(filledBlocks) + '░'.repeat(emptyBlocks);
-
-                  return (
-                    <div key={budget.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                      {/* Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-semibold text-slate-900">
-                              {getCategoryName(budget.categoryId)}
-                            </h3>
-                            {user && (
-                              <OwnerBadge
-                                userId={'partner'}
-                                currentUserId={user.id}
-                                partnerName={partnerName}
-                                size="sm"
-                              />
-                            )}
-                          </div>
-                          <div className="text-sm text-slate-600">
-                            {formatCurrency(spent)} / {formatCurrency(budget.limit)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="mb-3">
-                        <span className={`font-mono text-sm tracking-tight ${
-                          isOverBudget ? 'text-rose-500' : 'text-blue-500'
-                        }`}>
-                          {blockBar}
-                        </span>
-                        <span className={`ml-2 text-sm font-semibold ${
-                          isOverBudget ? 'text-rose-600' : 'text-slate-700'
-                        }`}>
-                          {Math.round(percentage)}%
-                        </span>
-                      </div>
-
-                      {/* Status */}
-                      <div className="text-sm text-slate-600 mb-3">
-                        {formatCurrency(remaining)} remaining • {daysLeft} days left
-                      </div>
-
-                      {/* Recent Transactions */}
-                      {recentTxns.length > 0 && (
-                        <div className="text-sm text-slate-600 mb-3">
-                          <span className="font-medium">Recent: </span>
-                          {recentTxns.map((txn, idx) => (
-                            <span key={txn.id}>
-                              {txn.description} {formatCurrency(txn.amount)}
-                              {idx < recentTxns.length - 1 && ', '}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* View Only */}
-                      <div className="flex items-center gap-2 justify-end">
-                        <span className="px-3 py-1.5 text-sm text-slate-500">
-                          View Only
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* No merged mode - show all budgets */}
-          {!mergedConnection && budgets.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 mb-4">My Budgets</h2>
-              <div className="space-y-4">
-                {budgets.map((budget) => {
-                  const spent = filteredSpendingByCategory.get(budget.categoryId) || 0;
-                  const remaining = budget.limit - spent;
-                  const percentage = budget.limit > 0 ? (spent / budget.limit) * 100 : 0;
-                  const isOverBudget = spent > budget.limit;
-                  const recentTxns = getRecentTransactions(budget.categoryId, 2);
-
-                  // Create visual block progress bar (20 blocks total)
-                  const filledBlocks = Math.min(20, Math.round((percentage / 100) * 20));
-                  const emptyBlocks = 20 - filledBlocks;
-                  const blockBar = '█'.repeat(filledBlocks) + '░'.repeat(emptyBlocks);
-
-                  return (
-                    <div key={budget.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                      {/* Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-slate-900 mb-1">
-                            {getCategoryName(budget.categoryId)}
-                          </h3>
-                          <div className="text-sm text-slate-600">
-                            {formatCurrency(spent)} / {formatCurrency(budget.limit)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="mb-3">
-                        <span className={`font-mono text-sm tracking-tight ${
-                          isOverBudget ? 'text-rose-500' : 'text-blue-500'
-                        }`}>
-                          {blockBar}
-                        </span>
-                        <span className={`ml-2 text-sm font-semibold ${
-                          isOverBudget ? 'text-rose-600' : 'text-slate-700'
-                        }`}>
-                          {Math.round(percentage)}%
-                        </span>
-                      </div>
-
-                      {/* Status */}
-                      <div className="text-sm text-slate-600 mb-3">
-                        {formatCurrency(remaining)} remaining • {daysLeft} days left
-                      </div>
-
-                      {/* Recent Transactions */}
-                      {recentTxns.length > 0 && (
-                        <div className="text-sm text-slate-600 mb-3">
-                          <span className="font-medium">Recent: </span>
-                          {recentTxns.map((txn, idx) => (
-                            <span key={txn.id}>
-                              {txn.description} {formatCurrency(txn.amount)}
-                              {idx < recentTxns.length - 1 && ', '}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 justify-end">
-                        <button
-                          onClick={() => handleOpenEditor(budget)}
-                          className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 rounded transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(budget.categoryId)}
-                          className="px-3 py-1.5 text-sm text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {budgets.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <p className="text-slate-500 mb-4">No budgets yet for {month}</p>
-              <button
-                onClick={() => handleOpenEditor()}
-                className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 transition-colors"
-                aria-label="Create first budget"
-              >
-                <Plus size={16} />
-                Create Your First Budget
-              </button>
-            </div>
-          )}
-        </div>
-        )}
+          );
+        })()}
 
         {/* Budget Editor Modal */}
         <BudgetFormModalV2

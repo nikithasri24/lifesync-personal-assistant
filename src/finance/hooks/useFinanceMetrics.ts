@@ -12,6 +12,7 @@ import {
   calculateCashFlowByCategory,
   calculateCashFlowTrend,
   prepareSankeyData,
+  filterTransfers,
   type CashFlowResult,
   type CashFlowByCategory,
   type SankeyNode,
@@ -86,15 +87,27 @@ export function useFinanceMetrics(options: UseFinanceMetricsOptions): FinanceMet
   } = options;
 
   // Filter transactions by current period if provided
-  const currentTxns = useMemo(() => {
+  const periodTxns = useMemo(() => {
     if (!currentPeriod) return transactions;
     return filterByDateRange(transactions, currentPeriod);
   }, [transactions, currentPeriod]);
 
-  const previousTxns = useMemo(() => {
+  // Strip inter-account transfers (e.g. Credit Card Payments) so they don't
+  // double-count expenses — the individual purchases are already tracked.
+  const currentTxns = useMemo(
+    () => filterTransfers(periodTxns, categories),
+    [periodTxns, categories]
+  );
+
+  const previousPeriodTxns = useMemo(() => {
     if (!previousPeriod) return [];
     return filterByDateRange(transactions, previousPeriod);
   }, [transactions, previousPeriod]);
+
+  const previousTxns = useMemo(
+    () => filterTransfers(previousPeriodTxns, categories),
+    [previousPeriodTxns, categories]
+  );
 
   // Calculate cash flow
   const cashFlow = useMemo(

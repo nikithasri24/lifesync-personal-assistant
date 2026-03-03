@@ -6,6 +6,17 @@ import { financeKeys } from './useFinanceMergedMode';
 
 // ==================== Transactions ====================
 
+export function useTransactionMonthsQuery(): UseQueryResult<string[], Error> {
+  return useQuery<string[], Error>({
+    queryKey: [...financeKeys.all, 'transaction-months'],
+    queryFn: async () => {
+      const api = await getFinanceAPI();
+      return api.listTransactionMonths();
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes — months don't change often
+  });
+}
+
 export function useTransactionsQuery(params?: TxnQuery, options?: Omit<UseQueryOptions<Transaction[], Error>, 'queryKey' | 'queryFn'>): UseQueryResult<Transaction[], Error> {
   return useQuery<Transaction[], Error>({
     queryKey: financeKeys.transactions(params),

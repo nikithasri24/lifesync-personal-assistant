@@ -7,6 +7,36 @@
 
 import type { Transaction } from '../types';
 
+/**
+ * Category names that represent inter-account transfers, not real income/expenses.
+ * Transactions in these categories are excluded from all cash flow calculations
+ * to avoid double-counting (e.g. CC purchases are already tracked individually;
+ * the payment from checking → CC is just moving money between accounts).
+ */
+export const TRANSFER_CATEGORY_NAMES = new Set([
+  'Credit Card Payments',
+]);
+
+/**
+ * Remove inter-account transfer transactions from a list before cash flow math.
+ * Excludes transactions that have a transfer_id (created via the transfer command)
+ * OR belong to a known transfer category (manually categorised transfers).
+ */
+export function filterTransfers(
+  transactions: Transaction[],
+  categories: Array<{ id: string; name: string }>
+): Transaction[] {
+  const transferCatIds = new Set(
+    categories
+      .filter(c => TRANSFER_CATEGORY_NAMES.has(c.name))
+      .map(c => c.id)
+  );
+  return transactions.filter(t =>
+    !t.transferId &&
+    !(t.categoryId && transferCatIds.has(t.categoryId))
+  );
+}
+
 export interface CashFlowResult {
   totalIncome: number;
   totalExpenses: number;
@@ -144,59 +174,66 @@ export interface SankeyNode {
   value: number;
 }
 
+// Max categories shown on right side of Sankey before grouping into "Other"
+const MAX_EXPENSE_NODES = 7;
+
 export function prepareSankeyData(
   transactions: Transaction[],
   categories: Array<{ id: string; name: string }>
 ): SankeyNode[] {
   const nodes: SankeyNode[] = [];
 
-  // Income flows: Income -> Total Income
-  const incomeBySource = calculateCashFlowByCategory(
-    transactions.filter(t => t.type === 'credit'),
-    categories,
-    'credit'
+  // Strip inter-account transfers before building the flow diagram
+  const realTxns = filterTransfers(transactions, categories);
+
+  // Income sources: categories where ALL transactions are credits (no debits).
+  // This matches the Transactions tab logic — a category with any debits is
+  // treated as an expense category; credits in it are ignored (returns/refunds).
+  const debitCategoryIds = new Set(
+    realTxns.filter(t => t.type === 'debit').map(t => t.categoryId).filter(Boolean)
+  );
+  const incomeTxns = realTxns.filter(
+    t => t.type === 'credit' && !(t.categoryId && debitCategoryIds.has(t.categoryId))
   );
 
+  // Income flows: sources → Total Income
+  const incomeBySource = calculateCashFlowByCategory(incomeTxns, categories, 'credit');
   const totalIncome = incomeBySource.reduce((sum, cat) => sum + cat.amount, 0);
 
-  // Add income sources to total income
   for (const source of incomeBySource) {
     if (source.amount > 0) {
-      nodes.push({
-        source: source.categoryName,
-        target: 'Total Income',
-        value: source.amount,
-      });
+      nodes.push({ source: source.categoryName, target: 'Total Income', value: source.amount });
     }
   }
 
-  // Expense flows: Total Income -> Category
-  const expenseByCategory = calculateCashFlowByCategory(
-    transactions.filter(t => t.type === 'debit'),
+  // Expense flows: Total Income → categories.
+  // Use debit-only sums, exactly matching the Transactions tab category totals.
+  // Credits in expense categories (returns/refunds) are intentionally ignored here,
+  // consistent with how the Transactions tab computes expense category amounts.
+  const allExpenses = calculateCashFlowByCategory(
+    realTxns.filter(t => t.type === 'debit'),
     categories,
     'debit'
-  );
+  ).filter(e => e.amount > 0);
 
-  for (const expense of expenseByCategory) {
-    if (expense.amount > 0) {
-      nodes.push({
-        source: 'Total Income',
-        target: expense.categoryName,
-        value: expense.amount,
-      });
-    }
+  const topExpenses  = allExpenses.slice(0, MAX_EXPENSE_NODES);
+  const restExpenses = allExpenses.slice(MAX_EXPENSE_NODES);
+
+  for (const expense of topExpenses) {
+    nodes.push({ source: 'Total Income', target: expense.categoryName, value: expense.amount });
   }
 
-  // Savings: Total Income -> Savings (if positive net flow)
-  const totalExpenses = expenseByCategory.reduce((sum, cat) => sum + cat.amount, 0);
-  const savings = totalIncome - totalExpenses;
+  // Lump tail categories into "Other" so the chart stays readable
+  const otherTotal = restExpenses.reduce((sum, e) => sum + e.amount, 0);
+  if (otherTotal > 0) {
+    nodes.push({ source: 'Total Income', target: 'Other', value: otherTotal });
+  }
 
+  // Savings node (if net positive)
+  const totalExpenses = allExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const savings = totalIncome - totalExpenses;
   if (savings > 0) {
-    nodes.push({
-      source: 'Total Income',
-      target: 'Savings',
-      value: savings,
-    });
+    nodes.push({ source: 'Total Income', target: 'Savings', value: savings });
   }
 
   return nodes;
