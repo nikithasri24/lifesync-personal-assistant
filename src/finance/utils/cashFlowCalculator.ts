@@ -209,9 +209,40 @@ export function prepareSankeyData(
     }
   }
 
-  // Paystub data is shown in a dedicated breakdown card on the Dashboard,
-  // not injected into the Sankey (which tracks net household cash flow).
-  void paystub;
+  // When paystub data exists, the existing Salary transactions already represent
+  // Nikki's net take-home pay. We expand that into Gross Pay → deductions + net,
+  // keeping any remaining salary (e.g. partner's) unchanged.
+  if (paystub && paystub.grossPay > 0) {
+    const GROSS_LABEL = 'Nikki Gross Pay';
+
+    // Find the "Salary" income node (usually the biggest one)
+    const salaryNodeIdx = nodes.findIndex(n =>
+      n.target === 'Total Income' && n.source.toLowerCase().includes('salary')
+    );
+
+    if (salaryNodeIdx !== -1) {
+      const salaryNode = nodes[salaryNodeIdx];
+      const partnerSalary = salaryNode.value - paystub.netPay;
+
+      // Remove the combined Salary node
+      nodes.splice(salaryNodeIdx, 1);
+
+      // If there's remaining salary (partner's), keep it as-is
+      if (partnerSalary > 0) {
+        nodes.push({ source: 'Salary', target: 'Total Income', value: partnerSalary });
+      }
+    }
+
+    // Nikki Gross Pay → each deduction (visible on right side)
+    for (const d of paystub.deductions) {
+      if (d.amount > 0) {
+        nodes.push({ source: GROSS_LABEL, target: d.name, value: d.amount });
+      }
+    }
+
+    // Nikki Gross Pay → Total Income (net take-home only)
+    nodes.push({ source: GROSS_LABEL, target: 'Total Income', value: paystub.netPay });
+  }
 
   // Expense flows: Total Income → categories.
   // Use debit-only sums, exactly matching the Transactions tab category totals.

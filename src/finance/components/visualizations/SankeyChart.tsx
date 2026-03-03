@@ -46,12 +46,19 @@ interface ProcessedLink {
 
 // Special-node colors that aren't user-defined categories
 const SPECIAL_COLORS: Record<string, string> = {
-  income:          '#3b82f6', // blue  — income source bars
-  'Total Income':  '#3b82f6',
-  savings:         '#10b981', // green — savings bar
-  'Savings':       '#10b981',
-  'Other':         '#94a3b8', // slate — grouped tail categories
-  default:         '#64748b',
+  income:           '#3b82f6', // blue  — income source bars
+  'Total Income':   '#3b82f6',
+  savings:          '#10b981', // green — savings bar
+  'Savings':        '#10b981',
+  'Other':          '#94a3b8', // slate — grouped tail categories
+  // Paystub deduction colors
+  '401K':           '#8b5cf6', // purple — retirement
+  'Medical':        '#06b6d4', // cyan   — health
+  'Federal Tax':    '#ef4444', // red    — federal tax
+  'FICA':           '#f97316', // orange — social security
+  'CA Tax':         '#f59e0b', // amber  — state tax
+  'ESPP':           '#10b981', // green  — employee stock
+  default:          '#64748b',
 };
 
 // Layout constants
@@ -98,7 +105,11 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
     const isIncomeSource = (id: string) => data.some(d => d.source === id && d.target === 'Total Income');
     const isTotalIncome  = (id: string) => id === 'Total Income';
     const isSavings      = (id: string) => id === 'Savings';
-    const isExpense      = (id: string) => data.some(d => d.source === 'Total Income' && d.target === id) && !isSavings(id);
+    // Expenses = any node on the right side: either sourced from Total Income,
+    // OR sourced from an income source (paystub deductions like 401K, taxes).
+    const isExpense = (id: string) =>
+      !isIncomeSource(id) && !isTotalIncome(id) && !isSavings(id) &&
+      data.some(d => d.target === id);
 
     const levels = new Map<string, number>();
     for (const id of nodeIds) {
