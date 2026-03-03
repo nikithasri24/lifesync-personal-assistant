@@ -1,47 +1,55 @@
 /**
- * Credit Cards Page
- * Comprehensive credit card management with benefits, rewards, and offers tracking
+ * Credit Cards Page — Dashboard Style
+ * Single scrollable page with 4 intelligence sections:
+ * 1. Portfolio header (total balance, utilization, estimated rewards value)
+ * 2. Spend Optimizer — ranked cards by category
+ * 3. Benefits Tracker — grouped by urgency
+ * 4. Active Bonuses — rotating + welcome bonus progress
+ * 5. My Cards — compact list with edit
  */
 
-import React, { useState } from 'react';
-import { CreditCard, Plus, Loader2, Gift, TrendingUp } from 'lucide-react';
+import React from 'react';
+import { Loader2 } from 'lucide-react';
 import { useAccountsQuery, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
-import type { Account } from '../types';
-import { formatCurrency } from '../utils/currency';
-import { CreditCardDetailsModal } from '../components/creditCards/CreditCardDetailsModal';
-import { WelcomeBonusTracker } from '../components/creditCards/WelcomeBonusTracker';
-import { UtilizationDashboard } from '../components/creditCards/UtilizationDashboard';
+import {
+  useAllCardsBenefitsQuery,
+  useAllCardsCategoryBonusesQuery,
+  useAllCardsWelcomeBonusesQuery,
+} from '../hooks/useCreditCardsQuery';
 import { useAuth } from '@/hooks/useAuth';
-import { OwnerBadge } from '../../components/common/OwnerBadge';
 import { useThemeColors } from '@/hooks/useThemeColors';
-
-type TabType = 'cards' | 'bonuses' | 'utilization';
+import { formatCurrency } from '../utils/currency';
+import { estimateRewardsValue } from '../utils/pointValuations';
+import { SpendOptimizer } from '../components/creditCards/SpendOptimizer';
+import { BenefitsTracker } from '../components/creditCards/BenefitsTracker';
+import { CategoryBonusTracker } from '../components/creditCards/CategoryBonusTracker';
+import { CardsList } from '../components/creditCards/CardsList';
 
 const CreditCardsPage: React.FC = () => {
   const colors = useThemeColors();
-  const [selectedCard, setSelectedCard] = useState<Account | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('cards');
-
-  // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
 
-  // Get partner name from merged connection
-  const partnerName = React.useMemo(() => {
-    if (!mergedConnection || !user) return undefined;
-    return mergedConnection.partnerName;
-  }, [mergedConnection, user]);
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const partnerName = React.useMemo(() => mergedConnection?.partnerName, [mergedConnection]);
 
   const { data: accounts = [], isLoading, error } = useAccountsQuery();
+  const creditCards = accounts.filter((a) => a.type === 'credit');
 
-  // Filter for credit card accounts only
-  const creditCards = accounts.filter(acc => acc.type === 'credit');
+  // Aggregate queries — fetch data for all cards in parallel
+  const { data: benefitsByCard, isLoading: benefitsLoading } = useAllCardsBenefitsQuery(creditCards);
+  const { data: bonusesByCard, isLoading: bonusesLoading } = useAllCardsCategoryBonusesQuery(creditCards);
+  const { data: welcomeBonusesByCard, isLoading: welcomeLoading } = useAllCardsWelcomeBonusesQuery(creditCards);
 
-  // Calculate summary stats
-  const totalBalance = creditCards.reduce((sum, card) => sum + card.balance, 0);
-  const totalCreditLimit = creditCards.reduce((sum, card) => sum + (card.creditLimit || 0), 0);
-  const totalRewards = creditCards.reduce((sum, card) => sum + (card.rewardsBalance || 0), 0);
-  const utilizationRate = totalCreditLimit > 0 ? (Math.abs(totalBalance) / totalCreditLimit) * 100 : 0;
+  // Summary stats
+  const totalBalance = creditCards.reduce((sum, c) => sum + Math.abs(c.balance), 0);
+  const totalLimit = creditCards.reduce((sum, c) => sum + (c.creditLimit ?? 0), 0);
+  const utilPct = totalLimit > 0 ? (totalBalance / totalLimit) * 100 : 0;
+
+  // Portfolio rewards value estimate
+  const totalRewardsCents = creditCards.reduce((sum, c) => sum + estimateRewardsValue(c), 0);
+  const totalRewardsDollars = totalRewardsCents / 100;
+
+  const anyLoading = isLoading || benefitsLoading || bonusesLoading || welcomeLoading;
 
   if (isLoading) {
     return (
@@ -49,8 +57,10 @@ const CreditCardsPage: React.FC = () => {
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-2" />
-              <p className="text-sm text-primary opacity-60">Loading credit cards...</p>
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: '#C18B5E' }} />
+              <p className="text-sm" style={{ color: colors.text.secondary }}>
+                Loading credit cards...
+              </p>
             </div>
           </div>
         </div>
@@ -64,8 +74,10 @@ const CreditCardsPage: React.FC = () => {
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <p className="text-red-500 mb-2">Error loading credit cards</p>
-              <p className="text-sm text-primary opacity-60">{error.message}</p>
+              <p className="text-red-500 mb-1">Error loading credit cards</p>
+              <p className="text-sm" style={{ color: colors.text.secondary }}>
+                {error.message}
+              </p>
             </div>
           </div>
         </div>
@@ -73,186 +85,104 @@ const CreditCardsPage: React.FC = () => {
     );
   }
 
-  const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'cards', label: 'My Cards', icon: <CreditCard className="h-4 w-4" /> },
-    { id: 'bonuses', label: 'Welcome Bonuses', icon: <Gift className="h-4 w-4" /> },
-    { id: 'utilization', label: 'Utilization', icon: <TrendingUp className="h-4 w-4" /> },
-  ];
-
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
-        {/* Header */}
+        {/* ── Page Header ── */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2" style={{ color: colors.text.primary }}>
-            <span className="text-4xl">💳</span>
-            Credit Cards
-          </h1>
-          <p className="text-sm" style={{ color: colors.text.secondary }}>
-            Track balances, rewards, and credit utilization
-          </p>
-        </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-primary/10 mb-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? 'border-blue-500 text-blue-500'
-                : 'border-transparent text-primary opacity-60 hover:opacity-100'
-            }`}
-          >
-            {tab.icon}
-            <span className="font-medium">{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'cards' && (
-        <>
-          {/* Summary Cards */}
-          {creditCards.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-primary/30 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-primary/10">
-                <p className="text-sm text-primary opacity-60 mb-1">Total Balance</p>
-                <p className="text-2xl font-bold text-primary">{formatCurrency(Math.abs(totalBalance))}</p>
-                <p className="text-xs text-primary opacity-60 mt-1">
-                  {creditCards.length} card{creditCards.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-
-              <div className="bg-primary/30 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-primary/10">
-                <p className="text-sm text-primary opacity-60 mb-1">Credit Limit</p>
-                <p className="text-2xl font-bold text-primary">{formatCurrency(totalCreditLimit)}</p>
-                <p className="text-xs text-primary opacity-60 mt-1">Total available</p>
-              </div>
-
-              <div className="bg-primary/30 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-primary/10">
-                <p className="text-sm text-primary opacity-60 mb-1">Utilization</p>
-                <p className="text-2xl font-bold text-primary">{utilizationRate.toFixed(1)}%</p>
-                <p className={`text-xs mt-1 ${utilizationRate < 30 ? 'text-emerald-400' : utilizationRate < 50 ? 'text-amber-400' : 'text-red-400'}`}>
-                  {utilizationRate < 30 ? 'Excellent' : utilizationRate < 50 ? 'Good' : 'High'}
-                </p>
-              </div>
-
-              <div className="bg-primary/30 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-primary/10">
-                <p className="text-sm text-primary opacity-60 mb-1">Total Rewards</p>
-                <p className="text-2xl font-bold text-primary">{totalRewards.toLocaleString()}</p>
-                <p className="text-xs text-primary opacity-60 mt-1">Points/miles/cashback</p>
-              </div>
-            </div>
-          )}
-
-          {/* Credit Cards Grid */}
-          {creditCards.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">💳</div>
-              <h3 className="text-lg font-semibold text-primary mb-2">No credit cards yet</h3>
-              <p className="text-primary opacity-60 mb-4">
-                Add your credit cards to track balances, rewards, and benefits
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {creditCards.map((card) => (
-                <CreditCardCard
-                  key={card.id}
-                  card={card}
-                  onClick={() => setSelectedCard(card)}
-                  currentUserId={user?.id}
-                  partnerName={partnerName}
-                />
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {activeTab === 'bonuses' && <WelcomeBonusTracker />}
-      {activeTab === 'utilization' && <UtilizationDashboard />}
-
-        {/* Detailed View Modal */}
-        {selectedCard && (
-          <CreditCardDetailsModal
-            card={selectedCard}
-            onClose={() => setSelectedCard(null)}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Credit Card Card Component
-interface CreditCardCardProps {
-  card: Account;
-  onClick: () => void;
-  currentUserId?: string;
-  partnerName?: string;
-}
-
-const CreditCardCard: React.FC<CreditCardCardProps> = ({ card, onClick, currentUserId, partnerName }) => {
-  const utilization = card.creditLimit ? (Math.abs(card.balance) / card.creditLimit) * 100 : 0;
-  const available = (card.creditLimit || 0) - Math.abs(card.balance);
-
-  return (
-    <div
-      onClick={onClick}
-      className="rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm shadow-sm ring-1 ring-primary/10 p-5 transition-all hover:shadow-md hover:scale-[1.02] cursor-pointer"
-    >
-      {/* Card Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="text-lg font-semibold text-primary">{card.name}</h3>
-            {currentUserId && (
-              <OwnerBadge
-                userId={card.userId}
-                currentUserId={currentUserId}
-                partnerName={partnerName}
-                size="sm"
-              />
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: colors.text.primary }}>
+              <span className="text-4xl">💳</span>
+              Credit Cards
+            </h1>
+            {totalRewardsDollars > 0 && (
+              <span
+                className="text-sm font-semibold px-3 py-1.5 rounded-full"
+                style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)', color: '#fff' }}
+              >
+                Portfolio: ~{formatCurrency(totalRewardsDollars)} rewards
+              </span>
             )}
           </div>
-          {card.rewardsType && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
-              {card.rewardsBalance?.toLocaleString()} {card.rewardsType}
-            </span>
+
+          {/* Summary stats row */}
+          {creditCards.length > 0 && (
+            <div className="flex flex-wrap gap-4 mt-3 text-sm" style={{ color: colors.text.secondary }}>
+              <span>
+                <strong style={{ color: colors.text.primary }}>{formatCurrency(totalBalance)}</strong>{' '}
+                balance
+              </span>
+              <span>·</span>
+              <span>
+                <strong
+                  style={{
+                    color: utilPct >= 75 ? '#EF4444' : utilPct >= 30 ? '#F59E0B' : '#10B981',
+                  }}
+                >
+                  {utilPct.toFixed(1)}%
+                </strong>{' '}
+                utilization
+              </span>
+              <span>·</span>
+              <span>
+                <strong style={{ color: colors.text.primary }}>{formatCurrency(totalLimit)}</strong>{' '}
+                total limit
+              </span>
+              <span>·</span>
+              <span>
+                <strong style={{ color: colors.text.primary }}>{creditCards.length}</strong>{' '}
+                card{creditCards.length !== 1 ? 's' : ''}
+              </span>
+            </div>
           )}
         </div>
-        <CreditCard className="h-6 w-6 text-primary opacity-60" />
-      </div>
 
-      {/* Balance */}
-      <div className="mb-4">
-        <p className="text-sm text-primary opacity-60 mb-1">Current Balance</p>
-        <p className="text-2xl font-bold text-primary">{formatCurrency(Math.abs(card.balance))}</p>
-      </div>
-
-      {/* Credit Limit & Utilization */}
-      <div className="mb-3">
-        <div className="flex justify-between text-xs text-primary opacity-60 mb-1">
-          <span>Available: {formatCurrency(available)}</span>
-          <span>{utilization.toFixed(1)}% used</span>
-        </div>
-        <div className="w-full bg-primary/10 rounded-full h-2">
+        {creditCards.length === 0 ? (
           <div
-            className={`h-2 rounded-full transition-all ${
-              utilization < 30 ? 'bg-emerald-500' : utilization < 50 ? 'bg-amber-500' : 'bg-red-500'
-            }`}
-            style={{ width: `${Math.min(utilization, 100)}%` }}
-          />
-        </div>
-      </div>
+            className="p-8 rounded-xl border-2 border-dashed text-center"
+            style={{ borderColor: colors.border.medium }}
+          >
+            <div className="text-4xl mb-3">💳</div>
+            <p className="font-medium mb-2" style={{ color: colors.text.primary }}>
+              No credit cards yet
+            </p>
+            <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
+              Add your credit cards via the Accounts page to track balances, rewards, and benefits
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* 1. Spend Optimizer */}
+            <SpendOptimizer cards={creditCards} bonusesByCard={bonusesByCard} />
 
-      {/* APR & Limit */}
-      <div className="flex items-center justify-between text-xs text-primary opacity-60">
-        {card.apr && <span>APR: {card.apr}%</span>}
-        {card.creditLimit && <span>Limit: {formatCurrency(card.creditLimit)}</span>}
+            {/* 2. Benefits Tracker */}
+            <BenefitsTracker
+              cards={creditCards}
+              benefitsByCard={benefitsByCard}
+            />
+
+            {/* 3. Active Bonuses (rotating + welcome) */}
+            <CategoryBonusTracker
+              cards={creditCards}
+              bonusesByCard={bonusesByCard}
+              welcomeBonusesByCard={welcomeBonusesByCard}
+            />
+
+            {/* 4. My Cards list */}
+            <CardsList
+              cards={creditCards}
+              partnerName={partnerName}
+            />
+          </div>
+        )}
+
+        {/* Loading overlay for sub-data (non-blocking) */}
+        {!isLoading && anyLoading && creditCards.length > 0 && (
+          <div className="flex items-center gap-2 mt-3" style={{ color: colors.text.secondary }}>
+            <Loader2 className="w-3 h-3 animate-spin" />
+            <span className="text-xs">Loading card details...</span>
+          </div>
+        )}
       </div>
     </div>
   );

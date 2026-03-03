@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
+import { useQuery, useQueries, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import { getFinanceAPI } from '@/finance/data';
 import type {
   CardBenefit,
@@ -10,6 +10,7 @@ import type {
   CardOffer,
   CardOfferInput,
 } from '@/finance/types';
+import type { Account } from '@/finance/types';
 import { logger } from '@/services/logger';
 import { financeKeys } from './useFinanceMergedMode';
 
@@ -166,4 +167,81 @@ export function useUpsertCardOfferMutation(): UseMutationResult<void, Error, { a
       logger.error('Finance', 'Failed to upsert card offer', { error: error.message, accountId });
     },
   });
+}
+
+// ==================== Aggregate Queries (all cards at once) ====================
+
+/** Fetch CardBenefits for a list of credit card accounts in parallel. */
+export function useAllCardsBenefitsQuery(cards: Account[]): {
+  data: Record<string, CardBenefit[]>;
+  isLoading: boolean;
+} {
+  const queries = useQueries({
+    queries: cards.map((card) => ({
+      queryKey: financeKeys.cardBenefits(card.id),
+      queryFn: async () => {
+        const api = await getFinanceAPI();
+        return api.listCardBenefits(card.id);
+      },
+      staleTime: 1000 * 60 * 10,
+    })),
+  });
+
+  const isLoading = queries.some((q) => q.isLoading);
+  const data: Record<string, CardBenefit[]> = {};
+  cards.forEach((card, i) => {
+    data[card.id] = queries[i]?.data ?? [];
+  });
+
+  return { data, isLoading };
+}
+
+/** Fetch CardCategoryBonuses for a list of credit card accounts in parallel. */
+export function useAllCardsCategoryBonusesQuery(cards: Account[]): {
+  data: Record<string, CardCategoryBonus[]>;
+  isLoading: boolean;
+} {
+  const queries = useQueries({
+    queries: cards.map((card) => ({
+      queryKey: financeKeys.categoryBonuses(card.id),
+      queryFn: async () => {
+        const api = await getFinanceAPI();
+        return api.listCategoryBonuses(card.id);
+      },
+      staleTime: 1000 * 60 * 10,
+    })),
+  });
+
+  const isLoading = queries.some((q) => q.isLoading);
+  const data: Record<string, CardCategoryBonus[]> = {};
+  cards.forEach((card, i) => {
+    data[card.id] = queries[i]?.data ?? [];
+  });
+
+  return { data, isLoading };
+}
+
+/** Fetch WelcomeBonuses for a list of credit card accounts in parallel. */
+export function useAllCardsWelcomeBonusesQuery(cards: Account[]): {
+  data: Record<string, WelcomeBonus[]>;
+  isLoading: boolean;
+} {
+  const queries = useQueries({
+    queries: cards.map((card) => ({
+      queryKey: financeKeys.welcomeBonuses(card.id),
+      queryFn: async () => {
+        const api = await getFinanceAPI();
+        return api.listWelcomeBonuses(card.id);
+      },
+      staleTime: 1000 * 60 * 10,
+    })),
+  });
+
+  const isLoading = queries.some((q) => q.isLoading);
+  const data: Record<string, WelcomeBonus[]> = {};
+  cards.forEach((card, i) => {
+    data[card.id] = queries[i]?.data ?? [];
+  });
+
+  return { data, isLoading };
 }
