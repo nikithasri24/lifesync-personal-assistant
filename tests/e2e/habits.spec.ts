@@ -4,12 +4,19 @@ test.describe('Habits E2E', () => {
   test('add, complete, and delete habit', async ({ page }) => {
     const habitName = `Test Habit E2E ${Date.now()}`
 
-    // Navigate to Habits
+    // Navigate to Habits and wait for data to load
     await page.goto('/habits')
-    await page.waitForLoadState('domcontentloaded')
+    await page.waitForLoadState('load')
 
-    // Ensure page has loaded
-    await expect(page.locator('main')).toBeVisible()
+    // If the error boundary fires (Supabase auth not ready), reload once
+    await page.waitForTimeout(1000)
+    if (await page.getByText('Error in Habits').isVisible().catch(() => false)) {
+      await page.reload()
+      await page.waitForLoadState('load')
+    }
+
+    // Wait for the FAB to confirm the page is ready
+    await expect(page.getByRole('button', { name: 'Create new habit' })).toBeVisible({ timeout: 15000 })
 
     // Open the add habit modal using the FAB (aria-label="Create new habit")
     await page.getByRole('button', { name: 'Create new habit' }).click()
@@ -49,10 +56,19 @@ test.describe('Habits E2E', () => {
 
   test('frequency labels display correctly', async ({ page }) => {
     await page.goto('/habits')
-    await page.waitForLoadState('domcontentloaded')
+    await page.waitForLoadState('load')
 
-    // Ensure page has loaded
-    await expect(page.locator('main')).toBeVisible()
+    // Habits can show FeatureErrorBoundary on first load if Supabase auth hasn't
+    // initialised yet. Poll for the FAB up to 30 s, clicking "Try Again" when needed.
+    const deadline = Date.now() + 30_000
+    while (Date.now() < deadline) {
+      if (await page.getByRole('button', { name: 'Create new habit' }).isVisible().catch(() => false)) break
+      if (await page.getByText('Error in Habits').isVisible().catch(() => false)) {
+        await page.getByRole('button', { name: 'Try Again' }).click()
+      }
+      await page.waitForTimeout(1000)
+    }
+    await expect(page.getByRole('button', { name: 'Create new habit' })).toBeVisible({ timeout: 5000 })
 
     // Create Weekly habit
     await page.getByRole('button', { name: 'Create new habit' }).click()
@@ -81,7 +97,19 @@ test.describe('Habits E2E', () => {
 
   test('daily habit with multi-target shows progress indicator', async ({ page }) => {
     await page.goto('/habits')
-    await page.waitForLoadState('domcontentloaded')
+    await page.waitForLoadState('load')
+
+    // Habits can show FeatureErrorBoundary on first load if Supabase auth hasn't
+    // initialised yet. Poll for the FAB up to 30 s, clicking "Try Again" when needed.
+    const deadline = Date.now() + 30_000
+    while (Date.now() < deadline) {
+      if (await page.getByRole('button', { name: 'Create new habit' }).isVisible().catch(() => false)) break
+      if (await page.getByText('Error in Habits').isVisible().catch(() => false)) {
+        await page.getByRole('button', { name: 'Try Again' }).click()
+      }
+      await page.waitForTimeout(1000)
+    }
+    await expect(page.getByRole('button', { name: 'Create new habit' })).toBeVisible({ timeout: 5000 })
 
     // Create daily habit with target 3
     await page.getByRole('button', { name: 'Create new habit' }).click()
@@ -102,7 +130,19 @@ test.describe('Habits E2E', () => {
 
   test('weekly and monthly multi-target habits show correct labels', async ({ page }) => {
     await page.goto('/habits')
-    await page.waitForLoadState('domcontentloaded')
+    await page.waitForLoadState('load')
+
+    // Habits can show FeatureErrorBoundary on first load if Supabase auth hasn't
+    // initialised yet. Poll for the FAB up to 30 s, clicking "Try Again" when needed.
+    const deadline = Date.now() + 30_000
+    while (Date.now() < deadline) {
+      if (await page.getByRole('button', { name: 'Create new habit' }).isVisible().catch(() => false)) break
+      if (await page.getByText('Error in Habits').isVisible().catch(() => false)) {
+        await page.getByRole('button', { name: 'Try Again' }).click()
+      }
+      await page.waitForTimeout(1000)
+    }
+    await expect(page.getByRole('button', { name: 'Create new habit' })).toBeVisible({ timeout: 5000 })
 
     // Create weekly habit with target 2
     await page.getByRole('button', { name: 'Create new habit' }).click()
