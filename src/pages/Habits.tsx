@@ -11,7 +11,7 @@
  * - Modal visibility and editing state
  */
 
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -343,6 +343,20 @@ const HabitsContent: React.FC = () => {
     modals.open('showForm');
   };
 
+  // Group habits by category for today view
+  const habitsByCategory = useMemo(() => {
+    if (modals.state.viewMode !== 'today') return null;
+    return habitsWithStats.reduce((acc, h) => {
+      const cat = h.habit.category || 'General';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(h);
+      return acc;
+    }, {} as Record<string, typeof habitsWithStats>);
+  }, [habitsWithStats, modals.state.viewMode]);
+
+  // Mark all state
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
+
   // Loading state
   if (habitsLoading || entriesLoading) {
     return <HabitsLoadingState />;
@@ -364,11 +378,42 @@ const HabitsContent: React.FC = () => {
     : null;
   const editingDraft = editingHabit ? toHabitDraft(editingHabit) : undefined;
 
-  // Calculate stats for header (unused now but kept for future)
+  // Calculate stats for header
   const totalHabits = filteredHabits.length;
   const completedToday = habitsWithStats.filter(h => h.hasReachedTarget).length;
   const completionPercentage = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
   const maxStreak = Math.max(...habitsWithStats.map(h => h.currentStreak), 0);
+  const hasIncompleteHabits = habitsWithStats.some(h => !h.hasReachedTarget);
+
+  const handleMarkAllDone = async () => {
+    const incomplete = habitsWithStats.filter(h => !h.hasReachedTarget && h.habit.id);
+    if (incomplete.length === 0) return;
+    setIsMarkingAll(true);
+    try {
+      await Promise.all(incomplete.map(h =>
+        createEntryMutation.mutateAsync({
+          habit_id: h.habit.id!,
+          date: selectedDateKey,
+          value: 1,
+        })
+      ));
+      showToast(`${incomplete.length} habit${incomplete.length === 1 ? '' : 's'} completed! 🎉`, 'success');
+    } catch {
+      showToast('Some habits failed to complete', 'error');
+    } finally {
+      setIsMarkingAll(false);
+    }
+  };
+
+  const handleMarkAllInCategory = (categoryHabits: typeof habitsWithStats) => {
+    const incomplete = categoryHabits.filter(h => !h.hasReachedTarget && h.habit.id);
+    incomplete.forEach(h => {
+      createEntryMutation.mutate({ habit_id: h.habit.id!, date: selectedDateKey, value: 1 });
+    });
+    if (incomplete.length > 0) {
+      showToast(`${incomplete.length} habit${incomplete.length === 1 ? '' : 's'} completed! ✅`, 'success');
+    }
+  };
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
@@ -393,6 +438,9 @@ const HabitsContent: React.FC = () => {
           onViewModeChange={(mode) => modals.set('viewMode', mode)}
           selectedDate={modals.state.selectedDate}
           onDateChange={(date) => modals.set('selectedDate', date)}
+          onMarkAllDone={handleMarkAllDone}
+          isMarkingAll={isMarkingAll}
+          hasIncompleteHabits={hasIncompleteHabits}
         />
 
         {/* Habits List or Weekly Grid */}
@@ -423,27 +471,48 @@ const HabitsContent: React.FC = () => {
                   Add First Habit
                 </button>
               </div>
-            ) : (
-              habitsWithStats.map((habitWithStats) => (
-                <HabitCardV2
-                  key={habitWithStats.habit.id}
-                  habit={habitWithStats.habit}
-                  habitEntries={apiEntries.filter(e => e.habit_id === habitWithStats.habit.id)}
-                  todayCompletions={habitWithStats.todayCompletions}
-                  targetCount={habitWithStats.targetCount}
-                  hasReachedTarget={habitWithStats.hasReachedTarget}
-                  currentStreak={habitWithStats.currentStreak}
-                  bestStreak={habitWithStats.habit.best_streak}
-                  isCompleting={createEntryMutation.isPending}
-                  onComplete={() => handleToggleComplete(habitWithStats.habit.id)}
-                  onEdit={() => handleEditHabit(habitWithStats.habit)}
-                  onDelete={() => {}} // Not used anymore
-                  mergedConnection={mergedConnection}
-                  currentUserId={currentUserId}
-                  partnerName={partnerName}
-                />
-              ))
-            )}
+            ) : habitsByCategory ? (
+              Object.entries(habitsByCategory).map(([category, categoryHabits]) => {
+                const hasIncomplete = categoryHabits.some(h => !h.hasReachedTarget);
+                return (
+                  <div key={category} style={{ marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#9B8B7A', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {category}
+                      </span>
+                      {hasIncomplete && (
+                        <button
+                          onClick={() => handleMarkAllInCategory(categoryHabits)}
+                          style={{ fontSize: '12px', color: '#C18B5E', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: '2px 8px' }}
+                          aria-label={`Mark all ${category} habits done`}
+                        >
+                          Mark all
+                        </button>
+                      )}
+                    </div>
+                    {categoryHabits.map((habitWithStats) => (
+                      <HabitCardV2
+                        key={habitWithStats.habit.id}
+                        habit={habitWithStats.habit}
+                        habitEntries={apiEntries.filter(e => e.habit_id === habitWithStats.habit.id)}
+                        todayCompletions={habitWithStats.todayCompletions}
+                        targetCount={habitWithStats.targetCount}
+                        hasReachedTarget={habitWithStats.hasReachedTarget}
+                        currentStreak={habitWithStats.currentStreak}
+                        bestStreak={habitWithStats.habit.best_streak}
+                        isCompleting={createEntryMutation.isPending}
+                        onComplete={() => handleToggleComplete(habitWithStats.habit.id)}
+                        onEdit={() => handleEditHabit(habitWithStats.habit)}
+                        onDelete={() => {}}
+                        mergedConnection={mergedConnection}
+                        currentUserId={currentUserId}
+                        partnerName={partnerName}
+                      />
+                    ))}
+                  </div>
+                );
+              })
+            ) : null}
           </div>
         ) : (
           <HabitWeeklyGridV2

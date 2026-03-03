@@ -99,7 +99,7 @@ export const JournalContainer: React.FC = () => {
   useEffect(() => {
     resetPage();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedTags, filters.startDate, filters.endDate]);
+  }, [searchQuery, selectedTags, filters?.startDate, filters?.endDate]);
 
   // Handle ?edit=<id> query parameter
   const [searchParams, setSearchParams] = useSearchParams();
