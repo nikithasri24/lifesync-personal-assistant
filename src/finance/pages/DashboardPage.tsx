@@ -5,6 +5,8 @@ import { formatCurrency } from '../utils/currency';
 import { currentMonth, monthRange, formatMonth } from '../utils/date';
 import { filterTransfers } from '../utils/cashFlowCalculator';
 import { useFinanceMetrics, type FinanceMetrics } from '../hooks/useFinanceMetrics';
+import { usePaystubQuery } from '../hooks/usePaystubQuery';
+import { PaycheckBreakdown } from '../components/PaycheckBreakdown';
 import {
   useTransactionsQuery,
   useTransactionMonthsQuery,
@@ -167,6 +169,9 @@ const DashboardPage: React.FC = () => {
     };
   }, [month]);
 
+  // Fetch paystub for the selected month (enriches Sankey with gross pay breakdown)
+  const { data: paystub } = usePaystubQuery(month);
+
   // Only calculate metrics after data is loaded - use filtered data
   const metrics: FinanceMetrics = useFinanceMetrics({
     transactions: loading ? [] : filteredTxns,
@@ -175,6 +180,7 @@ const DashboardPage: React.FC = () => {
     currentPeriod,
     previousPeriod,
     topCategoriesLimit: 10,
+    paystub,
   });
 
   // Debug metrics
@@ -401,6 +407,9 @@ const DashboardPage: React.FC = () => {
             )}
           </Card>
         )}
+
+        {/* Paycheck Breakdown — shown when paystub data exists for the month */}
+        {paystub && <PaycheckBreakdown paystub={paystub} />}
 
         {/* Budget Progress - Full Width */}
         <Card title="Budget Progress (Top 5 Categories)">

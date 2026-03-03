@@ -7,6 +7,7 @@
 
 import { useMemo } from 'react';
 import type { Transaction, Category, Account } from '../types';
+import type { Paystub } from '../data';
 import {
   calculateCashFlow,
   calculateCashFlowByCategory,
@@ -72,6 +73,7 @@ export interface UseFinanceMetricsOptions {
   currentPeriod?: DateRange;
   previousPeriod?: DateRange;
   topCategoriesLimit?: number;
+  paystub?: Paystub | null;
 }
 
 /**
@@ -84,6 +86,7 @@ export function useFinanceMetrics(options: UseFinanceMetricsOptions): FinanceMet
     currentPeriod,
     previousPeriod,
     topCategoriesLimit = 5,
+    paystub,
   } = options;
 
   // Filter transactions by current period if provided
@@ -123,7 +126,7 @@ export function useFinanceMetrics(options: UseFinanceMetricsOptions): FinanceMet
 
   // Prepare Sankey data
   const sankeyData = useMemo(
-    () => prepareSankeyData(currentTxns, categories),
+    () => prepareSankeyData(currentTxns, categories, paystub),
     [currentTxns, categories]
   );
 

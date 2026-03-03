@@ -177,9 +177,12 @@ export interface SankeyNode {
 // Max categories shown on right side of Sankey before grouping into "Other"
 const MAX_EXPENSE_NODES = 7;
 
+import type { Paystub } from '../data';
+
 export function prepareSankeyData(
   transactions: Transaction[],
-  categories: Array<{ id: string; name: string }>
+  categories: Array<{ id: string; name: string }>,
+  paystub?: Paystub | null
 ): SankeyNode[] {
   const nodes: SankeyNode[] = [];
 
@@ -205,6 +208,10 @@ export function prepareSankeyData(
       nodes.push({ source: source.categoryName, target: 'Total Income', value: source.amount });
     }
   }
+
+  // Paystub data is shown in a dedicated breakdown card on the Dashboard,
+  // not injected into the Sankey (which tracks net household cash flow).
+  void paystub;
 
   // Expense flows: Total Income → categories.
   // Use debit-only sums, exactly matching the Transactions tab category totals.
