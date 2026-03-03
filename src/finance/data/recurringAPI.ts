@@ -91,7 +91,7 @@ export async function listRecurringTransactions(): Promise<RecurringTransaction[
   }
 
   const { data, error } = await supabase
-    .from('recurring_transactions')
+    .from('finance_recurring_transactions')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
@@ -159,7 +159,7 @@ export async function upsertRecurringTransaction(
   if (input.id) {
     // Update existing
     const { data, error } = await supabase
-      .from('recurring_transactions')
+      .from('finance_recurring_transactions')
       .update(payload)
       .eq('id', input.id)
       .eq('user_id', user.id)
@@ -174,7 +174,7 @@ export async function upsertRecurringTransaction(
   } else {
     // Create new
     const { data, error } = await supabase
-      .from('recurring_transactions')
+      .from('finance_recurring_transactions')
       .insert(payload)
       .select()
       .single();
@@ -220,7 +220,7 @@ export async function deleteRecurringTransaction(id: string): Promise<void> {
   }
 
   const { error } = await supabase
-    .from('recurring_transactions')
+    .from('finance_recurring_transactions')
     .delete()
     .eq('id', id)
     .eq('user_id', user.id);
@@ -241,7 +241,7 @@ export async function listPendingTransactions(): Promise<PendingTransaction[]> {
   }
 
   const { data, error } = await supabase
-    .from('pending_transactions')
+    .from('finance_pending_transactions')
     .select('*')
     .eq('user_id', user.id)
     .in('status', ['pending', 'edited'])
@@ -284,7 +284,7 @@ export async function approvePendingTransaction(
 
   // Get the pending transaction
   const { data: pending, error: fetchError } = await supabase
-    .from('pending_transactions')
+    .from('finance_pending_transactions')
     .select('*')
     .eq('id', pendingId)
     .eq('user_id', user.id)
@@ -329,7 +329,7 @@ export async function approvePendingTransaction(
 
   // Update pending transaction status
   const { error: updateError } = await supabase
-    .from('pending_transactions')
+    .from('finance_pending_transactions')
     .update({
       status: 'approved',
       transaction_id: txn.id,
@@ -353,7 +353,7 @@ export async function skipPendingTransaction(pendingId: string): Promise<void> {
   }
 
   const { error } = await supabase
-    .from('pending_transactions')
+    .from('finance_pending_transactions')
     .update({
       status: 'skipped',
       reviewed_at: new Date().toISOString(),
@@ -377,7 +377,7 @@ export async function deletePendingTransaction(pendingId: string): Promise<void>
   }
 
   const { error } = await supabase
-    .from('pending_transactions')
+    .from('finance_pending_transactions')
     .delete()
     .eq('id', pendingId)
     .eq('user_id', user.id);
@@ -400,7 +400,7 @@ export async function generatePendingTransactions(): Promise<number> {
 
   // Get all active recurring transactions
   const { data: recurring, error: fetchError } = await supabase
-    .from('recurring_transactions')
+    .from('finance_recurring_transactions')
     .select('*')
     .eq('user_id', user.id)
     .eq('active', true);
@@ -440,7 +440,7 @@ export async function generatePendingTransactions(): Promise<number> {
 
         // Check if this pending transaction already exists
         const { data: existing } = await supabase
-          .from('pending_transactions')
+          .from('finance_pending_transactions')
           .select('id')
           .eq('recurring_transaction_id', rec.id)
           .eq('scheduled_date', nextDate.toISOString().split('T')[0])
@@ -465,7 +465,7 @@ export async function generatePendingTransactions(): Promise<number> {
           } else {
             // Create pending transaction for review
             await supabase
-              .from('pending_transactions')
+              .from('finance_pending_transactions')
               .insert({
                 user_id: user.id,
                 recurring_transaction_id: rec.id,
@@ -485,7 +485,7 @@ export async function generatePendingTransactions(): Promise<number> {
 
         // Update last generated date
         await supabase
-          .from('recurring_transactions')
+          .from('finance_recurring_transactions')
           .update({ last_generated_date: nextDate.toISOString().split('T')[0] })
           .eq('id', rec.id);
 
