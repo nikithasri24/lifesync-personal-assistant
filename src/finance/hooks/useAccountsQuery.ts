@@ -54,10 +54,12 @@ export function useUpdateAccountMutation(): UseMutationResult<void, Error, { acc
   });
 }
 
-export function useUpsertAccountMutation(): UseMutationResult<void, Error, { id?: string; name: string; type: string; balance: number; institutionId?: string; userId?: string }, unknown> {
+type UpsertAccountInput = { id?: string; name: string; type: string; balance: number; institutionId?: string; userId?: string; isArchived?: boolean; creditLimit?: number; apr?: number; promoAprEndDate?: string; notes?: string };
+
+export function useUpsertAccountMutation(): UseMutationResult<void, Error, UpsertAccountInput, unknown> {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, { id?: string; name: string; type: string; balance: number; institutionId?: string; userId?: string }>({
+  return useMutation<void, Error, UpsertAccountInput>({
     mutationFn: async (account) => {
       logger.debug('Finance', 'Upserting account', { account });
       const api = await getFinanceAPI();

@@ -4,12 +4,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Gift, Percent, Shield, Calendar } from 'lucide-react';
+import { X, Plus, Gift, Percent, Shield, Calendar, Pencil } from 'lucide-react';
 import type { Account } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { BenefitsTab } from './BenefitsTab';
 import { OffersTab } from './OffersTab';
 import { StatementsTab } from './StatementsTab';
+import { AccountFormModalV2, type AccountFormData } from '../v2/AccountFormModalV2';
+import { useUpsertAccountMutation } from '@/hooks/useFinanceQuery';
 
 interface CreditCardDetailsModalProps {
   card: Account;
@@ -20,6 +22,23 @@ type TabType = 'overview' | 'benefits' | 'offers' | 'statements';
 
 export const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({ card, onClose }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [isEditing, setIsEditing] = useState(false);
+  const upsertAccount = useUpsertAccountMutation();
+
+  const handleSave = async (data: AccountFormData) => {
+    await upsertAccount.mutateAsync({
+      id: card.id,
+      name: data.name,
+      type: data.type,
+      balance: data.balance,
+      creditLimit: data.creditLimit,
+      apr: data.apr,
+      promoAprEndDate: data.promoAprEndDate,
+      notes: data.notes,
+      isArchived: data.isArchived,
+    });
+    setIsEditing(false);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -72,13 +91,22 @@ export const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({ 
                 </span>
               )}
             </div>
-            <button
-              onClick={onClose}
-              className="rounded-lg p-2 hover:bg-primary/20 transition-colors"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5 text-primary" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="rounded-lg p-2 hover:bg-primary/20 transition-colors"
+                aria-label="Edit card"
+              >
+                <Pencil className="h-5 w-5 text-primary" />
+              </button>
+              <button
+                onClick={onClose}
+                className="rounded-lg p-2 hover:bg-primary/20 transition-colors"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5 text-primary" />
+              </button>
+            </div>
           </div>
 
           {/* Quick Stats */}
@@ -124,6 +152,24 @@ export const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({ 
           {activeTab === 'statements' && <StatementsTab accountId={card.id} />}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <AccountFormModalV2
+        isOpen={isEditing}
+        onClose={() => setIsEditing(false)}
+        onSave={handleSave}
+        isPending={upsertAccount.isPending}
+        initialData={{
+          name: card.name,
+          type: card.type,
+          balance: card.balance,
+          creditLimit: card.creditLimit,
+          apr: card.apr,
+          promoAprEndDate: card.promoAprEndDate,
+          notes: card.notes,
+          isArchived: card.isArchived,
+        }}
+      />
     </div>
   );
 };
