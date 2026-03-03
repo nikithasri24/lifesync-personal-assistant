@@ -19,12 +19,12 @@ export type FinanceTabView =
   | 'calculators'
   | 'creditcards'
   | 'insurance'
-  | 'settings';
+  | 'timeline';
 
 export function useFinanceState() {
   const [activeTab, setActiveTabState] = useState<FinanceTabView>(() => {
     const hash = window.location.hash.replace('#', '') as FinanceTabView;
-    const valid: FinanceTabView[] = ['dashboard','accounts','transactions','budgets','recurring','networth','goals','loans','retirement','projections','calculators','creditcards','insurance','settings'];
+    const valid: FinanceTabView[] = ['dashboard','accounts','transactions','budgets','recurring','networth','goals','loans','retirement','projections','calculators','creditcards','insurance','timeline'];
     return valid.includes(hash) ? hash : 'dashboard';
   });
 

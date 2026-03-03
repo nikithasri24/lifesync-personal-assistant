@@ -23,7 +23,7 @@ const ProjectionsPage = React.lazy(() => import('../finance/pages/ProjectionsPag
 const CalculatorsPage = React.lazy(() => import('../finance/pages/CalculatorsPage'));
 const CreditCardsPage = React.lazy(() => import('../finance/pages/CreditCardsPage'));
 const InsurancePage = React.lazy(() => import('../finance/pages/InsurancePage'));
-const SettingsPage = React.lazy(() => import('../finance/pages/SettingsPage'));
+const TimelinePage = React.lazy(() => import('../finance/pages/TimelinePage'));
 
 const Finances: React.FC = () => {
   const colors = useThemeColors();
@@ -59,7 +59,7 @@ const Finances: React.FC = () => {
                   { value: 'calculators', label: 'Calculators' },
                   { value: 'creditcards', label: 'Credit Cards' },
                   { value: 'insurance', label: 'Insurance' },
-                  { value: 'settings', label: 'Settings' },
+                  { value: 'timeline', label: '📅 Timeline' },
                 ]}
                 value={activeTab}
                 onChange={(value) => setActiveTab(value as FinanceTabView)}
@@ -89,7 +89,7 @@ const Finances: React.FC = () => {
             {activeTab === 'calculators' && <CalculatorsPage />}
             {activeTab === 'creditcards' && <CreditCardsPage />}
             {activeTab === 'insurance' && <InsurancePage />}
-            {activeTab === 'settings' && <SettingsPage />}
+            {activeTab === 'timeline' && <TimelinePage />}
           </React.Suspense>
         </div>
       </div>
