@@ -13,12 +13,14 @@ interface ChallengeDetailModalProps {
   isOpen: boolean;
   challenge: AchievementReward;
   onClose: () => void;
+  currentUserId?: string;
 }
 
 export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
   isOpen,
   challenge,
   onClose,
+  currentUserId,
 }) => {
   const { showToast } = useToast();
   const { mutate: updateChallenge, isPending: isUpdating } = useUpdateAchievementReward();
@@ -36,6 +38,8 @@ export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
     challenge.expiration_date ? challenge.expiration_date.split('T')[0] : ''
   );
   const [isEditing, setIsEditing] = useState(false);
+
+  const isCreator = !!currentUserId && currentUserId === challenge.creator_id;
 
   // Keyboard navigation
   useEffect(() => {
@@ -415,19 +419,27 @@ export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-start gap-3">
                   <span className="text-3xl">
-                    {challenge.hide_reward && !isCompleted ? '🎁' :
-                      challenge.reward_type === 'message' ? '💌' :
-                      challenge.reward_type === 'activity' ? '🎯' :
-                      challenge.reward_type === 'gift' ? '🎁' : '✨'}
+                    {challenge.reward_type === 'message' ? '💌'
+                      : challenge.reward_type === 'activity' ? '🎯'
+                      : challenge.reward_type === 'gift' ? '🎁'
+                      : '✨'}
                   </span>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-gray-700 mb-1">
-                      {isCompleted ? 'Your Reward:' : 'Reward:'}
+                      {isCompleted ? 'Reward Unlocked! 🎉' : isCreator ? "Gift you've prepared:" : 'Your reward:'}
                     </p>
                     <p className="text-gray-900">
-                      {challenge.hide_reward && !isCompleted
-                        ? 'Mystery Reward (unlocks when complete)'
-                        : challenge.reward_description || 'Reward awaits!'}
+                      {isCompleted || isCreator
+                        ? challenge.reward_description || 'Reward awaits!'
+                        : (() => {
+                            const teaser: Record<string, string> = {
+                              message:  'A personal message is waiting for you…',
+                              activity: 'A date or activity is waiting for you…',
+                              gift:     'A gift is waiting for you…',
+                              surprise: 'A surprise is waiting for you…',
+                            };
+                            return teaser[challenge.reward_type] ?? 'Complete the challenge to unlock your reward!';
+                          })()}
                     </p>
                   </div>
                 </div>

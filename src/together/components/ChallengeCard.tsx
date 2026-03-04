@@ -40,29 +40,35 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
   // Show reward if claimed OR progress is complete
   const isCompleted = isClaimed || isProgressComplete;
 
+  // Creator always sees the reward; undefined userId → defaults to recipient (safe/conservative)
+  const isCreator = !!currentUserId && currentUserId === challenge.creator_id;
+
   const getRewardIcon = () => {
-    if (challenge.hide_reward && !isCompleted) {
-      return '🎁';
-    }
     switch (challenge.reward_type) {
-      case 'message':
-        return '💌';
-      case 'activity':
-        return '🎯';
-      case 'gift':
-        return '🎁';
-      case 'surprise':
-        return '✨';
-      default:
-        return '🎁';
+      case 'message':  return '💌';
+      case 'activity': return '🎯';
+      case 'gift':     return '🎁';
+      case 'surprise': return '✨';
+      default:         return '🎁';
     }
   };
 
   const getRewardText = () => {
-    if (challenge.hide_reward && !isCompleted) {
-      return 'Mystery Reward (unlocks when complete)';
-    }
-    return challenge.reward_description || 'Reward awaits!';
+    if (isCompleted) return challenge.reward_description || 'Reward awaits!';
+    if (isCreator)   return challenge.reward_description || 'Reward awaits!';
+    const teaser: Record<string, string> = {
+      message:  'A personal message is waiting for you…',
+      activity: 'A date or activity is waiting for you…',
+      gift:     'A gift is waiting for you…',
+      surprise: 'A surprise is waiting for you…',
+    };
+    return teaser[challenge.reward_type] ?? 'Complete the challenge to unlock your reward!';
+  };
+
+  const getRewardLabel = () => {
+    if (isCompleted) return 'Reward Unlocked! 🎉';
+    if (isCreator)   return "Gift you've prepared:";
+    return 'Your reward:';
   };
 
   const handleClaimReward = (e: React.MouseEvent) => {
@@ -174,7 +180,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
           <span className="text-xl">{getRewardIcon()}</span>
           <div className="flex-1">
             <p className="text-xs font-semibold mb-1" style={{ color: colors.text.secondary }}>
-              {isCompleted ? 'Your Reward:' : 'Reward:'}
+              {getRewardLabel()}
             </p>
             <p className="text-sm" style={{ color: colors.text.primary }}>
               {getRewardText()}

@@ -15,7 +15,7 @@ import { useModalState } from '@/hooks/useModalState';
 import { DashboardHeaderV2 } from '@/dashboard/components/v2/DashboardHeaderV2';
 import { QuickActionsV2 } from '@/dashboard/components/v2/QuickActionsV2';
 import { BriefingCardV2 } from '@/dashboard/components/v2/BriefingCardV2';
-import { TodayTasksSectionV2, TodayHabitsSectionV2, RecentNotesSectionV2 } from '@/dashboard/components/v2';
+import { TodayTasksSectionV2, RecentNotesSectionV2 } from '@/dashboard/components/v2';
 import { TodayHabitsCompactStrip } from '@/dashboard/components/v2/TodayHabitsCompactStrip';
 import { QuickAddModalV2 } from '@/dashboard/components/v2/QuickAddModalV2';
 import { NoteFormModalV2 } from '@/notes/components/v2/NoteFormModalV2';
@@ -367,18 +367,6 @@ function DashboardContent() {
               onAddTask={modals.openQuickAdd}
               onComplete={handleCompleteTask}
               completingTask={completingTask}
-            />
-
-            {/* Today's Habits */}
-            <TodayHabitsSectionV2
-              habits={todayHabits}
-              hasAnyHabits={habits.length > 0}
-              onViewAll={() => navigate('/habits')}
-              onComplete={handleCompleteHabit}
-              completingHabit={completingHabit}
-              completedHabits={completedHabits}
-              onCompleteAll={handleCompleteAllHabits}
-              isCompletingAll={isCompletingAll}
             />
 
             {/* Recent Notes */}

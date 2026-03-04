@@ -236,6 +236,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
           isOpen={!!modals.state.viewingChallenge}
           challenge={modals.state.viewingChallenge}
           onClose={() => modals.set('viewingChallenge', null)}
+          currentUserId={currentUserId ?? undefined}
         />
       )}
     </div>
