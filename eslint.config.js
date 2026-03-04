@@ -95,6 +95,11 @@ export default tseslint.config([
               importNames: ['supabase'],
               message: 'Direct Supabase client imports are only allowed in src/api/ and src/lib/. Use API layer functions instead. Type imports are allowed.',
             },
+            {
+              name: '@/hooks/useFinanceQuery',
+              importNames: ['useFinanceMergedConnectionQuery'],
+              message: 'Deprecated. Use useFinanceMergedConnection() from @/finance/hooks/useFinanceMergedMode instead.',
+            },
           ],
         },
       ],

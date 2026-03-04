@@ -1,5 +1,6 @@
 import React from 'react';
-import { useAccountsQuery, useInstitutionsQuery, useUpsertAccountMutation, useDeleteAccountMutation, useFinanceMergedConnectionQuery, useTransactionsQuery } from '@/hooks/useFinanceQuery';
+import { useAccountsQuery, useInstitutionsQuery, useUpsertAccountMutation, useDeleteAccountMutation, useFinanceMergedConnection, useTransactionsQuery } from '@/hooks/useFinanceQuery';
+import { filterByOwner } from '@/finance/utils/ownerFilter';
 import type { Account } from '../types';
 import { logger } from '../../services/logger';
 import { useToast } from '@/hooks/useToast';
@@ -18,7 +19,7 @@ const AccountsPage: React.FC = () => {
 
   // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner name and ID from merged connection
   const partnerName = React.useMemo(() => {
@@ -72,12 +73,7 @@ const AccountsPage: React.FC = () => {
   }, [monthlyTxns]);
 
   // Filter accounts by owner (if in merged mode)
-  const ownerFiltered = React.useMemo(() => {
-    if (!mergedConnection || filters.ownerFilter === 'all') return accts;
-    if (filters.ownerFilter === 'mine') return accts.filter(a => a.userId === user?.id);
-    if (filters.ownerFilter === 'partner') return accts.filter(a => a.userId !== user?.id);
-    return accts;
-  }, [accts, mergedConnection, filters.ownerFilter, user]);
+  const ownerFiltered = filterByOwner(accts, filters.ownerFilter, user?.id);
 
   const activeAccounts = React.useMemo(() => ownerFiltered.filter(a => !a.isArchived), [ownerFiltered]);
   const archivedAccounts = React.useMemo(() => ownerFiltered.filter(a => a.isArchived), [ownerFiltered]);

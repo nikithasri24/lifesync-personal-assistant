@@ -48,6 +48,11 @@ Before running this skill, ensure:
      - nutrition → 'nutrition'
      - skincare → 'skincare'
      - national-parks → 'travel'
+     - together → 'together'
+   - **⚠️ If the module name is NOT in `ShareableModule` enum** (`src/shared/types/connections.ts`):
+     - Add it to the union type
+     - Add an entry to `MODULE_CONFIGS`
+     - **Never use a different module as a proxy**
 
 2. **Read existing implementation:**
    - API file: `src/api/[feature]API.ts`
@@ -69,8 +74,10 @@ Before running this skill, ensure:
 import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
 ```
 
-2. **Add cached connection variable and getter function after imports:**
+2. **Add imports for logger and cached connection variable and getter function after imports:**
 ```typescript
+import { logger } from '@/services/logger';
+
 // Merged connection cache for [Feature]
 let cachedMergedConnection: MergedConnectionResult | null | undefined;
 
@@ -80,13 +87,12 @@ let cachedMergedConnection: MergedConnectionResult | null | undefined;
  */
 export async function get[Feature]MergedConnection(): Promise<MergedConnectionResult | null> {
   if (cachedMergedConnection !== undefined) {
-    console.log('[get[Feature]MergedConnection] Returning cached connection:', cachedMergedConnection);
+    logger.debug('[Feature]', 'Returning cached merged connection', { connection: cachedMergedConnection });
     return cachedMergedConnection;
   }
 
-  console.log('[get[Feature]MergedConnection] Fetching merged connection...');
   cachedMergedConnection = await getMergedConnectionId('[module-name]');
-  console.log('[get[Feature]MergedConnection] Cached connection:', cachedMergedConnection);
+  logger.debug('[Feature]', 'Fetched merged connection', { connection: cachedMergedConnection });
 
   return cachedMergedConnection;
 }
@@ -120,7 +126,7 @@ export async function get[Features](filters?: FilterType): Promise<FeatureType[]
       // If merged mode, get both users' data
       // Otherwise, just get current user's data
       if (mergedConnection) {
-        console.log('[get[Features]] Merged mode enabled, fetching for both users');
+        logger.debug('[Feature]API', 'Merged mode enabled, fetching for both users', { partnerId: mergedConnection.partnerId });
         query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
       } else {
         query = query.eq('user_id', user.id);
@@ -134,7 +140,7 @@ export async function get[Features](filters?: FilterType): Promise<FeatureType[]
       const { data, error } = await query;
       if (error) throw error;
 
-      console.log('[get[Features]] Fetched', data?.length ?? 0, 'items', mergedConnection ? '(merged mode)' : '(personal mode)');
+      logger.debug('[Feature]API', 'Fetched items', { count: data?.length ?? 0, mergedMode: !!mergedConnection });
       return (data ?? []) as FeatureType[];
     },
     { domain: '[Feature]API', operation: 'get[Features]', data: { filters } }
@@ -526,6 +532,7 @@ import { useState } from 'react';
 import { OwnerFilter, type OwnerFilterValue } from '../components/common/OwnerFilter';
 import { useMerged[Feature]ConnectionQuery, use[Features]Query } from '../hooks/use[Feature]Query';
 import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
+import { filterByOwner } from '@/finance/utils/ownerFilter';
 
 function [Feature]Page() {
   const { data: mergedConnection } = useMerged[Feature]ConnectionQuery();
@@ -533,20 +540,10 @@ function [Feature]Page() {
   const partnerName = usePartnerName(mergedConnection);
   const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
 
-  const { data: items, isLoading } = use[Features]Query();
+  const { data: items = [], isLoading } = use[Features]Query();
 
-  // Filter items by owner
-  const filteredItems = useMemo(() => {
-    if (!items || !mergedConnection) return items ?? [];
-
-    if (ownerFilter === 'mine') {
-      return items.filter(item => item.user_id === currentUserId);
-    } else if (ownerFilter === 'partner') {
-      return items.filter(item => item.user_id === mergedConnection.partnerId);
-    }
-
-    return items; // 'all'
-  }, [items, ownerFilter, currentUserId, mergedConnection]);
+  // Filter items by owner using shared utility
+  const filteredItems = filterByOwner(items, ownerFilter, currentUserId ?? undefined);
 
   return (
     <div>
@@ -659,15 +656,16 @@ supabase db push
 
 ## Definition of Done
 
+- [ ] Module name verified in `ShareableModule` enum (`src/shared/types/connections.ts`) — added if missing
 - [ ] API layer updated with merged connection
-- [ ] Cached connection getter function added
+- [ ] Cached connection getter uses `logger.debug()` (not `console.log`)
 - [ ] Main fetch function supports merged mode
 - [ ] Database migration created and applied
 - [ ] RLS policies added (SELECT, INSERT, UPDATE, DELETE)
 - [ ] Merged connection hook created
 - [ ] OwnerBadge component added to UI
 - [ ] OwnerFilter component added to page
-- [ ] Owner filtering logic implemented
+- [ ] Owner filtering uses `filterByOwner()` from `@/finance/utils/ownerFilter` (not copy-pasted useMemo)
 - [ ] Tested in personal mode
 - [ ] Tested in merged mode
 - [ ] RLS policies tested manually

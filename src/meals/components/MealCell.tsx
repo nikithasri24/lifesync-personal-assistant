@@ -40,7 +40,7 @@ export function MealCell({ meal, recipe, isEmpty, isToday, onClick }: MealCellPr
     }
   };
 
-  const displayName = meal?.customName || recipe?.name || '';
+  const displayName = meal?.customMeal || recipe?.name || '';
   const calories = recipe?.nutritionInfo?.calories;
   const emoji = meal?.mealType ? MEAL_TYPE_EMOJIS[meal.mealType] : '';
 

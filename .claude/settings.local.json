@@ -163,7 +163,18 @@
       "Bash(grep together:*)",
       "Bash(git:*)",
       "Bash(read f:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(TaskOutput b19lfspyc:*)",
+      "Bash(__NEW_LINE_5662c21516c1b367__ grep:*)",
+      "Bash(__NEW_LINE_e5da644a9f276a34__ grep:*)",
+      "Bash(supabase migration:*)",
+      "Bash(__NEW_LINE_aa8e42031fd41695__ grep:*)",
+      "Bash(PGPASSWORD=\"diUBikmtowFyRwrxIUxYGxKywuFCcSQF\" psql:*)",
+      "Bash(PGPASSWORD=\"oCmJByGfiZojRmjFlNgZJAwFIdInXjtB\" psql:*)",
+      "Bash(PGPASSWORD=\"bwiNBMfonfLMYoBbxoBokIApnKfiKijx\" psql:*)",
+      "mcp__plugin_playwright_playwright__browser_install",
+      "Bash(grep -n \"getMealsMergedConnection\" /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/api/mealPlanningAPI.ts | head -5\ngrep -n \"function getMealsMergedConnection\\\\|getMealsMergedConnection\" /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shared/api/SharedDataProvider.ts 2>/dev/null | head -5)",
+      "Bash(bash:*)"
     ],
     "deny": [],
     "ask": []

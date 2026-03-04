@@ -13,7 +13,7 @@ import {
   useDeletePendingTransactionMutation,
   useAccountsQuery,
   useCategoriesQuery,
-  useFinanceMergedConnectionQuery,
+  useFinanceMergedConnection,
 } from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../../utils/currency';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,7 +28,7 @@ interface PendingGroup {
 export const PendingTransactionsReview: React.FC = () => {
   // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner name from merged connection
   const partnerName = React.useMemo(() => {

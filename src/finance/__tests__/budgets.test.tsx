@@ -11,7 +11,8 @@ vi.mock('@/hooks/useAuth', () => ({
 }));
 
 vi.mock('@/hooks/useFinanceQuery', () => ({
-  useFinanceMergedConnectionQuery: () => ({ data: null }),
+  useFinanceMergedConnection: () => ({ data: null }),
+  useTransactionMonthsQuery: () => ({ data: ['2026-03'] }),
   useBudgetsQuery: () => ({
     data: [
       {

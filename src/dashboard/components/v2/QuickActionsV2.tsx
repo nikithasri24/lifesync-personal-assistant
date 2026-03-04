@@ -12,13 +12,15 @@ interface QuickActionsV2Props {
   onAddNote?: () => void;
   onAddJournal?: () => void;
   onStartFocus?: () => void;
+  onLogHabit?: () => void;
 }
 
 export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
   onAddTask,
   onAddNote,
   onAddJournal,
-  onStartFocus
+  onStartFocus,
+  onLogHabit,
 }) => {
   const colors = useThemeColors();
   const navigate = useNavigate();
@@ -31,36 +33,49 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 mb-6">
-      {actions.map((action) => (
-        <button
-          key={action.label}
-          onClick={action.onClick}
-          className={`rounded-xl p-4 flex flex-col items-center gap-2 transition-all ${
-            action.primary
-              ? 'shadow-md hover:shadow-lg hover:scale-105'
-              : 'border-2 shadow-sm hover:shadow-md hover:scale-105'
-          }`}
-          style={{
-            backgroundColor: action.primary
-              ? 'transparent'
-              : colors.bg.white,
-            background: action.primary
-              ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)'
-              : undefined,
-            borderColor: action.primary ? undefined : colors.border.medium,
-          }}
-          aria-label={action.label}
-        >
-          <div className="text-2xl">{action.icon}</div>
-          <div
-            className="text-sm font-semibold"
-            style={{ color: action.primary ? '#FFFFFF' : colors.text.primary }}
+    <div className="mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        {actions.map((action) => (
+          <button
+            key={action.label}
+            onClick={action.onClick}
+            className={`rounded-xl p-4 flex flex-col items-center gap-2 transition-all ${
+              action.primary
+                ? 'shadow-md hover:shadow-lg hover:scale-105'
+                : 'border-2 shadow-sm hover:shadow-md hover:scale-105'
+            }`}
+            style={{
+              backgroundColor: action.primary
+                ? 'transparent'
+                : colors.bg.white,
+              background: action.primary
+                ? 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)'
+                : undefined,
+              borderColor: action.primary ? undefined : colors.border.medium,
+            }}
+            aria-label={action.label}
           >
-            {action.label}
-          </div>
-        </button>
-      ))}
+            <div className="text-2xl">{action.icon}</div>
+            <div
+              className="text-sm font-semibold"
+              style={{ color: action.primary ? '#FFFFFF' : colors.text.primary }}
+            >
+              {action.label}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Log Habit — full-width fifth action */}
+      <button
+        onClick={onLogHabit || (() => navigate('/habits'))}
+        className="w-full px-4 py-3 rounded-xl border-2 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+        style={{ backgroundColor: colors.bg.white, borderColor: colors.border.medium }}
+        aria-label="Log habit"
+      >
+        <span className="text-xl">🎯</span>
+        <span className="text-sm font-semibold" style={{ color: colors.text.primary }}>Log Habit</span>
+      </button>
     </div>
   );
 };

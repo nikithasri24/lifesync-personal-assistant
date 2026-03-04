@@ -24,6 +24,9 @@ export interface HabitsHeaderV2Props {
   onViewModeChange?: (mode: 'today' | 'weekly') => void;
   selectedDate?: Date;
   onDateChange?: (date: Date) => void;
+  onMarkAllDone?: () => void;
+  isMarkingAll?: boolean;
+  hasIncompleteHabits?: boolean;
 }
 
 export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
@@ -38,6 +41,9 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
   onViewModeChange,
   selectedDate = new Date(),
   onDateChange,
+  onMarkAllDone,
+  isMarkingAll,
+  hasIncompleteHabits,
 }) => {
   const colors = useThemeColors();
 
@@ -112,21 +118,47 @@ export const HabitsHeaderV2: React.FC<HabitsHeaderV2Props> = ({
           position: 'relative',
         }}
       >
-        <h1
-          style={{
-            fontSize: '34px',
-            fontWeight: 700,
-            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '6px',
-          }}
-        >
-          Habits
-        </h1>
-        <p style={{ fontSize: '15px', color: '#9B8B7A' }}>
-          Build better routines
-        </p>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            <h1
+              style={{
+                fontSize: '34px',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: '6px',
+              }}
+            >
+              Habits
+            </h1>
+            <p style={{ fontSize: '15px', color: '#9B8B7A' }}>
+              Build better routines
+            </p>
+          </div>
+          {viewMode === 'today' && hasIncompleteHabits && onMarkAllDone && (
+            <button
+              onClick={onMarkAllDone}
+              disabled={isMarkingAll}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+                border: 'none',
+                color: 'white',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                opacity: isMarkingAll ? 0.5 : 1,
+                flexShrink: 0,
+                marginTop: '4px',
+              }}
+              aria-label="Mark all habits done"
+            >
+              {isMarkingAll ? 'Marking…' : 'Mark All Done'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats Header */}

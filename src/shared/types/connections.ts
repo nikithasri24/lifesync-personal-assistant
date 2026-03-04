@@ -41,7 +41,8 @@ export type ShareableModule =
   | 'projects'
   | 'journal'
   | 'skincare'
-  | 'calendar';
+  | 'calendar'
+  | 'together';
 
 // =====================================================
 // CORE TYPES
@@ -282,6 +283,15 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     icon: 'Calendar',
     defaultLevel: 'none',
     supportedLevels: ['none', 'view', 'merged'],
+    hasSettings: false,
+  },
+  together: {
+    module: 'together',
+    label: 'Together',
+    description: 'Milestones, messages, and challenges',
+    icon: 'Heart',
+    defaultLevel: 'none',
+    supportedLevels: ['none', 'view', 'collaborate', 'merged'],
     hasSettings: false,
   },
 };

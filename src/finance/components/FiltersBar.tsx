@@ -7,14 +7,10 @@ import type { TxnType } from '../types';
 
 export const FiltersBar: React.FC<{ onApply?: () => void; onReset?: () => void }> = ({ onApply, onReset }) => {
   const {
-    text,
-    setText,
-    fromISO,
-    toISO,
-    setFromISO,
-    setToISO,
-    type,
-    setType,
+    text, setText,
+    fromISO, toISO, setFromISO, setToISO,
+    type, setType,
+    tag, setTag,
   } = useFinanceFilters();
 
   return (
@@ -39,6 +35,14 @@ export const FiltersBar: React.FC<{ onApply?: () => void; onReset?: () => void }
           <option value="credit">Credit</option>
         </Select>
       </div>
+      <div className="w-36">
+        <Input
+          value={tag ?? ''}
+          onChange={(e) => setTag(e.target.value || undefined)}
+          placeholder="e.g. channel trip"
+          label="Tag"
+        />
+      </div>
       <div className="ml-auto flex gap-2">
         <Button variant="outline" onClick={onReset}>Reset</Button>
         <Button onClick={onApply}>Apply</Button>
@@ -48,4 +52,3 @@ export const FiltersBar: React.FC<{ onApply?: () => void; onReset?: () => void }
 };
 
 export default FiltersBar;
-

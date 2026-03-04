@@ -1,4 +1,3 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { getMergedConnectionId, type MergedConnectionResult } from '@/shared/api/SharedDataProvider';
 import { useCurrentUserId as useCurrentUserIdBase, useMergedConnection as useMergedConnectionBase, usePartnerName as usePartnerNameBase, useHasMergedPermission as useHasMergedPermissionBase } from '@/hooks/useOwnerInfo';
 import type { TxnQuery } from '@/finance/types';
@@ -60,25 +59,6 @@ export const financeKeys = {
   retirementAccounts: () => [...financeKeys.all, 'retirementAccounts'] as const,
   retirementAccount: (id: string) => [...financeKeys.all, 'retirementAccount', id] as const,
 };
-
-// ==================== Merged Connection Hooks ====================
-
-/**
- * Hook to get merged connection for finances module.
- * Returns partnerId and connectionId if both users have merged mode enabled.
- * @deprecated Use useMergedConnection('finances') from @/hooks/useOwnerInfo for standardization
- */
-export function useFinanceMergedConnectionQuery(options?: { enabled?: boolean }): UseQueryResult<MergedConnectionResult | null, Error> {
-  return useQuery<MergedConnectionResult | null, Error>({
-    queryKey: financeKeys.mergedConnection(),
-    queryFn: async () => {
-      const result = await getFinancesMergedConnection();
-      return result;
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes - merged connection doesn't change often
-    enabled: options?.enabled ?? true,
-  });
-}
 
 // ==================== Standardized Owner Info Hooks ====================
 // These are re-exports from useOwnerInfo configured for the finances module

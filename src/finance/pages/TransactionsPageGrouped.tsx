@@ -20,9 +20,10 @@ import {
   useAccountsQuery,
   useBudgetsQuery,
   useBudgetTemplatesQuery,
-  useFinanceMergedConnectionQuery,
+  useFinanceMergedConnection,
 } from '@/hooks/useFinanceQuery';
 import { useGroupedTransactions } from '../hooks/useGroupedTransactions';
+import { filterByOwner } from '@/finance/utils/ownerFilter';
 import { useBudgetSummary } from '../hooks/useBudgetSummary';
 import { formatCurrency } from '../utils/currency';
 import { filterTransfers } from '../utils/cashFlowCalculator';
@@ -40,7 +41,7 @@ const TransactionsPageGrouped: React.FC = () => {
 
   // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner name from merged connection
   const partnerName = React.useMemo(() => {
@@ -86,12 +87,7 @@ const TransactionsPageGrouped: React.FC = () => {
   }, [budgetTemplatesList]);
 
   // Filter transactions by owner (if in merged mode)
-  const filteredTransactions = React.useMemo(() => {
-    if (!mergedConnection || filters.ownerFilter === 'all') return transactions;
-    if (filters.ownerFilter === 'mine') return transactions.filter(t => t.userId === user?.id);
-    if (filters.ownerFilter === 'partner') return transactions.filter(t => t.userId !== user?.id);
-    return transactions;
-  }, [transactions, mergedConnection, filters.ownerFilter, user]);
+  const filteredTransactions = filterByOwner(transactions, filters.ownerFilter, user?.id);
 
   // Group transactions by category or owner
   const groupedByCategory = useGroupedTransactions({

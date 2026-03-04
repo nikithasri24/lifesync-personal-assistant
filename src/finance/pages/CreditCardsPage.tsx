@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { Loader2 } from 'lucide-react';
-import { useAccountsQuery, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
+import { useAccountsQuery, useFinanceMergedConnection } from '@/hooks/useFinanceQuery';
 import {
   useAllCardsBenefitsQuery,
   useAllCardsCategoryBonusesQuery,
@@ -29,7 +29,7 @@ const CreditCardsPage: React.FC = () => {
   const colors = useThemeColors();
   const { user } = useAuth();
 
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
   const partnerName = React.useMemo(() => mergedConnection?.partnerName, [mergedConnection]);
 
   const { data: accounts = [], isLoading, error } = useAccountsQuery();

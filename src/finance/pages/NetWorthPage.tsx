@@ -8,7 +8,7 @@ import { TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3 } from 'lucid
 import { Card } from '../components/Card';
 import { ChartLazy } from '../components/ChartLazy';
 import { formatCurrency } from '../utils/currency';
-import { useNetWorthQuery, useAccountsQuery, useLoansQuery, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
+import { useNetWorthQuery, useAccountsQuery, useLoansQuery, useFinanceMergedConnection } from '@/hooks/useFinanceQuery';
 import type { Account } from '../types';
 import { useAuth } from '@/hooks/useAuth';
 import { OwnerBadge } from '../../components/common/OwnerBadge';
@@ -19,7 +19,7 @@ const NetWorthPage: React.FC = () => {
 
   // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner name from merged connection
   const partnerName = React.useMemo(() => {

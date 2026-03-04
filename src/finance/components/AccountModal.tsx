@@ -16,7 +16,7 @@ import { FormModalV2 } from '@/components/v2';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
 import type { Account, AccountType } from '../types';
-import { useUpsertAccountMutation, useDeleteAccountMutation, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
+import { useUpsertAccountMutation, useDeleteAccountMutation, useFinanceMergedConnection } from '@/hooks/useFinanceQuery';
 import { useAuth } from '@/hooks/useAuth';
 
 interface AccountModalProps {
@@ -38,7 +38,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, account, onC
   const upsertAccountMutation = useUpsertAccountMutation();
   const deleteAccountMutation = useDeleteAccountMutation();
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner info from merged connection
   const partnerName = React.useMemo(() => {

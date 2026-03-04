@@ -31,6 +31,7 @@ export interface TransactionFormData {
   categoryId?: string;
   notes?: string;
   merchantName?: string;
+  tags?: string[];
 }
 
 interface TransactionFormState {
@@ -42,6 +43,7 @@ interface TransactionFormState {
   categoryId: string;
   notes: string;
   merchantName: string;
+  tagsRaw: string; // comma-separated input string
 }
 
 export const TransactionFormModalV2: React.FC<TransactionFormModalV2Props> = ({
@@ -64,6 +66,7 @@ export const TransactionFormModalV2: React.FC<TransactionFormModalV2Props> = ({
     categoryId: '',
     notes: '',
     merchantName: '',
+    tagsRaw: '',
   };
 
   const initialFormData: TransactionFormState | undefined = initialData ? {
@@ -75,6 +78,7 @@ export const TransactionFormModalV2: React.FC<TransactionFormModalV2Props> = ({
     categoryId: initialData.categoryId || '',
     notes: initialData.notes || '',
     merchantName: initialData.merchantName || '',
+    tagsRaw: initialData.tags?.join(', ') || '',
   } : undefined;
 
   return (
@@ -98,6 +102,9 @@ export const TransactionFormModalV2: React.FC<TransactionFormModalV2Props> = ({
           categoryId: formData.categoryId || undefined,
           notes: formData.notes.trim() || undefined,
           merchantName: formData.merchantName.trim() || undefined,
+          tags: formData.tagsRaw
+            ? formData.tagsRaw.split(',').map(t => t.trim()).filter(Boolean)
+            : undefined,
         };
         await onSave(transactionData);
       }}
@@ -254,6 +261,31 @@ export const TransactionFormModalV2: React.FC<TransactionFormModalV2Props> = ({
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
               placeholder="e.g., Whole Foods, Amazon"
             />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label htmlFor="txn-tags" className="block text-sm font-semibold text-gray-900 mb-2">
+              Tags
+              <span className="ml-1.5 text-xs font-normal text-gray-400">comma-separated</span>
+            </label>
+            <input
+              id="txn-tags"
+              type="text"
+              value={formState.tagsRaw}
+              onChange={(e) => setFormState({ ...formState, tagsRaw: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+              placeholder="e.g. channel trip, vacation"
+            />
+            {formState.tagsRaw && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {formState.tagsRaw.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
+                  <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Notes */}

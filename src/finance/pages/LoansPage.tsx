@@ -13,7 +13,7 @@ import {
   useUpsertLoanMutation,
   useDeleteLoanMutation,
   useUpsertLoanPaymentMutation,
-  useFinanceMergedConnectionQuery,
+  useFinanceMergedConnection,
 } from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
 import { calculateInterestPaidToDate } from '../utils/loanCalculations';
@@ -29,7 +29,7 @@ const LoansPage: React.FC = () => {
 
   // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner name from merged connection
   const partnerName = React.useMemo(() => {

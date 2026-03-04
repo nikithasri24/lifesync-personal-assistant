@@ -17,6 +17,8 @@ export interface TodayHabitsSectionV2Props {
   onComplete: (habitId: string) => void;
   completingHabit: string | null;
   completedHabits: Set<string>;
+  onCompleteAll?: () => void;
+  isCompletingAll?: boolean;
 }
 
 export const TodayHabitsSectionV2: React.FC<TodayHabitsSectionV2Props> = ({
@@ -26,6 +28,8 @@ export const TodayHabitsSectionV2: React.FC<TodayHabitsSectionV2Props> = ({
   onComplete,
   completingHabit,
   completedHabits,
+  onCompleteAll,
+  isCompletingAll,
 }) => {
   const colors = useThemeColors();
 
@@ -37,12 +41,25 @@ export const TodayHabitsSectionV2: React.FC<TodayHabitsSectionV2Props> = ({
         borderColor: colors.border.light,
       }}
     >
-      <SectionHeaderV2
-        title="Today's Habits"
-        icon={Target}
-        actionLabel="View all"
-        onAction={onViewAll}
-      />
+      <div className="flex items-center justify-between mb-4">
+        <SectionHeaderV2
+          title="Today's Habits"
+          icon={Target}
+          actionLabel="View all"
+          onAction={onViewAll}
+        />
+        {habits.length > 0 && onCompleteAll && (
+          <button
+            onClick={onCompleteAll}
+            disabled={isCompletingAll}
+            className="px-3 py-1.5 text-sm rounded-lg font-semibold text-white transition-opacity disabled:opacity-50 flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
+            aria-label="Mark all habits done"
+          >
+            {isCompletingAll ? 'Completing…' : 'Mark All Done'}
+          </button>
+        )}
+      </div>
 
       <div className="space-y-3">
         {habits.length === 0 ? (

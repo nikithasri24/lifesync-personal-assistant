@@ -3,7 +3,7 @@
  * Matches dashboard-design-spec.html with centered 900px layout
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTasks, useUpdateTask } from '@/hooks/useTasksQuery';
 import { useHabits, useCreateHabitEntry, useHabitEntries } from '@/hooks/useHabitsQuery';
@@ -16,6 +16,7 @@ import { DashboardHeaderV2 } from '@/dashboard/components/v2/DashboardHeaderV2';
 import { QuickActionsV2 } from '@/dashboard/components/v2/QuickActionsV2';
 import { BriefingCardV2 } from '@/dashboard/components/v2/BriefingCardV2';
 import { TodayTasksSectionV2, TodayHabitsSectionV2, RecentNotesSectionV2 } from '@/dashboard/components/v2';
+import { TodayHabitsCompactStrip } from '@/dashboard/components/v2/TodayHabitsCompactStrip';
 import { QuickAddModalV2 } from '@/dashboard/components/v2/QuickAddModalV2';
 import { NoteFormModalV2 } from '@/notes/components/v2/NoteFormModalV2';
 import { JournalEntryModalV2 } from '@/journal/components/v2/JournalEntryModalV2';
@@ -80,10 +81,14 @@ function DashboardContent() {
   const createNoteMutation = useCreateNote();
   const createJournalMutation = useCreateJournalEntry();
 
+  // Ref for scrolling to habit strip
+  const habitStripRef = useRef<HTMLDivElement>(null);
+
   // Completion tracking
   const [completingTask, setCompletingTask] = useState<string | null>(null);
   const [completingHabit, setCompletingHabit] = useState<string | null>(null);
   const [completedHabits, setCompletedHabits] = useState<Set<string>>(new Set());
+  const [isCompletingAll, setIsCompletingAll] = useState(false);
 
   // Filter today's tasks
   const todayTasks = tasks.filter(t =>
@@ -166,6 +171,28 @@ function DashboardContent() {
       showToast('Failed to complete habit', 'error');
     } finally {
       setCompletingHabit(null);
+    }
+  };
+
+  // Batch habit completion handler
+  const handleCompleteAllHabits = async () => {
+    const incomplete = todayHabits.filter(h => h.id);
+    if (incomplete.length === 0) return;
+    setIsCompletingAll(true);
+    try {
+      await Promise.all(incomplete.map(h =>
+        createHabitEntryMutation.mutateAsync({
+          habit_id: h.id,
+          date: today,
+          value: 1,
+        })
+      ));
+      setCompletedHabits(prev => new Set([...prev, ...incomplete.map(h => h.id)]));
+      showToast(`${incomplete.length} habit${incomplete.length === 1 ? '' : 's'} completed! 🎉`, 'success');
+    } catch {
+      showToast('Some habits failed to complete', 'error');
+    } finally {
+      setIsCompletingAll(false);
     }
   };
 
@@ -320,7 +347,18 @@ function DashboardContent() {
               onAddNote={() => quickModals.open('showNote')}
               onAddJournal={() => quickModals.open('showJournal')}
               onStartFocus={() => navigate('/focus')}
+              onLogHabit={() => habitStripRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
             />
+
+            {/* Compact Habit Strip — above-the-fold quick completion */}
+            <div ref={habitStripRef}>
+              <TodayHabitsCompactStrip
+                habits={todayHabits}
+                completedHabits={completedHabits}
+                onComplete={handleCompleteHabit}
+                completingHabit={completingHabit}
+              />
+            </div>
 
             {/* Today's Tasks */}
             <TodayTasksSectionV2
@@ -339,6 +377,8 @@ function DashboardContent() {
               onComplete={handleCompleteHabit}
               completingHabit={completingHabit}
               completedHabits={completedHabits}
+              onCompleteAll={handleCompleteAllHabits}
+              isCompletingAll={isCompletingAll}
             />
 
             {/* Recent Notes */}

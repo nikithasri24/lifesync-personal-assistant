@@ -1653,6 +1653,81 @@ return response;
 
 ---
 
+## Merged Mode Standards
+
+Merged mode lets two connected users see each other's data as if it were their own. Follow these rules to implement it correctly and avoid regressions.
+
+### ✅ DO: Use the Correct Hooks
+
+**For Finance features**, use the standardized wrapper from `@/finance/hooks/useFinanceMergedMode`:
+
+```typescript
+// ✅ CORRECT
+import { useFinanceMergedConnection } from '@/finance/hooks/useFinanceMergedMode';
+const { data: mergedConnection } = useFinanceMergedConnection();
+```
+
+```typescript
+// ❌ INCORRECT — deleted and banned by ESLint
+import { useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
+```
+
+**For other features**, use the generic hook from `@/hooks/useOwnerInfo`:
+
+```typescript
+// ✅ CORRECT
+import { useMergedConnection } from '@/hooks/useOwnerInfo';
+const { data: mergedConnection } = useMergedConnection('todos'); // use the correct ShareableModule
+```
+
+### ✅ DO: Use the `filterByOwner()` Utility
+
+Never copy-paste the owner filter pattern. Use the existing utility:
+
+```typescript
+// ✅ CORRECT
+import { filterByOwner } from '@/finance/utils/ownerFilter';
+const filtered = filterByOwner(items, filters.ownerFilter, user?.id);
+```
+
+```typescript
+// ❌ INCORRECT — copy-pasted pattern, don't do this
+const filtered = useMemo(() => {
+  if (!mergedConnection || filters.ownerFilter === 'all') return items;
+  if (filters.ownerFilter === 'mine') return items.filter(i => i.userId === user?.id);
+  if (filters.ownerFilter === 'partner') return items.filter(i => i.userId !== user?.id);
+  return items;
+}, [items, mergedConnection, filters.ownerFilter, user]);
+```
+
+### ✅ DO: Add New Modules to the `ShareableModule` Enum
+
+If you are adding merged mode to a feature whose module name is not yet in `ShareableModule`:
+
+1. Open `src/shared/types/connections.ts`
+2. Add the module name to the `ShareableModule` union type
+3. Add a `MODULE_CONFIGS` entry for it
+4. Only then use `getMergedConnectionId('your-module')` in your code
+
+```typescript
+// ❌ NEVER use a different module as a proxy
+const connection = await getMergedConnectionId('goals'); // proxy for 'together' — BUG
+
+// ✅ Add the real module to ShareableModule first, then use it
+const connection = await getMergedConnectionId('together');
+```
+
+### Quick Reference
+
+| Task | What to use |
+|------|------------|
+| Finance merged connection | `useFinanceMergedConnection()` from `@/finance/hooks/useFinanceMergedMode` |
+| Other feature merged connection | `useMergedConnection(module)` from `@/hooks/useOwnerInfo` |
+| Filter items by owner | `filterByOwner(items, filter, userId)` from `@/finance/utils/ownerFilter` |
+| Add merged mode to new feature | Follow `.claude/commands/add-merged-mode.md` skill guide |
+
+---
+
 ## Testing
 
 ### Test Structure
@@ -1709,6 +1784,9 @@ When writing new code, ensure:
 - [ ] Modal state uses `useModalState` instead of boilerplate
 - [ ] Business logic extracted to utils (not in hooks)
 - [ ] Hook return types are explicitly typed
+- [ ] Merged mode uses `useFinanceMergedConnection()` or `useMergedConnection(module)` — not deprecated `useFinanceMergedConnectionQuery`
+- [ ] Owner filtering uses `filterByOwner()` — not copy-pasted useMemo
+- [ ] New modules added to `ShareableModule` enum before use (no proxy workarounds)
 
 ---
 

@@ -20,7 +20,7 @@ import { logger } from '../../services/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import {
-  useFinanceMergedConnectionQuery,
+  useFinanceMergedConnection,
   useInsurancePoliciesQuery,
   useUpsertInsurancePolicyMutation,
 } from '@/hooks/useFinanceQuery';
@@ -30,7 +30,7 @@ const InsurancePage: React.FC = () => {
 
   // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner name from merged connection
   const partnerName = React.useMemo(() => {

@@ -144,6 +144,7 @@ export function ModalContainer({
       {recipeFormModal && (
         <Suspense fallback={<ModalLoadingFallback />}>
           <QuickRecipeModal
+            isOpen={true}
             initialName={recipeFormModal.initialName}
             onSave={recipeFormModal.onSave}
             onClose={onCloseRecipeForm}

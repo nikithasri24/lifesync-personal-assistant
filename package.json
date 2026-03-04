@@ -47,9 +47,14 @@
     "import:visa-data": "npx tsx scripts/import-visa-data.ts",
     "import:visa-to-db": "npx tsx scripts/import-visa-to-supabase.ts",
     "export:visa-csv": "npx tsx scripts/export-visa-to-csv.ts",
-    "create-test-accounts": "npx tsx scripts/create-test-accounts.ts"
+    "create-test-accounts": "npx tsx scripts/create-test-accounts.ts",
+    "add-txn": "npx tsx src/scripts/addTransaction.ts",
+    "update-txn": "npx tsx src/scripts/updateTransaction.ts",
+    "shopping": "npx tsx src/scripts/shopping.ts",
+    "meals": "npx tsx src/scripts/meals.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@capacitor/android": "^8.0.0",
     "@capacitor/cli": "^8.0.0",
     "@capacitor/core": "^8.0.0",

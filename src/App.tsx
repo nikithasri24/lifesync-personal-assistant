@@ -17,6 +17,7 @@ import { useRoutePerformance } from './hooks/useRoutePerformance';
 import { useWebVitals } from './hooks/useWebVitals';
 import { MessageRevealListener } from './together/components';
 import { useMilestoneReminders } from './together/hooks';
+import { SmartHabitPromptBanner } from './habits/components/SmartHabitPromptBanner';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -129,6 +130,8 @@ function App(): React.ReactElement {
         <UndoRedoButtons />
         {/* Quick Capture FAB */}
         <QuickCapture variant="floating" />
+        {/* Smart Habit Prompt Banner - contextual reminder within 30 min of reminder time */}
+        <SmartHabitPromptBanner />
         {/* Message Reveal Listener - Shows partner messages when triggered */}
         <MessageRevealListener />
       </Layout>

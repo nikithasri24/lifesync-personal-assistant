@@ -372,7 +372,22 @@ const MealPlanningContent: React.FC = () => {
             recipes={recipes}
             onAddMeal={(mealType) => {
               const today = format(new Date(), 'yyyy-MM-dd');
-              modalState.openRecipeForm(today, mealType);
+              modalState.openRecipeForm('', async (recipeData) => {
+                try {
+                  const newRecipe = await createRecipeWrapper(recipeData);
+                  if (activePlanWithPartnerId?.id) {
+                    await createPlannedMealWrapper({
+                      planId: activePlanWithPartnerId.id,
+                      meal: { date: today, mealType, recipeId: newRecipe.id, servings: 2, status: 'planned', notes: '', isPostponed: false },
+                    });
+                  }
+                  modalState.closeRecipeForm();
+                  showToast('Meal added! 🍽️', 'success');
+                } catch (err) {
+                  logger.error('MealPlanning', err as Error, { context: 'onAddMeal' });
+                  showToast('Failed to add meal', 'error');
+                }
+              });
             }}
             onLogMeal={(mealId) => {
               const updates: PlannedMealUpdate = { status: 'logged' };
@@ -394,7 +409,22 @@ const MealPlanningContent: React.FC = () => {
             onNextWeek={weekNav.goToNextWeek}
             onToday={weekNav.goToThisWeek}
             onCellClick={(date, mealType) => {
-              modalState.openRecipeForm(date, mealType);
+              modalState.openRecipeForm('', async (recipeData) => {
+                try {
+                  const newRecipe = await createRecipeWrapper(recipeData);
+                  if (activePlanWithPartnerId?.id) {
+                    await createPlannedMealWrapper({
+                      planId: activePlanWithPartnerId.id,
+                      meal: { date, mealType, recipeId: newRecipe.id, servings: 2, status: 'planned', notes: '', isPostponed: false },
+                    });
+                  }
+                  modalState.closeRecipeForm();
+                  showToast('Meal added! 🍽️', 'success');
+                } catch (err) {
+                  logger.error('MealPlanning', err as Error, { context: 'onCellClick' });
+                  showToast('Failed to add meal', 'error');
+                }
+              });
             }}
           />
         )}

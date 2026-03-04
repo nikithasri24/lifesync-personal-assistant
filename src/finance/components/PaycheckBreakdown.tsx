@@ -53,7 +53,7 @@ export const PaycheckBreakdown: React.FC<Props> = ({ paystub }) => {
             <div
               key={i}
               style={{
-                width: `${(d.amount / paystub.grossPay) * 100}%`,
+                width: `${paystub.grossPay > 0 ? (d.amount / paystub.grossPay) * 100 : 0}%`,
                 backgroundColor: TYPE_COLORS[d.type] ?? '#94a3b8',
                 opacity: 0.85,
               }}

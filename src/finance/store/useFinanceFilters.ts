@@ -8,6 +8,7 @@ type State = {
   toISO?: string;
   type?: TxnType;
   month?: string;
+  tag?: string;
   ownerFilter: OwnerFilterValue;
 };
 
@@ -17,6 +18,7 @@ type Actions = {
   setToISO: (v?: string) => void;
   setType: (v?: TxnType) => void;
   setMonth: (m: string) => void;
+  setTag: (v?: string) => void;
   setOwnerFilter: (v: OwnerFilterValue) => void;
   reset: () => void;
 };
@@ -38,24 +40,25 @@ const useFinanceFilters = create<State & Actions>((set, _get) => ({
   toISO: saved.toISO,
   type: saved.type,
   month: saved.month,
+  tag: saved.tag,
   ownerFilter: (saved.ownerFilter as OwnerFilterValue) ?? 'all',
   setText: (v) => set({ text: v }),
   setFromISO: (v) => set({ fromISO: v }),
   setToISO: (v) => set({ toISO: v }),
   setType: (v) => set({ type: v }),
   setMonth: (m) => set({ month: m }),
+  setTag: (v) => set({ tag: v }),
   setOwnerFilter: (v) => set({ ownerFilter: v }),
-  reset: () => set({ text: undefined, fromISO: undefined, toISO: undefined, type: undefined, ownerFilter: 'all' }),
+  reset: () => set({ text: undefined, fromISO: undefined, toISO: undefined, type: undefined, tag: undefined, ownerFilter: 'all' }),
 }));
 
 useFinanceFilters.subscribe((state) => {
   try {
-    const { text, fromISO, toISO, type, month, ownerFilter } = state;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ text, fromISO, toISO, type, month, ownerFilter }));
+    const { text, fromISO, toISO, type, month, tag, ownerFilter } = state;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ text, fromISO, toISO, type, month, tag, ownerFilter }));
   } catch {
     // Ignore localStorage errors
   }
 });
 
 export default useFinanceFilters;
-

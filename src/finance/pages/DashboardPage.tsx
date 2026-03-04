@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { OwnerBadge } from '../../components/common/OwnerBadge';
 import { SplitMetricCard } from '../components/SplitMetricCard';
 import { OwnerFilter } from '../components/OwnerFilter';
+import { filterByOwner } from '@/finance/utils/ownerFilter';
 import useFinanceFilters from '../store/useFinanceFilters';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
@@ -52,19 +53,8 @@ const DashboardPage: React.FC = () => {
   const loading = txnsLoading || accountsLoading || categoriesLoading || budgetsLoading;
 
   // Filter data by owner (if in merged mode and filter is active)
-  const filteredTxns = React.useMemo(() => {
-    if (!mergedConnection || filters.ownerFilter === 'all') return txns;
-    if (filters.ownerFilter === 'mine') return txns.filter(t => t.userId === user?.id);
-    if (filters.ownerFilter === 'partner') return txns.filter(t => t.userId !== user?.id);
-    return txns;
-  }, [txns, mergedConnection, filters.ownerFilter, user]);
-
-  const filteredAccounts = React.useMemo(() => {
-    if (!mergedConnection || filters.ownerFilter === 'all') return accounts;
-    if (filters.ownerFilter === 'mine') return accounts.filter(a => a.userId === user?.id);
-    if (filters.ownerFilter === 'partner') return accounts.filter(a => a.userId !== user?.id);
-    return accounts;
-  }, [accounts, mergedConnection, filters.ownerFilter, user]);
+  const filteredTxns = filterByOwner(txns, filters.ownerFilter, user?.id);
+  const filteredAccounts = filterByOwner(accounts, filters.ownerFilter, user?.id);
 
   // Transactions are already filtered by date from query.
   // Also strip inter-account transfers (Credit Card Payments etc.) to avoid double-counting.

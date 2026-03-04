@@ -11,7 +11,7 @@ import {
   useRetirementAccountQuery,
   useUpsertRetirementAccountMetadataMutation,
   useDeleteRetirementAccountMetadataMutation,
-  useFinanceMergedConnectionQuery,
+  useFinanceMergedConnection,
 } from '@/hooks/useFinanceQuery';
 import { RetirementDashboard } from '../components/retirement';
 import RetirementAccountEditor from '../components/retirement/RetirementAccountEditor';
@@ -25,7 +25,7 @@ const RetirementPage: React.FC = () => {
 
   // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner name from merged connection
   const partnerName = React.useMemo(() => {

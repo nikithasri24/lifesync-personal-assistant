@@ -48,6 +48,7 @@ vi.mock('@/hooks/useFinanceQuery', () => ({
   useUpsertAccountMutation: () => ({ mutate: vi.fn(), mutateAsync: mockMutateAsync, isPending: false }),
   useDeleteAccountMutation: () => ({ mutate: vi.fn(), mutateAsync: mockMutateAsync, isPending: false }),
   useUpsertTransactionMutation: vi.fn(() => ({ mutate: vi.fn(), mutateAsync: mockMutateAsync, isPending: false })),
+  useCreateTransferMutation: vi.fn(() => ({ mutate: vi.fn(), mutateAsync: mockMutateAsync, isPending: false })),
   useDeleteTransactionMutation: () => ({ mutate: vi.fn(), mutateAsync: mockMutateAsync, isPending: false }),
   useUpsertBudgetMutation: () => ({ mutate: vi.fn(), mutateAsync: mockMutateAsync, isPending: false }),
   useDeleteBudgetMutation: () => ({ mutate: vi.fn(), mutateAsync: mockMutateAsync, isPending: false }),

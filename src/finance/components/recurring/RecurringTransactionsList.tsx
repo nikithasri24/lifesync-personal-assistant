@@ -10,7 +10,7 @@ import {
   useRecurringTransactionsQuery,
   useUpsertRecurringTransactionMutation,
   useDeleteRecurringTransactionMutation,
-  useFinanceMergedConnectionQuery,
+  useFinanceMergedConnection,
 } from '@/hooks/useFinanceQuery';
 import { RecurringTransactionEditor } from './RecurringTransactionEditor';
 import { formatCurrency } from '../../utils/currency';
@@ -29,7 +29,7 @@ const FREQUENCY_LABELS: Record<string, string> = {
 export const RecurringTransactionsList: React.FC = () => {
   // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner name from merged connection
   const partnerName = React.useMemo(() => {

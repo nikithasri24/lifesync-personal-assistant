@@ -18,7 +18,7 @@ import type {
 /**
  * Calculate the next occurrence date for a recurring transaction
  */
-function calculateNextOccurrence(
+export function calculateNextOccurrence(
   lastDate: Date,
   frequency: RecurringFrequency,
   dayOfMonth?: number,
@@ -71,7 +71,7 @@ function calculateNextOccurrence(
 /**
  * Check if a date should generate a pending transaction based on daysBefore
  */
-function shouldGeneratePending(
+export function shouldGeneratePending(
   scheduledDate: Date,
   currentDate: Date,
   daysBefore: number

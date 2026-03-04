@@ -15,8 +15,6 @@ let cachedMergedConnections: Partial<Record<TogetherModule, MergedConnectionResu
 
 /**
  * Get merged connection for a Together module
- * Note: Together modules are not currently in the ShareableModule enum
- * This is a specialized implementation for Together feature
  */
 async function getTogetherMergedConnection(module: TogetherModule): Promise<MergedConnectionResult | null> {
   if (cachedMergedConnections[module] !== undefined) {
@@ -29,10 +27,7 @@ async function getTogetherMergedConnection(module: TogetherModule): Promise<Merg
 
   logger.debug('Together', 'Checking merged connection', { module });
 
-  // For now, since Together modules aren't in ShareableModule enum,
-  // we'll check the 'goals' or 'todos' module as a proxy
-  // In the future, add 'together' to ShareableModule enum
-  const connection = await getMergedConnectionId('goals');
+  const connection = await getMergedConnectionId('together');
 
   cachedMergedConnections[module] = connection;
 

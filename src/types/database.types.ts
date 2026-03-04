@@ -2360,6 +2360,7 @@ export type Database = {
           merchant_name: string | null
           notes: string | null
           suggested_category_id: string | null
+          tags: string[] | null
           type: Database["public"]["Enums"]["finance_txn_type"]
           updated_at: string
           user_id: string
@@ -2378,6 +2379,7 @@ export type Database = {
           merchant_name?: string | null
           notes?: string | null
           suggested_category_id?: string | null
+          tags?: string[] | null
           type: Database["public"]["Enums"]["finance_txn_type"]
           updated_at?: string
           user_id: string
@@ -2396,6 +2398,7 @@ export type Database = {
           merchant_name?: string | null
           notes?: string | null
           suggested_category_id?: string | null
+          tags?: string[] | null
           type?: Database["public"]["Enums"]["finance_txn_type"]
           updated_at?: string
           user_id?: string

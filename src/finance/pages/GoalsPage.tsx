@@ -9,12 +9,13 @@ import {
   useGoalsQuery,
   useUpsertGoalMutation,
   useDeleteGoalMutation,
-  useFinanceMergedConnectionQuery,
+  useFinanceMergedConnection,
 } from '@/hooks/useFinanceQuery';
 import type { Goal } from '../types';
 import { GoalCardV2, GoalFormModalV2, type GoalFormData } from '@/finance/components/v2';
 import { useAuth } from '@/hooks/useAuth';
 import { OwnerFilter } from '../components/OwnerFilter';
+import { filterByOwner } from '@/finance/utils/ownerFilter';
 import useFinanceFilters from '../store/useFinanceFilters';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { logger } from '@/services/logger';
@@ -26,7 +27,7 @@ const GoalsPage: React.FC = () => {
 
   // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner name from merged connection
   const partnerName = React.useMemo(() => {
@@ -41,12 +42,7 @@ const GoalsPage: React.FC = () => {
   const filters = useFinanceFilters();
 
   // Filter goals by owner (if in merged mode)
-  const filteredGoals = React.useMemo(() => {
-    if (!mergedConnection || filters.ownerFilter === 'all') return goals;
-    if (filters.ownerFilter === 'mine') return goals.filter(g => g.userId === user?.id);
-    if (filters.ownerFilter === 'partner') return goals.filter(g => g.userId !== user?.id);
-    return goals;
-  }, [goals, mergedConnection, filters.ownerFilter, user]);
+  const filteredGoals = filterByOwner(goals, filters.ownerFilter, user?.id);
 
   // Sort filtered goals
   const sortedGoals = React.useMemo<Goal[]>(() => {

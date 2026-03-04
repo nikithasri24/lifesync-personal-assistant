@@ -13,11 +13,12 @@ import {
   useDeleteBudgetMutation,
   useCategoriesQuery,
   useTransactionsQuery,
-  useFinanceMergedConnectionQuery
+  useFinanceMergedConnection
 } from '@/hooks/useFinanceQuery';
 import { currentMonth, monthRange } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
 import { OwnerFilter } from '../components/OwnerFilter';
+import { filterByOwner } from '@/finance/utils/ownerFilter';
 import { BudgetFormModalV2, type BudgetFormData } from '@/finance/components/v2';
 import { OwnerBadge } from '@/components/common/OwnerBadge';
 import useFinanceFilters from '../store/useFinanceFilters';
@@ -32,7 +33,7 @@ const BudgetsPage: React.FC = () => {
 
   // Auth and merged connection
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   // Get partner name
   const partnerName = React.useMemo(() => {
@@ -60,12 +61,7 @@ const BudgetsPage: React.FC = () => {
 
   const loading = budgetsLoading || categoriesLoading || txnsLoading;
 
-  const filteredYtdTxns = React.useMemo(() => {
-    if (!mergedConnection || filters.ownerFilter === 'all') return ytdTransactions;
-    if (filters.ownerFilter === 'mine') return ytdTransactions.filter(t => t.userId === user?.id);
-    if (filters.ownerFilter === 'partner') return ytdTransactions.filter(t => t.userId !== user?.id);
-    return ytdTransactions;
-  }, [ytdTransactions, mergedConnection, filters.ownerFilter, user]);
+  const filteredYtdTxns = filterByOwner(ytdTransactions, filters.ownerFilter, user?.id);
 
   const ytdSpendingByCategory = React.useMemo(() => {
     const map = new Map<string, number>();

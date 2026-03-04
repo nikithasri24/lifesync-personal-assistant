@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { Goal, Account, GoalInput } from '../../types';
 import { useAuth } from '@/hooks/useAuth';
-import { useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
+import { useFinanceMergedConnection } from '@/hooks/useFinanceQuery';
 
 interface GoalEditorProps {
   isOpen: boolean;
@@ -34,7 +34,7 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
   accounts,
 }) => {
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+  const { data: mergedConnection } = useFinanceMergedConnection();
 
   const [form, setForm] = React.useState<Partial<GoalInput>>({
     type: 'savings',
