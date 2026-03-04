@@ -26,9 +26,8 @@ import {
   useDeleteHabit,
   useCreateHabitEntry,
   useDeleteHabitEntriesForDate,
-  useMergedHabitsConnectionQuery,
 } from '../hooks/useHabitsQuery';
-import { useCurrentUserId } from '../hooks/useOwnerInfo';
+import { useMergedConnection, useCurrentUserId } from '../hooks/useOwnerInfo';
 import type { OwnerFilterValue } from '../components/common/OwnerFilter';
 import { logger } from '../services/logger';
 import type { HabitDraft } from '../habits/types';
@@ -66,7 +65,7 @@ const HabitsContent: React.FC = () => {
   const { data: apiEntries = [], isLoading: entriesLoading } = useHabitEntries();
 
   // Merged mode support
-  const { data: mergedConnection } = useMergedHabitsConnectionQuery();
+  const { data: mergedConnection } = useMergedConnection('habits');
   const { data: currentUserId } = useCurrentUserId();
 
   // Mutations

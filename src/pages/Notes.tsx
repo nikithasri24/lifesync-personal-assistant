@@ -8,10 +8,10 @@
 
 import { useState, useMemo } from 'react';
 import { Plus } from 'lucide-react';
-import { usePagedNotes, useCreateNote, useUpdateNote, useDeleteNote, useMergedNotesConnectionQuery } from '../hooks/useNotesQuery';
+import { usePagedNotes, useCreateNote, useUpdateNote, useDeleteNote } from '../hooks/useNotesQuery';
 import { usePagination } from '../hooks/utilities/usePagination';
 import { PaginationV2 } from '../components/ui/PaginationV2';
-import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
+import { useMergedConnection, useCurrentUserId } from '@/hooks/useOwnerInfo';
 import { useQueries } from '@tanstack/react-query';
 import { getListItems } from '../api/notesAPI';
 import type { NoteType } from '../types';
@@ -30,9 +30,9 @@ const NotesContent: React.FC = () => {
   const { showToast } = useToast();
 
   // Merged mode support
-  const { data: mergedConnection } = useMergedNotesConnectionQuery();
+  const { data: mergedConnection } = useMergedConnection('notes');
   const { data: currentUserId } = useCurrentUserId();
-  const partnerName = usePartnerName(mergedConnection);
+  const partnerName = mergedConnection?.partnerName ?? 'Partner';
   const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
 
   // Pagination state

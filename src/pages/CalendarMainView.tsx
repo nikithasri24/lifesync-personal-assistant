@@ -9,7 +9,7 @@ import { logger } from '../services/logger';
 import { CheckCircle2, Target } from 'lucide-react';
 
 // Hooks
-import { useTasks, useUpdateTask, useDeleteTask, useMergedTasksConnectionQuery } from '../hooks/useTasksQuery';
+import { useTasks, useUpdateTask, useDeleteTask } from '../hooks/useTasksQuery';
 import { useHabits, useHabitEntries } from '../hooks/useHabitsQuery';
 import { useCalendarEvents, useCreateCalendarEvent, useUpdateCalendarEvent, useDeleteCalendarEvent } from '../hooks/useCalendarQuery';
 import { useScheduleBlocks, useCreateScheduleBlock, useUpdateScheduleBlock, useDeleteScheduleBlock } from '../hooks/useScheduleBlocksQuery';
@@ -18,7 +18,7 @@ import { useCalendarTasks } from '../calendar/hooks/useCalendarTasks';
 import { isMultiDayTask, getTaskSpanDays, taskAppearsOnDate, getTaskSpanPosition } from '../calendar/hooks';
 import { useUndoRedo } from '../contexts/UndoRedoContext';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
-import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
+import { useMergedConnection, useCurrentUserId } from '@/hooks/useOwnerInfo';
 import type { OwnerFilterValue } from '../components/common/OwnerFilter';
 
 // Components
@@ -51,9 +51,9 @@ const Calendar: React.FC = () => {
   const { data: habitEntries = [], isLoading: entriesLoading } = useHabitEntries();
   const { data: calendarEvents = [], isLoading: eventsLoading } = useCalendarEvents();
   const { data: projects = [] } = useProjectsQuery();
-  const { data: mergedConnection } = useMergedTasksConnectionQuery();
+  const { data: mergedConnection } = useMergedConnection('todos');
   const { data: currentUserId } = useCurrentUserId();
-  const partnerName = usePartnerName(mergedConnection);
+  const partnerName = mergedConnection?.partnerName ?? 'Partner';
 
   // Owner filter state
   const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');

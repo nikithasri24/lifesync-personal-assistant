@@ -29,11 +29,11 @@ import {
   useCreateTask,
   useUpdateTask,
   usePermanentlyDeleteTask,
-  useMergedTasksConnectionQuery,
 } from '../hooks/useTasksQuery';
 import type { TaskData } from '../services/types';
 import { OwnerFilter, type OwnerFilterValue } from '../components/common/OwnerFilter';
-import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
+import { useMergedConnection, useCurrentUserId } from '@/hooks/useOwnerInfo';
+import { filterByOwner } from '@/finance/utils/ownerFilter';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useToast } from '../hooks/useToast';
 import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
@@ -94,9 +94,9 @@ const TodosContent: React.FC = () => {
   const apiHealth = useApiHealth(15000); // Check every 15 seconds
 
   // Merged mode support
-  const { data: mergedConnection } = useMergedTasksConnectionQuery();
+  const { data: mergedConnection } = useMergedConnection('todos');
   const { data: currentUserId } = useCurrentUserId();
-  const partnerName = usePartnerName(mergedConnection);
+  const partnerName = mergedConnection?.partnerName ?? 'Partner';
   const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
 
   // ============================================================================
@@ -106,18 +106,10 @@ const TodosContent: React.FC = () => {
   const projects = useMemo(() => transformApiProjects(apiProjects), [apiProjects]);
 
   // Apply owner filter if in merged mode
-  const tasks = useMemo(() => {
-    if (!mergedConnection || !currentUserId) return allTasks;
-
-    switch (ownerFilter) {
-      case 'mine':
-        return allTasks.filter(task => task.userId === currentUserId);
-      case 'partner':
-        return allTasks.filter(task => task.userId === mergedConnection.partnerId);
-      default:
-        return allTasks; // 'all'
-    }
-  }, [allTasks, ownerFilter, currentUserId, mergedConnection]);
+  const tasks = useMemo(
+    () => filterByOwner(allTasks, ownerFilter, currentUserId ?? undefined),
+    [allTasks, ownerFilter, currentUserId]
+  );
 
   // ============================================================================
   // View State
