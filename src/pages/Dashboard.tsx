@@ -7,7 +7,8 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTasks, useUpdateTask } from '@/hooks/useTasksQuery';
 import { useHabits, useCreateHabitEntry, useHabitEntries } from '@/hooks/useHabitsQuery';
-import { useNotes, useCreateNote } from '@/hooks/useNotesQuery';
+import { usePagedNotes, useCreateNote } from '@/hooks/useNotesQuery';
+import type { PaginatedResult } from '@/types/pagination';
 import { useJournalEntries, useCreateJournalEntry } from '@/hooks/useJournalQuery';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useToast } from '@/hooks/useToast';
@@ -50,18 +51,26 @@ function DashboardContent() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Data fetching — scoped to what the dashboard needs
-  const tasksQuery = useTasks();
+  // Tasks: only today's non-done tasks (dashboard shows at most 5)
+  const tasksQuery = useTasks({
+    dueAfter: today,
+    dueBefore: today,
+    statuses: ['todo', 'in_progress', 'waiting', 'scheduled'],
+    deleted: false,
+    archived: false,
+  });
   const habitsQuery = useHabits({ isActive: true });
   // Habit entries: only this week (dashboard shows weekly progress)
   const habitEntriesQuery = useHabitEntries({ startDate: weekStart, endDate: today });
-  const notesQuery = useNotes();
+  // Notes: first page only (dashboard shows 2 recent notes)
+  const notesQuery = usePagedNotes(undefined, 1);
   // Journal entries: only last 30 days (dashboard shows recent entries)
   const journalQuery = useJournalEntries({ startDate: thirtyDaysAgo, endDate: now });
 
   const tasks: Task[] = (tasksQuery as { data: Task[] }).data ?? [];
   const habits: Habit[] = (habitsQuery as unknown as { data: Habit[] }).data ?? [];
   const habitEntries = habitEntriesQuery.data ?? [];
-  const notes: Note[] = (notesQuery as { data: Note[] }).data ?? [];
+  const notes: Note[] = ((notesQuery as { data: PaginatedResult<Note> | undefined }).data?.items ?? []) as Note[];
   const journalEntries: JournalEntry[] = (journalQuery as { data: JournalEntry[] }).data ?? [];
 
   const isLoading = tasksQuery.isLoading || habitsQuery.isLoading || habitEntriesQuery.isLoading || notesQuery.isLoading || journalQuery.isLoading;

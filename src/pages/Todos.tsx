@@ -25,11 +25,13 @@ import { Plus, CheckSquare, Trash2, X } from 'lucide-react';
 import { useApiHealth } from '../hooks/useApiHealth';
 import {
   useTasks,
+  usePagedTasks,
   useProjects,
   useCreateTask,
   useUpdateTask,
   usePermanentlyDeleteTask,
 } from '../hooks/useTasksQuery';
+import type { TaskFilters } from '../hooks/useTasksQuery';
 import type { TaskData } from '../services/types';
 import { OwnerFilter, type OwnerFilterValue } from '../components/common/OwnerFilter';
 import { useMergedConnection, useCurrentUserId } from '@/hooks/useOwnerInfo';
@@ -65,13 +67,8 @@ import { DEFAULT_PAGE_SIZE } from '../types/pagination';
 // Import utilities
 import { transformApiTasks, transformApiProjects } from '../todos/utils';
 
-// Import services
-import { applyFilters } from '../todos/services/taskFilters';
-import {
-  getTodayTasks,
-  getUpcomingTasks,
-  getInboxTasks,
-} from '../todos/services/taskHelpers';
+// Statuses that indicate a task is not yet done — used in server-side view filters.
+const NON_DONE_STATUSES: TaskData['status'][] = ['todo', 'in_progress', 'waiting', 'scheduled'];
 
 const TodosContent: React.FC = () => {
   // ============================================================================
@@ -81,38 +78,7 @@ const TodosContent: React.FC = () => {
   const { showToast } = useToast();
 
   // ============================================================================
-  // React Query Hooks - Server State Management
-  // ============================================================================
-  const { data: apiTasks = [], isLoading: tasksLoading, error: tasksError } = useTasks();
-  const { data: apiProjects = [], isLoading: projectsLoading } = useProjects();
-
-  const createTaskMutation = useCreateTask();
-  const updateTaskMutation = useUpdateTask();
-  const deleteTaskMutation = usePermanentlyDeleteTask();
-
-  // Enhanced API health monitoring
-  const apiHealth = useApiHealth(15000); // Check every 15 seconds
-
-  // Merged mode support
-  const { data: mergedConnection } = useMergedConnection('todos');
-  const { data: currentUserId } = useCurrentUserId();
-  const partnerName = mergedConnection?.partnerName ?? 'Partner';
-  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
-
-  // ============================================================================
-  // Data Transformation - API to Local Format
-  // ============================================================================
-  const allTasks = useMemo(() => transformApiTasks(apiTasks), [apiTasks]);
-  const projects = useMemo(() => transformApiProjects(apiProjects), [apiProjects]);
-
-  // Apply owner filter if in merged mode
-  const tasks = useMemo(
-    () => filterByOwner(allTasks, ownerFilter, currentUserId ?? undefined),
-    [allTasks, ownerFilter, currentUserId]
-  );
-
-  // ============================================================================
-  // View State
+  // View State (declared early — used in serverFilters below)
   // ============================================================================
   const [activeView, setActiveView] = useState<TaskView>('today');
 
@@ -127,6 +93,14 @@ const TodosContent: React.FC = () => {
   const [showStarredOnly, setShowStarredOnly] = useState(false);
 
   // ============================================================================
+  // Merged mode support (declared early — used in serverFilters below)
+  // ============================================================================
+  const { data: mergedConnection } = useMergedConnection('todos');
+  const { data: currentUserId } = useCurrentUserId();
+  const partnerName = mergedConnection?.partnerName ?? 'Partner';
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
+
+  // ============================================================================
   // Pagination State
   // ============================================================================
   const { page, setPage, resetPage } = usePagination();
@@ -136,6 +110,100 @@ const TodosContent: React.FC = () => {
     resetPage();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView, priorityFilter, statusFilter, projectFilter, searchQuery, showStarredOnly, ownerFilter]);
+
+  // ============================================================================
+  // Server-side filter computation
+  // Maps UI state → API filter params passed to getPagedTasks.
+  // ============================================================================
+
+  const serverFilters = useMemo((): TaskFilters => {
+    const today = new Date().toISOString().split('T')[0];
+    const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      .toISOString().split('T')[0];
+
+    // View-specific date/status constraints
+    let viewFilters: TaskFilters = { deleted: false, archived: false };
+    switch (activeView) {
+      case 'today':
+        viewFilters = { ...viewFilters, dueAfter: today, dueBefore: today, statuses: NON_DONE_STATUSES };
+        break;
+      case 'upcoming':
+        viewFilters = { ...viewFilters, dueAfter: today, dueBefore: sevenDaysFromNow, statuses: NON_DONE_STATUSES };
+        break;
+      case 'inbox':
+        // All non-done tasks regardless of due date
+        viewFilters = { ...viewFilters, statuses: NON_DONE_STATUSES };
+        break;
+      case 'list':
+        // All tasks including done — no extra filters
+        break;
+    }
+
+    // Explicit status filter from UI overrides the view's statuses
+    if (statusFilter !== 'all') {
+      delete viewFilters.statuses;
+      viewFilters.status = statusFilter as TaskData['status'];
+    }
+
+    if (priorityFilter !== 'all') viewFilters.priority = priorityFilter as TaskData['priority'];
+    if (projectFilter !== 'all') viewFilters.projectId = projectFilter;
+    if (showStarredOnly) viewFilters.starred = true;
+    if (searchQuery.trim()) viewFilters.search = searchQuery.trim();
+
+    // Owner filter: push to server so page counts are accurate
+    if (ownerFilter === 'mine' && currentUserId) {
+      viewFilters.ownerUserId = currentUserId;
+    } else if (ownerFilter === 'partner' && mergedConnection?.partnerId) {
+      viewFilters.ownerUserId = mergedConnection.partnerId;
+    }
+
+    return viewFilters;
+  }, [activeView, statusFilter, priorityFilter, projectFilter, showStarredOnly, searchQuery, ownerFilter, currentUserId, mergedConnection]);
+
+  // ============================================================================
+  // React Query Hooks - Server State Management
+  // ============================================================================
+
+  // Catalog: all non-deleted tasks — used for dependency resolution, subtask
+  // toggle lookups, and drag-drop (needs tasks outside the current page).
+  const { data: catalogData = [], isLoading: catalogLoading, error: catalogError } = useTasks({ deleted: false, archived: false });
+
+  // Display list: server-paginated and filtered to the current view.
+  const { data: pagedData, isLoading: pageLoading } = usePagedTasks(serverFilters, page);
+
+  const { data: apiProjects = [], isLoading: projectsLoading } = useProjects();
+
+  const createTaskMutation = useCreateTask();
+  const updateTaskMutation = useUpdateTask();
+  const deleteTaskMutation = usePermanentlyDeleteTask();
+
+  // Enhanced API health monitoring
+  const apiHealth = useApiHealth(15000); // Check every 15 seconds
+
+  // ============================================================================
+  // Data Transformation - API to Local Format
+  // ============================================================================
+
+  // allTasks: catalog transformed to local type, used for dependency/subtask UI
+  const allTasks = useMemo(() => transformApiTasks(catalogData), [catalogData]);
+  const projects = useMemo(() => transformApiProjects(apiProjects), [apiProjects]);
+
+  // tasks: owner-filtered catalog — used for drag-drop which operates across views
+  const tasks = useMemo(
+    () => filterByOwner(allTasks, ownerFilter, currentUserId ?? undefined),
+    [allTasks, ownerFilter, currentUserId]
+  );
+
+  // displayItems: the server-paginated result, transformed to local type
+  const displayItems = useMemo(
+    () => transformApiTasks(pagedData?.items ?? []),
+    [pagedData]
+  );
+  const totalPages = pagedData?.totalPages ?? 1;
+  const totalCount = pagedData?.total ?? 0;
+
+  const isLoading = catalogLoading || pageLoading || projectsLoading;
+  const error = catalogError;
 
   // ============================================================================
   // Modal State
@@ -173,41 +241,8 @@ const TodosContent: React.FC = () => {
   // ============================================================================
   const { expandedTasks, toggleTaskExpansion } = useTaskExpansion();
 
-  // ============================================================================
-  // Computed Values - Filtered and View-Specific Tasks
-  // ============================================================================
-
-  // Get tasks for current view
-  const viewTasks = useMemo(() => {
-    let baseTasks = tasks;
-
-    // Apply view-specific filtering first
-    if (activeView === 'today') {
-      baseTasks = getTodayTasks(tasks);
-    } else if (activeView === 'inbox') {
-      baseTasks = getInboxTasks(tasks);
-    } else if (activeView === 'upcoming') {
-      baseTasks = getUpcomingTasks(tasks);
-    }
-
-    // Apply filters (priority, status, project, search, starred)
-    const filters = {
-      priority: priorityFilter,
-      status: statusFilter,
-      project: projectFilter,
-      starred: showStarredOnly,
-    };
-
-    return applyFilters(baseTasks, filters, searchQuery);
-  }, [tasks, activeView, priorityFilter, statusFilter, projectFilter, searchQuery, showStarredOnly]);
-
-  // Paginate the filtered view tasks
-  const pagedViewTasks = useMemo(() => {
-    const startIndex = (page - 1) * DEFAULT_PAGE_SIZE;
-    return viewTasks.slice(startIndex, startIndex + DEFAULT_PAGE_SIZE);
-  }, [viewTasks, page]);
-
-  const totalTaskPages = Math.ceil(viewTasks.length / DEFAULT_PAGE_SIZE);
+  // displayItems / totalPages / totalCount are derived from the server-paginated
+  // response (computed above near the hooks section).
 
   // ============================================================================
   // Task Handlers
@@ -273,7 +308,7 @@ const TodosContent: React.FC = () => {
   }, [editingTaskId, deleteTaskMutation, showToast]);
 
   const handleToggleStatus = useCallback((taskId: string) => {
-    const task = apiTasks.find(t => t.id === taskId);
+    const task = catalogData.find(t => t.id === taskId);
     if (!task) return;
 
     const newStatus = task.status === 'done' ? 'todo' : 'done';
@@ -289,7 +324,7 @@ const TodosContent: React.FC = () => {
         },
       }
     );
-  }, [apiTasks, updateTaskMutation, showToast]);
+  }, [catalogData, updateTaskMutation, showToast]);
 
   const handleToggleSubtask = useCallback(async (taskId: string, subtaskId: string) => {
     const task = allTasks.find(t => t.id === taskId);
@@ -326,9 +361,9 @@ const TodosContent: React.FC = () => {
   }, []);
 
   const handleSelectAll = useCallback(() => {
-    const allTaskIds = viewTasks.map(t => t.id || '').filter(Boolean);
+    const allTaskIds = displayItems.map(t => t.id || '').filter(Boolean);
     setSelectedTaskIds(new Set(allTaskIds));
-  }, [viewTasks]);
+  }, [displayItems]);
 
   const handleDeselectAll = useCallback(() => {
     setSelectedTaskIds(new Set());
@@ -362,24 +397,21 @@ const TodosContent: React.FC = () => {
   // Loading and Error States
   // ============================================================================
 
-  if (tasksLoading || projectsLoading) {
+  if (isLoading) {
     return <TodosLoadingState />;
   }
 
-  if (tasksError) {
+  if (error) {
     return <TodosErrorState />;
   }
 
   // ============================================================================
   // Get editing task data
   // ============================================================================
-  const editingTask = editingTaskId ? apiTasks.find(t => t.id === editingTaskId) : undefined;
+  const editingTask = editingTaskId ? catalogData.find(t => t.id === editingTaskId) : undefined;
 
-  // ============================================================================
-  // Computed Values
-  // ============================================================================
-  const taskCount = viewTasks.length;
-  const completedCount = viewTasks.filter(t => t.status === 'done').length;
+  // taskCount comes from the server total for the current filter set.
+  const taskCount = totalCount;
 
   // ============================================================================
   // Main Render
@@ -506,13 +538,12 @@ const TodosContent: React.FC = () => {
         {/* Task Count Summary */}
         <div className="mb-4 text-sm" style={{ color: colors.text.secondary }}>
           {taskCount} task{taskCount !== 1 ? 's' : ''}
-          {completedCount > 0 && ` • ${completedCount} completed`}
-          {totalTaskPages > 1 && ` • page ${page} of ${totalTaskPages}`}
+          {totalPages > 1 && ` • page ${page} of ${totalPages}`}
         </div>
 
         {/* Content Area - List View */}
         <TaskListViewV2
-          tasks={pagedViewTasks}
+          tasks={displayItems}
           projects={projects}
           onTaskClick={handleTaskClick}
           onToggleStatus={handleToggleStatus}
@@ -533,11 +564,11 @@ const TodosContent: React.FC = () => {
         />
 
         {/* Pagination */}
-        {totalTaskPages > 1 && (
+        {totalPages > 1 && (
           <PaginationV2
             currentPage={page}
-            totalPages={totalTaskPages}
-            totalItems={viewTasks.length}
+            totalPages={totalPages}
+            totalItems={totalCount}
             pageSize={DEFAULT_PAGE_SIZE}
             onPageChange={setPage}
           />

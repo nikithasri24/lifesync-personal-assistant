@@ -80,6 +80,13 @@ export async function getTasks(filters?: {
   createdBefore?: string;
   /** Include only tasks whose updated_at is on or after this ISO timestamp. */
   updatedAfter?: string;
+  /** Full-text search on title and description (case-insensitive). */
+  search?: string;
+  /**
+   * Override merged-mode owner filter. When set, fetches only tasks belonging
+   * to this user_id (subject to RLS). Use to implement "mine / partner" UI toggles.
+   */
+  ownerUserId?: string;
 }): Promise<TaskData[]> {
   return apiCall(
     async () => {
@@ -93,9 +100,12 @@ export async function getTasks(filters?: {
         .select('*')
         .order('created_at', { ascending: false });
 
-      // If merged mode enabled, fetch both users' data
-      // Otherwise, fetch only current user's data
-      if (mergedConnection) {
+      // ownerUserId overrides merged-mode: filter to a specific user_id.
+      // Merged mode: show both users' tasks.
+      // Default: show only current user's tasks.
+      if (filters?.ownerUserId) {
+        query = query.eq('user_id', filters.ownerUserId);
+      } else if (mergedConnection) {
         query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
       } else {
         query = query.eq('user_id', user.id);
@@ -120,6 +130,10 @@ export async function getTasks(filters?: {
         if (filters.createdAfter) query = query.gte('created_at', filters.createdAfter);
         if (filters.createdBefore) query = query.lte('created_at', filters.createdBefore);
         if (filters.updatedAfter) query = query.gte('updated_at', filters.updatedAfter);
+        if (filters.search?.trim()) {
+          const term = `%${filters.search.trim()}%`;
+          query = query.or(`title.ilike.${term},description.ilike.${term}`);
+        }
       }
 
       const { data, error } = await query;
@@ -396,7 +410,9 @@ export async function getPagedTasks(
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false });
 
-      if (mergedConnection) {
+      if (filters?.ownerUserId) {
+        query = query.eq('user_id', filters.ownerUserId);
+      } else if (mergedConnection) {
         query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
       } else {
         query = query.eq('user_id', user.id);
@@ -419,6 +435,10 @@ export async function getPagedTasks(
         if (filters.createdAfter) query = query.gte('created_at', filters.createdAfter);
         if (filters.createdBefore) query = query.lte('created_at', filters.createdBefore);
         if (filters.updatedAfter) query = query.gte('updated_at', filters.updatedAfter);
+        if (filters.search?.trim()) {
+          const term = `%${filters.search.trim()}%`;
+          query = query.or(`title.ilike.${term},description.ilike.${term}`);
+        }
       }
 
       const { data, count, error } = await query.range(offset, offset + pageSize - 1);

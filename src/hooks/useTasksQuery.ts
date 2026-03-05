@@ -55,12 +55,23 @@ export function useMergedTasksConnectionQuery() {
 
 export interface TaskFilters {
   status?: TaskData['status'];
+  /** Match any of the given statuses. Overrides `status`. */
+  statuses?: TaskData['status'][];
   priority?: TaskData['priority'];
   category?: TaskData['category'];
   projectId?: string;
   starred?: boolean;
   archived?: boolean;
   deleted?: boolean;
+  dueBefore?: string;
+  dueAfter?: string;
+  createdAfter?: string;
+  createdBefore?: string;
+  updatedAfter?: string;
+  /** Full-text search on title and description. */
+  search?: string;
+  /** Override merged-mode owner filter to a specific user_id. */
+  ownerUserId?: string;
 }
 
 /**
@@ -87,11 +98,12 @@ export function useTasks(filters?: TaskFilters): UseQueryResult<TaskData[], Erro
  */
 export function usePagedTasks(
   filters?: TaskFilters,
-  page = 1
+  page = 1,
+  pageSize = DEFAULT_PAGE_SIZE
 ): UseQueryResult<PaginatedResult<TaskData>, Error> {
   return useQuery({
-    queryKey: queryKeys.tasks.list({ ...filters, page } as Record<string, unknown>),
-    queryFn: () => getPagedTasks(filters, { page, pageSize: DEFAULT_PAGE_SIZE }),
+    queryKey: queryKeys.tasks.list({ ...filters, page, pageSize } as Record<string, unknown>),
+    queryFn: () => getPagedTasks(filters, { page, pageSize }),
     ...queryOptions.user,
     placeholderData: keepPreviousData,
   });
