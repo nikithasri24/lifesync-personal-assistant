@@ -88,6 +88,10 @@ vi.mock('../../hooks/useOwnerInfo', () => ({
     data: 'test-user-id',
     isLoading: false,
   }),
+  useMergedConnection: () => ({
+    data: null,
+    isLoading: false,
+  }),
 }))
 
 describe('Habits weekly/monthly multi-target labels', () => {

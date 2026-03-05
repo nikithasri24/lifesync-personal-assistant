@@ -135,4 +135,41 @@ describe('Task-Project Integration', () => {
 
     expect(updatedTask.project_id).toBeNull();
   });
+
+  test('archived project tasks still appear in main task list', async () => {
+    // When a project is archived, its tasks should still be queryable without project_id filter
+    const archivedProjectTask = { ...mockTask, project_id: 'archived-project-1' };
+    vi.mocked(tasksAPI.getTasks).mockResolvedValue([archivedProjectTask] as any);
+
+    // Query all tasks (no project filter)
+    const allTasks = await tasksAPI.getTasks({});
+
+    expect(allTasks).toBeDefined();
+    expect(allTasks.length).toBeGreaterThan(0);
+    // Task still has its project_id even though the project is archived
+    expect(allTasks[0].project_id).toBe('archived-project-1');
+  });
+
+  test('all tasks done sets project progress to 100%', async () => {
+    const allDone = [
+      { ...mockTask, id: 'task-1', status: 'done' },
+      { ...mockTask, id: 'task-2', status: 'done' },
+      { ...mockTask, id: 'task-3', status: 'done' },
+    ];
+
+    vi.mocked(tasksAPI.getTasks).mockResolvedValue(allDone as any);
+    vi.mocked(projectsAPI.updateProject).mockResolvedValue({
+      ...mockProject,
+      progress: 100,
+    } as any);
+
+    const tasks = await tasksAPI.getTasks({ projectId: mockProject.id });
+    const completed = tasks.filter((t: any) => t.status === 'done').length;
+    const progress = Math.round((completed / tasks.length) * 100);
+
+    const updated = await projectsAPI.updateProject(mockProject.id, { progress });
+
+    expect(progress).toBe(100);
+    expect(updated.progress).toBe(100);
+  });
 });

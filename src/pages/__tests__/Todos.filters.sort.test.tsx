@@ -21,6 +21,20 @@ vi.mock('../../contexts/ThemeContext', () => ({
 
 vi.mock('../../hooks/useTasksQuery', () => ({
   useTasks: () => ({ data: mockTasks, isLoading: false, error: null }),
+  usePagedTasks: (filters?: { search?: string; status?: string; priority?: string }) => {
+    let items = mockTasks
+    if (filters?.search) {
+      const q = filters.search.toLowerCase()
+      items = items.filter(t => t.title.toLowerCase().includes(q))
+    }
+    if (filters?.status) {
+      items = items.filter(t => t.status === filters.status)
+    }
+    if (filters?.priority) {
+      items = items.filter(t => t.priority === filters.priority)
+    }
+    return { data: { items, totalPages: 1, total: items.length }, isLoading: false, error: null }
+  },
   useProjects: () => ({
     data: [{ id: 'p1', name: 'Project One', created_at: new Date().toISOString(), user_id: 'test-user' }],
     isLoading: false,

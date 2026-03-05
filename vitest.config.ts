@@ -46,10 +46,10 @@ export default defineConfig({
       ],
       // Coverage thresholds - fail if below these percentages
       thresholds: {
-        lines: 60,      // Minimum 60% line coverage
-        functions: 55,  // Minimum 55% function coverage
-        branches: 50,   // Minimum 50% branch coverage
-        statements: 60, // Minimum 60% statement coverage
+        lines: 75,      // Minimum 75% line coverage
+        functions: 70,  // Minimum 70% function coverage
+        branches: 65,   // Minimum 65% branch coverage
+        statements: 75, // Minimum 75% statement coverage
       },
       // Report uncovered lines
       all: true,

@@ -37,6 +37,11 @@ vi.mock('../../contexts/ThemeContext', () => ({
 
 vi.mock('../../hooks/useTasksQuery', () => ({
   useTasks: () => ({ data: mockTasks, isLoading: false, error: null }),
+  usePagedTasks: () => ({
+    data: { items: [], totalPages: 1, total: 0 },
+    isLoading: false,
+    error: null,
+  }),
   useProjects: () => ({ data: [], isLoading: false, error: null }),
   useCreateTask: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
   useUpdateTask: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),

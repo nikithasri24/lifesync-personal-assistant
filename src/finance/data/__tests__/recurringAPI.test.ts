@@ -326,9 +326,9 @@ describe('recurringAPI', () => {
       };
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === 'pending_transactions') {
+        if (table === 'finance_pending_transactions') {
           // First call is select, second is update
-          if (vi.mocked(supabase.from).mock.calls.filter(c => c[0] === 'pending_transactions').length === 1) {
+          if (vi.mocked(supabase.from).mock.calls.filter(c => c[0] === 'finance_pending_transactions').length === 1) {
             return fetchQuery as any;
           }
           return updateQuery as any;

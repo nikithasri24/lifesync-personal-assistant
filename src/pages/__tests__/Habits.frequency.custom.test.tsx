@@ -65,6 +65,10 @@ vi.mock('../../hooks/useOwnerInfo', () => ({
     data: 'test-user-id',
     isLoading: false,
   }),
+  useMergedConnection: () => ({
+    data: null,
+    isLoading: false,
+  }),
 }))
 
 describe('Habits frequency label: custom', () => {
@@ -87,7 +91,7 @@ describe('Habits frequency label: custom', () => {
       expect(screen.getByText('Custom cadence')).toBeInTheDocument()
     })
 
-    // Category should be shown in the card
-    expect(screen.getByText(/Other/)).toBeInTheDocument()
+    // Category should be shown in the card (may appear multiple times as header + card label)
+    expect(screen.getAllByText(/Other/).length).toBeGreaterThan(0)
   })
 })

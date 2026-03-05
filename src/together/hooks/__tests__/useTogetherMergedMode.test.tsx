@@ -55,7 +55,7 @@ describe('useTogetherMergedMode', () => {
       const result = await getTogetherMergedConnection('milestones');
 
       expect(result).toEqual(mockConnection);
-      expect(getMergedConnectionId).toHaveBeenCalledWith('goals');
+      expect(getMergedConnectionId).toHaveBeenCalledWith('together');
     });
 
     it('should return null when no merged connection', async () => {
@@ -146,7 +146,7 @@ describe('useTogetherMergedMode', () => {
       });
 
       expect(result.current.data).toEqual(mockConnection);
-      expect(getMergedConnectionId).toHaveBeenCalledWith('goals');
+      expect(getMergedConnectionId).toHaveBeenCalledWith('together');
     });
 
     it('should return null when no connection', async () => {

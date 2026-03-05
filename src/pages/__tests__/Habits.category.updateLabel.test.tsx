@@ -67,6 +67,10 @@ vi.mock('../../hooks/useOwnerInfo', () => ({
     data: 'test-user-id',
     isLoading: false,
   }),
+  useMergedConnection: () => ({
+    data: null,
+    isLoading: false,
+  }),
 }))
 
 describe('Habits category label updates after edit', () => {
@@ -90,8 +94,8 @@ describe('Habits category label updates after edit', () => {
       expect(screen.getByText('Plan day')).toBeInTheDocument()
     })
 
-    // Initial category should be visible
-    expect(screen.getByText(/Work/)).toBeInTheDocument()
+    // Initial category should be visible (may appear multiple times as section header + card label)
+    expect(screen.getAllByText(/Work/).length).toBeGreaterThan(0)
 
     // Click on habit to open edit modal
     await act(async () => {

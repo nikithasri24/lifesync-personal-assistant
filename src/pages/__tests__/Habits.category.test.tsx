@@ -83,6 +83,10 @@ vi.mock('../../hooks/useOwnerInfo', () => ({
     data: 'test-user-id',
     isLoading: false,
   }),
+  useMergedConnection: () => ({
+    data: null,
+    isLoading: false,
+  }),
 }))
 
 describe('Habits categories', () => {
@@ -107,9 +111,9 @@ describe('Habits categories', () => {
     })
     expect(screen.getByText('Run')).toBeInTheDocument()
 
-    // Category labels should be visible
-    expect(screen.getByText(/Work/)).toBeInTheDocument()
-    expect(screen.getByText(/Fitness/)).toBeInTheDocument()
+    // Category labels should be visible (may appear multiple times as section headers + card labels)
+    expect(screen.getAllByText(/Work/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Fitness/).length).toBeGreaterThan(0)
   })
 
   it('adds a habit via the modal form', async () => {

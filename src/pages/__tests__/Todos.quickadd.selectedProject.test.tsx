@@ -14,7 +14,12 @@ vi.mock('../../hooks/useTasksQuery', () => {
   const now = new Date().toISOString()
   return {
     useTasks: () => ({ data: [], isLoading: false, error: null }),
-    useProjects: () => ({
+    usePagedTasks: () => ({
+    data: { items: [], totalPages: 1, total: 0 },
+    isLoading: false,
+    error: null,
+  }),
+  useProjects: () => ({
       data: [{ id: 'p1', name: 'My Project', created_at: now, user_id: 'test-user' }],
       isLoading: false,
       error: null,

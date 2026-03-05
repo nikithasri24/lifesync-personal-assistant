@@ -170,7 +170,7 @@ describe('AccountFormModalV2', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/Credit Limit/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/APR/i)).toBeInTheDocument();
+        expect(screen.getByLabelText('APR (%)')).toBeInTheDocument();
       });
     });
 
@@ -272,7 +272,7 @@ describe('AccountFormModalV2', () => {
       await user.selectOptions(typeSelect, 'credit');
 
       await waitFor(async () => {
-        const aprInput = screen.getByLabelText(/APR/i);
+        const aprInput = screen.getByLabelText('APR (%)');
         await user.type(aprInput, '15.99');
         expect(aprInput).toHaveValue(15.99);
       });
@@ -323,7 +323,7 @@ describe('AccountFormModalV2', () => {
         const creditLimitInput = screen.getByLabelText(/Credit Limit/i);
         await user.type(creditLimitInput, '5000');
 
-        const aprInput = screen.getByLabelText(/APR/i);
+        const aprInput = screen.getByLabelText('APR (%)');
         await user.type(aprInput, '18.5');
       });
 

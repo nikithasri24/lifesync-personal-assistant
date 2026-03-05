@@ -5,23 +5,29 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const updateTaskMock = vi.fn()
 
+const mockBulkSelectTasks = [
+  { id: 'x1', title: 'Alpha unit', created_at: new Date().toISOString(), user_id: 'test-user', status: 'todo', priority: 'medium', tags: [] },
+  { id: 'x2', title: 'Bravo unit', created_at: new Date().toISOString(), user_id: 'test-user', status: 'todo', priority: 'medium', tags: [] },
+]
+
 vi.mock('../../contexts/ThemeContext', () => ({
   useTheme: () => ({ theme: 'light' }),
   ThemeProvider: ({ children }: any) => children,
 }))
 
 vi.mock('../../hooks/useTasksQuery', () => {
-  const now = new Date().toISOString()
   return {
     useTasks: () => ({
-      data: [
-        { id: 'x1', title: 'Alpha unit', created_at: now, user_id: 'test-user', status: 'todo', priority: 'medium', tags: [] },
-        { id: 'x2', title: 'Bravo unit', created_at: now, user_id: 'test-user', status: 'todo', priority: 'medium', tags: [] },
-      ],
+      data: mockBulkSelectTasks,
       isLoading: false,
       error: null,
     }),
-    useProjects: () => ({ data: [], isLoading: false, error: null }),
+    usePagedTasks: () => ({
+    data: { items: mockBulkSelectTasks, totalPages: 1, total: mockBulkSelectTasks.length },
+    isLoading: false,
+    error: null,
+  }),
+  useProjects: () => ({ data: [], isLoading: false, error: null }),
     useCreateTask: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
     useUpdateTask: () => ({ mutate: updateTaskMock, mutateAsync: vi.fn(), isPending: false }),
     usePermanentlyDeleteTask: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),

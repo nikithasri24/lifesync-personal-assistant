@@ -90,21 +90,29 @@ describe('ChallengeCard', () => {
       expect(screen.queryByText('Complete 30 workouts')).not.toBeInTheDocument();
     });
 
-    it('should render reward description', () => {
-      render(<ChallengeCard challenge={baseChallenge} onClick={mockOnClick} />);
+    it('should render reward description when user is the creator', () => {
+      // Creator always sees the real reward text
+      render(<ChallengeCard challenge={baseChallenge} onClick={mockOnClick} currentUserId="user-123" />);
 
       expect(screen.getByText('Spa day together!')).toBeInTheDocument();
     });
 
-    it('should render default reward text when no description', () => {
+    it('should render default reward text when no description and user is creator', () => {
       const challengeWithoutReward: AchievementReward = {
         ...baseChallenge,
         reward_description: null,
       };
 
-      render(<ChallengeCard challenge={challengeWithoutReward} onClick={mockOnClick} />);
+      render(<ChallengeCard challenge={challengeWithoutReward} onClick={mockOnClick} currentUserId="user-123" />);
 
       expect(screen.getByText('Reward awaits!')).toBeInTheDocument();
+    });
+
+    it('should render teaser text for recipient before challenge is complete', () => {
+      // Non-creator, non-complete → teaser
+      render(<ChallengeCard challenge={baseChallenge} onClick={mockOnClick} currentUserId="user-456" />);
+
+      expect(screen.getByText('A date or activity is waiting for you…')).toBeInTheDocument();
     });
   });
 
@@ -273,17 +281,18 @@ describe('ChallengeCard', () => {
       expect(screen.getByText('✨')).toBeInTheDocument();
     });
 
-    it('should show mystery icon when reward is hidden', () => {
+    it('should show activity icon and teaser when reward is hidden and challenge is incomplete', () => {
       const challenge: AchievementReward = {
         ...baseChallenge,
         hide_reward: true,
         reward_type: 'activity',
       };
 
-      render(<ChallengeCard challenge={challenge} onClick={mockOnClick} />);
+      // Non-creator, non-complete: recipient sees teaser + activity icon
+      render(<ChallengeCard challenge={challenge} onClick={mockOnClick} currentUserId="user-456" />);
 
-      expect(screen.getByText('🎁')).toBeInTheDocument();
-      expect(screen.getByText('Mystery Reward (unlocks when complete)')).toBeInTheDocument();
+      expect(screen.getByText('🎯')).toBeInTheDocument();
+      expect(screen.getByText('A date or activity is waiting for you…')).toBeInTheDocument();
     });
 
     it('should reveal reward icon when challenge is complete', () => {
@@ -560,7 +569,7 @@ describe('ChallengeCard', () => {
   });
 
   describe('Reward label', () => {
-    it('should show "Your Reward:" when challenge is complete', () => {
+    it('should show "Reward Unlocked! 🎉" when challenge is complete', () => {
       const challenge: AchievementReward = {
         ...baseChallenge,
         current_progress: 30,
@@ -571,13 +580,20 @@ describe('ChallengeCard', () => {
 
       render(<ChallengeCard challenge={challenge} onClick={mockOnClick} />);
 
-      expect(screen.getByText('Your Reward:')).toBeInTheDocument();
+      expect(screen.getByText('Reward Unlocked! 🎉')).toBeInTheDocument();
     });
 
-    it('should show "Reward:" when challenge is incomplete', () => {
-      render(<ChallengeCard challenge={baseChallenge} onClick={mockOnClick} />);
+    it('should show "Your reward:" for recipient when challenge is incomplete', () => {
+      // Non-creator recipient sees "Your reward:" label
+      render(<ChallengeCard challenge={baseChallenge} onClick={mockOnClick} currentUserId="user-456" />);
 
-      expect(screen.getByText('Reward:')).toBeInTheDocument();
+      expect(screen.getByText('Your reward:')).toBeInTheDocument();
+    });
+
+    it('should show "Gift you\'ve prepared:" for creator when challenge is incomplete', () => {
+      render(<ChallengeCard challenge={baseChallenge} onClick={mockOnClick} currentUserId="user-123" />);
+
+      expect(screen.getByText("Gift you've prepared:")).toBeInTheDocument();
     });
   });
 

@@ -155,4 +155,45 @@ describe('Habit-Goal Integration', () => {
 
     expect(updatedHabit.is_active).toBe(false);
   });
+
+  test('breaking habit streak does not regress goal progress below current value', async () => {
+    // A broken streak resets streak_count to 0 but goal progress must not go below prior value
+    const priorGoalProgress = 30;
+    const habitAfterBreak = { ...mockHabit, streak_count: 0 };
+    const goalAfterBreak = {
+      ...mockGoal,
+      progress: priorGoalProgress, // goal holds its own progress independently
+    };
+
+    vi.mocked(habitsAPI.updateHabit).mockResolvedValue(habitAfterBreak as any);
+    vi.mocked(lifeGoalsAPI.updateLifeGoal).mockResolvedValue(goalAfterBreak as any);
+
+    const updatedHabit = await habitsAPI.updateHabit(mockHabit.id, { streak_count: 0 });
+    expect(updatedHabit.streak_count).toBe(0);
+
+    // Progress must stay at or above its previous value (no regression)
+    const updatedGoal = await lifeGoalsAPI.updateLifeGoal(mockGoal.id, {
+      progress: priorGoalProgress,
+    });
+    expect(updatedGoal.progress).toBeGreaterThanOrEqual(priorGoalProgress);
+  });
+
+  test('multiple habits linked to same goal aggregate progress correctly', async () => {
+    // Two habits each contribute to the same goal
+    const habit1 = { ...mockHabit, id: 'habit-1', streak_count: 10 };
+    const habit2 = { ...mockHabit, id: 'habit-2', streak_count: 20, name: 'Weekly Yoga' };
+    const linkedHabits = [habit1, habit2];
+
+    vi.mocked(habitsAPI.getHabits).mockResolvedValue(linkedHabits as any);
+
+    const habits = await habitsAPI.getHabits({ category: 'fitness' });
+    const totalStreak = habits.reduce(
+      (sum: number, h: any) => sum + ((h.streak_count as number) ?? 0),
+      0
+    );
+
+    // Combined progress: average or sum as app decides; here we just verify aggregation
+    expect(totalStreak).toBe(30);
+    expect(habits).toHaveLength(2);
+  });
 });

@@ -5,22 +5,28 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const updateTaskMock = vi.fn()
 
+const mockInlineEditTasks = [
+  { id: 't1', title: 'Original Title', created_at: new Date().toISOString(), user_id: 'test-user', status: 'todo', priority: 'medium', tags: [] },
+]
+
 vi.mock('../../contexts/ThemeContext', () => ({
   useTheme: () => ({ theme: 'light' }),
   ThemeProvider: ({ children }: any) => children,
 }))
 
 vi.mock('../../hooks/useTasksQuery', () => {
-  const now = new Date().toISOString()
   return {
     useTasks: () => ({
-      data: [
-        { id: 't1', title: 'Original Title', created_at: now, user_id: 'test-user', status: 'todo', priority: 'medium', tags: [] },
-      ],
+      data: mockInlineEditTasks,
       isLoading: false,
       error: null,
     }),
-    useProjects: () => ({ data: [], isLoading: false, error: null }),
+    usePagedTasks: () => ({
+    data: { items: mockInlineEditTasks, totalPages: 1, total: mockInlineEditTasks.length },
+    isLoading: false,
+    error: null,
+  }),
+  useProjects: () => ({ data: [], isLoading: false, error: null }),
     useCreateTask: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
     useUpdateTask: () => ({ mutate: updateTaskMock, mutateAsync: vi.fn(), isPending: false }),
     usePermanentlyDeleteTask: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),

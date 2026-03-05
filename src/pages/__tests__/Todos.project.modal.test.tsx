@@ -12,6 +12,11 @@ vi.mock('../../contexts/ThemeContext', () => ({
 
 vi.mock('../../hooks/useTasksQuery', () => ({
   useTasks: () => ({ data: [], isLoading: false, error: null }),
+  usePagedTasks: () => ({
+    data: { items: [], totalPages: 1, total: 0 },
+    isLoading: false,
+    error: null,
+  }),
   useProjects: () => ({
     data: [{ id: 'p1', name: 'Test Project', created_at: new Date().toISOString(), user_id: 'test-user' }],
     isLoading: false,

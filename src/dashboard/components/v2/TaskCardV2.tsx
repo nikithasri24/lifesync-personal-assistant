@@ -67,6 +67,7 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
       <button
         onClick={() => task.id && onComplete(task.id)}
         disabled={isCompleting || !task.id}
+        aria-label={`Complete ${task.title}`}
         className="
           flex-shrink-0
           transition-all duration-200
