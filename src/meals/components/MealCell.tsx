@@ -13,6 +13,8 @@ interface MealCellProps {
   isEmpty?: boolean;
   isToday?: boolean;
   onClick: () => void;
+  /** Names of meals logged from the fridge pool / meal_logs table for this cell */
+  loggedNames?: string[];
 }
 
 const MEAL_TYPE_EMOJIS: Record<string, string> = {
@@ -22,7 +24,7 @@ const MEAL_TYPE_EMOJIS: Record<string, string> = {
   snack: '🍎',
 };
 
-export function MealCell({ meal, recipe, isEmpty, isToday, onClick }: MealCellProps) {
+export function MealCell({ meal, recipe, isEmpty, isToday, onClick, loggedNames }: MealCellProps) {
   const colors = useThemeColors();
 
   // Status color based on meal status
@@ -52,7 +54,7 @@ export function MealCell({ meal, recipe, isEmpty, isToday, onClick }: MealCellPr
         width: '72px',
         height: '88px',
         padding: '6px',
-        backgroundColor: isEmpty ? 'transparent' : colors.bg.white,
+        backgroundColor: (isEmpty && !loggedNames?.length) ? 'transparent' : colors.bg.white,
         border: `2px solid ${isToday && !isEmpty ? colors.accent.start : 'transparent'}`,
         borderRadius: '12px',
         boxShadow: isEmpty ? 'none' : '0 2px 4px rgba(139, 111, 71, 0.06)',
@@ -125,7 +127,17 @@ export function MealCell({ meal, recipe, isEmpty, isToday, onClick }: MealCellPr
         </>
       )}
 
-      {isEmpty && (
+      {isEmpty && loggedNames && loggedNames.length > 0 && (
+        // Logged from fridge pool — show green with names
+        <>
+          <div style={{ position: 'absolute', top: '4px', right: '4px', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981' }} />
+          <div style={{ fontSize: '9px', lineHeight: '10px', color: colors.text.primary, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', textAlign: 'center', fontWeight: 500, padding: '2px 0', height: '100%' }}>
+            {loggedNames.join(' · ')}
+          </div>
+        </>
+      )}
+
+      {isEmpty && (!loggedNames || loggedNames.length === 0) && (
         <div
           style={{
             width: '100%',

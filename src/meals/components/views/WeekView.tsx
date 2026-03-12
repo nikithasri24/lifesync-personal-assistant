@@ -19,6 +19,8 @@ interface WeekViewProps {
   onNextWeek: () => void;
   onToday: () => void;
   onCellClick: (date: string, mealType: string) => void;
+  /** Meal log names keyed by 'yyyy-MM-dd-mealtype', from the batch cook meal_logs table */
+  mealLogsByDate?: Record<string, string[]>;
 }
 
 const MEAL_TYPES = [
@@ -36,6 +38,7 @@ export function WeekView({
   onNextWeek,
   onToday,
   onCellClick,
+  mealLogsByDate,
 }: WeekViewProps) {
   const colors = useThemeColors();
 
@@ -171,6 +174,7 @@ export function WeekView({
                   const { meal, recipe } = getMealForCell(day, type.id);
                   const dateKey = toKey(day);
 
+                  const loggedNames = mealLogsByDate?.[`${dateKey}-${type.id}`];
                   return (
                     <MealCell
                       key={`${dateKey}-${type.id}`}
@@ -179,6 +183,7 @@ export function WeekView({
                       isEmpty={!meal}
                       isToday={dayIsToday}
                       onClick={() => onCellClick(dateKey, type.id)}
+                      loggedNames={loggedNames}
                     />
                   );
                 })}

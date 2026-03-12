@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Search, Heart, Plus, Edit, Trash } from 'lucide-react';
+import { Search, Heart, Plus, Edit, Trash, AlertTriangle } from 'lucide-react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { Recipe } from '../../../types';
 import { PaginationV2 } from '../../../components/ui/PaginationV2';
@@ -21,6 +21,10 @@ interface RecipesViewProps {
   onEditRecipe: (recipeId: string) => void;
   onDeleteRecipe: (recipeId: string) => void;
   onAddRecipe: () => void;
+  /** Batch cook dishes that have no linked recipe yet — shown as stubs at the top */
+  sessionDishesNeedingRecipe?: Array<{ id: string; name: string }>;
+  /** Called when the user wants to create a recipe for a session dish */
+  onCreateRecipeForDish?: (dishId: string, dishName: string) => void;
 }
 
 export function RecipesView({
@@ -33,15 +37,23 @@ export function RecipesView({
   onEditRecipe,
   onDeleteRecipe,
   onAddRecipe,
+  sessionDishesNeedingRecipe,
+  onCreateRecipeForDish,
 }: RecipesViewProps) {
   const colors = useThemeColors();
   const [page, setPage] = useState(1);
+  const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
 
-  // Reset to page 1 when search/favorites filter changes
-  React.useEffect(() => { setPage(1); }, [searchQuery, showFavoritesOnly]);
+  // Reset to page 1 when filters change
+  React.useEffect(() => { setPage(1); }, [searchQuery, showFavoritesOnly, showIncompleteOnly]);
 
-  const totalPages = Math.ceil(recipes.length / RECIPES_PAGE_SIZE);
-  const pagedRecipes = recipes.slice((page - 1) * RECIPES_PAGE_SIZE, page * RECIPES_PAGE_SIZE);
+  // Split into complete (have ingredients) and incomplete (missing ingredients)
+  const incompleteRecipes = recipes.filter(r => !r.ingredients || r.ingredients.length === 0);
+  const completeRecipes   = recipes.filter(r =>  r.ingredients && r.ingredients.length > 0);
+
+  const filteredRecipes = showIncompleteOnly ? incompleteRecipes : recipes;
+  const totalPages = Math.ceil(filteredRecipes.length / RECIPES_PAGE_SIZE);
+  const pagedRecipes = filteredRecipes.slice((page - 1) * RECIPES_PAGE_SIZE, page * RECIPES_PAGE_SIZE);
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh', paddingBottom: '80px' }}>
@@ -73,29 +85,112 @@ export function RecipesView({
         </div>
       </div>
 
-      {/* Stats and Filter */}
-      <div className="px-6 pb-4 flex items-center justify-between">
+      {/* Stats and Filters */}
+      <div className="px-6 pb-3 flex items-center justify-between gap-2">
         <p style={{ fontSize: '14px', color: colors.text.tertiary }}>
-          {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'}
+          {filteredRecipes.length} {filteredRecipes.length === 1 ? 'recipe' : 'recipes'}
         </p>
 
-        <button
-          type="button"
-          onClick={onToggleFavorites}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200"
-          style={{
-            backgroundColor: showFavoritesOnly ? colors.badge.bg : 'transparent',
-            color: showFavoritesOnly ? colors.accent.start : colors.text.secondary,
-          }}
-        >
-          <Heart size={16} fill={showFavoritesOnly ? colors.accent.start : 'none'} />
-          <span className="text-sm font-medium">Favorites</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {incompleteRecipes.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowIncompleteOnly(v => !v);
+                if (showFavoritesOnly) onToggleFavorites();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200"
+              style={{
+                backgroundColor: showIncompleteOnly ? '#FEF3C7' : 'transparent',
+                color: showIncompleteOnly ? '#D97706' : colors.text.secondary,
+              }}
+            >
+              <AlertTriangle size={14} />
+              <span className="text-sm font-medium">Needs info ({incompleteRecipes.length})</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              onToggleFavorites();
+              setShowIncompleteOnly(false);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200"
+            style={{
+              backgroundColor: showFavoritesOnly ? colors.badge.bg : 'transparent',
+              color: showFavoritesOnly ? colors.accent.start : colors.text.secondary,
+            }}
+          >
+            <Heart size={16} fill={showFavoritesOnly ? colors.accent.start : 'none'} />
+            <span className="text-sm font-medium">Favorites</span>
+          </button>
+        </div>
       </div>
+
+      {/* Incomplete recipes nudge banner */}
+      {!showIncompleteOnly && !searchQuery && !showFavoritesOnly && incompleteRecipes.length > 0 && (
+        <div
+          className="mx-6 mb-3 px-4 py-3 rounded-xl flex items-center justify-between"
+          style={{ backgroundColor: '#FEF3C7', border: '1px solid #FDE68A' }}
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} style={{ color: '#D97706', flexShrink: 0 }} />
+            <p className="text-sm font-medium" style={{ color: '#92400E' }}>
+              {incompleteRecipes.length} recipe{incompleteRecipes.length !== 1 ? 's' : ''} missing ingredients — needed for shopping lists
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowIncompleteOnly(true)}
+            className="text-xs font-semibold ml-2 flex-shrink-0"
+            style={{ color: '#D97706' }}
+          >
+            Fix →
+          </button>
+        </div>
+      )}
+
+      {/* Session dishes without a recipe — shown as stubs to populate */}
+      {!searchQuery && !showFavoritesOnly && !showIncompleteOnly &&
+       sessionDishesNeedingRecipe && sessionDishesNeedingRecipe.length > 0 && (
+        <div className="px-6 mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wide" style={{ color: colors.text.secondary }}>
+              🍳 From your fridge pool — no recipe yet
+            </h3>
+            <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+              {sessionDishesNeedingRecipe.length}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {sessionDishesNeedingRecipe.map(dish => (
+              <div
+                key={dish.id}
+                className="flex items-center justify-between px-4 py-3 rounded-2xl border-2 border-dashed"
+                style={{ borderColor: 'rgba(212, 165, 116, 0.4)', backgroundColor: 'rgba(212, 165, 116, 0.04)' }}
+              >
+                <div>
+                  <p className="font-semibold text-sm" style={{ color: colors.text.primary }}>{dish.name}</p>
+                  <p className="text-xs mt-0.5" style={{ color: colors.text.tertiary }}>No recipe — can't generate shopping list</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onCreateRecipeForDish?.(dish.id, dish.name)}
+                  className="px-3 py-2 rounded-xl text-xs font-semibold text-white flex-shrink-0 ml-3"
+                  style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
+                  aria-label={`Add recipe for ${dish.name}`}
+                >
+                  + Add recipe
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recipes Grid */}
       <div className="px-6">
-        {recipes.length === 0 ? (
+        {filteredRecipes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="text-6xl mb-4">📖</div>
             <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
@@ -134,6 +229,19 @@ export function RecipesView({
               >
                 {/* Recipe Header */}
                 <div className="p-4 pb-3">
+                  {/* Incomplete badge */}
+                  {(!recipe.ingredients || recipe.ingredients.length === 0) && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onEditRecipe(recipe.id); }}
+                      className="flex items-center gap-1 mb-2 px-2 py-1 rounded-lg text-xs font-semibold"
+                      style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}
+                      aria-label="Add ingredients to this recipe"
+                    >
+                      <AlertTriangle size={11} />
+                      No ingredients — tap to add
+                    </button>
+                  )}
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-base flex-1 mr-2" style={{ color: colors.text.primary }}>
                       {recipe.name}

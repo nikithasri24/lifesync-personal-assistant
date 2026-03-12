@@ -323,10 +323,16 @@ export function buildMealPlanUpdatePayload(updates: MealPlanUpdate) {
 }
 
 export function buildPlannedMealInsertPayload(planId: string, meal: PlannedMealInput) {
+  // If date is already a yyyy-MM-dd string, use it directly to avoid UTC timezone shift.
+  // formatDate(new Date('2026-03-11'), ...) treats the ISO string as UTC midnight, which
+  // rolls back to the previous day in negative-offset timezones (e.g. US/Pacific UTC-8).
+  const dateStr = meal.date instanceof Date
+    ? formatDate(meal.date, 'yyyy-MM-dd')
+    : meal.date;
   return sanitize({
     meal_plan_id: planId,
     meal_type: meal.mealType,
-    date: formatDate(meal.date, 'yyyy-MM-dd'),
+    date: dateStr,
     recipe_id: meal.recipeId && meal.recipeId.trim() !== '' ? meal.recipeId : null,
     custom_meal: meal.customMeal && meal.customMeal.trim() !== '' ? sanitizeInput(meal.customMeal) : null,
     servings: meal.servings,

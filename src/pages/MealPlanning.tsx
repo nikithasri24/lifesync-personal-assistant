@@ -24,10 +24,26 @@ import {
   useMergedConnectionQuery,
 } from '@/hooks/useMealPlanningQuery';
 import { getShoppingLists, createShoppingList, createShoppingItem } from '@/api/shoppingAPI';
+import { useQueryClient } from '@tanstack/react-query';
+import { shoppingKeys } from '@/hooks/useShoppingQuery';
 import type { GroceryItem } from '@/mealPlanning/hooks/useGroceryList';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { useMealsState, type TabView } from '../meals/hooks';
 import { TodayView, WeekView, RecipesView, GroceryView } from '../meals/components/views';
+import { MealFormModalV2 } from '../meals/components/v2/MealFormModalV2';
+import { BatchCookSessionModal } from '../meals/components/v2/BatchCookSessionModal';
+import { FridgePoolV2 } from '../meals/components/v2/FridgePoolV2';
+import { QuickLogModal } from '../meals/components/v2/QuickLogModal';
+import {
+  useActiveBatchSessionQuery,
+  useCreateBatchCookSession,
+  useCreateMealLog,
+  useMealLogsQuery,
+  useUpdateDishServings,
+  useUpdateDishName,
+  useUpdateDishRecipe,
+} from '../hooks/mealPlanning/useBatchCookQueries';
+import type { BatchCookDish } from '../meals/types';
 
 // Import hooks
 import { useMealFormModals } from '../mealPlanning/hooks/useMealFormModals';
@@ -106,9 +122,27 @@ const cleanupOldDrafts = (): void => {
 const MealPlanningContent: React.FC = () => {
   // Theme colors
   const colors = useThemeColors();
+  const queryClient = useQueryClient();
 
   // Tab navigation
   const { activeTab, setActiveTab } = useMealsState();
+
+  // State for the "Plan Meal" modal (picks from existing recipes or custom name)
+  const [addMealModal, setAddMealModal] = useState<{ date: Date; mealType: string } | null>(null);
+
+  // Batch cook state
+  const [showBatchCookModal, setShowBatchCookModal] = useState(false);
+  const [quickLogModal, setQuickLogModal] = useState<{
+    preSelectedDish?: BatchCookDish;
+    preSelectedMealType?: string;
+  } | null>(null);
+
+  const { data: activeSession } = useActiveBatchSessionQuery();
+  const createBatchSessionMutation = useCreateBatchCookSession();
+  const createMealLogMutation = useCreateMealLog();
+  const updateDishServingsMutation = useUpdateDishServings();
+  const updateDishNameMutation = useUpdateDishName();
+  const updateDishRecipeMutation = useUpdateDishRecipe();
 
   // React Query hooks
   const {
@@ -151,7 +185,7 @@ const MealPlanningContent: React.FC = () => {
     await updatePlannedMealMutation.mutateAsync(data);
   }, [updatePlannedMealMutation]);
 
-  const createRecipeWrapper = useCallback(async (recipe: RecipeInput): Promise<Recipe> => {
+  const _createRecipeWrapper = useCallback(async (recipe: RecipeInput): Promise<Recipe> => {
     return await createRecipeMutation.mutateAsync(recipe);
   }, [createRecipeMutation]);
 
@@ -188,6 +222,11 @@ const MealPlanningContent: React.FC = () => {
   const modalState = useMealFormModals();
   const weekNav = useWeekNavigation(weekStartsOn, mealPlans);
   const recipeImport = useRecipeImport();
+
+  // Fetch meal logs for the currently-visible week so they appear in the Week grid
+  const weekFrom = weekNav.weekDays[0] ? format(weekNav.weekDays[0], 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+  const weekTo   = weekNav.weekDays[6] ? format(weekNav.weekDays[6], 'yyyy-MM-dd') : weekFrom;
+  const { data: weekMealLogs = [] } = useMealLogsQuery(weekFrom, weekTo);
 
   // Get merged connection info for partner tracking
   const { data: mergedConnection } = useMergedConnectionQuery();
@@ -280,6 +319,30 @@ const MealPlanningContent: React.FC = () => {
     return plannedMeals.filter(meal => format(ensureDate(meal.date), 'yyyy-MM-dd') === today);
   }, [plannedMeals]);
 
+  // Build a flat dish id→name map from the active session (which, via RLS,
+  // now includes partner sessions too — so this covers both own and shared dishes).
+  const allDishesMap = useMemo(() => {
+    const map = new Map<string, string>();
+    activeSession?.dishes.forEach(d => {
+      map.set(d.id, d.customName ?? d.recipeName ?? 'Meal');
+    });
+    return map;
+  }, [activeSession]);
+
+  // Build lookup for the Week view: 'yyyy-MM-dd-mealtype' → display names.
+  const mealLogsByDate = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    weekMealLogs.forEach(log => {
+      const key = `${log.loggedDate}-${log.mealType}`;
+      const name = log.customName
+        ?? (log.batchDishId ? allDishesMap.get(log.batchDishId) : undefined)
+        ?? 'Meal';
+      if (!map[key]) map[key] = [];
+      if (!map[key].includes(name)) map[key].push(name);
+    });
+    return map;
+  }, [weekMealLogs, allDishesMap]);
+
   // Copy week handler
   const handleCopyWeek = async (): Promise<void> => {
     try {
@@ -291,6 +354,47 @@ const MealPlanningContent: React.FC = () => {
     }
   };
 
+  // Parse a raw ingredient string like "1/2 cup blueberries" into {name, quantity, unit}.
+  // This handles legacy recipes created via the old textarea form where the whole line
+  // was stored as the ingredient name with no separate amount/unit fields.
+  const parseIngredientItem = (item: GroceryItem): { name: string; quantity: number; unit?: string } => {
+    if (item.amount) {
+      // Already has structured data — use it directly
+      return {
+        name: item.name.trim(),
+        quantity: parseFloat(item.amount) || 1,
+        unit: item.unit,
+      };
+    }
+    // Try to parse "1/2 cup blueberries" or "2 cups milk" from the name
+    const match = item.name.match(
+      /^((\d+\s+)?\d+\/\d+|\d+(?:\.\d+)?)\s*(cups?|tbsp|tsp|oz|lbs?|g|kg|ml|piece|pcs|pinch|cloves?|whole)?\s+(.+)$/i
+    );
+    if (match) {
+      const rawAmt = match[1].trim();
+      const unit = match[3]?.toLowerCase();
+      const name = match[4].trim();
+      // Evaluate fraction strings like "1/2" or "1 1/2"
+      let quantity = 1;
+      if (rawAmt.includes('/')) {
+        const parts = rawAmt.split(/\s+/);
+        if (parts.length === 2) {
+          // Mixed number: "1 1/2"
+          const [whole, frac] = parts;
+          const [num, den] = frac.split('/');
+          quantity = parseInt(whole) + parseInt(num) / parseInt(den);
+        } else {
+          const [num, den] = rawAmt.split('/');
+          quantity = parseInt(num) / parseInt(den);
+        }
+      } else {
+        quantity = parseFloat(rawAmt) || 1;
+      }
+      return { name, quantity, unit };
+    }
+    return { name: item.name.trim(), quantity: 1, unit: item.unit };
+  };
+
   // Send grocery items to shopping list
   const handleSendToShoppingList = useCallback(async (items: GroceryItem[]): Promise<{ success: boolean; count: number }> => {
     try {
@@ -299,7 +403,6 @@ const MealPlanningContent: React.FC = () => {
       let targetList = lists.find(l => l.name === 'My Shopping List' || l.status === 'active');
 
       if (!targetList) {
-        // Create a new list
         targetList = await createShoppingList({
           name: 'My Shopping List',
           status: 'active',
@@ -310,27 +413,30 @@ const MealPlanningContent: React.FC = () => {
         throw new Error('Failed to get or create shopping list');
       }
 
-      // Add each item to the shopping list
+      // Add each item, parsing ingredient strings where needed
       let successCount = 0;
       for (const item of items) {
         try {
+          const parsed = parseIngredientItem(item);
           await createShoppingItem(targetList.id, {
-            name: item.name,
-            quantity: item.amount ? parseFloat(item.amount) || 1 : 1,
-            unit: item.unit ?? undefined,
+            name: parsed.name.charAt(0).toUpperCase() + parsed.name.slice(1),
+            quantity: parsed.quantity,
+            unit: parsed.unit ?? undefined,
             is_purchased: false,
           });
           successCount++;
         } catch (itemError) {
           logger.warn('MealPlanning', itemError instanceof Error ? itemError : new Error(String(itemError)), {
             context: 'addItemToShoppingList',
-            itemName: item.name
+            itemName: item.name,
           });
         }
       }
 
       if (successCount > 0) {
-        showToast(`Added ${successCount} item${successCount !== 1 ? 's' : ''} to Shopping List!`, 'success');
+        // Invalidate the shopping query cache so the Shopping page reflects new items immediately
+        void queryClient.invalidateQueries({ queryKey: shoppingKeys.all });
+        showToast(`Added ${successCount} item${successCount !== 1 ? 's' : ''} to Shopping List! 🛒`, 'success');
       }
 
       return { success: successCount > 0, count: successCount };
@@ -339,7 +445,7 @@ const MealPlanningContent: React.FC = () => {
       showToast('Failed to add items to Shopping List', 'error');
       return { success: false, count: 0 };
     }
-  }, [showToast]);
+  }, [showToast, queryClient]);
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
@@ -348,6 +454,7 @@ const MealPlanningContent: React.FC = () => {
         <div className="mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-3 mb-4" style={{ color: colors.text.primary }}>
             <span className="text-4xl">🍽️</span>
+            Meals
           </h1>
         </div>
 
@@ -367,27 +474,79 @@ const MealPlanningContent: React.FC = () => {
 
         {/* Tab Content */}
         {activeTab === 'today' && (
+          <>
+            {/* Fridge Pool — shown when there's an active batch cook session */}
+            {activeSession && (
+              <FridgePoolV2
+                session={activeSession}
+                recipes={recipes}
+                onLogFromPool={(dish, mealType) => {
+                  setQuickLogModal({ preSelectedDish: dish, preSelectedMealType: mealType });
+                }}
+                onRenameDish={async (dish, newName) => {
+                  try {
+                    await updateDishNameMutation.mutateAsync({ dishId: dish.id, customName: newName });
+                  } catch (err) {
+                    logger.error('MealPlanning', err as Error, { context: 'renameDish' });
+                    showToast('Failed to rename dish', 'error');
+                  }
+                }}
+                onLinkRecipe={async (dish, recipeId) => {
+                  try {
+                    await updateDishRecipeMutation.mutateAsync({ dishId: dish.id, recipeId });
+                    showToast(recipeId ? 'Recipe linked! Shopping list will now include its ingredients.' : 'Recipe unlinked.', 'success');
+                  } catch (err) {
+                    logger.error('MealPlanning', err as Error, { context: 'linkDishRecipe' });
+                    showToast('Failed to link recipe', 'error');
+                  }
+                }}
+                onMarkDone={async (dish) => {
+                  try {
+                    await updateDishServingsMutation.mutateAsync({ dishId: dish.id, servingsRemaining: 0 });
+                    showToast(`${dish.customName ?? dish.recipeName ?? 'Dish'} marked as all gone`, 'success');
+                  } catch (err) {
+                    logger.error('MealPlanning', err as Error, { context: 'markDishDone' });
+                    showToast('Failed to update dish', 'error');
+                  }
+                }}
+                onNewSession={() => setShowBatchCookModal(true)}
+              />
+            )}
+
+            {/* Start batch cook session CTA when no active session */}
+            {!activeSession && (
+              <div
+                className="mb-6 p-4 rounded-2xl border-2 border-dashed flex items-center justify-between"
+                style={{ borderColor: 'rgba(212, 165, 116, 0.4)', backgroundColor: 'rgba(212, 165, 116, 0.04)' }}
+              >
+                <div>
+                  <p className="font-semibold text-sm" style={{ color: '#C18B5E' }}>
+                    🍳 Batch cook this week?
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Record what you cooked and track it through the week
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBatchCookModal(true)}
+                  className="px-4 py-2 rounded-xl font-semibold text-sm text-white flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
+                >
+                  Start Session
+                </button>
+              </div>
+            )}
+          </>
+        )}
+        {/* Only show the traditional meal planning slots when there's no active batch cook session.
+            When batch cooking, the Fridge Pool above replaces this entirely. */}
+        {activeTab === 'today' && !activeSession && (
           <TodayView
             todaysMeals={todaysMeals}
             recipes={recipes}
             onAddMeal={(mealType) => {
-              const today = format(new Date(), 'yyyy-MM-dd');
-              modalState.openRecipeForm('', async (recipeData) => {
-                try {
-                  const newRecipe = await createRecipeWrapper(recipeData);
-                  if (activePlanWithPartnerId?.id) {
-                    await createPlannedMealWrapper({
-                      planId: activePlanWithPartnerId.id,
-                      meal: { date: today, mealType, recipeId: newRecipe.id, servings: 2, status: 'planned', notes: '', isPostponed: false },
-                    });
-                  }
-                  modalState.closeRecipeForm();
-                  showToast('Meal added! 🍽️', 'success');
-                } catch (err) {
-                  logger.error('MealPlanning', err as Error, { context: 'onAddMeal' });
-                  showToast('Failed to add meal', 'error');
-                }
-              });
+              setAddMealModal({ date: new Date(), mealType });
             }}
             onLogMeal={(mealId) => {
               const updates: PlannedMealUpdate = { status: 'logged' };
@@ -408,23 +567,9 @@ const MealPlanningContent: React.FC = () => {
             onPreviousWeek={weekNav.goToPreviousWeek}
             onNextWeek={weekNav.goToNextWeek}
             onToday={weekNav.goToThisWeek}
+            mealLogsByDate={mealLogsByDate}
             onCellClick={(date, mealType) => {
-              modalState.openRecipeForm('', async (recipeData) => {
-                try {
-                  const newRecipe = await createRecipeWrapper(recipeData);
-                  if (activePlanWithPartnerId?.id) {
-                    await createPlannedMealWrapper({
-                      planId: activePlanWithPartnerId.id,
-                      meal: { date, mealType, recipeId: newRecipe.id, servings: 2, status: 'planned', notes: '', isPostponed: false },
-                    });
-                  }
-                  modalState.closeRecipeForm();
-                  showToast('Meal added! 🍽️', 'success');
-                } catch (err) {
-                  logger.error('MealPlanning', err as Error, { context: 'onCellClick' });
-                  showToast('Failed to add meal', 'error');
-                }
-              });
+              setAddMealModal({ date: ensureDate(date) ?? new Date(), mealType });
             }}
           />
         )}
@@ -440,6 +585,25 @@ const MealPlanningContent: React.FC = () => {
             onEditRecipe={modalState.openRecipeEdit}
             onDeleteRecipe={handleDeleteRecipe}
             onAddRecipe={() => modalState.openRecipeForm('', '')}
+            sessionDishesNeedingRecipe={
+              activeSession?.dishes
+                .filter(d => !d.recipeId && d.customName)
+                .map(d => ({ id: d.id, name: d.customName! }))
+            }
+            onCreateRecipeForDish={(dishId, dishName) => {
+              // Open recipe form pre-filled with dish name; on save, link the new recipe to the dish
+              modalState.openRecipeForm(dishName, async (recipeData) => {
+                try {
+                  const newRecipe = await _createRecipeWrapper(recipeData);
+                  await updateDishRecipeMutation.mutateAsync({ dishId, recipeId: newRecipe.id });
+                  modalState.closeRecipeForm();
+                  showToast(`Recipe created and linked to "${dishName}" 🎉`, 'success');
+                } catch (err) {
+                  logger.error('MealPlanning', err as Error, { context: 'createRecipeForDish' });
+                  showToast('Failed to create recipe', 'error');
+                }
+              });
+            }}
           />
         )}
 
@@ -461,6 +625,122 @@ const MealPlanningContent: React.FC = () => {
               showToast('Shopping list copied to clipboard!', 'success');
             }}
             onSendToShoppingList={handleSendToShoppingList}
+            batchSessionName={activeSession?.name}
+            batchIngredients={
+              // Aggregate ingredients from all batch session dishes that have recipes
+              activeSession
+                ? (() => {
+                    // Normalize ingredient name to a canonical dedup key:
+                    // strips parens/notes, lowercases, and removes common plural suffixes
+                    // so "Onion" and "Onions" → "onion" (same bucket)
+                    const normalizeIngKey = (name: string): string =>
+                      name.toLowerCase().trim()
+                        .replace(/\s*\([^)]*\)/g, '')   // strip parenthetical notes
+                        .trim()
+                        .replace(/ies$/i, 'y')           // chillies → chilly
+                        .replace(/ves$/i, 'f')           // leaves → leaf
+                        .replace(/es$/i, '')             // tomatoes → tomat
+                        .replace(/s$/i, '');             // onions → onion
+
+                    const seen = new Map<string, import('@/mealPlanning/hooks/useGroceryList').GroceryItem>();
+                    activeSession.dishes.forEach(dish => {
+                      if (!dish.recipeId) return;
+                      const recipe = recipes.find(r => r.id === dish.recipeId);
+                      recipe?.ingredients?.forEach(ing => {
+                        const key = normalizeIngKey(ing.name);
+                        if (!seen.has(key)) {
+                          seen.set(key, { id: key, name: ing.name, amount: ing.amount, unit: ing.unit, recipes: [recipe.name], status: 'needed' });
+                        }
+                      });
+                    });
+                    return Array.from(seen.values());
+                  })()
+                : undefined
+            }
+          />
+        )}
+
+        {/* Batch Cook Session Modal */}
+        <BatchCookSessionModal
+          isOpen={showBatchCookModal}
+          recipes={recipes}
+          onClose={() => setShowBatchCookModal(false)}
+          isPending={createBatchSessionMutation.isPending}
+          onSubmit={async (input) => {
+            try {
+              await createBatchSessionMutation.mutateAsync(input);
+              setShowBatchCookModal(false);
+              showToast(`"${input.name}" session started! ${input.dishes.length} dish${input.dishes.length !== 1 ? 'es' : ''} in the pool 🍳`, 'success');
+            } catch (err) {
+              logger.error('MealPlanning', err as Error, { context: 'createBatchSession' });
+              showToast('Failed to create batch cook session', 'error');
+            }
+          }}
+        />
+
+        {/* Quick Log Modal — log what you ate from the fridge pool */}
+        {quickLogModal !== null && (
+          <QuickLogModal
+            isOpen={true}
+            session={activeSession ?? null}
+            preSelectedDish={quickLogModal.preSelectedDish}
+            preSelectedMealType={quickLogModal.preSelectedMealType}
+            isPending={createMealLogMutation.isPending}
+            onClose={() => setQuickLogModal(null)}
+            onSubmit={async ({ batchDishId, customName, mealType, servingsConsumed, notes }) => {
+              try {
+                await createMealLogMutation.mutateAsync({
+                  loggedDate: format(new Date(), 'yyyy-MM-dd'),
+                  mealType,
+                  batchDishId,
+                  customName,
+                  servingsConsumed,
+                  notes: notes || undefined,
+                });
+                setQuickLogModal(null);
+                showToast('Meal logged! ✓', 'success');
+              } catch (err) {
+                logger.error('MealPlanning', err as Error, { context: 'logMeal' });
+                showToast('Failed to log meal', 'error');
+              }
+            }}
+          />
+        )}
+
+        {/* Plan Meal Modal — picks from existing recipes or enters a custom name */}
+        {addMealModal && (
+          <MealFormModalV2
+            isOpen={true}
+            date={addMealModal.date}
+            mealType={addMealModal.mealType}
+            recipes={recipes}
+            onClose={() => setAddMealModal(null)}
+            onSubmit={async ({ date, mealType, recipeId, customName, servings, notes }) => {
+              try {
+                if (!activePlanWithPartnerId?.id) {
+                  showToast('No active meal plan. Please try again.', 'error');
+                  return;
+                }
+                await createPlannedMealWrapper({
+                  planId: activePlanWithPartnerId.id,
+                  meal: {
+                    date,
+                    mealType,
+                    recipeId: recipeId ?? undefined,
+                    customMeal: customName ?? undefined,
+                    servings,
+                    status: 'planned',
+                    notes: notes ?? '',
+                    isPostponed: false,
+                  },
+                });
+                setAddMealModal(null);
+                showToast('Meal planned! 🍽️', 'success');
+              } catch (err) {
+                logger.error('MealPlanning', err as Error, { context: 'planMeal' });
+                showToast('Failed to plan meal', 'error');
+              }
+            }}
           />
         )}
 

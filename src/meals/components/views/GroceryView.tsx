@@ -3,7 +3,7 @@
  * Auto-generated shopping list from weekly meals
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Copy, ShoppingBag, Check } from 'lucide-react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { GroceryItem } from '../../../mealPlanning/hooks/useGroceryList';
@@ -12,15 +12,19 @@ interface GroceryViewProps {
   groceryList: GroceryItem[];
   neededItems: GroceryItem[];
   atHomeItems: GroceryItem[];
-  onUpdateItemStatus: (name: string, status: 'needed' | 'at-home' | 'in-cart' | 'purchased') => void;
+  onUpdateItemStatus: (itemId: string, status: 'needed' | 'at_home' | 'in_cart' | 'purchased') => void;
   onCopyToClipboard: () => void;
   onSendToShoppingList: (items: GroceryItem[]) => Promise<{ success: boolean; count: number }>;
+  /** Batch cook session name (if active) — shown as source label */
+  batchSessionName?: string;
+  /** Ingredients aggregated from all batch cook session recipes */
+  batchIngredients?: GroceryItem[];
 }
 
 type FilterTab = 'needed' | 'athome' | 'all';
 
 // Group items by category
-const categorizeItems = (items: GroceryItem[]) => {
+const categorizeItems = (items: GroceryItem[]): [string, GroceryItem[]][] => {
   const categories: Record<string, GroceryItem[]> = {
     Produce: [],
     Proteins: [],
@@ -82,6 +86,42 @@ const categorizeItems = (items: GroceryItem[]) => {
   return Object.entries(categories).filter(([_, items]) => items.length > 0);
 };
 
+// ── Ingredient name parser ────────────────────────────────────────────────
+// Handles messy recipe strings like "1 tablespoon (15 ml) oil" or
+// "2 green cardamoms ( (or ¼ to ⅓ tsp ground cardamom, elaichi))"
+// Returns { measurement, displayName } where displayName is stripped of
+// leading quantities and all parenthetical notes.
+const UNIT_RE = /^([\d\s\/\.\-½¼¾⅓⅔⅛]+)?\s*(tablespoons?|teaspoons?|cups?|tbsp\.?|tsp\.?|oz\.?|lbs?\.?|grams?|g|kgs?|ml|l|litres?|pieces?|pcs|whole|cloves?|inch|cm|pinch|handful|bunch|head|can|cans|slice|slices|sprig|sprigs)s?\b/i;
+
+function parseIngredientDisplay(item: GroceryItem): { measurement: string; displayName: string } {
+  // If structured amount+unit exist and name looks clean, use them directly
+  if ((item.amount || item.unit) && !/^\d/.test(item.name)) {
+    const measurement = [item.amount, item.unit].filter(Boolean).join(' ');
+    return { measurement, displayName: item.name };
+  }
+
+  // Try to match a leading quantity+unit
+  const match = item.name.match(UNIT_RE);
+  let measurement = '';
+  let rest = item.name;
+
+  if (match) {
+    measurement = match[0].trim();
+    rest = item.name.slice(match[0].length).trim();
+  } else if (item.amount) {
+    measurement = [item.amount, item.unit].filter(Boolean).join(' ');
+  }
+
+  // Strip all parenthetical noise from the remaining name
+  const cleaned = rest
+    .replace(/\s*\(+[^)]*\)+/g, '')   // remove (notes like this)
+    .replace(/\s*\[+[^)]*\]+/g, '')   // remove [notes]
+    .replace(/,\s*$/, '')              // trailing comma
+    .trim();
+
+  return { measurement, displayName: cleaned || rest || item.name };
+}
+
 export function GroceryView({
   groceryList,
   neededItems,
@@ -89,10 +129,63 @@ export function GroceryView({
   onUpdateItemStatus,
   onCopyToClipboard,
   onSendToShoppingList,
-}: GroceryViewProps) {
+  batchSessionName,
+  batchIngredients,
+}: GroceryViewProps): React.ReactElement {
   const colors = useThemeColors();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('needed');
   const [isSending, setIsSending] = useState(false);
+  const [batchSentSuccess, setBatchSentSuccess] = useState(false);
+
+  // Persist "have it" checks to localStorage keyed by session name so they survive reloads.
+  // When the session changes (new batch cook), the key changes and we start fresh.
+  const storageKey = batchSessionName ? `grocery_at_home_${batchSessionName}` : null;
+
+  const [batchAtHome, setBatchAtHome] = useState<Set<string>>(new Set<string>());
+
+  // Load from localStorage once the session name is known (it arrives async from Supabase).
+  // Using a ref so we only load once per storageKey, not on every render.
+  const loadedKeyRef = React.useRef<string | null>(null);
+  useEffect(() => {
+    if (!storageKey || loadedKeyRef.current === storageKey) return;
+    loadedKeyRef.current = storageKey;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        setBatchAtHome(new Set<string>(JSON.parse(saved) as string[]));
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, [storageKey]);
+
+  // Persist to localStorage whenever the set changes
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(batchAtHome)));
+    } catch {
+      // ignore quota errors
+    }
+  }, [batchAtHome, storageKey]);
+
+  const toggleBatchAtHome = (id: string): void => {
+    setBatchAtHome(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const allChecked = !!(batchIngredients && batchIngredients.length > 0 && batchAtHome.size === batchIngredients.length);
+  const toggleSelectAll = (): void => {
+    if (allChecked) {
+      setBatchAtHome(new Set());
+    } else {
+      setBatchAtHome(new Set(batchIngredients?.map(i => i.id) ?? []));
+    }
+    setBatchSentSuccess(false);
+  };
+  const batchNeededCount = (batchIngredients?.length ?? 0) - batchAtHome.size;
 
   const filteredItems =
     activeFilter === 'needed'
@@ -103,14 +196,146 @@ export function GroceryView({
 
   const categorized = categorizeItems(filteredItems);
 
-  const handleSendToShopping = async () => {
+  const handleSendToShopping = async (): Promise<void> => {
     setIsSending(true);
     await onSendToShoppingList(neededItems);
     setIsSending(false);
   };
 
+  // ── Batch mode: when a session is active, the grocery tab IS the batch checklist ──
+  // Hide the regular planned-meals section entirely — it's always empty when batch cooking.
+  if (batchSessionName && batchIngredients && batchIngredients.length > 0) {
+    return (
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh', paddingBottom: '5rem' }}>
+        <div className="px-4 pt-4 pb-6">
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(212, 165, 116, 0.3)' }}>
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-4 py-4"
+              style={{ backgroundColor: 'rgba(212, 165, 116, 0.08)' }}
+            >
+              <div>
+                <p className="font-bold text-sm" style={{ color: '#C18B5E' }}>
+                  Shop for &quot;{batchSessionName}&quot;
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: colors.text.tertiary }}>
+                  {batchSentSuccess
+                    ? 'Added to your shopping list'
+                    : batchNeededCount > 0
+                      ? `${batchNeededCount} to buy · ${batchAtHome.size} already have`
+                      : `All ${batchIngredients.length} items checked off`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="text-xs font-medium px-2 py-1 rounded-lg mr-2 flex-shrink-0"
+                style={{ color: colors.text.tertiary, backgroundColor: colors.bg.primary }}
+              >
+                {allChecked ? 'Deselect all' : 'Select all'}
+              </button>
+              {batchSentSuccess ? (
+                <span
+                  className="text-xs font-semibold px-3 py-2 rounded-xl flex-shrink-0"
+                  style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#10B981' }}
+                >
+                  Sent!
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const toSend = batchIngredients.filter(i => !batchAtHome.has(i.id));
+                    const result = await onSendToShoppingList(toSend);
+                    if (result.success) {
+                      setBatchAtHome(new Set(batchIngredients.map(i => i.id)));
+                      setBatchSentSuccess(true);
+                    }
+                  }}
+                  disabled={batchNeededCount === 0}
+                  className="px-3 py-2 rounded-xl text-xs font-semibold text-white disabled:opacity-40 flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
+                >
+                  {batchNeededCount > 0 ? `Add (${batchNeededCount}) to list` : 'Add to list'}
+                </button>
+              )}
+            </div>
+
+            {/* Ingredient checklist */}
+            <div style={{ backgroundColor: colors.bg.white }}>
+              {batchIngredients.map((ing, idx) => {
+                const isAtHome = batchAtHome.has(ing.id);
+                const { measurement, displayName } = parseIngredientDisplay(ing);
+                return (
+                  <button
+                    key={ing.id}
+                    type="button"
+                    onClick={() => { toggleBatchAtHome(ing.id); setBatchSentSuccess(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
+                    style={{
+                      borderBottom: idx < batchIngredients.length - 1 ? `1px solid ${colors.border.light}` : 'none',
+                      backgroundColor: isAtHome ? 'rgba(16, 185, 129, 0.03)' : 'transparent',
+                    }}
+                    aria-label={isAtHome ? `Unmark ${displayName}` : `Mark ${displayName} as at home`}
+                  >
+                    <div
+                      className="flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all"
+                      style={{
+                        borderColor: isAtHome ? '#10B981' : colors.border.medium,
+                        backgroundColor: isAtHome ? '#10B981' : 'transparent',
+                      }}
+                    >
+                      {isAtHome && <Check size={11} color="white" strokeWidth={3} />}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-sm font-medium leading-tight"
+                        style={{
+                          color: isAtHome ? colors.text.tertiary : colors.text.primary,
+                          textDecoration: isAtHome ? 'line-through' : 'none',
+                        }}
+                      >
+                        {displayName}
+                      </p>
+                      {measurement && (
+                        <p className="text-xs mt-0.5" style={{ color: colors.text.tertiary }}>
+                          {measurement}
+                        </p>
+                      )}
+                    </div>
+
+                    {isAtHome && (
+                      <span className="text-xs flex-shrink-0 font-medium" style={{ color: '#10B981' }}>
+                        have it
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── No batch session active: show planned-meals grocery list ──────────────
+  // Also shown when batch session exists but has no linked recipe ingredients yet.
+  const noBatchButSessionExists = !!(batchSessionName && (!batchIngredients || batchIngredients.length === 0));
+
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh', paddingBottom: '140px' }}>
+      {/* Hint when session exists but no recipes are linked */}
+      {noBatchButSessionExists && (
+        <div
+          className="mx-4 mt-4 mb-2 px-4 py-3 rounded-xl text-sm"
+          style={{ backgroundColor: 'rgba(212, 165, 116, 0.08)', color: colors.text.secondary, border: '1px solid rgba(212, 165, 116, 0.2)' }}
+        >
+          Link recipes to your batch cook dishes in the Recipes tab to generate a shopping list here.
+        </div>
+      )}
+
       {/* Header Stats */}
       <div className="px-6 pt-4 pb-3">
         <p style={{ fontSize: '14px', color: colors.text.tertiary }}>
@@ -126,10 +351,7 @@ export function GroceryView({
             onClick={() => setActiveFilter('needed')}
             className="px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200"
             style={{
-              backgroundColor:
-                activeFilter === 'needed'
-                  ? `${colors.accent.start}`
-                  : colors.bg.white,
+              backgroundColor: activeFilter === 'needed' ? `${colors.accent.start}` : colors.bg.white,
               color: activeFilter === 'needed' ? 'white' : colors.text.primary,
               border: activeFilter === 'needed' ? 'none' : `2px solid ${colors.border.light}`,
             }}
@@ -141,10 +363,7 @@ export function GroceryView({
             onClick={() => setActiveFilter('athome')}
             className="px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200"
             style={{
-              backgroundColor:
-                activeFilter === 'athome'
-                  ? `${colors.accent.start}`
-                  : colors.bg.white,
+              backgroundColor: activeFilter === 'athome' ? `${colors.accent.start}` : colors.bg.white,
               color: activeFilter === 'athome' ? 'white' : colors.text.primary,
               border: activeFilter === 'athome' ? 'none' : `2px solid ${colors.border.light}`,
             }}
@@ -156,10 +375,7 @@ export function GroceryView({
             onClick={() => setActiveFilter('all')}
             className="px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200"
             style={{
-              backgroundColor:
-                activeFilter === 'all'
-                  ? `${colors.accent.start}`
-                  : colors.bg.white,
+              backgroundColor: activeFilter === 'all' ? `${colors.accent.start}` : colors.bg.white,
               color: activeFilter === 'all' ? 'white' : colors.text.primary,
               border: activeFilter === 'all' ? 'none' : `2px solid ${colors.border.light}`,
             }}
@@ -213,12 +429,9 @@ export function GroceryView({
                           index === items.length - 1 ? 'none' : `1px solid ${colors.border.light}`,
                       }}
                     >
-                      {/* Checkbox */}
                       <button
                         type="button"
-                        onClick={() =>
-                          onUpdateItemStatus(item.name, isAtHome ? 'needed' : 'at-home')
-                        }
+                        onClick={() => onUpdateItemStatus(item.id, isAtHome ? 'needed' : 'at_home')}
                         className="flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200"
                         style={{
                           borderColor: isAtHome ? colors.status.success : colors.border.medium,
@@ -229,7 +442,6 @@ export function GroceryView({
                         {isAtHome && <Check size={16} color="white" />}
                       </button>
 
-                      {/* Item Details */}
                       <div className="flex-1 min-w-0">
                         <p
                           className="font-medium"
@@ -280,7 +492,7 @@ export function GroceryView({
             </button>
             <button
               type="button"
-              onClick={handleSendToShopping}
+              onClick={() => { void handleSendToShopping(); }}
               disabled={isSending}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-95 disabled:opacity-50"
               style={{

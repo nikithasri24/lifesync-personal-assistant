@@ -307,6 +307,7 @@ function ShoppingSmartContent(): ReactElement {
             onToggleItem={(itemId) => { void handleToggleItem(itemId); }}
             onEditItem={startEditItem}
             onRequestDeleteItem={(itemId) => setItemToDelete(itemId)}
+            onBulkDelete={(itemIds) => { itemIds.forEach(id => { void deleteShoppingItem(id); }); }}
             onFindStores={openStoreSuggestions}
             onShowStorePrefs={() => setShowStorePrefs(true)}
           />

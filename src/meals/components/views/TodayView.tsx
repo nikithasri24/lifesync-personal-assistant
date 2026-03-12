@@ -181,18 +181,8 @@ export function TodayView({
         })}
       </div>
 
-      {/* Empty State */}
-      {todaysMeals.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 px-6">
-          <div className="text-6xl mb-4">🍽️</div>
-          <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
-            No Meals Planned Today
-          </h3>
-          <p className="text-sm text-center mb-6" style={{ color: colors.text.tertiary }}>
-            Start planning your meals for today
-          </p>
-        </div>
-      )}
+      {/* Empty State — only shown when no meals exist at all, not alongside per-section empties */}
+      {/* Intentionally removed: per-section "No meal planned yet" messages already communicate this */}
     </div>
   );
 }

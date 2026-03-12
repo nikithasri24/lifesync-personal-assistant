@@ -168,7 +168,7 @@ export function ModalContainer({
         const recipe = recipes.find((r) => r.id === editingRecipeId);
         return recipe ? (
           <Suspense fallback={<ModalLoadingFallback />}>
-            <RecipeEditModal recipe={recipe} onClose={onCloseRecipeEdit} />
+            <RecipeEditModal isOpen={true} recipe={recipe} onClose={onCloseRecipeEdit} />
           </Suspense>
         ) : null;
       })()}

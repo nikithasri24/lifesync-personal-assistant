@@ -35,7 +35,7 @@ interface MealFormModalV2Props {
     customName?: string;
     servings: number;
     notes?: string;
-  }) => void;
+  }) => void | Promise<void>;
 }
 
 interface MealFormData {

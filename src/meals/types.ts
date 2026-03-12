@@ -88,3 +88,65 @@ export interface MealSwap {
 }
 
 export type TabView = 'today' | 'week' | 'recipes' | 'grocery';
+
+// ============================================================
+// Batch Cook Feature Types
+// ============================================================
+
+export interface BatchCookDish {
+  id: string;
+  sessionId: string;
+  recipeId?: string;
+  recipeName?: string; // denormalised from recipe for display
+  customName?: string;
+  servingsCooked: number;
+  servingsRemaining: number;
+  notes?: string;
+  createdAt: Date;
+}
+
+export interface BatchCookSession {
+  id: string;
+  userId: string;
+  name: string;
+  cookDate: string; // yyyy-MM-dd
+  notes?: string;
+  dishes: BatchCookDish[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MealLog {
+  id: string;
+  userId: string;
+  loggedDate: string; // yyyy-MM-dd
+  mealType: MealType;
+  batchDishId?: string;
+  recipeId?: string;
+  customName?: string;
+  servingsConsumed: number;
+  notes?: string;
+  createdAt: Date;
+}
+
+export interface BatchCookSessionInput {
+  name: string;
+  cookDate: string; // yyyy-MM-dd
+  notes?: string;
+  dishes: Array<{
+    recipeId?: string;
+    customName?: string;
+    servingsCooked: number;
+    notes?: string;
+  }>;
+}
+
+export interface MealLogInput {
+  loggedDate: string;
+  mealType: MealType;
+  batchDishId?: string;
+  recipeId?: string;
+  customName?: string;
+  servingsConsumed: number;
+  notes?: string;
+}
