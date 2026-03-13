@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Edit3, Trash2, CheckCircle2, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react';
 import type { LifeGoal } from '../types/lifeGoals';
 import { BadgeV2 } from '@/components/v2/BadgeV2';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { gradients } from '@/styles/colors';
+import { GoalCheckinModal } from './v2/GoalCheckinModal';
+import { useGoalCheckinsQuery } from '@/goals/hooks/useGoalCheckinsQuery';
+import { format } from 'date-fns';
 
 interface GoalCardProps {
   goal: LifeGoal;
@@ -33,6 +36,11 @@ export function GoalCard({
 }: GoalCardProps): React.ReactElement {
   const colors = useThemeColors();
   const isCompleted = goal.status === 'completed';
+  const [showCheckinModal, setShowCheckinModal] = useState(false);
+  const [currentGoal, setCurrentGoal] = useState(goal);
+
+  // Load check-ins lazily only when expanded
+  const { data: checkins = [] } = useGoalCheckinsQuery(isExpanded ? goal.id : null);
 
   // Priority badge variant mapping
   const getPriorityVariant = (): 'success' | 'info' | 'warning' | 'default' => {
@@ -79,12 +87,20 @@ export function GoalCard({
           >
             {goal.title}
           </h3>
-          <div className="flex items-center gap-2 text-xs" style={{ color: colors.text.tertiary }}>
+          <div className="flex items-center gap-2 text-xs flex-wrap" style={{ color: colors.text.tertiary }}>
             <span>{categoryEmoji} {goal.category}</span>
             {goal.targetDate && (
               <>
                 <span>•</span>
                 <span>📅 {new Date(goal.targetDate).toLocaleDateString()}</span>
+                {!isCompleted && new Date(goal.targetDate) < new Date() && (
+                  <span
+                    className="px-1.5 py-0.5 rounded-full text-white font-semibold"
+                    style={{ backgroundColor: '#DC2626', fontSize: '10px' }}
+                  >
+                    Overdue
+                  </span>
+                )}
               </>
             )}
           </div>
@@ -186,6 +202,17 @@ export function GoalCard({
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
+          {!isCompleted && (
+            <button
+              type="button"
+              onClick={() => setShowCheckinModal(true)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              style={{ backgroundColor: 'rgba(212,165,116,0.12)', color: '#C18B5E' }}
+              aria-label="Log progress check-in"
+            >
+              + Log
+            </button>
+          )}
           {onExpand && (
             <button
               type="button"
@@ -210,12 +237,59 @@ export function GoalCard({
         </div>
       )}
 
-      {/* Expandable content (milestones, check-ins, etc.) */}
-      {isExpanded && children && (
+      {/* Expandable content — check-in timeline */}
+      {isExpanded && (
         <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${colors.border.light}` }}>
-          {children}
+          {checkins.length === 0 ? (
+            <p className="text-xs text-center py-2" style={{ color: colors.text.tertiary }}>
+              No progress logs yet. Tap "+ Log" to add your first check-in.
+            </p>
+          ) : (
+            <div className="space-y-0">
+              {checkins.slice(0, 5).map((c) => (
+                <div
+                  key={c.id}
+                  className="flex gap-3 py-2.5"
+                  style={{ borderBottom: `1px solid ${colors.border.light}` }}
+                >
+                  <span className="text-xs w-14 flex-shrink-0 mt-0.5" style={{ color: colors.text.tertiary }}>
+                    {format(new Date(c.checkInDate), 'MMM d')}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    {c.progressUpdate !== undefined && (
+                      <span className="text-xs font-bold mr-1" style={{ color: '#C18B5E' }}>
+                        {c.progressUpdate}%
+                      </span>
+                    )}
+                    <span className="text-xs" style={{ color: colors.text.primary }}>{c.notes}</span>
+                    {c.wins && (
+                      <p className="text-xs mt-0.5" style={{ color: '#059669' }}>Win: {c.wins}</p>
+                    )}
+                    {c.blockers && (
+                      <p className="text-xs mt-0.5" style={{ color: '#DC2626' }}>Blocker: {c.blockers}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {children && (
+            <div className="mt-3">
+              {children}
+            </div>
+          )}
         </div>
       )}
+
+      {/* Check-in modal */}
+      <GoalCheckinModal
+        isOpen={showCheckinModal}
+        goal={currentGoal}
+        onClose={() => setShowCheckinModal(false)}
+        onSuccess={(newProgress) => {
+          setCurrentGoal((g) => ({ ...g, progress: newProgress }));
+        }}
+      />
     </div>
   );
 }

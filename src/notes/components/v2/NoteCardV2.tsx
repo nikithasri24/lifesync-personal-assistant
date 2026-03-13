@@ -187,8 +187,8 @@ export const NoteCardV2: React.FC<NoteCardV2Props> = ({
           </div>
         )}
 
-        {/* Created date (only in list view) */}
-        {createdAt && viewMode === 'list' && (
+        {/* Created date */}
+        {createdAt && (
           <div style={{ fontSize: '11px', color: colors.text.tertiary, marginTop: '8px' }}>
             {getRelativeTime(createdAt)}
           </div>

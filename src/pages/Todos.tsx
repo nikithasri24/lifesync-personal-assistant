@@ -43,6 +43,7 @@ import { useUndoRedo } from '../contexts/UndoRedoContext';
 import { useTodosDragDrop, useTaskExpansion } from '../todos/hooks';
 import { reminderService } from '../services/reminders/ReminderService';
 import { logger } from '../services/logger';
+import { format } from 'date-fns';
 
 // Import V2 components
 import { FABV2 } from '../components/v2/FABV2';
@@ -58,6 +59,7 @@ import {
   type StatusFilter,
 } from '../todos/components/v2';
 
+import { TaskScheduleModal } from '../components/todos/TaskScheduleModal';
 import { TodosLoadingState } from '../todos/components/layout/TodosLoadingState';
 import { TodosErrorState } from '../todos/components/layout/TodosErrorState';
 import { usePagination } from '../hooks/utilities/usePagination';
@@ -211,6 +213,7 @@ const TodosContent: React.FC = () => {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [schedulingTaskId, setSchedulingTaskId] = useState<string | null>(null);
 
   // ============================================================================
   // Selection State (for bulk operations)
@@ -252,6 +255,51 @@ const TodosContent: React.FC = () => {
     setEditingTaskId(taskId);
     setShowEditModal(true);
   }, []);
+
+  const handleScheduleConfirm = useCallback((start: Date, end: Date) => {
+    if (!schedulingTaskId) return;
+    const dueDate = start.toISOString().split('T')[0];
+    updateTaskMutation.mutate(
+      {
+        id: schedulingTaskId,
+        updates: {
+          due_date: dueDate,
+          scheduled_start: start.toISOString(),
+          scheduled_end: end.toISOString(),
+          status: 'scheduled',
+        },
+      },
+      {
+        onSuccess: () => {
+          showToast(`Task scheduled! 📅`, 'success');
+          setSchedulingTaskId(null);
+        },
+        onError: () => {
+          showToast('Failed to schedule task', 'error');
+        },
+      }
+    );
+  }, [schedulingTaskId, updateTaskMutation, showToast]);
+
+  const handleClearSchedule = useCallback(() => {
+    if (!schedulingTaskId) return;
+    updateTaskMutation.mutate(
+      {
+        id: schedulingTaskId,
+        updates: {
+          scheduled_start: null,
+          scheduled_end: null,
+          status: 'todo',
+        },
+      },
+      {
+        onSuccess: () => {
+          showToast('Schedule cleared', 'success');
+          setSchedulingTaskId(null);
+        },
+      }
+    );
+  }, [schedulingTaskId, updateTaskMutation, showToast]);
 
   const handleEditSubmit = useCallback(async (data: Partial<TaskData>) => {
     if (!editingTaskId) return;
@@ -561,6 +609,7 @@ const TodosContent: React.FC = () => {
           onToggleExpanded={toggleTaskExpansion}
           onToggleSubtask={handleToggleSubtask}
           allTasks={allTasks}
+          onScheduleClick={setSchedulingTaskId}
         />
 
         {/* Pagination */}
@@ -578,9 +627,9 @@ const TodosContent: React.FC = () => {
         <QuickAddModalV2
           isOpen={showQuickAdd}
           onClose={() => setShowQuickAdd(false)}
-          onSubmit={async (text) => {
-            // Set due date based on current view
-            const today = new Date().toISOString().split('T')[0];
+          onSubmit={async (text, options) => {
+            // Set due date based on current view (use local date, not UTC)
+            const today = format(new Date(), 'yyyy-MM-dd');
             const dueDate = activeView === 'today' ? today : null;
 
             try {
@@ -591,6 +640,7 @@ const TodosContent: React.FC = () => {
                   priority: 'medium',
                   category: 'personal',
                   due_date: dueDate,
+                  recurrence_pattern: options?.recurrence_pattern ?? 'none',
                 } as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>
               );
               showToast('Task created successfully! ✅', 'success');
@@ -600,6 +650,10 @@ const TodosContent: React.FC = () => {
             }
           }}
           isPending={createTaskMutation.isPending}
+          onOpenFullForm={() => {
+            setShowQuickAdd(false);
+            setShowEditModal(true);
+          }}
         />
 
         {/* Full Edit Modal */}
@@ -618,6 +672,19 @@ const TodosContent: React.FC = () => {
           isPending={updateTaskMutation.isPending || deleteTaskMutation.isPending}
         />
       </div>
+
+      {/* Task Schedule Modal */}
+      {schedulingTaskId && (() => {
+        const schedulingTask = allTasks.find(t => t.id === schedulingTaskId);
+        return schedulingTask ? (
+          <TaskScheduleModal
+            task={schedulingTask}
+            onSchedule={handleScheduleConfirm}
+            onClearSchedule={handleClearSchedule}
+            onClose={() => setSchedulingTaskId(null)}
+          />
+        ) : null;
+      })()}
 
       {/* V2 FAB for Quick Add - Positioned outside container for proper viewport positioning */}
       <FABV2

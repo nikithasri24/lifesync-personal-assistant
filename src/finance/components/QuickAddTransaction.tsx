@@ -9,6 +9,8 @@ import { Mic, MicOff } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
+import { suggestCategory } from '@/finance/utils/categorizationSuggester';
+import { useTransactionsQuery } from '@/finance/hooks/useTransactionsQuery';
 import { useUpsertTransactionMutation, useCreateTransferMutation, useAccountsQuery, useCategoriesQuery } from '@/hooks/useFinanceQuery';
 import { useAuth } from '@/hooks/useAuth';
 import { useVoiceInput } from '@/shopping/hooks/useVoiceInput';
@@ -36,6 +38,7 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
   // Use React Query hooks for data fetching
   const { data: accounts = [] } = useAccountsQuery();
   const { data: categories = [] } = useCategoriesQuery();
+  const { data: recentTxns = [] } = useTransactionsQuery({ limit: 50 });
 
   const [formData, setFormData] = React.useState({
     accountId: '',
@@ -459,6 +462,31 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
+              {/* Smart category suggestion */}
+              {(() => {
+                const suggestedId = formData.description.length > 2
+                  ? suggestCategory(
+                      formData.description,
+                      recentTxns.map((t) => ({ description: t.description, category_id: t.categoryId ?? null }))
+                    )
+                  : null;
+                const suggestedCat = suggestedId ? categories.find((c) => c.id === suggestedId) : null;
+                if (!suggestedCat || formData.categoryId === suggestedId) return null;
+                return (
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span className="text-xs text-slate-400">Suggested:</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, categoryId: suggestedId! })}
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full transition-colors"
+                      style={{ backgroundColor: 'rgba(212,165,116,0.15)', color: '#C18B5E' }}
+                      aria-label={`Use suggested category: ${suggestedCat.name}`}
+                    >
+                      {suggestedCat.name} — Use this
+                    </button>
+                  </div>
+                );
+              })()}
               <p className="mt-1 text-xs text-slate-500">
                 {formData.type === 'credit'
                   ? 'Income categories shown first'

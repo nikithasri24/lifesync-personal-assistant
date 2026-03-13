@@ -33,16 +33,17 @@ const Finances: React.FC = () => {
     <FeatureErrorBoundary feature="Finances">
       <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh', paddingTop: '1rem' }}>
         {/* Tab Navigation - Scrollable */}
-        <div
-          style={{
-            background: 'rgba(212, 165, 116, 0.1)',
-            borderRadius: '12px',
-            padding: '4px',
-            margin: '0 20px 16px',
-            overflowX: 'auto',
-          }}
-        >
-          <div className="overflow-x-auto">
+        <div style={{ position: 'relative', margin: '0 20px 16px' }}>
+          <div
+            style={{
+              background: 'rgba(212, 165, 116, 0.1)',
+              borderRadius: '12px',
+              padding: '4px',
+              overflowX: 'auto',
+              scrollbarWidth: 'thin',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
             <SegmentedControl
               scrollable
               segments={[
@@ -65,6 +66,19 @@ const Finances: React.FC = () => {
                 onChange={(value) => setActiveTab(value as FinanceTabView)}
               />
           </div>
+          {/* Right fade gradient - scroll affordance hint */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: '40px',
+              background: 'linear-gradient(to left, rgba(253,251,247,0.9) 0%, transparent 100%)',
+              borderRadius: '0 12px 12px 0',
+              pointerEvents: 'none',
+            }}
+          />
         </div>
 
         {/* Tab Content */}

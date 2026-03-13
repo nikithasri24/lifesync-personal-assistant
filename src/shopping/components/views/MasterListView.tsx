@@ -63,6 +63,9 @@ export function MasterListView({
 
   const uncheckedCount = items.filter(item => !item.purchased).length;
   const completedCount = items.filter(item => item.purchased).length;
+  const cartTotal = items
+    .filter((item) => !item.purchased && item.estimatedPrice && item.estimatedPrice > 0)
+    .reduce((sum, item) => sum + (item.estimatedPrice ?? 0), 0);
 
   const toggleSelect = (id: string): void => {
     setSelectedIds(prev => {
@@ -106,6 +109,11 @@ export function MasterListView({
       <div className="px-6 pt-2 pb-3 lg:hidden flex items-center justify-between">
         <p style={{ fontSize: '15px', color: colors.text.tertiary }}>
           {uncheckedCount} items • {itemStores.length} stores
+          {cartTotal > 0 && (
+            <span className="ml-2 font-semibold" style={{ color: '#C18B5E' }}>
+              · Est. ${cartTotal.toFixed(2)}
+            </span>
+          )}
         </p>
         {completedCount > 0 && (
           <button

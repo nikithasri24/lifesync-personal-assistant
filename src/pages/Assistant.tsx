@@ -7,6 +7,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useConversations, useCreateConversation, useSendMessage } from '@/hooks/useConversationsQuery';
 import { AssistantHeaderV2 } from '@/assistant/components/v2/AssistantHeaderV2';
+import { ConversationHistoryDrawer } from '@/assistant/components/v2/ConversationHistoryDrawer';
 import { ChatMessageV2 } from '@/assistant/components/v2/ChatMessageV2';
 import { TypingIndicatorV2 } from '@/assistant/components/v2/TypingIndicatorV2';
 import { EmptyConversationStateV2 } from '@/assistant/components/v2/EmptyConversationStateV2';
@@ -119,6 +120,14 @@ function AssistantContent() {
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
         {/* Header */}
         <AssistantHeaderV2 onNewChat={handleNewChat} />
+
+        {/* Conversation History */}
+        <ConversationHistoryDrawer
+          conversations={conversations}
+          activeConversationId={activeConversationId}
+          onSelect={setActiveConversationId}
+          onNewChat={handleNewChat}
+        />
 
         {/* Messages Area */}
         <div className="mt-4" style={{ minHeight: 'calc(100vh - 180px)' }}>

@@ -18,6 +18,7 @@ import { QuickActionsV2 } from '@/dashboard/components/v2/QuickActionsV2';
 import { BriefingCardV2 } from '@/dashboard/components/v2/BriefingCardV2';
 import { TodayTasksSectionV2, RecentNotesSectionV2 } from '@/dashboard/components/v2';
 import { TodayHabitsCompactStrip } from '@/dashboard/components/v2/TodayHabitsCompactStrip';
+import { TodayMealsSectionV2 } from '@/dashboard/components/v2/TodayMealsSectionV2';
 import { QuickAddModalV2 } from '@/dashboard/components/v2/QuickAddModalV2';
 import { NoteFormModalV2 } from '@/notes/components/v2/NoteFormModalV2';
 import { JournalEntryModalV2 } from '@/journal/components/v2/JournalEntryModalV2';
@@ -377,6 +378,9 @@ function DashboardContent() {
               onComplete={handleCompleteTask}
               completingTask={completingTask}
             />
+
+            {/* Today's Meals */}
+            <TodayMealsSectionV2 />
 
             {/* Recent Notes */}
             <RecentNotesSectionV2

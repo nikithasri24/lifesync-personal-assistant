@@ -8,7 +8,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { apiCall, requireAuth } from '@/api/apiWrapper';
-import { parseToLifeSyncError } from '@/lib/errors';
+import { parseToLifeSyncError, ConflictError } from '@/lib/errors';
 import { logger } from '@/services/logger';
 import { getTogetherMergedConnection } from '../hooks/useTogetherMergedMode';
 import type {
@@ -154,21 +154,36 @@ export async function createMilestone(milestone: CreateMilestoneRequest): Promis
 }
 
 /**
- * Update existing milestone
+ * Update existing milestone.
+ * Pass `expectedUpdatedAt` to enable optimistic locking.
  */
-export async function updateMilestone(id: string, updates: Partial<CreateMilestoneRequest>): Promise<Milestone> {
+export async function updateMilestone(
+  id: string,
+  updates: Partial<CreateMilestoneRequest>,
+  expectedUpdatedAt?: string
+): Promise<Milestone> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('milestones')
         .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
+
+      if (expectedUpdatedAt) {
+        query = query.eq('updated_at', expectedUpdatedAt);
+      }
+
+      const { data, error } = await query.select().maybeSingle();
 
       if (error) throw parseToLifeSyncError(error);
+
+      if (!data) {
+        throw new ConflictError(
+          'This milestone was modified by another session. Please refresh and try again.'
+        );
+      }
 
       return data;
     },

@@ -84,7 +84,6 @@ class ContextAggregator {
    */
   async getTodaysContext(userId: string): Promise<TodaysContext> {
     const today = new Date().toISOString().split('T')[0];
-    const now = new Date().toISOString();
 
     // Fetch all data in parallel
     const [
@@ -112,30 +111,44 @@ class ContextAggregator {
   }
 
   private async fetchTasksContext(_userId: string, today: string) {
-    // Use cache accessor (benefits from React Query cache)
-    const allTasks = await cacheAccessor.getTasks({ deleted: false, archived: false });
+    // Two focused parallel queries — filters pushed to DB, no JS table scan.
+    // Active query: only non-terminal statuses so we can find overdue + high-priority.
+    // Done query: count only, no field projection needed beyond status.
+    const [activeTasks, doneTasks] = await Promise.all([
+      cacheAccessor.getTasks({
+        deleted: false,
+        archived: false,
+        statuses: ['todo', 'in_progress', 'waiting', 'scheduled'],
+      }),
+      cacheAccessor.getTasks({
+        deleted: false,
+        archived: false,
+        statuses: ['done'],
+      }),
+    ]);
 
-    const completed = allTasks.filter(t => t.status === 'done').length;
-    const overdue = allTasks.filter(t =>
-      t.due_date && t.due_date < today && t.status !== 'done'
-    ).length;
-    const highPriority = allTasks
-      .filter(t => t.priority === 'high' && t.status !== 'done')
+    // overdue: active tasks whose due_date is before today (string compare is fine for ISO dates)
+    const overdue = activeTasks.filter(t => t.due_date && t.due_date < today).length;
+
+    const highPriority = activeTasks
+      .filter(t => t.priority === 'high' || t.priority === 'urgent')
       .slice(0, 5)
       .map(t => ({ id: t.id!, title: t.title, due_date: t.due_date || undefined }));
 
     return {
-      total: allTasks.length,
-      completed,
+      total: activeTasks.length + doneTasks.length,
+      completed: doneTasks.length,
       overdue,
       highPriority,
     };
   }
 
   private async fetchHabitsContext(_userId: string, today: string) {
-    // Use cache accessor (benefits from React Query cache)
-    const allHabits = await cacheAccessor.getHabits({ isActive: true });
-    const entries = await cacheAccessor.getHabitEntriesForDate(today);
+    // Parallel fetch — habits list and today's entries are independent queries.
+    const [allHabits, entries] = await Promise.all([
+      cacheAccessor.getHabits({ isActive: true }),
+      cacheAccessor.getHabitEntriesForDate(today),
+    ]);
 
     const completedIds = new Set(entries.map(e => e.habit_id));
 
@@ -239,22 +252,20 @@ class ContextAggregator {
    * Get full aggregated context for AI
    */
   async getAggregatedContext(userId: string): Promise<AggregatedContext> {
-    const [today, patterns] = await Promise.all([
+    const nextWeek = format(addDays(new Date(), 7), 'yyyy-MM-dd');
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+
+    // Fetch context, patterns, and upcoming events in parallel.
+    // Upcoming events use a 7-day window so they don't collide with today's
+    // events cache key (which uses startDate=endDate=today).
+    const [todayContext, patterns, upcomingEvents] = await Promise.all([
       this.getTodaysContext(userId),
       this.getUserPatterns(userId),
+      cacheAccessor.getCalendarEvents({ startDate: todayStr, endDate: nextWeek }),
     ]);
 
-    // Use cache accessor (benefits from React Query cache)
-    const nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-
-    const upcomingEvents = await cacheAccessor.getCalendarEvents({
-      startDate: format(new Date(), 'yyyy-MM-dd'),
-      endDate: format(nextWeek, 'yyyy-MM-dd'),
-    });
-
     return {
-      today,
+      today: todayContext,
       patterns,
       upcomingEvents: upcomingEvents.slice(0, 10).map(e => ({
         title: e.title,

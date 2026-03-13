@@ -8,6 +8,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isTod
 import { useTasks, useUpdateTask } from '@/hooks/useTasksQuery';
 import { useCalendarEvents, useUpdateCalendarEvent } from '@/hooks/useCalendarQuery';
 import { AddEventModal } from '@/calendar/components/AddEventModal';
+import { TodayAtAGlance } from '@/calendar/components/TodayAtAGlance';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { FeatureErrorBoundary } from '@/components/FeatureErrorBoundary';
 import { useUndoRedo } from '@/contexts/UndoRedoContext';
@@ -318,6 +319,15 @@ const CalendarContent = () => {
             Today
           </button>
         </div>
+      </div>
+
+      {/* Today at a Glance — always shown above the calendar grid */}
+      <div className="mt-3">
+        <TodayAtAGlance
+          events={calendarEvents}
+          tasks={tasks}
+          onAddEvent={() => setShowAddModal(true)}
+        />
       </div>
 
       {/* Weekday Headers */}

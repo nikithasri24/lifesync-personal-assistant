@@ -5,7 +5,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { apiCall, requireAuth } from '@/api/apiWrapper';
-import { parseToLifeSyncError } from '@/lib/errors';
+import { parseToLifeSyncError, ConflictError } from '@/lib/errors';
 import { logger } from '@/services/logger';
 import { getTogetherMergedConnection } from '../hooks/useTogetherMergedMode';
 import type {
@@ -119,26 +119,38 @@ export async function createAchievementReward(
 }
 
 /**
- * Update achievement reward
+ * Update achievement reward.
+ * Pass `expectedUpdatedAt` to enable optimistic locking.
  */
 export async function updateAchievementReward(
   id: string,
-  updates: Partial<CreateAchievementRewardRequest> & { current_progress?: number; status?: ChallengeStatus }
+  updates: Partial<CreateAchievementRewardRequest> & { current_progress?: number; status?: ChallengeStatus },
+  expectedUpdatedAt?: string
 ): Promise<AchievementReward> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('achievement_rewards')
         .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
+
+      if (expectedUpdatedAt) {
+        query = query.eq('updated_at', expectedUpdatedAt);
+      }
+
+      const { data, error } = await query.select().maybeSingle();
 
       if (error) {
         logger.error('Together', 'Failed to update achievement reward', { error, id });
         throw parseToLifeSyncError(error);
+      }
+
+      if (!data) {
+        throw new ConflictError(
+          'This challenge was modified by another session. Please refresh and try again.'
+        );
       }
 
       logger.info('Together', 'Achievement reward updated', { id });

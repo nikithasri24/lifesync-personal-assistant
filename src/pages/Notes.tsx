@@ -7,7 +7,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { usePagedNotes, useCreateNote, useUpdateNote, useDeleteNote } from '../hooks/useNotesQuery';
 import { usePagination } from '../hooks/utilities/usePagination';
 import { PaginationV2 } from '../components/ui/PaginationV2';
@@ -74,6 +74,7 @@ const NotesContent: React.FC = () => {
 
   // View state
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Modal state using useModalState hook
   const modals = useModalState({
@@ -81,18 +82,28 @@ const NotesContent: React.FC = () => {
     editingNoteId: null as string | null,
   });
 
-  // Filter notes by owner (merged mode)
+  // Filter notes by owner (merged mode) and search query
   const filteredNotes = useMemo(() => {
-    if (!mergedConnection || ownerFilter === 'all') return notes;
+    let result = notes;
 
-    if (ownerFilter === 'mine') {
-      return notes.filter(note => note.user_id === currentUserId);
-    } else if (ownerFilter === 'partner') {
-      return notes.filter(note => note.user_id === mergedConnection.partnerId);
+    if (mergedConnection && ownerFilter !== 'all') {
+      if (ownerFilter === 'mine') {
+        result = result.filter(note => note.user_id === currentUserId);
+      } else if (ownerFilter === 'partner') {
+        result = result.filter(note => note.user_id === mergedConnection.partnerId);
+      }
     }
 
-    return notes;
-  }, [notes, ownerFilter, currentUserId, mergedConnection]);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(note =>
+        note.title.toLowerCase().includes(q) ||
+        note.content.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [notes, ownerFilter, currentUserId, mergedConnection, searchQuery]);
 
   // Get unique tags for stats
   const totalTags = useMemo(() => {
@@ -241,6 +252,18 @@ const NotesContent: React.FC = () => {
             />
           </div>
         )}
+
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: colors.text.tertiary }} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search notes..."
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+          />
+        </div>
 
         {/* View Toggle */}
         <div className="mb-6 p-1 rounded-xl flex gap-1" style={{ backgroundColor: colors.bg.secondary }}>

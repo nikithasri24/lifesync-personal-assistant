@@ -205,7 +205,7 @@ export const EditItemModalV2: React.FC<EditItemModalV2Props> = ({
               </select>
             </div>
 
-            {/* Price and Brand */}
+            {/* Price fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold mb-2" style={{ color: colors.text.secondary }}>
@@ -224,6 +224,27 @@ export const EditItemModalV2: React.FC<EditItemModalV2Props> = ({
                   placeholder="$0.00"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: colors.text.secondary }}>
+                  Actual Price Paid
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={(formState as any).actualPrice ?? ''}
+                  onChange={(e) => {
+                    const newState = { ...formState, actualPrice: e.target.value };
+                    setFormState(newState as any);
+                    onFormChange(newState as any);
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+                  placeholder="$0.00"
+                />
+              </div>
+            </div>
+
+            {/* Brand */}
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-semibold mb-2" style={{ color: colors.text.secondary }}>
                   Brand (optional)

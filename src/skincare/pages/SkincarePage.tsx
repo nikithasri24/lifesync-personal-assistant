@@ -227,7 +227,7 @@ const SelfCareContent: React.FC = () => {
               borderRadius: '0 0 16px 16px',
             }}
           >
-            <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>✨</h1>
+            <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>✨ Self Care</h1>
             <div style={{ fontSize: '14px', opacity: 0.9 }}>
               Skincare routines, products & personal care
             </div>
@@ -275,7 +275,7 @@ const SelfCareContent: React.FC = () => {
           }}
         >
           <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-            ✨
+            ✨ Self Care
           </h1>
           <div style={{ fontSize: '14px', opacity: 0.9 }}>
             Skincare routines, products & personal care

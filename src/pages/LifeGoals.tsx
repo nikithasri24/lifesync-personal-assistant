@@ -19,6 +19,7 @@ import type {
 } from '../goals/types/lifeGoals';
 import { Users } from 'lucide-react';
 import { logger } from '../services/logger';
+import { useToast } from '../hooks/useToast';
 import ErrorState from '../components/ErrorState';
 import { supabase } from '../lib/supabase';
 import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
@@ -72,6 +73,7 @@ const LifeGoalsContent: React.FC = () => {
 
   const loading = goalsLoading || dreamsLoading;
   const colors = useThemeColors();
+  const { showToast } = useToast();
 
   // Get current user ID
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -363,10 +365,15 @@ const LifeGoalsContent: React.FC = () => {
 
   const handleUpdateProgress = async (goalId: string): Promise<void> => {
     try {
-      await updateGoalMutation.mutateAsync({
-        goalId,
-        updates: { progress: progressValue },
-      });
+      const updates: Record<string, unknown> = { progress: progressValue };
+      if (progressValue >= 100) {
+        updates.status = 'completed';
+        updates.completedDate = new Date().toISOString();
+      }
+      await updateGoalMutation.mutateAsync({ goalId, updates: updates as any });
+      if (progressValue >= 100) {
+        showToast('Goal achieved! Marked as complete. 🏆', 'success');
+      }
       setEditingProgress(null);
       setProgressValue(0);
     } catch (error) {

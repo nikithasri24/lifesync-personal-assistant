@@ -16,3 +16,4 @@ export { useShoppingMutations } from './useShoppingMutations';
 export { useShoppingFormHandlers } from './useShoppingFormHandlers';
 export { usePantryHandlers } from './usePantryHandlers';
 export { useReceiptHandler } from './useReceiptHandler';
+export * from './useShoppingQuery';

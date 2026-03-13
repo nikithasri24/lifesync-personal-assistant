@@ -16,8 +16,8 @@
  */
 
 import React from 'react';
-import { Clock, Repeat, User, ChevronRight, Bell } from 'lucide-react';
-import { format, isToday, isPast, isTomorrow } from 'date-fns';
+import { Clock, Repeat, User, ChevronRight, Bell, CalendarClock } from 'lucide-react';
+import { format, parseISO, isToday, isPast, isTomorrow } from 'date-fns';
 import { CheckboxV2 } from '../../../components/v2/CheckboxV2';
 import { PriorityBadgeV2 } from './PriorityBadgeV2';
 import { StatusBadgeV2 } from './StatusBadgeV2';
@@ -50,6 +50,8 @@ export interface TaskCardV2Props {
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   // Dependency props
   allTasks?: TaskData[]; // For dependency resolution
+  // Scheduling
+  onScheduleClick?: (taskId: string) => void;
 }
 
 const priorityBorderColors: Record<NonNullable<TaskData['priority']>, string> = {
@@ -63,7 +65,11 @@ const priorityBorderColors: Record<NonNullable<TaskData['priority']>, string> = 
 const formatDueDate = (dueDate: string | null | undefined): { text: string; isOverdue: boolean } | null => {
   if (!dueDate) return null;
 
-  const date = new Date(dueDate);
+  // Extract YYYY-MM-DD regardless of format:
+  // Supabase may return 'YYYY-MM-DD', 'YYYY-MM-DDT00:00:00+00:00', or 'YYYY-MM-DD 00:00:00+00'
+  const datePart = dueDate.substring(0, 10);
+  const [year, month, day] = datePart.split('-').map(Number);
+  const date = new Date(year, month - 1, day); // local midnight — avoids UTC-to-local timezone shift
 
   if (isToday(date)) {
     return { text: 'Due today', isOverdue: false };
@@ -97,12 +103,30 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
   onToggleExpanded,
   onToggleSubtask,
   allTasks = [],
+  onScheduleClick,
 }) => {
   const colors = useThemeColors();
   const isCompleted = task.status === 'done';
   const borderColor = priorityBorderColors[task.priority || 'medium'];
-  const dueDateInfo = formatDueDate(task.due_date);
+  // Handle both TaskData (snake_case due_date: string) and Task (camelCase dueDate: Date)
+  // The Todos page uses transformApiTasks which converts due_date → dueDate (Date object)
+  const camelDueDate = (task as unknown as { dueDate?: Date }).dueDate;
+  const rawDueDate: string | null = task.due_date ??
+    (camelDueDate ? camelDueDate.toISOString() : null);
+  const dueDateInfo = formatDueDate(rawDueDate);
   const isRecurring = task.recurrence_pattern && task.recurrence_pattern !== 'none';
+
+  // Support both TaskData (snake_case string) and Task (camelCase Date) at runtime
+  const scheduledStartRaw = task.scheduled_start
+    ?? (task as unknown as { scheduledStart?: Date | string }).scheduledStart;
+  const scheduledLabel = scheduledStartRaw
+    ? (() => {
+        const d = typeof scheduledStartRaw === 'string'
+          ? parseISO(scheduledStartRaw)
+          : scheduledStartRaw;
+        return `${format(d, 'EEE MMM d')} · ${format(d, 'h:mm a')}`;
+      })()
+    : null;
 
   const handleDragStart = (e: React.DragEvent) => {
     if (onDragStart) {
@@ -175,6 +199,24 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
           {task.starred && (
             <span className="text-base">⭐</span>
           )}
+          {/* Schedule button */}
+          {onScheduleClick && !isCompleted && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onScheduleClick(task.id || '');
+              }}
+              className={`p-1 rounded-lg transition-colors flex-shrink-0 ${
+                scheduledLabel
+                  ? 'text-green-600 hover:bg-green-50'
+                  : 'text-gray-400 hover:bg-gray-100 hover:text-[#C18B5E]'
+              }`}
+              aria-label={scheduledLabel ? 'Edit schedule' : 'Schedule task'}
+              title={scheduledLabel ? `Scheduled: ${scheduledLabel}` : 'Schedule this task'}
+            >
+              <CalendarClock className="w-4 h-4" />
+            </button>
+          )}
           {/* Multi-select drag badge */}
           {isDragging && draggedTaskCount > 0 && (
             <div
@@ -222,6 +264,14 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
             </span>
           )}
 
+          {/* Scheduled time badge */}
+          {scheduledLabel && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-50 border border-green-200 text-xs font-medium text-green-700">
+              <CalendarClock className="w-3 h-3" />
+              {scheduledLabel}
+            </span>
+          )}
+
           {/* Subtask Count - Now clickable */}
           {task.follow_up_tasks && task.follow_up_tasks.length > 0 && (
             <button
@@ -243,10 +293,11 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
           {/* Recurring Indicator */}
           {isRecurring && (
             <span
-              className="flex items-center gap-1 text-xs"
-              style={{ color: colors.text.tertiary }}
+              className="flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md"
+              style={{ backgroundColor: 'rgba(212,165,116,0.12)', color: '#C18B5E' }}
             >
               <Repeat className="w-3 h-3" />
+              {task.recurrence_pattern}
             </span>
           )}
 

@@ -32,7 +32,9 @@ export function WelcomeBannerV2({ userName }: WelcomeBannerV2Props): React.React
   };
 
   const { greeting, emoji } = getTimeBasedGreeting();
-  const displayName = userName || 'there';
+  const rawName = userName || 'there';
+  const sanitized = rawName.includes('.') ? rawName.split('.')[0] : rawName;
+  const displayName = sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-[var(--color-primary-500)]/10 to-[var(--color-secondary-500)]/10 dark:from-[var(--color-primary-600)]/20 dark:to-[var(--color-secondary-600)]/20 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-300">

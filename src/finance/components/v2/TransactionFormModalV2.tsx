@@ -9,8 +9,9 @@
  * - Radio button type selector (debit/credit)
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FormModalV2 } from '@/components/v2';
+import { suggestCategory } from '@/finance/utils/categorizationSuggester';
 
 interface TransactionFormModalV2Props {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface TransactionFormModalV2Props {
   isPending?: boolean;
   accounts?: Array<{ id: string; name: string }>;
   categories?: Array<{ id: string; name: string; icon?: string }>;
+  recentTransactions?: Array<{ description: string; category_id: string | null }>;
 }
 
 export interface TransactionFormData {
@@ -54,6 +56,7 @@ export const TransactionFormModalV2: React.FC<TransactionFormModalV2Props> = ({
   isPending = false,
   accounts = [],
   categories = [],
+  recentTransactions = [],
 }) => {
   const today = new Date().toISOString().split('T')[0];
 
@@ -246,6 +249,30 @@ export const TransactionFormModalV2: React.FC<TransactionFormModalV2Props> = ({
                 </option>
               ))}
             </select>
+            {/* Smart suggestion chip */}
+            {(() => {
+              const suggestedId = formState.description.length > 2
+                ? suggestCategory(formState.description, recentTransactions)
+                : null;
+              const suggestedCat = suggestedId
+                ? categories.find((c) => c.id === suggestedId)
+                : null;
+              if (!suggestedCat || formState.categoryId === suggestedId) return null;
+              return (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Suggested:</span>
+                  <button
+                    type="button"
+                    onClick={() => setFormState({ ...formState, categoryId: suggestedId! })}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors"
+                    style={{ backgroundColor: 'rgba(212,165,116,0.15)', color: '#C18B5E' }}
+                    aria-label={`Use suggested category: ${suggestedCat.name}`}
+                  >
+                    {suggestedCat.icon} {suggestedCat.name} — Use this
+                  </button>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Merchant Name */}

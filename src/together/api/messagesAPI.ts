@@ -5,7 +5,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { apiCall, requireAuth } from '@/api/apiWrapper';
-import { parseToLifeSyncError } from '@/lib/errors';
+import { parseToLifeSyncError, ConflictError } from '@/lib/errors';
 import { logger } from '@/services/logger';
 import { getTogetherMergedConnection } from '../hooks/useTogetherMergedMode';
 import type {
@@ -165,26 +165,40 @@ export async function createPartnerMessage(
 }
 
 /**
- * Update existing partner message
+ * Update existing partner message.
+ * Pass `expectedUpdatedAt` (the `updated_at` value read from the server) to
+ * enable optimistic locking — the update is rejected if another session
+ * modified the record in the meantime.
  */
 export async function updatePartnerMessage(
   id: string,
-  updates: Partial<CreatePartnerMessageRequest>
+  updates: Partial<CreatePartnerMessageRequest>,
+  expectedUpdatedAt?: string
 ): Promise<PartnerMessage> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('partner_messages')
         .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
+
+      if (expectedUpdatedAt) {
+        query = query.eq('updated_at', expectedUpdatedAt);
+      }
+
+      const { data, error } = await query.select().maybeSingle();
 
       if (error) {
         logger.error('Together', 'Failed to update partner message', { error, id });
         throw parseToLifeSyncError(error);
+      }
+
+      if (!data) {
+        throw new ConflictError(
+          'This message was modified by another session. Please refresh and try again.'
+        );
       }
 
       logger.info('Together', 'Partner message updated', { id });

@@ -189,7 +189,7 @@ const FocusContent: React.FC = () => {
           }}
         >
           <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>
-            ⏱️
+            ⏱️ Focus
           </h1>
           <div style={{ fontSize: '14px', opacity: 0.9 }}>
             {getSubtitle()}

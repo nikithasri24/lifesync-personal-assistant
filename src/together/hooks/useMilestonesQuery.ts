@@ -6,7 +6,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/services/logger';
-import { parseToLifeSyncError, getUserErrorMessage, AuthenticationError } from '@/lib/errors';
+import { parseToLifeSyncError, getUserErrorMessage, AuthenticationError, ConflictError } from '@/lib/errors';
 import { useToast } from '@/hooks/useToast';
 import {
   getMilestones,
@@ -184,25 +184,38 @@ export function useUpdateMilestone() {
   return useMutation({
     mutationFn: async ({
       id,
+      expectedUpdatedAt,
       ...updates
-    }: UpdateMilestoneRequest): Promise<Milestone> => {
+    }: UpdateMilestoneRequest & { expectedUpdatedAt?: string }): Promise<Milestone> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new AuthenticationError('Not authenticated');
       }
 
-      logger.debug('Together', 'Updating milestone', { id });
+      logger.debug('Together', 'Updating milestone', { id, optimisticLock: !!expectedUpdatedAt });
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('milestones')
         .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
+
+      // Optimistic lock: only update if nobody changed the record since we last read it
+      if (expectedUpdatedAt) {
+        query = query.eq('updated_at', expectedUpdatedAt);
+      }
+
+      const { data, error } = await query.select().maybeSingle();
 
       if (error) {
         logger.error('Together', 'Failed to update milestone', { error });
         throw parseToLifeSyncError(error);
+      }
+
+      // null data + no error = optimistic lock failed (record was modified by another session)
+      if (!data) {
+        throw new ConflictError(
+          'This milestone was modified by another session. Please refresh and try again.'
+        );
       }
 
       logger.info('Together', 'Milestone updated', { id });
@@ -261,7 +274,7 @@ export function useUpdateMilestone() {
       void queryClient.invalidateQueries({ queryKey: [...milestoneKeys.all, 'infinite'] });
     },
     onError: (error, { id }, context) => {
-      // Rollback on error
+      // Rollback optimistic update
       if (context?.previousMilestone) {
         queryClient.setQueryData(milestoneKeys.detail(id), context.previousMilestone);
       }
@@ -269,9 +282,13 @@ export function useUpdateMilestone() {
       void queryClient.invalidateQueries({ queryKey: milestoneKeys.upcoming() });
       void queryClient.invalidateQueries({ queryKey: [...milestoneKeys.all, 'infinite'] });
 
-      const message = getUserErrorMessage(error);
+      // Give a more specific message for concurrent-edit conflicts
+      const isConflict = error instanceof ConflictError;
+      const message = isConflict
+        ? 'Someone else updated this milestone. Your changes were not saved — please refresh. 🔄'
+        : getUserErrorMessage(error);
       showToast(message, 'error');
-      logger.error('Together', error as Error, { operation: 'updateMilestone' });
+      logger.error('Together', error as Error, { operation: 'updateMilestone', isConflict });
     },
   });
 }

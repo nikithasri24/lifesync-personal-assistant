@@ -27,9 +27,10 @@ export const DashboardHeaderV2: React.FC = () => {
     year: 'numeric',
   });
 
-  // Get user's first name or default to 'there'
-  const userName = user?.email?.split('@')[0] || 'there';
-  const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
+  // Get user's first name — strip email prefix dots (e.g. "nikitha.lisi" → "Nikitha")
+  const rawName = user?.email?.split('@')[0] || 'there';
+  const sanitized = rawName.includes('.') ? rawName.split('.')[0] : rawName;
+  const displayName = sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
 
   const greeting = getGreetingData();
 
