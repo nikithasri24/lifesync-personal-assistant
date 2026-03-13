@@ -11,8 +11,7 @@
  * - Preserved ingredient/instruction parsing logic
  */
 
-import React, { useState, useEffect, useRef, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
+import React, { useState, type ReactElement } from 'react';
 import { FormModalV2 } from '@/components/v2';
 import { logger } from '../../../services/logger';
 import type { Recipe, Ingredient } from '../../../types';
@@ -39,9 +38,6 @@ interface RecipeFormState {
 
 export function RecipeEditModal({ isOpen, recipe, onClose }: RecipeEditModalProps): ReactElement {
   const updateRecipeMutation = useUpdateRecipeMutation();
-  const [saving, setSaving] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [form, setForm] = useState<RecipeFormState>({
     name: recipe.name ?? '',
@@ -61,76 +57,40 @@ export function RecipeEditModal({ isOpen, recipe, onClose }: RecipeEditModalProp
     sourceUrl: recipe.sourceUrl ?? '',
   });
 
-  // Auto-save functionality - debounced by 2 seconds
-  useEffect(() => {
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
+  const handleSave = async (): Promise<void> => {
+    const ingredientLines = form.ingredients
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
 
-    autoSaveTimerRef.current = setTimeout(() => {
-      void (async () => {
-        try {
-          setSaving(true);
-          setError(null);
+    const parsedIngredients: Ingredient[] = ingredientLines.map((line) => {
+      const match1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
+      if (match1) return { amount: match1[1], unit: match1[2], name: match1[3] };
+      const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+      if (match2) return { amount: match2[1], unit: undefined, name: match2[2] };
+      return { amount: undefined, unit: undefined, name: line };
+    });
 
-          const ingredientLines = form.ingredients
-            .split(/\r?\n/)
-            .map((line) => line.trim())
-            .filter(Boolean);
-
-          const parsedIngredients: Ingredient[] = ingredientLines.map((line) => {
-            const match1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
-            if (match1) return { amount: match1[1], unit: match1[2], name: match1[3] };
-            const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
-            if (match2) return { amount: match2[1], unit: undefined, name: match2[2] };
-            return { amount: undefined, unit: undefined, name: line };
-          });
-
-          const updates: Partial<Recipe> = {
-            name: form.name.trim() || 'Untitled',
-            description: form.description.trim(),
-            servings: Number.isFinite(Number(form.servings)) ? Number(form.servings) : recipe.servings,
-            prepTime: Number.isFinite(Number(form.prepTime)) ? Number(form.prepTime) : recipe.prepTime,
-            cookTime: Number.isFinite(Number(form.cookTime)) ? Number(form.cookTime) : recipe.cookTime,
-            difficulty: (form.difficulty) || recipe.difficulty,
-            tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
-            instructions: form.instructions.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
-            ingredients: parsedIngredients,
-            sourceUrl: form.sourceUrl.trim() || undefined,
-          };
-
-          await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
-        } catch (err) {
-          logger.error('RecipeEditModal', err as Error, { context: 'auto-save failed' });
-          setError('Auto-save failed');
-        } finally {
-          setSaving(false);
-        }
-      })();
-    }, 2000);
-
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
+    const updates: Partial<Recipe> = {
+      name: form.name.trim() || 'Untitled',
+      description: form.description.trim(),
+      servings: Number.isFinite(Number(form.servings)) ? Number(form.servings) : recipe.servings,
+      prepTime: Number.isFinite(Number(form.prepTime)) ? Number(form.prepTime) : recipe.prepTime,
+      cookTime: Number.isFinite(Number(form.cookTime)) ? Number(form.cookTime) : recipe.cookTime,
+      difficulty: form.difficulty || recipe.difficulty,
+      tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      instructions: form.instructions.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
+      ingredients: parsedIngredients,
+      sourceUrl: form.sourceUrl.trim() || undefined,
     };
-  }, [form, recipe.id, recipe.servings, recipe.prepTime, recipe.cookTime, recipe.difficulty, recipe.sourceUrl, updateRecipeMutation]);
 
-  // Custom header with auto-save indicator
-  const customHeader = (
-    <div className="flex items-center gap-3">
-      <div className="text-xs text-gray-600">
-        {saving ? (
-          <span className="flex items-center gap-1">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Saving...
-          </span>
-        ) : (
-          <span className="text-emerald-600">Auto-saved</span>
-        )}
-      </div>
-    </div>
-  );
+    try {
+      await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
+      onClose();
+    } catch (err) {
+      logger.error('RecipeEditModal', err as Error, { context: 'save failed' });
+    }
+  };
 
   return (
     <FormModalV2<Record<string, never>>
@@ -139,24 +99,13 @@ export function RecipeEditModal({ isOpen, recipe, onClose }: RecipeEditModalProp
       title="Edit Recipe"
       subtitle={recipe.name}
       defaultData={{}}
-      isPending={false}
-      submitText="Close"
-      isEditing={false}
-      onSubmit={async () => {
-        // No-op: auto-save handles saving, this just closes
-        onClose();
-      }}
-      customHeader={customHeader}
+      isPending={updateRecipeMutation.isPending}
+      submitText="Save Changes"
+      isEditing={true}
+      onSubmit={handleSave}
     >
       {() => (
         <>
-          {/* Error Message */}
-          {error && (
-            <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
           {/* Name and Difficulty */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
