@@ -367,64 +367,77 @@ export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ sessions, recipes, o
                 </div>
               ) : (
                 <div className="flex items-center gap-3 mb-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setLinkingDishId(dish.id)}
-                    className="flex items-center gap-1 text-xs transition-opacity"
-                    style={{ color: dish.recipeId ? '#10B981' : colors.text.tertiary, opacity: dish.recipeId ? 0.85 : 0.6 }}
-                    aria-label={dish.recipeId ? 'Change linked recipe' : 'Link existing recipe'}
-                  >
-                    <Link className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">
-                      {dish.recipeId
-                        ? `${recipes.find(r => r.id === dish.recipeId)?.name ?? 'recipe'} ✓`
-                        : 'Link recipe'}
-                    </span>
-                  </button>
-                  {/* Edit recipe — shown when a recipe is already linked */}
-                  {dish.recipeId && onEditRecipe && (
-                    <button
-                      type="button"
-                      onClick={() => onEditRecipe(dish.recipeId!)}
-                      className="flex items-center gap-1 text-xs font-semibold transition-colors"
-                      style={{ color: '#C18B5E' }}
-                      aria-label={`Edit recipe for ${displayName}`}
-                    >
-                      <Pencil className="w-3 h-3 flex-shrink-0" />
-                      Edit recipe
-                    </button>
-                  )}
-                  {/* YouTube watch button — shown when linked recipe has a video */}
-                  {dish.recipeId && (() => {
-                    const url = recipes.find(r => r.id === dish.recipeId)?.sourceUrl;
-                    return url ? (
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-lg transition-opacity hover:opacity-80"
-                        style={{ backgroundColor: '#FF0000', color: 'white' }}
-                        aria-label={`Watch ${displayName} on YouTube`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Youtube className="w-3 h-3 flex-shrink-0" />
-                        Watch
-                      </a>
-                    ) : null;
+                  {(() => {
+                    const linkedRecipe = dish.recipeId ? recipes.find(r => r.id === dish.recipeId) : undefined;
+                    const hasIngredients = linkedRecipe && linkedRecipe.ingredients && linkedRecipe.ingredients.length > 0;
+                    const isFullyLinked = !!dish.recipeId && hasIngredients;
+                    const youtubeUrl = linkedRecipe?.sourceUrl;
+
+                    return (
+                      <>
+                        {/* Link/unlink button — shows ✓ only when recipe has ingredients */}
+                        <button
+                          type="button"
+                          onClick={() => setLinkingDishId(dish.id)}
+                          className="flex items-center gap-1 text-xs transition-opacity"
+                          style={{
+                            color: isFullyLinked ? '#10B981' : colors.text.tertiary,
+                            opacity: isFullyLinked ? 0.85 : 0.6,
+                          }}
+                          aria-label={isFullyLinked ? 'Change linked recipe' : 'Link existing recipe'}
+                        >
+                          <Link className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {isFullyLinked ? `${linkedRecipe!.name} ✓` : 'Link recipe'}
+                          </span>
+                        </button>
+
+                        {/* Edit recipe — only when fully linked */}
+                        {isFullyLinked && onEditRecipe && (
+                          <button
+                            type="button"
+                            onClick={() => onEditRecipe(dish.recipeId!)}
+                            className="flex items-center gap-1 text-xs font-semibold transition-colors"
+                            style={{ color: '#C18B5E' }}
+                            aria-label={`Edit recipe for ${displayName}`}
+                          >
+                            <Pencil className="w-3 h-3 flex-shrink-0" />
+                            Edit recipe
+                          </button>
+                        )}
+
+                        {/* Create recipe — when no recipe or recipe is empty (no ingredients) */}
+                        {!isFullyLinked && onCreateRecipeForDish && (
+                          <button
+                            type="button"
+                            onClick={() => onCreateRecipeForDish(dish.id, dish.customName ?? dish.recipeName ?? displayName)}
+                            className="flex items-center gap-1 text-xs font-semibold transition-colors"
+                            style={{ color: '#C18B5E' }}
+                            aria-label={`Create recipe for ${displayName}`}
+                          >
+                            <Plus className="w-3 h-3 flex-shrink-0" />
+                            Create recipe
+                          </button>
+                        )}
+
+                        {/* YouTube watch — shown whenever linked recipe has a URL, even if empty */}
+                        {youtubeUrl && (
+                          <a
+                            href={youtubeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-lg transition-opacity hover:opacity-80"
+                            style={{ backgroundColor: '#FF0000', color: 'white' }}
+                            aria-label={`Watch ${displayName} on YouTube`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Youtube className="w-3 h-3 flex-shrink-0" />
+                            Watch
+                          </a>
+                        )}
+                      </>
+                    );
                   })()}
-                  {/* Create recipe shortcut — only shown when no recipe is linked yet */}
-                  {!dish.recipeId && onCreateRecipeForDish && (
-                    <button
-                      type="button"
-                      onClick={() => onCreateRecipeForDish(dish.id, dish.customName ?? dish.recipeName ?? displayName)}
-                      className="flex items-center gap-1 text-xs font-semibold transition-colors"
-                      style={{ color: '#C18B5E' }}
-                      aria-label={`Create recipe for ${displayName}`}
-                    >
-                      <Plus className="w-3 h-3 flex-shrink-0" />
-                      Create recipe
-                    </button>
-                  )}
                 </div>
               )}
               <div className="flex items-center justify-between mt-1.5">
