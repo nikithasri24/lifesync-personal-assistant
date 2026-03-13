@@ -38,6 +38,7 @@ interface RecipeFormData {
   sugar: string;
   tags: string;
   imageUrl: string;
+  sourceUrl: string;
   isFavorite: boolean;
 }
 
@@ -77,6 +78,7 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
     sugar: '',
     tags: '',
     imageUrl: '',
+    sourceUrl: '',
     isFavorite: false,
   };
 
@@ -392,6 +394,19 @@ export const RecipeFormModalV2: React.FC<RecipeFormModalV2Props> = ({
             </div>
 
             {/* Additional Fields */}
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text.secondary }}>
+                YouTube / Video URL
+              </label>
+              <input
+                type="url"
+                value={formState.sourceUrl}
+                onChange={(e) => setFormState({ ...formState, sourceUrl: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+                placeholder="https://youtube.com/watch?v=..."
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-semibold mb-2" style={{ color: colors.text.secondary }}>
                 Image URL

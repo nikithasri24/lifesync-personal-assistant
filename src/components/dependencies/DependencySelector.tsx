@@ -22,7 +22,7 @@ interface DependencySelectorProps {
 
 export const DependencySelector: React.FC<DependencySelectorProps> = ({
   currentTaskId,
-  selectedDependencies,
+  selectedDependencies = [],
   allTasks,
   onChange,
   disabled = false,

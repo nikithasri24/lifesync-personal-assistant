@@ -276,6 +276,7 @@ export function buildRecipeInsertPayload(input: RecipeInput) {
     is_favorite: input.isFavorite ?? false,
     dietary_restrictions: sanitizeArray(input.dietaryRestrictions ?? []),
     nutrition_info: input.nutritionInfo ?? null,
+    source_url: input.sourceUrl ? sanitizeInput(input.sourceUrl) : null,
   });
 }
 
@@ -301,6 +302,9 @@ export function buildRecipeUpdatePayload(updates: RecipeUpdate) {
     is_favorite: updates.isFavorite,
     dietary_restrictions: updates.dietaryRestrictions ? sanitizeArray(updates.dietaryRestrictions) : undefined,
     nutrition_info: updates.nutritionInfo,
+    source_url: updates.sourceUrl !== undefined
+      ? (updates.sourceUrl ? sanitizeInput(updates.sourceUrl) : null)
+      : undefined,
   });
 }
 

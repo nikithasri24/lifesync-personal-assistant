@@ -4,21 +4,28 @@
  * Each dish shows a progress bar (remaining / cooked) and a quick-log button.
  */
 
-import React, { useRef, useState } from 'react';
-import { ChefHat, AlertTriangle, Link, Pencil } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { ChefHat, AlertTriangle, Link, Pencil, Plus, Trash2, X, Check, Youtube } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { BatchCookSession, BatchCookDish } from '../../types';
 
 interface Recipe { id: string; name: string; }
 
 interface FridgePoolV2Props {
-  session: BatchCookSession;
+  /** All sessions that have food remaining. When multiple, a tab row is shown. */
+  sessions: BatchCookSession[];
   recipes: Recipe[];
   onLogFromPool: (dish: BatchCookDish, mealType: string) => void;
   onMarkDone: (dish: BatchCookDish) => void;
   onLinkRecipe: (dish: BatchCookDish, recipeId: string | null) => void;
   onRenameDish: (dish: BatchCookDish, newName: string) => void;
   onNewSession: () => void;
+  onAddDish: (sessionId: string, name: string, servings: number) => Promise<void>;
+  onDeleteSession: (sessionId: string) => Promise<void>;
+  /** Called when the user wants to create a new recipe for a dish that has none yet */
+  onCreateRecipeForDish?: (dishId: string, dishName: string) => void;
+  /** Called when the user wants to edit the recipe already linked to a dish */
+  onEditRecipe?: (recipeId: string) => void;
 }
 
 const ServingBar: React.FC<{ cooked: number; remaining: number }> = ({ cooked, remaining }): React.ReactElement => {
@@ -51,14 +58,31 @@ const ServingBar: React.FC<{ cooked: number; remaining: number }> = ({ cooked, r
   );
 };
 
-export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ session, recipes, onLogFromPool, onMarkDone, onLinkRecipe, onRenameDish, onNewSession }) => {
+export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ sessions, recipes, onLogFromPool, onMarkDone, onLinkRecipe, onRenameDish, onNewSession, onAddDish, onDeleteSession, onCreateRecipeForDish, onEditRecipe }) => {
   const colors = useThemeColors();
+  const [activeIdx, setActiveIdx] = useState(0);
   const [linkingDishId, setLinkingDishId] = useState<string | null>(null);
   const [renamingDishId, setRenamingDishId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
+  // Add-dish inline form state
+  const [showAddDish, setShowAddDish] = useState(false);
+  const [newDishName, setNewDishName] = useState('');
+  const [newDishServings, setNewDishServings] = useState(4);
+  const [addingDish, setAddingDish] = useState(false);
+  const addDishInputRef = useRef<HTMLInputElement>(null);
+
+  // Keep activeIdx in range if sessions array shrinks
+  useEffect(() => {
+    if (activeIdx >= sessions.length) setActiveIdx(0);
+  }, [sessions.length, activeIdx]);
+
+  const session = sessions[activeIdx] ?? sessions[0];
+  if (!session) return null;
+
   const activeDishes = session.dishes.filter(d => d.servingsRemaining > 0);
   const emptyDishes = session.dishes.filter(d => d.servingsRemaining === 0);
+  const hasMultipleSessions = sessions.length > 1;
 
   return (
     <div
@@ -71,28 +95,168 @@ export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ session, recipes, on
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-5 py-4 border-b"
+        className="flex items-center justify-between px-5 py-3 border-b"
         style={{ borderColor: colors.border.light, backgroundColor: 'rgba(212, 165, 116, 0.06)' }}
       >
-        <div className="flex items-center gap-2">
-          <ChefHat className="w-5 h-5" style={{ color: '#C18B5E' }} />
-          <div>
-            <p className="font-bold text-sm" style={{ color: colors.text.primary }}>{session.name}</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <ChefHat className="w-5 h-5 flex-shrink-0" style={{ color: '#C18B5E' }} />
+          <div className="min-w-0">
+            <p className="font-bold text-sm truncate" style={{ color: colors.text.primary }}>{session.name}</p>
             <p className="text-xs" style={{ color: colors.text.tertiary }}>
               {activeDishes.length} dish{activeDishes.length !== 1 ? 'es' : ''} ready ·{' '}
               {session.dishes.reduce((sum, d) => sum + d.servingsRemaining, 0)} servings left
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onNewSession}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
-          style={{ color: '#C18B5E', backgroundColor: 'rgba(212, 165, 116, 0.15)' }}
-        >
-          + New Session
-        </button>
+        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+          {/* Add dish to current session */}
+          <button
+            type="button"
+            onClick={() => { setShowAddDish(v => !v); setTimeout(() => addDishInputRef.current?.focus(), 50); }}
+            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
+            style={{ color: '#C18B5E', backgroundColor: 'rgba(212, 165, 116, 0.15)' }}
+            aria-label="Add dish to session"
+            title="Add a dish to this session"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add dish
+          </button>
+          {/* Delete session */}
+          <button
+            type="button"
+            onClick={async () => {
+              if (window.confirm(`Delete "${session.name}"? This removes all dishes and logs.`)) {
+                await onDeleteSession(session.id);
+              }
+            }}
+            className="p-1.5 rounded-lg transition-colors hover:bg-red-50"
+            style={{ color: '#9CA3AF' }}
+            aria-label={`Delete session ${session.name}`}
+            title="Delete this session"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+          {/* New Session */}
+          <button
+            type="button"
+            onClick={onNewSession}
+            className="text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
+            style={{ color: '#C18B5E', backgroundColor: 'rgba(212, 165, 116, 0.15)' }}
+          >
+            + New
+          </button>
+        </div>
       </div>
+
+      {/* Inline "Add Dish" form — slides in under the header */}
+      {showAddDish && (
+        <div
+          className="flex items-center gap-2 px-4 py-3 border-b"
+          style={{ borderColor: colors.border.light, backgroundColor: 'rgba(212,165,116,0.04)' }}
+        >
+          <input
+            ref={addDishInputRef}
+            type="text"
+            value={newDishName}
+            onChange={e => setNewDishName(e.target.value)}
+            onKeyDown={async e => {
+              if (e.key === 'Enter' && newDishName.trim()) {
+                setAddingDish(true);
+                try { await onAddDish(session.id, newDishName.trim(), newDishServings); setNewDishName(''); setShowAddDish(false); } finally { setAddingDish(false); }
+              }
+              if (e.key === 'Escape') { setShowAddDish(false); setNewDishName(''); }
+            }}
+            placeholder="Dish name…"
+            className="flex-1 text-sm px-3 py-1.5 rounded-lg border outline-none"
+            style={{ borderColor: '#C18B5E', color: colors.text.primary, minWidth: 0 }}
+            disabled={addingDish}
+          />
+          <input
+            type="number"
+            value={newDishServings}
+            onChange={e => setNewDishServings(Math.max(1, parseInt(e.target.value) || 1))}
+            min={1}
+            max={99}
+            className="w-16 text-sm px-2 py-1.5 rounded-lg border text-center outline-none"
+            style={{ borderColor: colors.border.light, color: colors.text.primary }}
+            title="Servings"
+            disabled={addingDish}
+          />
+          <span className="text-xs flex-shrink-0" style={{ color: colors.text.tertiary }}>servings</span>
+          <button
+            type="button"
+            disabled={!newDishName.trim() || addingDish}
+            onClick={async () => {
+              if (!newDishName.trim()) return;
+              setAddingDish(true);
+              try { await onAddDish(session.id, newDishName.trim(), newDishServings); setNewDishName(''); setShowAddDish(false); } finally { setAddingDish(false); }
+            }}
+            className="p-1.5 rounded-lg transition-colors disabled:opacity-40"
+            style={{ backgroundColor: 'rgba(212,165,116,0.2)', color: '#C18B5E' }}
+            aria-label="Confirm add dish"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => { setShowAddDish(false); setNewDishName(''); }}
+            className="p-1.5 rounded-lg transition-colors hover:bg-gray-100"
+            style={{ color: '#9CA3AF' }}
+            aria-label="Cancel"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Session tabs — shown only when multiple sessions have food remaining */}
+      {hasMultipleSessions && (
+        <div
+          className="flex gap-2 px-4 pt-3 pb-1 flex-wrap"
+          style={{ borderBottom: `1px solid ${colors.border.light}` }}
+        >
+          {sessions.map((s, i) => {
+            const remaining = s.dishes.reduce((sum, d) => sum + d.servingsRemaining, 0);
+            const isActive = i === activeIdx;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  setActiveIdx(i);
+                  setLinkingDishId(null);
+                  setRenamingDishId(null);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                style={{
+                  backgroundColor: isActive ? 'rgba(212,165,116,0.18)' : colors.bg.secondary,
+                  border: `1.5px solid ${isActive ? '#C18B5E' : colors.border.light}`,
+                  color: isActive ? '#C18B5E' : colors.text.tertiary,
+                }}
+                aria-label={`Switch to session: ${s.name}`}
+                aria-pressed={isActive}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: isActive ? '#C18B5E' : '#9CA3AF' }}
+                />
+                <span className="truncate" style={{ maxWidth: '100px' }}>{s.name}</span>
+                <span
+                  className="flex-shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+                  style={{
+                    backgroundColor: isActive ? '#C18B5E' : '#E5E7EB',
+                    color: isActive ? 'white' : '#6B7280',
+                    minWidth: '18px',
+                    textAlign: 'center',
+                  }}
+                >
+                  {remaining}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Dish list */}
       <div className="p-4 space-y-3">
@@ -202,20 +366,66 @@ export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ session, recipes, on
                   </select>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setLinkingDishId(dish.id)}
-                  className="flex items-center gap-1 mb-1.5 text-xs transition-opacity"
-                  style={{ color: dish.recipeId ? '#10B981' : colors.text.tertiary, opacity: dish.recipeId ? 0.85 : 0.6 }}
-                  aria-label={dish.recipeId ? 'Change linked recipe' : 'Link recipe for shopping list'}
-                >
-                  <Link className="w-3 h-3 flex-shrink-0" />
-                  <span className="truncate">
-                    {dish.recipeId
-                      ? `${recipes.find(r => r.id === dish.recipeId)?.name ?? 'recipe'} ✓`
-                      : 'Link recipe for shopping list'}
-                  </span>
-                </button>
+                <div className="flex items-center gap-3 mb-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setLinkingDishId(dish.id)}
+                    className="flex items-center gap-1 text-xs transition-opacity"
+                    style={{ color: dish.recipeId ? '#10B981' : colors.text.tertiary, opacity: dish.recipeId ? 0.85 : 0.6 }}
+                    aria-label={dish.recipeId ? 'Change linked recipe' : 'Link existing recipe'}
+                  >
+                    <Link className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">
+                      {dish.recipeId
+                        ? `${recipes.find(r => r.id === dish.recipeId)?.name ?? 'recipe'} ✓`
+                        : 'Link recipe'}
+                    </span>
+                  </button>
+                  {/* Edit recipe — shown when a recipe is already linked */}
+                  {dish.recipeId && onEditRecipe && (
+                    <button
+                      type="button"
+                      onClick={() => onEditRecipe(dish.recipeId!)}
+                      className="flex items-center gap-1 text-xs font-semibold transition-colors"
+                      style={{ color: '#C18B5E' }}
+                      aria-label={`Edit recipe for ${displayName}`}
+                    >
+                      <Pencil className="w-3 h-3 flex-shrink-0" />
+                      Edit recipe
+                    </button>
+                  )}
+                  {/* YouTube watch button — shown when linked recipe has a video */}
+                  {dish.recipeId && (() => {
+                    const url = recipes.find(r => r.id === dish.recipeId)?.sourceUrl;
+                    return url ? (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-lg transition-opacity hover:opacity-80"
+                        style={{ backgroundColor: '#FF0000', color: 'white' }}
+                        aria-label={`Watch ${displayName} on YouTube`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Youtube className="w-3 h-3 flex-shrink-0" />
+                        Watch
+                      </a>
+                    ) : null;
+                  })()}
+                  {/* Create recipe shortcut — only shown when no recipe is linked yet */}
+                  {!dish.recipeId && onCreateRecipeForDish && (
+                    <button
+                      type="button"
+                      onClick={() => onCreateRecipeForDish(dish.id, dish.customName ?? dish.recipeName ?? displayName)}
+                      className="flex items-center gap-1 text-xs font-semibold transition-colors"
+                      style={{ color: '#C18B5E' }}
+                      aria-label={`Create recipe for ${displayName}`}
+                    >
+                      <Plus className="w-3 h-3 flex-shrink-0" />
+                      Create recipe
+                    </button>
+                  )}
+                </div>
               )}
               <div className="flex items-center justify-between mt-1.5">
                 <ServingBar cooked={dish.servingsCooked} remaining={dish.servingsRemaining} />

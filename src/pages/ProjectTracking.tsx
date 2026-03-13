@@ -128,7 +128,7 @@ const ProjectTrackingContent: React.FC = () => {
         icon={Plus}
         onClick={() => setShowCreateModal(true)}
         label="New Project"
-        position="bottom-right"
+        position="bottom-left"
         size="md"
       />
 

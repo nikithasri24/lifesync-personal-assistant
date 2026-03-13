@@ -14,6 +14,8 @@ import {
   type NotificationQueueItem as NotificationQueueItemAPI,
 } from '@/api/notificationAPI';
 import { pushNotificationService } from '@/services/pushNotificationService';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { isNative } from '@/lib/platform';
 import { format, addMinutes, subMinutes, isAfter, isBefore, parseISO } from 'date-fns';
 import { logger } from '../logger';
 import type {
@@ -23,6 +25,13 @@ import type {
   NotificationQueueItem,
   ReminderPreferences,
 } from './types';
+
+/** Convert a UUID to a stable positive 32-bit integer for LocalNotifications id */
+function uuidToInt(uuid: string): number {
+  return Math.abs(uuid.split('-').join('').slice(0, 8).split('').reduce(
+    (acc, c) => (acc * 31 + c.charCodeAt(0)) | 0, 0
+  ));
+}
 
 export interface ScheduleReminderParams {
   type: ReminderType;
@@ -38,6 +47,15 @@ export interface ScheduleReminderParams {
 class ReminderService {
   private checkInterval: NodeJS.Timeout | null = null;
   private preferences: ReminderPreferences | null = null;
+
+  /**
+   * Request notification permissions on native; call once on app init.
+   */
+  async initialize(): Promise<void> {
+    if (isNative()) {
+      await LocalNotifications.requestPermissions();
+    }
+  }
 
   /**
    * Schedule a reminder to be sent at a specific time
@@ -64,6 +82,22 @@ class ReminderService {
         scheduled_for: params.scheduledFor.toISOString(),
       });
 
+      // On native, also schedule a local notification so it fires while app is backgrounded
+      if (isNative()) {
+        const delay = new Date(params.scheduledFor).getTime() - Date.now();
+        if (delay > 0) {
+          await LocalNotifications.schedule({
+            notifications: [{
+              id: uuidToInt(result.id),
+              title: params.title,
+              body: params.body,
+              schedule: { at: new Date(params.scheduledFor) },
+              extra: { type: params.type, referenceId: params.entityId },
+            }],
+          });
+        }
+      }
+
       logger.debug('Service', 'Scheduled reminder', { reminderId: result.id });
       return result.id;
     } catch (error) {
@@ -78,6 +112,14 @@ class ReminderService {
   async cancelReminder(reminderId: string): Promise<boolean> {
     try {
       await cancelReminderAPI(reminderId);
+
+      // Also cancel the local notification on native
+      if (isNative()) {
+        await LocalNotifications.cancel({
+          notifications: [{ id: uuidToInt(reminderId) }],
+        });
+      }
+
       return true;
     } catch (error) {
       logger.error('Service', error instanceof Error ? error : 'Failed to cancel reminder', {});

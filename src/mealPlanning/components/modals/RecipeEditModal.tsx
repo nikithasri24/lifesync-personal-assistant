@@ -34,6 +34,7 @@ interface RecipeFormState {
   tags: string;
   instructions: string;
   ingredients: string;
+  sourceUrl: string;
 }
 
 export function RecipeEditModal({ isOpen, recipe, onClose }: RecipeEditModalProps): ReactElement {
@@ -57,6 +58,7 @@ export function RecipeEditModal({ isOpen, recipe, onClose }: RecipeEditModalProp
         return parts.join(' ');
       })
       .join('\n'),
+    sourceUrl: recipe.sourceUrl ?? '',
   });
 
   // Auto-save functionality - debounced by 2 seconds
@@ -94,6 +96,7 @@ export function RecipeEditModal({ isOpen, recipe, onClose }: RecipeEditModalProp
             tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
             instructions: form.instructions.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
             ingredients: parsedIngredients,
+            sourceUrl: form.sourceUrl.trim() || undefined,
           };
 
           await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
@@ -111,7 +114,7 @@ export function RecipeEditModal({ isOpen, recipe, onClose }: RecipeEditModalProp
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [form, recipe.id, recipe.servings, recipe.prepTime, recipe.cookTime, recipe.difficulty, updateRecipeMutation]);
+  }, [form, recipe.id, recipe.servings, recipe.prepTime, recipe.cookTime, recipe.difficulty, recipe.sourceUrl, updateRecipeMutation]);
 
   // Custom header with auto-save indicator
   const customHeader = (
@@ -232,6 +235,18 @@ export function RecipeEditModal({ isOpen, recipe, onClose }: RecipeEditModalProp
               value={form.tags}
               onChange={(e) => setForm((s) => ({ ...s, tags: e.target.value }))}
               placeholder="e.g. meal:breakfast, quick, vegetarian"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
+            />
+          </div>
+
+          {/* YouTube / Video URL */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">YouTube / Video URL</label>
+            <input
+              type="url"
+              value={form.sourceUrl}
+              onChange={(e) => setForm((s) => ({ ...s, sourceUrl: e.target.value }))}
+              placeholder="https://youtube.com/watch?v=..."
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
             />
           </div>

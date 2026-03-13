@@ -8,6 +8,8 @@
 
 import { cacheAccessor } from '@/lib/cacheAccessor';
 import { getAnalyticsDaily } from '@/api/analyticsAPI';
+import { getFinanceAPI } from '@/finance/data';
+import { logger } from '@/services/logger';
 import { format, addDays } from 'date-fns';
 
 export interface TodaysContext {
@@ -85,19 +87,21 @@ class ContextAggregator {
   async getTodaysContext(userId: string): Promise<TodaysContext> {
     const today = new Date().toISOString().split('T')[0];
 
-    // Fetch all data in parallel
+    // Fetch all data in parallel — finance is included so the full context is one round-trip
     const [
       tasksResult,
       habitsResult,
       eventsResult,
       focusResult,
       wellnessResult,
+      financeResult,
     ] = await Promise.all([
       this.fetchTasksContext(userId, today),
       this.fetchHabitsContext(userId, today),
       this.fetchEventsContext(userId, today),
       this.fetchFocusContext(userId, today),
       this.fetchWellnessContext(userId, today),
+      this.fetchFinanceContext(today),
     ]);
 
     return {
@@ -106,7 +110,7 @@ class ContextAggregator {
       events: eventsResult,
       focus: focusResult,
       wellness: wellnessResult,
-      finance: { spendingToday: 0, budgetRemaining: 0 }, // TODO: Implement
+      finance: financeResult,
     };
   }
 
@@ -190,6 +194,43 @@ class ContextAggregator {
       minutesToday,
       currentStreak: 0, // TODO: Calculate from consecutive days
     };
+  }
+
+  private async fetchFinanceContext(today: string) {
+    const currentMonth = today.slice(0, 7); // YYYY-MM
+    const monthStart = `${currentMonth}-01T00:00:00.000Z`;
+    const monthEnd = `${today}T23:59:59.999Z`;
+
+    try {
+      const api = await getFinanceAPI();
+      const [budgets, txns] = await Promise.all([
+        api.listBudgets(currentMonth),
+        api.listTransactions({ fromISO: monthStart, toISO: monthEnd, type: 'debit', limit: 200 }),
+      ]);
+
+      // Sum debit spend per category
+      const spendByCat = new Map<string, number>();
+      for (const txn of (txns.items ?? [])) {
+        if (!txn.categoryId) continue;
+        spendByCat.set(txn.categoryId, (spendByCat.get(txn.categoryId) ?? 0) + txn.amount);
+      }
+
+      const spendingToday = (txns.items ?? [])
+        .filter(t => t.dateISO.startsWith(today))
+        .reduce((s, t) => s + t.amount, 0);
+
+      const totalBudgeted = budgets.reduce((s, b) => s + b.limit, 0);
+      const totalSpent = budgets.reduce((s, b) => s + (spendByCat.get(b.categoryId) ?? 0), 0);
+
+      return {
+        spendingToday: Math.round(spendingToday * 100) / 100,
+        budgetRemaining: Math.round((totalBudgeted - totalSpent) * 100) / 100,
+      };
+    } catch (err) {
+      // Finance data is optional — don't let it break the broader context
+      logger.warn('ContextAggregator', 'Finance context unavailable', { error: (err as Error).message });
+      return { spendingToday: 0, budgetRemaining: 0 };
+    }
   }
 
   private async fetchWellnessContext(_userId: string, today: string) {

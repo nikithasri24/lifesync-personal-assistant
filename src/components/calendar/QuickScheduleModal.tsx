@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { X, Calendar, Plus, CheckCircle2 } from 'lucide-react';
 import type { Task } from '../../lib/supabase';
@@ -23,6 +23,12 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
   onCreateBlock,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    if (isOpen) window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !selectedDate) return null;
 
@@ -58,7 +64,7 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
       />
 
       {/* Modal */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
+      <div data-testid="quick-schedule-modal" className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">

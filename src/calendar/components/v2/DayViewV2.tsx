@@ -53,9 +53,26 @@ export const DayViewV2: React.FC<DayViewV2Props> = ({
   const hours = Array.from({ length: 18 }, (_, i) => i + 6);
 
   // Get items for this date
+  // Use split('T')[0] to handle both plain date strings and timestamptz returns from Supabase
   const dateKey = format(date, 'yyyy-MM-dd');
-  const dayTasks = tasks.filter(t => t.due_date === dateKey && t.scheduled_start);
-  const dayEvents = events.filter(e => e.start_date === dateKey && !e.all_day);
+  // Tasks with scheduled_start on this date → appear in time slots
+  const dayTasks = tasks.filter(t => {
+    if (!t.scheduled_start) return false;
+    // Prefer scheduled_start date for placement
+    const taskDateKey = (t.scheduled_start as string)?.split('T')[0] ||
+                        (t.due_date as string | null)?.split('T')[0];
+    return taskDateKey === dateKey;
+  });
+  // Tasks with only due_date (no specific time) → appear as all-day items at the top
+  const allDayDueTasks = tasks.filter(t => {
+    if (t.scheduled_start) return false; // already handled above
+    const taskDateKey = (t.due_date as string | null)?.split('T')[0];
+    return taskDateKey === dateKey && t.status !== 'done';
+  });
+  const dayEvents = events.filter(e => {
+    const eventDateKey = (e.start_date as string)?.split('T')[0];
+    return eventDateKey === dateKey && !e.all_day;
+  });
   const dayBlocks = scheduleBlocks.filter(b => b.date === dateKey);
 
   // Check if we should show current time indicator
@@ -73,6 +90,31 @@ export const DayViewV2: React.FC<DayViewV2Props> = ({
 
   return (
     <div className="flex-1 overflow-auto" style={{ backgroundColor: colors.bg.white }}>
+      {/* All-day tasks: tasks with due_date but no specific scheduled time */}
+      {allDayDueTasks.length > 0 && (
+        <div
+          className="flex items-center gap-1 px-3 py-2 border-b"
+          style={{ borderColor: colors.border.light, backgroundColor: colors.bg.secondary }}
+        >
+          <span className="text-xs font-semibold flex-shrink-0" style={{ color: colors.text.tertiary, width: '3rem' }}>
+            All day
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {allDayDueTasks.map(task => (
+              <div
+                key={task.id}
+                data-testid="calendar-task-chip"
+                data-task-id={task.id}
+                onClick={() => onTaskClick(task)}
+                className="px-2 py-0.5 rounded text-xs font-medium text-white cursor-pointer hover:opacity-80 transition-opacity"
+                style={{ backgroundColor: '#3B82F6' }}
+              >
+                {task.title}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="relative">
         {hours.map((hour) => {
           const hourLabel = hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
@@ -85,6 +127,11 @@ export const DayViewV2: React.FC<DayViewV2Props> = ({
           });
 
           const hourEvents = dayEvents.filter(event => {
+            // Use start_time for hour matching — start_date is a date-only field
+            if (event.start_time) {
+              return parseInt(event.start_time.split(':')[0], 10) === hour;
+            }
+            // Fallback: parse start_date with time if it includes one
             const eventStart = parseISO(event.start_date);
             return eventStart.getHours() === hour;
           });
@@ -180,12 +227,17 @@ export const DayViewV2: React.FC<DayViewV2Props> = ({
 
                 {/* Events */}
                 {hourEvents.map((event) => {
-                  const eventStart = parseISO(event.start_date);
-                  const eventEnd = parseISO(event.end_date);
-                  const topOffset = eventStart.getMinutes();
-                  const durationMinutes = Math.round((eventEnd.getTime() - eventStart.getTime()) / 60000);
+                  // Use start_time / end_time for positioning (start_date is date-only)
+                  const [startHour = hour, startMin = 0] = (event.start_time || `${hour}:00`)
+                    .split(':').map(Number);
+                  const [endHour = startHour + 1, endMin = 0] = (event.end_time || `${startHour + 1}:00`)
+                    .split(':').map(Number);
+                  const topOffset = startMin;
+                  const durationMinutes = Math.max(30, (endHour - startHour) * 60 + (endMin - startMin));
                   const eventHeight = Math.max(24, durationMinutes);
-                  const timeLabel = format(eventStart, 'HH:mm');
+                  const timeLabel = event.start_time
+                    ? event.start_time.slice(0, 5)
+                    : format(parseISO(event.start_date), 'HH:mm');
 
                   return (
                     <EventCardV2

@@ -5,7 +5,11 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-dom/client', 'react-router-dom'],
+  },
   resolve: {
+    dedupe: ['react', 'react-dom', 'react-router-dom'],
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@/api': path.resolve(__dirname, './src/api'),
@@ -82,7 +86,6 @@ export default defineConfig({
             './src/finance/pages/CalculatorsPage',
             './src/finance/pages/CreditCardsPage',
             './src/finance/pages/InsurancePage',
-            './src/finance/pages/SettingsPage',
           ],
         },
       },

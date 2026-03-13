@@ -50,16 +50,38 @@ export const MonthViewV2: React.FC<MonthViewV2Props> = ({
   const getItemsForDate = (date: Date) => {
     const dateKey = format(date, 'yyyy-MM-dd');
     const dayEvents = events.filter(e => e.start_date === dateKey);
-    const dayTasks = tasks.filter(t => t.due_date === dateKey && t.status !== 'done');
+    const dayTasks = tasks.filter(t => t.due_date && (t.due_date as string).split('T')[0] === dateKey && t.status !== 'done');
     return { events: dayEvents, tasks: dayTasks };
   };
 
+  // Compute workload heat level for a day (total estimated minutes of scheduled tasks)
+  const getWorkloadLevel = (date: Date): 'none' | 'light' | 'moderate' | 'heavy' => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const totalMinutes = tasks
+      .filter(t => t.due_date === dateKey && t.status !== 'done')
+      .reduce((sum, t) => sum + (t.estimated_time ?? 30), 0);
+    if (totalMinutes === 0) return 'none';
+    if (totalMinutes < 180) return 'light';
+    if (totalMinutes < 360) return 'moderate';
+    return 'heavy';
+  };
+
+  const workloadBarColor: Record<string, string> = {
+    light: '#86efac',   // green-300
+    moderate: '#fcd34d', // amber-300
+    heavy: '#f87171',    // red-400
+  };
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Weekday headers */}
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      {/* Weekday headers — inline grid to guarantee 7-column layout */}
       <div
-        className="grid grid-cols-7"
-        style={{ borderBottom: `1px solid ${colors.border.light}` }}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          flexShrink: 0,
+          borderBottom: `1px solid ${colors.border.light}`,
+        }}
       >
         {WEEKDAYS.map(day => (
           <div
@@ -72,20 +94,31 @@ export const MonthViewV2: React.FC<MonthViewV2Props> = ({
         ))}
       </div>
 
-      {/* Calendar grid */}
+      {/* Calendar grid — inline grid guarantees 7-column layout */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', backgroundColor: colors.border.light }}>
       <div
-        className="flex-1 grid grid-cols-7 gap-px overflow-auto"
-        style={{ backgroundColor: colors.border.light }}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gap: '1px',
+          minHeight: '100%',
+          backgroundColor: colors.border.light,
+        }}
       >
         {days.map((day, index) => {
           const isCurrentMonth = isSameMonth(day, currentDate);
           const isToday = isTodayFn(day);
           const { events: dayEvents, tasks: dayTasks } = getItemsForDate(day);
+          const workload = getWorkloadLevel(day);
+          const taskCount = dayTasks.length;
+          const eventCount = dayEvents.length;
 
           return (
             <div
               key={index}
-              className="min-h-[70px] p-1 cursor-pointer hover:opacity-90 transition-opacity"
+              data-testid="month-day-cell"
+              data-date={format(day, 'yyyy-MM-dd')}
+              className="min-h-[70px] p-1 cursor-pointer hover:opacity-90 transition-opacity relative flex flex-col"
               style={{
                 backgroundColor: isToday
                   ? '#FEF3E8' // Terracotta tint for today
@@ -139,9 +172,35 @@ export const MonthViewV2: React.FC<MonthViewV2Props> = ({
                   />
                 ))}
               </div>
+
+              {/* Item count label */}
+              {(taskCount > 0 || eventCount > 0) && (
+                <div className="mt-auto flex justify-center gap-1 pt-1">
+                  {taskCount > 0 && (
+                    <span className="text-[9px] text-blue-500 font-semibold">
+                      {taskCount}t
+                    </span>
+                  )}
+                  {eventCount > 0 && (
+                    <span className="text-[9px] font-semibold" style={{ color: '#D4A574' }}>
+                      {eventCount}e
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Workload heat bar */}
+              {workload !== 'none' && isCurrentMonth && (
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-b"
+                  style={{ backgroundColor: workloadBarColor[workload] }}
+                  title={`${workload} workload`}
+                />
+              )}
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );

@@ -4,10 +4,11 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { format, addMinutes } from 'date-fns';
+import { format, addMinutes, startOfWeek, addDays } from 'date-fns';
 import {
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp, GripVertical,
-  Zap, Battery, BatteryLow, Clock, Sparkles, AlertTriangle, Star, CheckSquare
+  Zap, Battery, BatteryLow, Clock, Sparkles, AlertTriangle, Star, CheckSquare,
+  Wand2, Loader2
 } from 'lucide-react';
 import type { Task } from '../../lib/supabase';
 import type { MiniCalendarDay } from '../hooks/useCalendarState';
@@ -44,6 +45,13 @@ interface CalendarSidebarProps {
 
   // Smart scheduling props (optional for backward compatibility)
   onScheduleTask?: (taskId: string, start: Date, end: Date) => void;
+
+  // Plan My Day
+  onPlanMyDay?: (date: Date) => void;
+  planMyDayLoading?: boolean;
+
+  // All scheduled tasks (for week load strip)
+  allTasks?: import('../../lib/supabase').Task[];
 }
 
 // Priority configuration
@@ -77,6 +85,9 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   onDropInUnscheduled,
   onDropInCategory,
   onScheduleTask,
+  onPlanMyDay,
+  planMyDayLoading = false,
+  allTasks = [],
 }) => {
   // State for smart scheduling
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -103,6 +114,26 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
 
   // Get suggested slots from the suggestion result
   const suggestedSlots = suggestions?.suggestedSlots || [];
+
+  // Week availability: count scheduled tasks per day this week (Mon–Sun)
+  const weekStart = startOfWeek(miniCalendarDate, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const weekLoadLevel = (date: Date): 'empty' | 'light' | 'moderate' | 'heavy' => {
+    const key = format(date, 'yyyy-MM-dd');
+    const total = allTasks
+      .filter(t => t.due_date && (t.due_date as string).split('T')[0] === key && t.status !== 'done')
+      .reduce((sum, t) => sum + (t.estimated_time ?? 30), 0);
+    if (total === 0) return 'empty';
+    if (total < 180) return 'light';
+    if (total < 360) return 'moderate';
+    return 'heavy';
+  };
+  const loadColor: Record<string, string> = {
+    empty: '#e5e7eb',   // gray-200
+    light: '#86efac',   // green-300
+    moderate: '#fcd34d', // amber-300
+    heavy: '#f87171',    // red-400
+  };
 
   // Group unscheduled tasks by priority (use unscheduledTasks only to avoid duplicates)
   const tasksByPriority = {
@@ -174,6 +205,8 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
               return (
                 <div
                   key={task.id}
+                  data-testid="sidebar-task"
+                  data-task-id={task.id}
                   draggable
                   onClick={() => handleTaskClick(task)}
                   onDragStart={(e) => { e.stopPropagation(); onDragStart(task, e); }}
@@ -211,6 +244,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
 
   return (
     <div
+      data-testid="calendar-sidebar"
       style={{ width: '200px' }}
       className="flex-shrink-0 border-r border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden bg-white dark:bg-slate-900"
     >
@@ -288,6 +322,48 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
               {totalUnscheduled}
             </span>
           </div>
+
+          {/* Plan My Day button */}
+          {onPlanMyDay && totalUnscheduled > 0 && (
+            <button
+              onClick={() => onPlanMyDay(miniCalendarDate)}
+              disabled={planMyDayLoading}
+              className="mt-1.5 w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-semibold text-white transition-all disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
+              title={`Auto-schedule ${totalUnscheduled} task${totalUnscheduled !== 1 ? 's' : ''} for ${format(miniCalendarDate, 'MMM d')}`}
+            >
+              {planMyDayLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Wand2 className="w-3 h-3" />
+              )}
+              {planMyDayLoading ? 'Scheduling...' : `Plan ${format(miniCalendarDate, 'MMM d')}`}
+            </button>
+          )}
+
+          {/* Week load strip */}
+          <div className="mt-2 flex gap-0.5">
+            {weekDays.map((wd, i) => {
+              const level = weekLoadLevel(wd);
+              const isSelected = format(wd, 'yyyy-MM-dd') === format(miniCalendarDate, 'yyyy-MM-dd');
+              return (
+                <div
+                  key={i}
+                  className="flex-1 flex flex-col items-center gap-0.5"
+                  title={`${format(wd, 'EEE, MMM d')} — ${level} load`}
+                >
+                  <span className="text-[8px] text-slate-400 dark:text-slate-500">
+                    {format(wd, 'EEEEE')}
+                  </span>
+                  <div
+                    className={`w-full rounded-full transition-all ${isSelected ? 'ring-1 ring-purple-400' : ''}`}
+                    style={{ height: '5px', backgroundColor: loadColor[level] }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
           {selectedTask && (
             <div className="mt-1.5 text-[9px] text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-1.5 py-1 rounded flex items-center gap-1">
               <span className="truncate flex-1">Scheduling: <strong>{selectedTask.title}</strong></span>

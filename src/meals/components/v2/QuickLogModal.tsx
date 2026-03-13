@@ -56,10 +56,11 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
       setServings(1);
       setNotes('');
       setCustomName('');
-      setMode(preSelectedDish ? 'pool' : 'pool');
+      // No session or no pre-selected dish → start in custom (free-text) mode
+      setMode(session && preSelectedDish ? 'pool' : 'custom');
       setError('');
     }
-  }, [isOpen, preSelectedDish, preSelectedMealType]);
+  }, [isOpen, preSelectedDish, preSelectedMealType, session]);
 
   useEffect(() => {
     const handle = (e: KeyboardEvent): void => { if (e.key === 'Escape') onClose(); };

@@ -690,7 +690,7 @@ const TodosContent: React.FC = () => {
       <FABV2
         icon={Plus}
         onClick={() => setShowQuickAdd(true)}
-        position="bottom-right"
+        position="bottom-left"
         ariaLabel="Add Task"
       />
     </div>

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -6,7 +6,7 @@ import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
 import { UndoRedoButtons } from './components/UndoRedoButtons';
-import { QuickCapture } from './components/inbox';
+import { SmartQuickCapture } from './components/inbox/SmartQuickCapture';
 import { useReminderChecker } from './hooks/useReminders';
 import { useHabitReminders, useStreakProtectionAlerts } from './hooks/useHabitReminders';
 import { useBillReminders } from './hooks/useBillReminders';
@@ -17,11 +17,18 @@ import { useRoutePerformance } from './hooks/useRoutePerformance';
 import { useWebVitals } from './hooks/useWebVitals';
 import { MessageRevealListener } from './together/components';
 import { useMilestoneReminders } from './together/hooks';
-import { SmartHabitPromptBanner } from './habits/components/SmartHabitPromptBanner';
+import { BatchHabitPromptBanner } from './habits/components/BatchHabitPromptBanner';
+import { useAuth } from './hooks/useAuth';
+import { isNative, isIOS } from './lib/platform';
+import { PushNotifications } from '@capacitor/push-notifications';
+import { upsertPushSubscription } from './api/pushSubscriptionsAPI';
+import { reminderService } from './services/reminders/ReminderService';
+import { logger } from './services/logger';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Calendar = lazy(() => import('./pages/Calendar'));
+const CalendarMainView = lazy(() => import('./pages/CalendarMainView'));
 const Focus = lazy(() => import('./pages/Focus'));
 const Habits = lazy(() => import('./pages/Habits'));
 const Todos = lazy(() => import('./pages/Todos'));
@@ -42,7 +49,38 @@ const SelfCare = lazy(() => import('./pages/SelfCare'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const More = lazy(() => import('./pages/More'));
 
+async function registerForPush(userId: string): Promise<void> {
+  if (!isNative() || !isIOS()) return;
+  const { receive } = await PushNotifications.requestPermissions();
+  if (receive !== 'granted') return;
+  await PushNotifications.register();
+  PushNotifications.addListener('registration', ({ value: token }) => {
+    void upsertPushSubscription({
+      user_id: userId,
+      endpoint: `apns:${token}`,
+      is_active: true,
+    });
+  });
+  PushNotifications.addListener('registrationError', (err) => {
+    logger.warn('PushNotifications', 'APNs registration failed', { err });
+  });
+}
+
 function App(): React.ReactElement {
+  const { user } = useAuth();
+
+  // Initialize native notification permissions once on mount
+  useEffect(() => {
+    void reminderService.initialize();
+  }, []);
+
+  // Register for remote push once the user is authenticated on iOS
+  useEffect(() => {
+    if (user?.id) {
+      void registerForPush(user.id);
+    }
+  }, [user?.id]);
+
   // Performance monitoring
   useRoutePerformance();
 
@@ -93,7 +131,7 @@ function App(): React.ReactElement {
             <Route path="/" element={<RouteErrorBoundary feature="Dashboard"><Dashboard /></RouteErrorBoundary>} />
             <Route path="/assistant" element={<RouteErrorBoundary feature="Assistant"><Assistant /></RouteErrorBoundary>} />
             <Route path="/calendar" element={<RouteErrorBoundary feature="Calendar"><Calendar /></RouteErrorBoundary>} />
-            <Route path="/scheduler" element={<Navigate to="/calendar" replace />} />
+            <Route path="/scheduler" element={<RouteErrorBoundary feature="Scheduler"><CalendarMainView /></RouteErrorBoundary>} />
             <Route path="/focus" element={<RouteErrorBoundary feature="Focus"><Focus /></RouteErrorBoundary>} />
 
             {/* Productivity Routes */}
@@ -128,10 +166,10 @@ function App(): React.ReactElement {
         </Suspense>
         {/* Global undo/redo buttons */}
         <UndoRedoButtons />
-        {/* Quick Capture FAB */}
-        <QuickCapture variant="floating" />
-        {/* Smart Habit Prompt Banner - contextual reminder within 30 min of reminder time */}
-        <SmartHabitPromptBanner />
+        {/* Smart Quick Capture FAB — intent-aware routing */}
+        <SmartQuickCapture />
+        {/* Batch Habit Prompt Banner — shows all due habits at once */}
+        <BatchHabitPromptBanner />
         {/* Message Reveal Listener - Shows partner messages when triggered */}
         <MessageRevealListener />
       </Layout>

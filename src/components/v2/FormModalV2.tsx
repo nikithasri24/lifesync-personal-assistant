@@ -132,12 +132,19 @@ export function FormModalV2<T extends Record<string, any>>({
     isEditing ? mergedInitialData : (draft || mergedInitialData)
   );
 
-  // Update form state when initialData changes (for edit mode)
+  // Reset form state whenever the modal opens so stale state from previous
+  // opens doesn't leak through (the useState initialiser only runs once on mount)
   useEffect(() => {
-    if (isEditing && initialData) {
-      setFormState({ ...defaultData, ...initialData } as T);
+    if (isOpen) {
+      if (isEditing && initialData) {
+        setFormState({ ...defaultData, ...initialData } as T);
+      } else if (!isEditing) {
+        // Use draft if available, otherwise use fresh defaults
+        setFormState((draftKey ? (draft ?? mergedInitialData) : mergedInitialData));
+      }
     }
-  }, [initialData, isEditing, defaultData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // Auto-save when form state changes (only if draft key provided)
   useEffect(() => {

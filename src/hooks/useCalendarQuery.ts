@@ -98,15 +98,10 @@ export function useCreateCalendarEvent(): UseMutationResult<
     onSuccess: (newEvent) => {
       logger.info('Calendar', 'Calendar event created successfully', { id: newEvent.id, title: newEvent.title });
 
-      // Optimistically add to cache for immediate UI response
-      queryClient.setQueryData<CalendarEvent[]>(
-        queryKeys.calendar.lists(),
-        (old) => {
-          return old ? [...old, newEvent].sort((a, b) => a.start_date.localeCompare(b.start_date)) : [newEvent];
-        }
-      );
+      // Invalidate all calendar queries (covers filtered lists used by the week/month/day views)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
 
-      // Emit event - DataSyncProvider handles cache invalidation
+      // Emit event for any DataSyncProvider subscribers
       dataEvents.emit('calendar:created', { eventId: newEvent.id!, date: newEvent.start_date });
     },
     onError: (error: Error) => {
@@ -183,7 +178,8 @@ export function useUpdateCalendarEvent(): UseMutationResult<
         }
       );
 
-      // Emit event - DataSyncProvider handles cache invalidation
+      // Invalidate all calendar queries so filtered views refresh
+      void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
       dataEvents.emit('calendar:updated', { eventId: updatedEvent.id!, date: updatedEvent.start_date });
     },
     onError: (error: Error, { id }, context) => {
@@ -225,7 +221,8 @@ export function useDeleteCalendarEvent(): UseMutationResult<void, Error, string,
         }
       );
 
-      // Emit event - DataSyncProvider handles cache invalidation
+      // Invalidate all calendar queries so filtered views refresh
+      void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
       dataEvents.emit('calendar:deleted', { eventId: deletedId });
     },
     onError: (error: Error, id) => {

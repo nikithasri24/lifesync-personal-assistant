@@ -67,14 +67,24 @@ export const EventModal: React.FC<EventModalProps> = ({
   initialDate = null,
 }) => {
   const defaultDate = initialDate ? format(initialDate, 'yyyy-MM-dd') : '';
+  // Derive start/end times from the clicked slot if an initialDate with a specific hour is provided
+  const defaultStartTime = initialDate
+    ? format(initialDate, 'HH:mm')
+    : '09:00';
+  const defaultEndHour = initialDate
+    ? Math.min(initialDate.getHours() + 1, 23)
+    : 10;
+  const defaultEndTime = initialDate
+    ? `${String(defaultEndHour).padStart(2, '0')}:00`
+    : '10:00';
 
   const defaultFormData: EventFormState = {
     title: '',
     description: '',
     start_date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
-    start_time: '09:00',
+    start_time: defaultStartTime,
     end_date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
-    end_time: '10:00',
+    end_time: defaultEndTime,
     all_day: false,
     location: '',
     type: 'event',
@@ -109,7 +119,7 @@ export const EventModal: React.FC<EventModalProps> = ({
       title={event ? 'Edit Event' : 'New Event'}
       defaultData={defaultFormData}
       initialData={initialFormData}
-      draftKey={event ? undefined : 'calendar_event_modal_draft'}
+      draftKey={event || initialDate ? undefined : 'calendar_event_modal_draft'}
       isPending={isSaving}
       submitText={event ? 'Save Changes' : 'Create Event'}
       isEditing={!!event}

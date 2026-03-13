@@ -30,13 +30,16 @@ import type { GroceryItem } from '@/mealPlanning/hooks/useGroceryList';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { useMealsState, type TabView } from '../meals/hooks';
 import { TodayView, WeekView, RecipesView, GroceryView } from '../meals/components/views';
+import type { BatchSessionGrocery } from '../meals/components/views/GroceryView';
 import { MealFormModalV2 } from '../meals/components/v2/MealFormModalV2';
 import { BatchCookSessionModal } from '../meals/components/v2/BatchCookSessionModal';
 import { FridgePoolV2 } from '../meals/components/v2/FridgePoolV2';
 import { QuickLogModal } from '../meals/components/v2/QuickLogModal';
 import {
-  useActiveBatchSessionQuery,
+  useActiveSessionsQuery,
   useCreateBatchCookSession,
+  useDeleteBatchCookSession,
+  useAddDishToSession,
   useCreateMealLog,
   useMealLogsQuery,
   useUpdateDishServings,
@@ -137,8 +140,13 @@ const MealPlanningContent: React.FC = () => {
     preSelectedMealType?: string;
   } | null>(null);
 
-  const { data: activeSession } = useActiveBatchSessionQuery();
+  const { data: activeSessions = [] } = useActiveSessionsQuery();
+  // Convenience alias — the most recent active session (first item, since sorted DESC).
+  // Used for grocery ingredients, dish-name map, and QuickLogModal.
+  const activeSession = activeSessions[0] ?? null;
   const createBatchSessionMutation = useCreateBatchCookSession();
+  const deleteBatchSessionMutation = useDeleteBatchCookSession();
+  const addDishToSessionMutation = useAddDishToSession();
   const createMealLogMutation = useCreateMealLog();
   const updateDishServingsMutation = useUpdateDishServings();
   const updateDishNameMutation = useUpdateDishName();
@@ -319,15 +327,17 @@ const MealPlanningContent: React.FC = () => {
     return plannedMeals.filter(meal => format(ensureDate(meal.date), 'yyyy-MM-dd') === today);
   }, [plannedMeals]);
 
-  // Build a flat dish id→name map from the active session (which, via RLS,
-  // now includes partner sessions too — so this covers both own and shared dishes).
+  // Build a flat dish id→name map from ALL active sessions so the week view
+  // shows correct log labels regardless of which session the dish belongs to.
   const allDishesMap = useMemo(() => {
     const map = new Map<string, string>();
-    activeSession?.dishes.forEach(d => {
-      map.set(d.id, d.customName ?? d.recipeName ?? 'Meal');
+    activeSessions.forEach(s => {
+      s.dishes.forEach(d => {
+        map.set(d.id, d.customName ?? d.recipeName ?? 'Meal');
+      });
     });
     return map;
-  }, [activeSession]);
+  }, [activeSessions]);
 
   // Build lookup for the Week view: 'yyyy-MM-dd-mealtype' → display names.
   const mealLogsByDate = useMemo(() => {
@@ -475,10 +485,10 @@ const MealPlanningContent: React.FC = () => {
         {/* Tab Content */}
         {activeTab === 'today' && (
           <>
-            {/* Fridge Pool — shown when there's an active batch cook session */}
-            {activeSession && (
+            {/* Fridge Pool — shown when any session has food remaining */}
+            {activeSessions.length > 0 && (
               <FridgePoolV2
-                session={activeSession}
+                sessions={activeSessions}
                 recipes={recipes}
                 onLogFromPool={(dish, mealType) => {
                   setQuickLogModal({ preSelectedDish: dish, preSelectedMealType: mealType });
@@ -510,11 +520,43 @@ const MealPlanningContent: React.FC = () => {
                   }
                 }}
                 onNewSession={() => setShowBatchCookModal(true)}
+                onCreateRecipeForDish={(dishId, dishName) => {
+                  modalState.openRecipeForm(dishName, async (recipeData) => {
+                    try {
+                      const newRecipe = await _createRecipeWrapper(recipeData);
+                      await updateDishRecipeMutation.mutateAsync({ dishId, recipeId: newRecipe.id });
+                      modalState.closeRecipeForm();
+                      showToast(`Recipe created and linked to "${dishName}" 🎉`, 'success');
+                    } catch (err) {
+                      logger.error('MealPlanning', err as Error, { context: 'createRecipeForDishFromPool' });
+                      showToast('Failed to create recipe', 'error');
+                    }
+                  });
+                }}
+                onAddDish={async (sessionId, name, servings) => {
+                  try {
+                    await addDishToSessionMutation.mutateAsync({ sessionId, customName: name, servingsCooked: servings });
+                    showToast(`"${name}" added to session! 🍳`, 'success');
+                  } catch (err) {
+                    logger.error('MealPlanning', err as Error, { context: 'addDishToSession' });
+                    showToast('Failed to add dish', 'error');
+                  }
+                }}
+                onDeleteSession={async (sessionId) => {
+                  try {
+                    await deleteBatchSessionMutation.mutateAsync(sessionId);
+                    showToast('Session deleted', 'success');
+                  } catch (err) {
+                    logger.error('MealPlanning', err as Error, { context: 'deleteSession' });
+                    showToast('Failed to delete session', 'error');
+                  }
+                }}
+                onEditRecipe={modalState.openRecipeEdit}
               />
             )}
 
             {/* Start batch cook session CTA when no active session */}
-            {!activeSession && (
+            {activeSessions.length === 0 && (
               <div
                 className="mb-6 p-4 rounded-2xl border-2 border-dashed flex items-center justify-between"
                 style={{ borderColor: 'rgba(212, 165, 116, 0.4)', backgroundColor: 'rgba(212, 165, 116, 0.04)' }}
@@ -541,7 +583,7 @@ const MealPlanningContent: React.FC = () => {
         )}
         {/* Only show the traditional meal planning slots when there's no active batch cook session.
             When batch cooking, the Fridge Pool above replaces this entirely. */}
-        {activeTab === 'today' && !activeSession && (
+        {activeTab === 'today' && activeSessions.length === 0 && (
           <TodayView
             todaysMeals={todaysMeals}
             recipes={recipes}
@@ -586,9 +628,12 @@ const MealPlanningContent: React.FC = () => {
             onDeleteRecipe={handleDeleteRecipe}
             onAddRecipe={() => modalState.openRecipeForm('', '')}
             sessionDishesNeedingRecipe={
-              activeSession?.dishes
-                .filter(d => !d.recipeId && d.customName)
-                .map(d => ({ id: d.id, name: d.customName! }))
+              // Show unlinked dishes from ALL active sessions, not just the newest
+              activeSessions.flatMap(s =>
+                s.dishes
+                  .filter(d => !d.recipeId && d.customName)
+                  .map(d => ({ id: d.id, name: d.customName! }))
+              )
             }
             onCreateRecipeForDish={(dishId, dishName) => {
               // Open recipe form pre-filled with dish name; on save, link the new recipe to the dish
@@ -625,38 +670,36 @@ const MealPlanningContent: React.FC = () => {
               showToast('Shopping list copied to clipboard!', 'success');
             }}
             onSendToShoppingList={handleSendToShoppingList}
-            batchSessionName={activeSession?.name}
-            batchIngredients={
-              // Aggregate ingredients from all batch session dishes that have recipes
-              activeSession
-                ? (() => {
-                    // Normalize ingredient name to a canonical dedup key:
-                    // strips parens/notes, lowercases, and removes common plural suffixes
-                    // so "Onion" and "Onions" → "onion" (same bucket)
-                    const normalizeIngKey = (name: string): string =>
-                      name.toLowerCase().trim()
-                        .replace(/\s*\([^)]*\)/g, '')   // strip parenthetical notes
-                        .trim()
-                        .replace(/ies$/i, 'y')           // chillies → chilly
-                        .replace(/ves$/i, 'f')           // leaves → leaf
-                        .replace(/es$/i, '')             // tomatoes → tomat
-                        .replace(/s$/i, '');             // onions → onion
+            allBatchSessions={(() => {
+              // Build per-session grocery lists so the user can pick which session to shop for
+              const normalizeIngKey = (name: string): string =>
+                name.toLowerCase().trim()
+                  .replace(/\s*\([^)]*\)/g, '')
+                  .trim()
+                  .replace(/ies$/i, 'y')
+                  .replace(/ves$/i, 'f')
+                  .replace(/es$/i, '')
+                  .replace(/s$/i, '');
 
-                    const seen = new Map<string, import('@/mealPlanning/hooks/useGroceryList').GroceryItem>();
-                    activeSession.dishes.forEach(dish => {
-                      if (!dish.recipeId) return;
-                      const recipe = recipes.find(r => r.id === dish.recipeId);
-                      recipe?.ingredients?.forEach(ing => {
-                        const key = normalizeIngKey(ing.name);
-                        if (!seen.has(key)) {
-                          seen.set(key, { id: key, name: ing.name, amount: ing.amount, unit: ing.unit, recipes: [recipe.name], status: 'needed' });
-                        }
-                      });
-                    });
-                    return Array.from(seen.values());
-                  })()
-                : undefined
-            }
+              const result: BatchSessionGrocery[] = activeSessions.map(s => {
+                const seen = new Map<string, GroceryItem>();
+                s.dishes.forEach(dish => {
+                  if (!dish.recipeId) return;
+                  const recipe = recipes.find(r => r.id === dish.recipeId);
+                  recipe?.ingredients?.forEach(ing => {
+                    const key = normalizeIngKey(ing.name);
+                    if (!seen.has(key)) {
+                      seen.set(key, { id: key, name: ing.name, amount: ing.amount, unit: ing.unit, recipes: [recipe.name], status: 'needed' });
+                    }
+                  });
+                });
+                return { id: s.id, name: s.name, ingredients: Array.from(seen.values()) };
+              }).filter(s => s.ingredients.length > 0);
+
+              return result.length > 0 ? result : undefined;
+            })()}
+            batchSessionName={activeSessions[0]?.name}
+            batchIngredients={undefined}
           />
         )}
 

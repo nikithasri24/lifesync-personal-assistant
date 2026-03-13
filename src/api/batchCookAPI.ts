@@ -102,14 +102,27 @@ export async function getBatchCookSessions(): Promise<BatchCookSession[]> {
 }
 
 /**
- * Get the active session — always the most recently created one.
- * The user's most recent batch cook is what they want to see and log from,
- * regardless of whether an older session still has servings remaining.
+ * Get all sessions that still have food remaining (servings_remaining > 0 on any dish),
+ * ordered by cook_date DESC (most recent first).
+ *
+ * When multiple sessions have food left — e.g. last week's prep AND next week's prep —
+ * all of them are returned so the UI can show a session-switcher tab row.
+ *
+ * Fallback: if every session is empty, returns the single most recent session so the
+ * "all eaten" empty state is still rendered correctly.
+ */
+export async function getActiveSessions(): Promise<BatchCookSession[]> {
+  const all = await getBatchCookSessions();
+  const withFood = all.filter(s => s.dishes.some(d => d.servingsRemaining > 0));
+  return withFood.length > 0 ? withFood : all.slice(0, 1);
+}
+
+/**
+ * Backward-compat wrapper — returns just the first active session.
+ * Prefer getActiveSessions() when displaying the Fridge Pool.
  */
 export async function getActiveBatchSession(): Promise<BatchCookSession | null> {
-  const sessions = await getBatchCookSessions();
-  // getBatchCookSessions orders by cook_date DESC. Return the newest session so a
-  // freshly created session immediately replaces the previous one in the Fridge Pool.
+  const sessions = await getActiveSessions();
   return sessions[0] ?? null;
 }
 
@@ -171,6 +184,31 @@ export async function deleteBatchCookSession(sessionId: string): Promise<void> {
 
   if (error) {
     logger.error('BatchCook', error as unknown as Error, { context: 'deleteBatchCookSession' });
+    throw error;
+  }
+}
+
+/**
+ * Add a new dish to an already-started batch cook session.
+ * Useful when you cook something extra mid-week and want to track it.
+ */
+export async function addDishToSession(
+  sessionId: string,
+  customName: string,
+  servingsCooked: number,
+  recipeId?: string | null
+): Promise<void> {
+  const servings = Math.max(1, servingsCooked);
+  const { error } = await supabase.from('batch_cook_dishes').insert({
+    session_id: sessionId,
+    custom_name: customName.trim(),
+    recipe_id: recipeId ?? null,
+    servings_cooked: servings,
+    servings_remaining: servings,
+  });
+
+  if (error) {
+    logger.error('BatchCook', error as unknown as Error, { context: 'addDishToSession' });
     throw error;
   }
 }

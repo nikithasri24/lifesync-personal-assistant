@@ -12,27 +12,31 @@ interface ConnectionCardProps {
   connection: PartnerConnection;
 }
 
-const RELATIONSHIP_STYLES: Record<RelationshipType, { bg: string; text: string }> = {
-  spouse: { bg: '#FEE2E2', text: '#DC2626' },
-  partner: { bg: '#FCE7F3', text: '#DB2777' },
-  friend: { bg: '#DBEAFE', text: '#2563EB' },
-  family: { bg: '#D1FAE5', text: '#059669' },
-  roommate: { bg: '#E9D5FF', text: '#9333EA' },
+const RELATIONSHIP_STYLES: Record<string, { bg: string; text: string }> = {
+  spouse:    { bg: '#FEE2E2', text: '#DC2626' },
+  partner:   { bg: '#FCE7F3', text: '#DB2777' },
+  friend:    { bg: '#DBEAFE', text: '#2563EB' },
+  family:    { bg: '#D1FAE5', text: '#059669' },
+  roommate:  { bg: '#E9D5FF', text: '#9333EA' },
   colleague: { bg: '#FED7AA', text: '#EA580C' },
+  other:     { bg: '#F3F4F6', text: '#6B7280' },
 };
 
-const RELATIONSHIP_LABELS: Record<RelationshipType, string> = {
-  spouse: 'Spouse',
-  partner: 'Partner',
-  friend: 'Friend',
-  family: 'Family',
-  roommate: 'Roommate',
+const FALLBACK_STYLE = { bg: '#F3F4F6', text: '#6B7280' };
+
+const RELATIONSHIP_LABELS: Record<string, string> = {
+  spouse:    'Spouse',
+  partner:   'Partner',
+  friend:    'Friend',
+  family:    'Family',
+  roommate:  'Roommate',
   colleague: 'Colleague',
+  other:     'Other',
 };
 
 export function ConnectionCard({ connection }: ConnectionCardProps) {
   const colors = useThemeColors();
-  const relationshipStyle = RELATIONSHIP_STYLES[connection.relationship];
+  const relationshipStyle = RELATIONSHIP_STYLES[connection.relationship] ?? FALLBACK_STYLE;
 
   // Get first letter of partner name for avatar
   const avatarLetter = connection.partner_name.charAt(0).toUpperCase();

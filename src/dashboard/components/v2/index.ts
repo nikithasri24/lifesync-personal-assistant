@@ -26,5 +26,6 @@ export { SmartSchedulerV2 } from './SmartSchedulerV2';
 export { DashboardHeaderV2 } from './DashboardHeaderV2';
 export { QuickActionsV2 } from './QuickActionsV2';
 export { BriefingCardV2 } from './BriefingCardV2';
+export { CommandCenterV2 } from './CommandCenterV2';
 export { QuickAddModalV2 } from './QuickAddModalV2';
 

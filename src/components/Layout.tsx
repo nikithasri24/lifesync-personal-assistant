@@ -70,6 +70,7 @@ const getViewFromPath = (pathname: string): ViewKey => {
   if (pathname.startsWith('/travel')) return 'travel';
   if (pathname.startsWith('/finances')) return 'finances';
   if (pathname.startsWith('/together')) return 'together';
+  if (pathname.startsWith('/scheduler')) return 'calendar';
 
   return 'dashboard';
 };

@@ -27,6 +27,7 @@ interface RecipeFormState {
   name: string;
   ingredientsText: string;
   instructionsText: string;
+  youtubeUrl: string;
 }
 
 export function QuickRecipeModal({
@@ -40,6 +41,7 @@ export function QuickRecipeModal({
     name: initialName,
     ingredientsText: '',
     instructionsText: '',
+    youtubeUrl: '',
   };
 
   const handleSubmit = async (formData: RecipeFormState): Promise<void> => {
@@ -75,7 +77,7 @@ export function QuickRecipeModal({
       servings: 4,
       tags: [],
       image: undefined,
-      sourceUrl: undefined,
+      sourceUrl: formData.youtubeUrl.trim() || undefined,
       videoThumbnail: undefined,
       notes: undefined,
     };
@@ -142,6 +144,20 @@ export function QuickRecipeModal({
               rows={3}
               placeholder="Toast bagels, spread cream cheese..."
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
+            />
+          </div>
+
+          {/* YouTube URL */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              YouTube URL <span className="text-sm text-gray-600 font-normal">(optional)</span>
+            </label>
+            <input
+              type="url"
+              value={formState.youtubeUrl}
+              onChange={(e) => setFormState({ ...formState, youtubeUrl: e.target.value })}
+              placeholder="https://youtube.com/watch?v=..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
             />
           </div>
         </>

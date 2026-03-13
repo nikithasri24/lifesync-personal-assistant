@@ -80,8 +80,12 @@ export const EventCardV2: React.FC<EventCardV2Props> = ({
 
   const title = getTitle();
 
+  const itemId = 'id' in item ? (item.id as string) : undefined;
+
   return (
     <div
+      data-testid={type === 'event' ? 'event-card' : type === 'task' ? 'calendar-task-chip' : `${type}-card`}
+      data-item-id={itemId}
       draggable
       onDragStart={(e) => {
         e.stopPropagation();

@@ -66,7 +66,8 @@ export const TaskFormModalV2: React.FC<TaskFormModalV2Props> = ({
     status: initialData.status || 'todo',
     category: initialData.category || 'personal',
     project_id: initialData.project_id || null,
-    due_date: initialData.due_date || '',
+    // Extract YYYY-MM-DD only — due_date may be a full timestamptz string from Supabase
+    due_date: initialData.due_date ? (initialData.due_date as string).split('T')[0] : '',
     estimated_time: initialData.estimated_time?.toString() || '',
     tags: (initialData.tags || []).join(', '),
     starred: initialData.starred || false,

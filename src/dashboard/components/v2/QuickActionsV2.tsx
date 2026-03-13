@@ -12,8 +12,6 @@ interface QuickActionsV2Props {
   onAddNote?: () => void;
   onAddJournal?: () => void;
   onStartFocus?: () => void;
-  onLogHabit?: () => void;
-  onLogMeal?: () => void;
 }
 
 export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
@@ -21,8 +19,6 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
   onAddNote,
   onAddJournal,
   onStartFocus,
-  onLogHabit,
-  onLogMeal,
 }) => {
   const colors = useThemeColors();
   const navigate = useNavigate();
@@ -68,27 +64,6 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
         ))}
       </div>
 
-      {/* Log Habit + Log Meal — full-width row */}
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={onLogHabit || (() => navigate('/habits'))}
-          className="px-4 py-3 rounded-xl border-2 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-          style={{ backgroundColor: colors.bg.white, borderColor: colors.border.medium }}
-          aria-label="Log habit"
-        >
-          <span className="text-xl">🎯</span>
-          <span className="text-sm font-semibold" style={{ color: colors.text.primary }}>Log Habit</span>
-        </button>
-        <button
-          onClick={onLogMeal || (() => navigate('/meals'))}
-          className="px-4 py-3 rounded-xl border-2 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-          style={{ backgroundColor: colors.bg.white, borderColor: colors.border.medium }}
-          aria-label="Log meal"
-        >
-          <span className="text-xl">🍽️</span>
-          <span className="text-sm font-semibold" style={{ color: colors.text.primary }}>Log Meal</span>
-        </button>
-      </div>
     </div>
   );
 };

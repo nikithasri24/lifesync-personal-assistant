@@ -8,6 +8,13 @@ import { Copy, ShoppingBag, Check } from 'lucide-react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { GroceryItem } from '../../../mealPlanning/hooks/useGroceryList';
 
+/** Per-session ingredient list for the multi-session selector */
+export interface BatchSessionGrocery {
+  id: string;
+  name: string;
+  ingredients: GroceryItem[];
+}
+
 interface GroceryViewProps {
   groceryList: GroceryItem[];
   neededItems: GroceryItem[];
@@ -17,8 +24,14 @@ interface GroceryViewProps {
   onSendToShoppingList: (items: GroceryItem[]) => Promise<{ success: boolean; count: number }>;
   /** Batch cook session name (if active) — shown as source label */
   batchSessionName?: string;
-  /** Ingredients aggregated from all batch cook session recipes */
+  /** Ingredients aggregated from all batch cook session recipes (legacy, single-session) */
   batchIngredients?: GroceryItem[];
+  /**
+   * All active sessions with their own ingredient lists.
+   * When provided with 2+ sessions, a session picker is shown so the user
+   * can select whose grocery list they want to see / send to shopping.
+   */
+  allBatchSessions?: BatchSessionGrocery[];
 }
 
 type FilterTab = 'needed' | 'athome' | 'all';
@@ -131,15 +144,25 @@ export function GroceryView({
   onSendToShoppingList,
   batchSessionName,
   batchIngredients,
+  allBatchSessions,
 }: GroceryViewProps): React.ReactElement {
   const colors = useThemeColors();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('needed');
   const [isSending, setIsSending] = useState(false);
   const [batchSentSuccess, setBatchSentSuccess] = useState(false);
 
+  // Session picker: which session's grocery list to show (multi-session support)
+  const hasMultipleSessions = (allBatchSessions?.length ?? 0) > 1;
+  const [selectedSessionIdx, setSelectedSessionIdx] = useState(0);
+
+  // Derive effective ingredients: from selected session (multi), or fallback to merged (legacy)
+  const effectiveSession = allBatchSessions?.[selectedSessionIdx];
+  const effectiveIngredients = effectiveSession?.ingredients ?? batchIngredients;
+  const effectiveSessionName = effectiveSession?.name ?? batchSessionName;
+
   // Persist "have it" checks to localStorage keyed by session name so they survive reloads.
-  // When the session changes (new batch cook), the key changes and we start fresh.
-  const storageKey = batchSessionName ? `grocery_at_home_${batchSessionName}` : null;
+  // When the session changes (new batch cook or different session selected), key changes and we start fresh.
+  const storageKey = effectiveSessionName ? `grocery_at_home_${effectiveSessionName}` : null;
 
   const [batchAtHome, setBatchAtHome] = useState<Set<string>>(new Set<string>());
 
@@ -176,16 +199,16 @@ export function GroceryView({
       return next;
     });
   };
-  const allChecked = !!(batchIngredients && batchIngredients.length > 0 && batchAtHome.size === batchIngredients.length);
+  const allChecked = !!(effectiveIngredients && effectiveIngredients.length > 0 && batchAtHome.size === effectiveIngredients.length);
   const toggleSelectAll = (): void => {
     if (allChecked) {
       setBatchAtHome(new Set());
     } else {
-      setBatchAtHome(new Set(batchIngredients?.map(i => i.id) ?? []));
+      setBatchAtHome(new Set(effectiveIngredients?.map(i => i.id) ?? []));
     }
     setBatchSentSuccess(false);
   };
-  const batchNeededCount = (batchIngredients?.length ?? 0) - batchAtHome.size;
+  const batchNeededCount = (effectiveIngredients?.length ?? 0) - batchAtHome.size;
 
   const filteredItems =
     activeFilter === 'needed'
@@ -204,11 +227,54 @@ export function GroceryView({
 
   // ── Batch mode: when a session is active, the grocery tab IS the batch checklist ──
   // Hide the regular planned-meals section entirely — it's always empty when batch cooking.
-  if (batchSessionName && batchIngredients && batchIngredients.length > 0) {
+  if (effectiveSessionName && effectiveIngredients && effectiveIngredients.length > 0) {
     return (
       <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh', paddingBottom: '5rem' }}>
         <div className="px-4 pt-4 pb-6">
           <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(212, 165, 116, 0.3)' }}>
+            {/* Session picker — shown when multiple sessions have ingredients */}
+            {hasMultipleSessions && allBatchSessions && (
+              <div
+                className="flex gap-2 px-4 pt-3 pb-2 flex-wrap border-b"
+                style={{ borderColor: 'rgba(212,165,116,0.2)', backgroundColor: 'rgba(212,165,116,0.04)' }}
+              >
+                {allBatchSessions.map((s, i) => {
+                  const isActive = i === selectedSessionIdx;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => { setSelectedSessionIdx(i); setBatchAtHome(new Set()); setBatchSentSuccess(false); }}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                      style={{
+                        backgroundColor: isActive ? 'rgba(212,165,116,0.18)' : '#F3F4F6',
+                        border: `1.5px solid ${isActive ? '#C18B5E' : '#E5E7EB'}`,
+                        color: isActive ? '#C18B5E' : '#6B7280',
+                      }}
+                      aria-pressed={isActive}
+                      aria-label={`Show grocery list for session: ${s.name}`}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: isActive ? '#C18B5E' : '#9CA3AF' }}
+                      />
+                      <span className="truncate" style={{ maxWidth: '110px' }}>{s.name}</span>
+                      <span
+                        className="flex-shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+                        style={{
+                          backgroundColor: isActive ? '#C18B5E' : '#E5E7EB',
+                          color: isActive ? 'white' : '#6B7280',
+                          minWidth: '18px',
+                          textAlign: 'center',
+                        }}
+                      >
+                        {s.ingredients.length}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {/* Header */}
             <div
               className="flex items-center justify-between px-4 py-4"
@@ -216,14 +282,14 @@ export function GroceryView({
             >
               <div>
                 <p className="font-bold text-sm" style={{ color: '#C18B5E' }}>
-                  Shop for &quot;{batchSessionName}&quot;
+                  Shop for &quot;{effectiveSessionName}&quot;
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: colors.text.tertiary }}>
                   {batchSentSuccess
                     ? 'Added to your shopping list'
                     : batchNeededCount > 0
                       ? `${batchNeededCount} to buy · ${batchAtHome.size} already have`
-                      : `All ${batchIngredients.length} items checked off`}
+                      : `All ${effectiveIngredients.length} items checked off`}
                 </p>
               </div>
               <button
@@ -245,10 +311,10 @@ export function GroceryView({
                 <button
                   type="button"
                   onClick={async () => {
-                    const toSend = batchIngredients.filter(i => !batchAtHome.has(i.id));
+                    const toSend = effectiveIngredients.filter(i => !batchAtHome.has(i.id));
                     const result = await onSendToShoppingList(toSend);
                     if (result.success) {
-                      setBatchAtHome(new Set(batchIngredients.map(i => i.id)));
+                      setBatchAtHome(new Set(effectiveIngredients.map(i => i.id)));
                       setBatchSentSuccess(true);
                     }
                   }}
@@ -263,7 +329,7 @@ export function GroceryView({
 
             {/* Ingredient checklist */}
             <div style={{ backgroundColor: colors.bg.white }}>
-              {batchIngredients.map((ing, idx) => {
+              {effectiveIngredients.map((ing, idx) => {
                 const isAtHome = batchAtHome.has(ing.id);
                 const { measurement, displayName } = parseIngredientDisplay(ing);
                 return (
@@ -273,7 +339,7 @@ export function GroceryView({
                     onClick={() => { toggleBatchAtHome(ing.id); setBatchSentSuccess(false); }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
                     style={{
-                      borderBottom: idx < batchIngredients.length - 1 ? `1px solid ${colors.border.light}` : 'none',
+                      borderBottom: idx < effectiveIngredients.length - 1 ? `1px solid ${colors.border.light}` : 'none',
                       backgroundColor: isAtHome ? 'rgba(16, 185, 129, 0.03)' : 'transparent',
                     }}
                     aria-label={isAtHome ? `Unmark ${displayName}` : `Mark ${displayName} as at home`}
@@ -322,7 +388,7 @@ export function GroceryView({
 
   // ── No batch session active: show planned-meals grocery list ──────────────
   // Also shown when batch session exists but has no linked recipe ingredients yet.
-  const noBatchButSessionExists = !!(batchSessionName && (!batchIngredients || batchIngredients.length === 0));
+  const noBatchButSessionExists = !!(effectiveSessionName && (!effectiveIngredients || effectiveIngredients.length === 0));
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh', paddingBottom: '140px' }}>

@@ -32,6 +32,8 @@ export interface TaskListViewV2Props {
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   // Dependency props
   allTasks?: import('../../services/types').TaskData[];
+  // Scheduling
+  onScheduleClick?: (taskId: string) => void;
 }
 
 interface StatusSection {
@@ -88,6 +90,7 @@ export const TaskListViewV2: React.FC<TaskListViewV2Props> = ({
   onToggleExpanded,
   onToggleSubtask,
   allTasks = [],
+  onScheduleClick,
 }) => {
   const colors = useThemeColors();
 
@@ -166,6 +169,7 @@ export const TaskListViewV2: React.FC<TaskListViewV2Props> = ({
                       onToggleExpanded={onToggleExpanded}
                       onToggleSubtask={onToggleSubtask}
                       allTasks={allTasks}
+                      onScheduleClick={onScheduleClick}
                     />
                   );
                 })}

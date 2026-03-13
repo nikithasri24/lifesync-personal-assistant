@@ -21,7 +21,8 @@ export interface ScheduleBlockFilters extends Record<string, unknown> {
 export function useScheduleBlocks(filters?: ScheduleBlockFilters): UseQueryResult<ScheduleBlock[], Error> {
   return useQuery({
     queryKey: queryKeys.scheduleBlocks.list(filters),
-    queryFn: () => getScheduleBlocks(filters),
+    queryFn: () => getScheduleBlocks(filters?.startDate ?? '', filters?.endDate ?? ''),
+    enabled: !!filters?.startDate && !!filters?.endDate,
     ...queryOptions.user,
   });
 }

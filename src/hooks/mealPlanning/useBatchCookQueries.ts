@@ -10,8 +10,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getBatchCookSessions,
   getActiveBatchSession,
+  getActiveSessions,
   createBatchCookSession,
   deleteBatchCookSession,
+  addDishToSession,
   updateDishServings,
   updateDishName,
   updateDishRecipe,
@@ -50,6 +52,15 @@ export function useActiveBatchSessionQuery() {
   });
 }
 
+/** Returns all sessions that still have food remaining — for the multi-tab Fridge Pool. */
+export function useActiveSessionsQuery() {
+  return useQuery({
+    queryKey: [...BATCH_KEYS.all, 'activeSessions'] as const,
+    queryFn: getActiveSessions,
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
 export function useCreateBatchCookSession() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -72,6 +83,29 @@ export function useDeleteBatchCookSession() {
     },
     onError: (err) => {
       logger.error('BatchCook', err, { context: 'useDeleteBatchCookSession' });
+    },
+  });
+}
+
+export function useAddDishToSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      sessionId,
+      customName,
+      servingsCooked,
+      recipeId,
+    }: {
+      sessionId: string;
+      customName: string;
+      servingsCooked: number;
+      recipeId?: string | null;
+    }) => addDishToSession(sessionId, customName, servingsCooked, recipeId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: BATCH_KEYS.all });
+    },
+    onError: (err) => {
+      logger.error('BatchCook', err, { context: 'useAddDishToSession' });
     },
   });
 }

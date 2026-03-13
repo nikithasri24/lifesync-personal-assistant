@@ -31,7 +31,6 @@ import { SegmentedControlV2 } from '@/components/v2/SegmentedControlV2';
 import { GoalList } from '../goals/components/layout/GoalList';
 import { DreamList } from '../goals/components/layout/DreamList';
 import { FilterBar, type StatusFilter, type OwnershipFilter } from '../goals/components/layout/FilterBar';
-import { FABV2 } from '@/components/v2/FABV2';
 import { Plus } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { usePagination } from '@/hooks/utilities/usePagination';
@@ -469,15 +468,29 @@ const LifeGoalsContent: React.FC = () => {
         <section className="space-y-4">
           {activeTab === 'goals' && (
           <>
-            <FilterBar
-              statusFilter={goalStatusFilter}
-              onStatusFilterChange={setGoalStatusFilter}
-              ownershipFilter={goalOwnershipFilter}
-              onOwnershipFilterChange={setGoalOwnershipFilter}
-              isMerged={isMerged}
-              partnerName={partnerName}
-              itemType="goals"
-            />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex-1">
+                <FilterBar
+                  statusFilter={goalStatusFilter}
+                  onStatusFilterChange={setGoalStatusFilter}
+                  ownershipFilter={goalOwnershipFilter}
+                  onOwnershipFilterChange={setGoalOwnershipFilter}
+                  isMerged={isMerged}
+                  partnerName={partnerName}
+                  itemType="goals"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGoalForm(true)}
+                className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
+                aria-label="New Goal"
+              >
+                <Plus className="w-4 h-4" />
+                New Goal
+              </button>
+            </div>
             <GoalList
               goals={filteredGoals.slice((goalsPage - 1) * DEFAULT_PAGE_SIZE, goalsPage * DEFAULT_PAGE_SIZE)}
               expandedGoalId={expandedGoalId}
@@ -509,15 +522,29 @@ const LifeGoalsContent: React.FC = () => {
           )}
           {activeTab === 'dreams' && (
             <>
-            <FilterBar
-              statusFilter={dreamStatusFilter}
-              onStatusFilterChange={setDreamStatusFilter}
-              ownershipFilter={dreamOwnershipFilter}
-              onOwnershipFilterChange={setDreamOwnershipFilter}
-              isMerged={isMerged}
-              partnerName={partnerName}
-              itemType="dreams"
-            />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex-1">
+                <FilterBar
+                  statusFilter={dreamStatusFilter}
+                  onStatusFilterChange={setDreamStatusFilter}
+                  ownershipFilter={dreamOwnershipFilter}
+                  onOwnershipFilterChange={setDreamOwnershipFilter}
+                  isMerged={isMerged}
+                  partnerName={partnerName}
+                  itemType="dreams"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDreamForm(true)}
+                className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
+                aria-label="New Dream"
+              >
+                <Plus className="w-4 h-4" />
+                New Dream
+              </button>
+            </div>
             <DreamList
               dreams={filteredDreams.slice((dreamsPage - 1) * DEFAULT_PAGE_SIZE, dreamsPage * DEFAULT_PAGE_SIZE)}
               onMarkAchieved={handleMarkDreamAchieved}
@@ -587,20 +614,6 @@ const LifeGoalsContent: React.FC = () => {
           isMergedModeAvailable={isMerged}
         />
 
-        {/* FAB */}
-        <FABV2
-          icon={Plus}
-          onClick={() => {
-            if (activeTab === 'goals') {
-            setShowGoalForm(true);
-          } else {
-            setShowDreamForm(true);
-          }
-        }}
-        label={activeTab === 'goals' ? 'New Goal' : 'New Dream'}
-        position="bottom-right"
-        size="md"
-      />
 
       </div>
     </div>

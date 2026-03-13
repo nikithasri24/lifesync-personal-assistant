@@ -1,21 +1,19 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+// Live-reload support: CAPACITOR_DEV=true npx cap sync
+// Override URL with CAPACITOR_DEV_URL (defaults to 192.168.1.240:5173)
+const devServerUrl = process.env.CAPACITOR_DEV_URL ?? 'http://192.168.1.240:5173';
+const isDevMode = process.env.CAPACITOR_DEV === 'true';
+
 const config: CapacitorConfig = {
   appId: 'com.lifesync.app',
   appName: 'Life Weave',
   webDir: 'dist',
 
-  // Server configuration for development
-  // Commented out for VPN/production builds - uncomment for local dev with live reload
-  // server: {
-  //   // Point to local dev server for live reload
-  //   url: 'http://192.168.1.240:5173',
-  //   cleartext: true,
-  //   // Enable cleartext traffic for local development (Android)
-  //   androidScheme: 'https',
-  //   // iOS equivalent
-  //   iosScheme: 'capacitor',
-  // },
+  // Injected when CAPACITOR_DEV=true — do not set manually
+  ...(isDevMode
+    ? { server: { url: devServerUrl, cleartext: true } }
+    : {}),
 
   // Plugin configurations
   plugins: {

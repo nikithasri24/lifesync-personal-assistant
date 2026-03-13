@@ -58,6 +58,8 @@ export const EventCard: React.FC<EventCardProps> = ({
   if (isAllDay) {
     return (
       <div
+        data-testid="event-card"
+        data-event-id={event.id}
         draggable
         onDragStart={(e) => {
           e.stopPropagation();
@@ -84,6 +86,8 @@ export const EventCard: React.FC<EventCardProps> = ({
   // Timed event rendering
   return (
     <div
+      data-testid="event-card"
+      data-event-id={event.id}
       draggable
       onDragStart={(e) => {
         e.stopPropagation();

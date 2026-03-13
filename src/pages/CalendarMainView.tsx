@@ -30,6 +30,7 @@ import { TaskEditModal } from '../scheduler/components/TaskEditModal';
 import { EventModal } from '../components/calendar/EventModal';
 import { EventCard } from '../components/calendar/EventCard';
 import { QuickScheduleModal } from '../components/calendar/QuickScheduleModal';
+import { DropTimePickerModal } from '../components/calendar/DropTimePickerModal';
 import { ScheduleBlockModal } from '../components/scheduleBlocks/ScheduleBlockModal';
 import { CalendarLoadingState } from '../calendar/components/layout/CalendarLoadingState';
 import { WeekDayHeaders } from '../calendar/components/layout/WeekDayHeaders';
@@ -43,6 +44,8 @@ import type { ScheduleBlock } from '../services/types';
 
 // Commands
 import { ChangeTaskCategoryCommand } from '../commands/TaskCommands';
+import { useAutoScheduleMutation } from '../hooks/useSchedulingQuery';
+import { useToast } from '../hooks/useToast';
 
 const Calendar: React.FC = () => {
   // Data fetching
@@ -121,6 +124,8 @@ const Calendar: React.FC = () => {
 
   const { categorizedTasks, unscheduledTasks } = useCalendarTasks(filteredTasks);
   const { executeCommand } = useUndoRedo();
+  const autoScheduleMutation = useAutoScheduleMutation();
+  const { showToast } = useToast();
   const scheduleBlockStyles: Record<ScheduleBlock['type'], string> = {
     task: 'bg-emerald-200/70 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100',
     event: 'bg-slate-200/80 text-slate-900 dark:bg-slate-700/60 dark:text-slate-100',
@@ -144,6 +149,9 @@ const Calendar: React.FC = () => {
   const [scheduleBlockInitialDate, setScheduleBlockInitialDate] = useState<Date | null>(null);
   const [editingScheduleBlock, setEditingScheduleBlock] = useState<ScheduleBlock | null>(null);
 
+  // Pending month-view drop — show time picker before committing
+  const [pendingMonthDrop, setPendingMonthDrop] = useState<{ task: Task; date: Date } | null>(null);
+
   // Current time indicator state
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -165,20 +173,25 @@ const Calendar: React.FC = () => {
     // Tasks (including multi-day tasks that span this date)
     const dayTasks = filteredTasks.filter(task => taskAppearsOnDate(task, date));
 
-    // Separate all-day tasks (high priority or starred tasks are treated as all-day)
+    // Tasks without a specific scheduled_start → show in all-day row on their due date
+    // Tasks with scheduled_start → show in time slot (unless also urgent/starred/long)
     const allDayTasks = dayTasks.filter(task =>
-      task.priority === 'urgent' || task.starred || (task.estimated_time ?? 0) >= 240 // 4+ hours
+      !task.scheduled_start ||
+      task.priority === 'urgent' ||
+      task.starred ||
+      (task.estimated_time ?? 0) >= 240 // 4+ hours
     );
     const timedTasks = dayTasks.filter(task =>
+      task.scheduled_start &&
       !(task.priority === 'urgent' || task.starred || (task.estimated_time ?? 0) >= 240)
     );
 
-    // Calendar Events
+    // Calendar Events — use date-part only to handle both plain dates and timestamptz strings
     const dayEvents = filteredEvents.filter(event => {
-      const eventStart = parseISO(event.start_date);
-      const eventEnd = parseISO(event.end_date);
-      return isSameDay(date, eventStart) || isSameDay(date, eventEnd) ||
-             (date >= eventStart && date <= eventEnd);
+      const startDateKey = (event.start_date as string)?.split('T')[0];
+      const endDateKey = (event.end_date as string)?.split('T')[0];
+      return startDateKey === dateKey || endDateKey === dateKey ||
+             (startDateKey < dateKey && endDateKey > dateKey);
     });
 
     const allDayEvents = dayEvents.filter(event => event.all_day);
@@ -394,6 +407,83 @@ const Calendar: React.FC = () => {
     setEditingTask(null);
   };
 
+  // Month-view drop: intercept and show time picker
+  const handleMonthDrop = (date: Date, e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedTask) return;
+    setPendingMonthDrop({ task: draggedTask, date });
+    setDraggedTask(null);
+  };
+
+  // Confirm time from DropTimePickerModal — scheduled with start/end
+  const handleDropTimeConfirm = (scheduledStart: string, scheduledEnd: string, dueDate: string) => {
+    if (!pendingMonthDrop) return;
+    const { task } = pendingMonthDrop;
+    const updates: Partial<Task> = {
+      due_date: dueDate,
+      scheduled_start: scheduledStart,
+      scheduled_end: scheduledEnd,
+      status: 'scheduled' as const,
+      sidebar_section: null,
+    };
+    const command = new ChangeTaskCategoryCommand(task.id as string, task.title, updates, task);
+    void executeCommand(command);
+    setPendingMonthDrop(null);
+  };
+
+  // Confirm all-day (no time) from DropTimePickerModal
+  const handleDropAllDay = (dueDate: string) => {
+    if (!pendingMonthDrop) return;
+    const { task } = pendingMonthDrop;
+    const updates: Partial<Task> = {
+      due_date: dueDate,
+      scheduled_start: null,
+      scheduled_end: null,
+      sidebar_section: null,
+    };
+    const command = new ChangeTaskCategoryCommand(task.id as string, task.title, updates, task);
+    void executeCommand(command);
+    setPendingMonthDrop(null);
+  };
+
+  // Plan My Day — auto-schedule all unscheduled tasks for a given date
+  const handlePlanMyDay = (date: Date) => {
+    const tasksToSchedule = unscheduledTasks
+      .filter(t => t.id)
+      .map(t => ({
+        id: t.id as string,
+        title: t.title,
+        priority: (t.priority || 'medium') as 'urgent' | 'high' | 'medium' | 'low',
+        estimatedMinutes: t.estimated_time || 30,
+      }));
+
+    if (tasksToSchedule.length === 0) return;
+
+    autoScheduleMutation.mutate(
+      { tasks: tasksToSchedule, date },
+      {
+        onSuccess: (result) => {
+          if (result.totalScheduled > 0) {
+            showToast(
+              `Scheduled ${result.totalScheduled} task${result.totalScheduled !== 1 ? 's' : ''} for today! ✨`,
+              'success'
+            );
+          }
+          if (result.totalUnscheduled > 0) {
+            showToast(
+              `${result.totalUnscheduled} task${result.totalUnscheduled !== 1 ? 's' : ''} couldn't fit — day is full`,
+              'error'
+            );
+          }
+        },
+        onError: () => {
+          showToast('Auto-schedule failed, please try again', 'error');
+        },
+      }
+    );
+  };
+
   // Smart scheduling handler - schedules a task to a specific time slot
   const handleScheduleTask = (taskId: string, start: Date, end: Date) => {
     const dateStr = format(start, 'yyyy-MM-dd');
@@ -572,7 +662,7 @@ const Calendar: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
+    <div data-testid="scheduler-page" className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
       {/* Left Sidebar */}
       <CalendarSidebar
         miniCalendarDate={calendarState.miniCalendarDate}
@@ -591,6 +681,9 @@ const Calendar: React.FC = () => {
         onDropInUnscheduled={handleDropInUnscheduled}
         onDropInCategory={handleDropInCategory}
         onScheduleTask={handleScheduleTask}
+        onPlanMyDay={handlePlanMyDay}
+        planMyDayLoading={autoScheduleMutation.isPending}
+        allTasks={filteredTasks}
       />
 
       {/* Main Calendar Area */}
@@ -627,7 +720,7 @@ const Calendar: React.FC = () => {
 
           {/* Week View */}
           {calendarState.view === 'week' && (
-            <div className="flex-1 overflow-auto">
+            <div data-testid="week-view" className="flex-1 overflow-auto">
               <div className="min-w-max">
                 <WeekDayHeaders weekDays={calendarState.weekDays} />
 
@@ -688,6 +781,8 @@ const Calendar: React.FC = () => {
                             {events.allDayEvents.map((event) => (
                               <div
                                 key={event.id}
+                                data-testid="event-card"
+                                data-event-id={event.id}
                                 draggable
                                 onDragStart={(e) => { e.stopPropagation(); handleEventDragStart(event, e); }}
                                 onDragEnd={handleEventDragEnd}
@@ -861,6 +956,8 @@ const Calendar: React.FC = () => {
                                 return (
                                   <div
                                     key={task.id}
+                                    data-testid="calendar-task-chip"
+                                    data-task-id={task.id}
                                     draggable
                                     onDragStart={(e) => { e.stopPropagation(); handleDragStart(task, e); }}
                                     onDragEnd={handleDragEnd}
@@ -889,6 +986,10 @@ const Calendar: React.FC = () => {
                             {/* Timed events */}
                             {events.events
                               .filter(event => {
+                                // Prefer start_time (HH:mm) when available; fall back to start_date
+                                if (event.start_time) {
+                                  return parseInt(event.start_time.split(':')[0], 10) === slot.hour;
+                                }
                                 const eventStart = parseISO(event.start_date);
                                 return eventStart.getHours() === slot.hour;
                               })
@@ -927,6 +1028,7 @@ const Calendar: React.FC = () => {
           {/* Month View */}
           {calendarState.view === 'month' && (
             <MonthViewV2
+              data-testid="month-view"
               currentDate={calendarState.currentDate}
               tasks={filteredTasks}
               events={filteredEvents}
@@ -937,13 +1039,14 @@ const Calendar: React.FC = () => {
               onTaskClick={handleTaskClick}
               onEventClick={handleEventClick}
               onDragOver={handleDragOver}
-              onDrop={handleDrop}
+              onDrop={handleMonthDrop}
             />
           )}
 
           {/* Day View */}
           {calendarState.view === 'day' && (
             <DayViewV2
+              data-testid="day-view"
               date={calendarState.currentDate}
               tasks={filteredTasks}
               events={filteredEvents}
@@ -1015,6 +1118,16 @@ const Calendar: React.FC = () => {
         onSave={handleSaveScheduleBlock}
         onDelete={handleDeleteScheduleBlock}
       />
+
+      {pendingMonthDrop && (
+        <DropTimePickerModal
+          task={pendingMonthDrop.task}
+          date={pendingMonthDrop.date}
+          onSchedule={handleDropTimeConfirm}
+          onAllDay={handleDropAllDay}
+          onClose={() => setPendingMonthDrop(null)}
+        />
+      )}
     </div>
   );
 };

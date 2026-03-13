@@ -343,7 +343,7 @@ function ShoppingSmartContent(): ReactElement {
         <FABV2
           icon={Plus}
           onClick={() => setShowAddChoiceModal(true)}
-          position="bottom-right"
+          position="bottom-left"
           size="lg"
           className="!static"
         />

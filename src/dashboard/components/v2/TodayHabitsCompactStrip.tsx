@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Check } from 'lucide-react';
+import { Check, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { HabitWithProgress } from './HabitCardV2';
 
@@ -13,6 +13,8 @@ interface TodayHabitsCompactStripProps {
   completedHabits: Set<string>;
   onComplete: (habitId: string) => void;
   completingHabit: string | null;
+  onCompleteAll?: () => void;
+  isCompletingAll?: boolean;
 }
 
 // Map common habit categories/names to emojis
@@ -36,6 +38,8 @@ export const TodayHabitsCompactStrip: React.FC<TodayHabitsCompactStripProps> = (
   completedHabits,
   onComplete,
   completingHabit,
+  onCompleteAll,
+  isCompletingAll = false,
 }) => {
   const navigate = useNavigate();
   const displayHabits = habits.slice(0, 6);
@@ -46,14 +50,28 @@ export const TodayHabitsCompactStrip: React.FC<TodayHabitsCompactStripProps> = (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Today's Habits</span>
-        <button
-          onClick={() => navigate('/habits')}
-          className="text-xs font-medium"
-          style={{ color: '#C18B5E', background: 'none', border: 'none', cursor: 'pointer' }}
-          aria-label="See all habits"
-        >
-          See all →
-        </button>
+        <div className="flex items-center gap-2">
+          {onCompleteAll && habits.some(h => !h.isComplete && !completedHabits.has(h.id)) && (
+            <button
+              onClick={onCompleteAll}
+              disabled={isCompletingAll}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)', color: 'white' }}
+              aria-label="Complete all habits"
+            >
+              <Zap className="w-3 h-3" />
+              {isCompletingAll ? 'Saving…' : 'All done'}
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/habits')}
+            className="text-xs font-medium"
+            style={{ color: '#C18B5E', background: 'none', border: 'none', cursor: 'pointer' }}
+            aria-label="See all habits"
+          >
+            See all →
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Search, Heart, Plus, Edit, Trash, AlertTriangle } from 'lucide-react';
+import { Search, Heart, Plus, Edit, Trash, AlertTriangle, Youtube } from 'lucide-react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { Recipe } from '../../../types';
 import { PaginationV2 } from '../../../components/ui/PaginationV2';
@@ -294,6 +294,22 @@ export function RecipesView({
                     )}
                   </div>
                 </div>
+
+                {/* YouTube link — shown as a prominent banner when present */}
+                {recipe.sourceUrl && (
+                  <a
+                    href={recipe.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center justify-center gap-2 py-2 mx-4 mb-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: '#FF0000', color: 'white' }}
+                    aria-label="Watch recipe video on YouTube"
+                  >
+                    <Youtube size={16} />
+                    Watch on YouTube
+                  </a>
+                )}
 
                 {/* Recipe Actions */}
                 <div

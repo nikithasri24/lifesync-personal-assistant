@@ -65,6 +65,7 @@ export * from './useConnectionsQuery';
 
 // Specialty
 export * from './useBriefingQuery';
+export * from './usePredictionsQuery';
 export * from './useImportantDatesQuery';
 
 // ==================== Deprecated Hooks ====================

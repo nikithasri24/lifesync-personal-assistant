@@ -6,15 +6,26 @@ import { isSameDay, addDays } from 'date-fns';
 import type { Task } from '../../lib/supabase';
 
 /**
- * Parse a date string into a local Date object (date only, ignoring time/timezone)
- * This avoids timezone issues where UTC dates shift to previous day in local time
- * Handles both 'YYYY-MM-DD' and ISO timestamp formats like '2025-12-17T00:00:00+00:00'
+ * Parse a due_date string to its intended local calendar date.
+ * due_date is conceptually a DATE (stored as midnight UTC), so we use the
+ * UTC date component to preserve the user's intended date regardless of timezone.
+ * e.g. '2026-03-11T00:00:00+00:00' → March 11 in any timezone.
  */
-const parseDateLocal = (dateStr: string): Date => {
-  // Extract just the date part (YYYY-MM-DD) from the string
-  const datePart = dateStr.split('T')[0];
+const parseDueDateLocal = (dateStr: string): Date => {
+  const datePart = dateStr.substring(0, 10); // always 'YYYY-MM-DD'
   const [year, month, day] = datePart.split('-').map(Number);
-  return new Date(year, month - 1, day); // month is 0-indexed
+  return new Date(year, month - 1, day);
+};
+
+/**
+ * Parse a scheduled_start/scheduled_end datetime to its LOCAL calendar date.
+ * scheduled_start is a real datetime, so we use the browser's local date:
+ * e.g. midnight UTC (= 5PM PDT) belongs to the PDT date (yesterday), not the UTC date.
+ * This prevents tasks scheduled at 5PM PDT from appearing on the next UTC day.
+ */
+const parseScheduledDateLocal = (dateStr: string): Date => {
+  const d = new Date(dateStr); // parsed in local timezone
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 };
 
 /**
@@ -34,20 +45,28 @@ export const getTaskSpanDays = (task: Task): number => {
 };
 
 /**
- * Check if a task appears on a specific date
+ * Check if a task appears on a specific date.
+ * Uses local-date parsing for scheduled_start/end (real datetimes) and
+ * UTC-date parsing for due_date (conceptual date stored as midnight UTC).
  */
 export const taskAppearsOnDate = (task: Task, date: Date): boolean => {
-  const rawStart = task.scheduled_start || task.due_date;
-  if (!rawStart) return false;
+  let taskStartDate: Date;
 
-  // Use local date parsing to avoid timezone issues
-  const taskStartDate = typeof rawStart === 'string'
-    ? parseDateLocal(rawStart)
-    : rawStart;
+  if (task.scheduled_start) {
+    // scheduled_start is a specific datetime → use browser LOCAL date
+    const raw = task.scheduled_start;
+    taskStartDate = typeof raw === 'string' ? parseScheduledDateLocal(raw) : raw;
+  } else if (task.due_date) {
+    // due_date is a calendar date stored as midnight UTC → use UTC date part
+    const raw = task.due_date as string;
+    taskStartDate = parseDueDateLocal(raw);
+  } else {
+    return false;
+  }
 
   const rawEnd = task.scheduled_end || null;
   const taskEndDate = rawEnd
-    ? (typeof rawEnd === 'string' ? parseDateLocal(rawEnd) : rawEnd)
+    ? (typeof rawEnd === 'string' ? parseScheduledDateLocal(rawEnd) : rawEnd)
     : null;
 
   if (taskEndDate) {
@@ -81,17 +100,19 @@ export const getTaskSpanPosition = (
   task: Task,
   date: Date
 ): { position: number; totalDays: number; isFirst: boolean; isLast: boolean } => {
-  const rawStart = task.scheduled_start || task.due_date;
-  if (!rawStart) return { position: -1, totalDays: 1, isFirst: true, isLast: true };
-
-  // Use local date parsing to avoid timezone issues
-  const taskStartDate = typeof rawStart === 'string'
-    ? parseDateLocal(rawStart)
-    : rawStart;
+  let taskStartDate: Date;
+  if (task.scheduled_start) {
+    const raw = task.scheduled_start;
+    taskStartDate = typeof raw === 'string' ? parseScheduledDateLocal(raw) : raw;
+  } else if (task.due_date) {
+    taskStartDate = parseDueDateLocal(task.due_date as string);
+  } else {
+    return { position: -1, totalDays: 1, isFirst: true, isLast: true };
+  }
 
   const rawEnd = task.scheduled_end || null;
   const taskEndDate = rawEnd
-    ? (typeof rawEnd === 'string' ? parseDateLocal(rawEnd) : rawEnd)
+    ? (typeof rawEnd === 'string' ? parseScheduledDateLocal(rawEnd) : rawEnd)
     : null;
 
   if (taskEndDate) {

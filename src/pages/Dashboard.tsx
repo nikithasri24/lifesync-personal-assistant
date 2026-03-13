@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/useToast';
 import { useModalState } from '@/hooks/useModalState';
 import { DashboardHeaderV2 } from '@/dashboard/components/v2/DashboardHeaderV2';
 import { QuickActionsV2 } from '@/dashboard/components/v2/QuickActionsV2';
-import { BriefingCardV2 } from '@/dashboard/components/v2/BriefingCardV2';
+import { CommandCenterV2 } from '@/dashboard/components/v2/CommandCenterV2';
 import { TodayTasksSectionV2, RecentNotesSectionV2 } from '@/dashboard/components/v2';
 import { TodayHabitsCompactStrip } from '@/dashboard/components/v2/TodayHabitsCompactStrip';
 import { TodayMealsSectionV2 } from '@/dashboard/components/v2/TodayMealsSectionV2';
@@ -348,8 +348,8 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* Morning Briefing */}
-            <BriefingCardV2 tasks={todayTasks} habits={incompleteHabitsForBriefing} />
+            {/* Command Center — cross-module intelligence */}
+            <CommandCenterV2 />
 
             {/* Quick Actions */}
             <QuickActionsV2
@@ -357,7 +357,6 @@ function DashboardContent() {
               onAddNote={() => quickModals.open('showNote')}
               onAddJournal={() => quickModals.open('showJournal')}
               onStartFocus={() => navigate('/focus')}
-              onLogHabit={() => habitStripRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
             />
 
             {/* Compact Habit Strip — above-the-fold quick completion */}
@@ -367,6 +366,8 @@ function DashboardContent() {
                 completedHabits={completedHabits}
                 onComplete={handleCompleteHabit}
                 completingHabit={completingHabit}
+                onCompleteAll={handleCompleteAllHabits}
+                isCompletingAll={isCompletingAll}
               />
             </div>
 
