@@ -25,7 +25,8 @@ import {
 } from '@/hooks/useMealPlanningQuery';
 import { getShoppingLists, createShoppingList, createShoppingItem } from '@/api/shoppingAPI';
 import { useQueryClient } from '@tanstack/react-query';
-import { shoppingKeys } from '@/hooks/useShoppingQuery';
+import { shoppingKeys, useActiveShoppingList } from '@/hooks/useShoppingQuery';
+import { addIngredientsToShoppingList } from '@/api/shoppingAPI';
 import type { GroceryItem } from '@/mealPlanning/hooks/useGroceryList';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { useMealsState, type TabView } from '../meals/hooks';
@@ -182,6 +183,7 @@ const MealPlanningContent: React.FC = () => {
   // Global UI settings
   const { weekStartsOn } = useComposedStore();
   const { showToast } = useToast();
+  const { activeListId: shoppingListId, ensureActiveList } = useActiveShoppingList();
 
   // Wrapper functions to adapt mutation signatures (defined early for hook dependencies)
   // Wrapped in useCallback to prevent infinite loops
@@ -406,7 +408,7 @@ const MealPlanningContent: React.FC = () => {
   };
 
   // Send grocery items to shopping list
-  const handleSendToShoppingList = useCallback(async (items: GroceryItem[]): Promise<{ success: boolean; count: number }> => {
+  const handleSendToShoppingList = useCallback(async (items: GroceryItem[], sessionName?: string): Promise<{ success: boolean; count: number }> => {
     try {
       // Get or create shopping list
       let lists = await getShoppingLists();
@@ -423,6 +425,11 @@ const MealPlanningContent: React.FC = () => {
         throw new Error('Failed to get or create shopping list');
       }
 
+      // Determine source context — if called from batch cook grocery view, tag appropriately
+      const effectiveSession = sessionName ?? activeSessions[0]?.name;
+      const sourceType = effectiveSession ? 'batch_cook' : undefined;
+      const sourceName = effectiveSession ?? undefined;
+
       // Add each item, parsing ingredient strings where needed
       let successCount = 0;
       for (const item of items) {
@@ -433,6 +440,8 @@ const MealPlanningContent: React.FC = () => {
             quantity: parsed.quantity,
             unit: parsed.unit ?? undefined,
             is_purchased: false,
+            ...(sourceType && { source_type: sourceType }),
+            ...(sourceName && { source_name: sourceName }),
           });
           successCount++;
         } catch (itemError) {
@@ -455,7 +464,7 @@ const MealPlanningContent: React.FC = () => {
       showToast('Failed to add items to Shopping List', 'error');
       return { success: false, count: 0 };
     }
-  }, [showToast, queryClient]);
+  }, [showToast, queryClient, activeSessions]);
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
@@ -552,6 +561,39 @@ const MealPlanningContent: React.FC = () => {
                   }
                 }}
                 onEditRecipe={modalState.openRecipeEdit}
+                onShopSession={async (sess) => {
+                  try {
+                    const list = await ensureActiveList();
+                    const ingredients = recipes
+                      .filter(r => sess.dishes.some(d => d.recipeId === r.id))
+                      .flatMap(r => (r.ingredients ?? []).map(ing => ({
+                        name: ing.name,
+                        amount: ing.amount ?? undefined,
+                        unit: ing.unit ?? undefined,
+                      })));
+                    if (ingredients.length === 0) {
+                      showToast('No recipe ingredients found — link recipes to dishes first', 'error');
+                      throw new Error('no_ingredients');
+                    }
+                    const result = await addIngredientsToShoppingList(
+                      list.id, ingredients, 'batch_cook', sess.name
+                    );
+                    void queryClient.invalidateQueries({ queryKey: shoppingKeys.all });
+                    showToast(
+                      result.added > 0
+                        ? `Added ${result.added} ingredient${result.added !== 1 ? 's' : ''} to Shopping List! 🛒`
+                        : 'Already added to Shopping List ✓',
+                      'success'
+                    );
+                  } catch (err) {
+                    const msg = (err as Error).message;
+                    if (msg !== 'no_ingredients') {
+                      logger.error('MealPlanning', err as Error, { context: 'shopSession' });
+                      showToast('Failed to add to Shopping List', 'error');
+                    }
+                    throw err; // re-throw so FridgePoolV2 doesn't show "Added ✓"
+                  }
+                }}
               />
             )}
 

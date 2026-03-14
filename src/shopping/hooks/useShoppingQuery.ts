@@ -13,6 +13,7 @@ import {
   createShoppingItem,
   updateShoppingItem,
   deleteShoppingItem,
+  addIngredientsToShoppingList,
 } from '@/api/shoppingAPI';
 import type { ShoppingItemData, ShoppingListData } from '@/services/types';
 import { logger } from '@/services/logger';
@@ -250,6 +251,33 @@ export function useToggleShoppingItem(): UseMutationResult<
   return useMutation({
     mutationFn: async ({ itemId, currentStatus, listId }) =>
       updateMutation.mutateAsync({ itemId, updates: { is_purchased: !currentStatus }, listId }),
+  });
+}
+
+// ==================== Add Ingredients (Batch Cook / Recipe) ====================
+
+export function useAddIngredientsToShoppingList() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      listId,
+      ingredients,
+      sourceType,
+      sourceName,
+      recipeId,
+    }: {
+      listId: string;
+      ingredients: Array<{ name: string; amount?: string; unit?: string }>;
+      sourceType: 'batch_cook' | 'recipe';
+      sourceName: string;
+      recipeId?: string;
+    }) => addIngredientsToShoppingList(listId, ingredients, sourceType, sourceName, recipeId),
+    onSuccess: (_, { listId }) => {
+      void queryClient.invalidateQueries({ queryKey: shoppingKeys.items(listId) });
+    },
+    onError: (err: Error) => {
+      logger.error('Shopping', 'Failed to add ingredients to shopping list', { error: err.message });
+    },
   });
 }
 

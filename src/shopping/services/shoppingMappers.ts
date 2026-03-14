@@ -34,8 +34,10 @@ export function mapShoppingItemDataToModel(items: ShoppingItemData[]): ShoppingI
     notes: item.notes ?? undefined,
     createdAt: new Date(item.created_at ?? Date.now()),
     updatedAt: new Date(item.updated_at ?? Date.now()),
-    // Store raw user_id for owner identification
     ownerId: item.user_id,
+    sourceType: item.source_type ?? null,
+    sourceName: item.source_name ?? null,
+    recipeId: item.recipe_id ?? null,
   }));
 }
 

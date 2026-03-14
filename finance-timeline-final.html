@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finance Timeline — Full Page Mockup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #F5EDE3;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    .page {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 0 0 80px;
+      background: #F5EDE3;
+      min-height: 100vh;
+    }
+
+    /* ── Segment tabs (top nav) ── */
+    .seg-wrap {
+      background: white;
+      padding: 12px 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 1px 0 #E8DCC8;
+    }
+    .seg-ctrl {
+      display: flex;
+      background: rgba(212,165,116,0.1);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+      margin-bottom: 12px;
+    }
+    .seg-btn {
+      flex: 1; padding: 7px 4px;
+      border-radius: 7px; border: none;
+      font-size: 11px; font-weight: 600;
+      cursor: pointer; background: none;
+      color: #9B8B7A;
+    }
+    .seg-btn.active {
+      background: white; color: #C18B5E;
+      box-shadow: 0 1px 3px rgba(139,111,71,0.15);
+    }
+
+    /* ── Section labels ── */
+    .section-label {
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: #C18B5E;
+      padding: 20px 16px 8px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: ''; flex: 1;
+      height: 1px; background: rgba(193,139,94,0.2);
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: white;
+      border-radius: 16px;
+      margin: 0 16px 10px;
+      box-shadow: 0 2px 8px rgba(139,111,71,0.07);
+      overflow: hidden;
+    }
+    .card-pad { padding: 14px 16px; }
+
+    /* ════════════════════════════════
+       SMART MOVES
+    ════════════════════════════════ */
+    .move {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #F5EDE3;
+    }
+    .move:last-child { border-bottom: none; }
+
+    .move-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .move-body { flex: 1; }
+    .move-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 9px; font-weight: 800;
+      padding: 2px 7px; border-radius: 999px;
+      margin-bottom: 4px; text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .b-red    { background: #FEE2E2; color: #DC2626; }
+    .b-amber  { background: #FEF3C7; color: #D97706; }
+    .b-blue   { background: #DBEAFE; color: #2563EB; }
+    .b-green  { background: #D1FAE5; color: #059669; }
+    .b-purple { background: #EDE9FE; color: #7C3AED; }
+
+    .move-title { font-size: 13px; font-weight: 700; color: #1F2937; line-height: 1.3; }
+    .move-detail { font-size: 11px; color: #9B8B7A; margin-top: 3px; line-height: 1.4; }
+    .move-action {
+      margin-top: 6px;
+      font-size: 11px; font-weight: 700; color: #C18B5E;
+      display: inline-flex; align-items: center; gap: 3px;
+    }
+    .move-right { text-align: right; flex-shrink: 0; }
+    .move-amount { font-size: 14px; font-weight: 800; }
+    .move-sub    { font-size: 10px; color: #9B8B7A; margin-top: 2px; }
+
+    /* ════════════════════════════════
+       A3 PILL RAIL
+    ════════════════════════════════ */
+    .pill-section-hdr {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px 4px;
+      font-size: 9px; font-weight: 800;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .pill-section-hdr::after {
+      content: ''; flex: 1; height: 1px; background: #F0E8DF;
+    }
+    .psh-red    { color: #DC2626; }
+    .psh-amber  { color: #D97706; }
+    .psh-green  { color: #059669; }
+    .psh-gray   { color: #9CA3AF; }
+    .psh-purple { color: #7C3AED; }
+
+    .pill-row {
+      display: flex;
+      align-items: center;
+      padding: 9px 16px;
+      border-bottom: 1px solid #F5EDE3;
+      gap: 0;
+    }
+    .pill-row:last-child { border-bottom: none; }
+
+    .pill-cd {
+      width: 40px; flex-shrink: 0; text-align: center;
+    }
+    .p-num  { font-size: 18px; font-weight: 900; line-height: 1; }
+    .p-unit { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #9B8B7A; }
+
+    .pc-red    .p-num { color: #EF4444; }
+    .pc-amber  .p-num { color: #F59E0B; }
+    .pc-green  .p-num { color: #10B981; }
+    .pc-purple .p-num { color: #8B5CF6; }
+    .pc-gray   .p-num { color: #9CA3AF; }
+
+    .pill-sep { width: 1px; height: 28px; background: #E8DCC8; margin: 0 12px; flex-shrink: 0; }
+
+    .pill-info { flex: 1; }
+    .pill-title { font-size: 12px; font-weight: 700; color: #1F2937; }
+    .pill-sub   { font-size: 10px; color: #9B8B7A; margin-top: 1px; }
+
+    .pill-amt {
+      font-size: 12px; font-weight: 800;
+      padding: 3px 9px; border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .pa-red    { background: #FEE2E2; color: #DC2626; }
+    .pa-amber  { background: #FEF3C7; color: #D97706; }
+    .pa-green  { background: #D1FAE5; color: #059669; }
+    .pa-purple { background: #EDE9FE; color: #7C3AED; }
+    .pa-gray   { background: #F3F4F6; color: #6B7280; }
+
+    /* ════════════════════════════════
+       PAYMENT PRIORITY
+    ════════════════════════════════ */
+    .priority-row {
+      display: flex; align-items: center;
+      padding: 11px 16px;
+      border-bottom: 1px solid #F5EDE3;
+      gap: 12px;
+    }
+    .priority-row:last-child { border-bottom: none; }
+
+    .priority-num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .pn-1 { background: #FEE2E2; color: #DC2626; }
+    .pn-2 { background: #FEF3C7; color: #D97706; }
+    .pn-3 { background: #FEF3C7; color: #D97706; }
+    .pn-4 { background: #EDE9FE; color: #7C3AED; }
+
+    .priority-info { flex: 1; }
+    .priority-name { font-size: 13px; font-weight: 700; color: #1F2937; }
+    .priority-sub  { font-size: 10px; color: #9B8B7A; margin-top: 1px; }
+
+    .priority-right { text-align: right; flex-shrink: 0; }
+    .priority-apr   { font-size: 14px; font-weight: 900; }
+    .priority-tag   {
+      display: inline-block;
+      font-size: 9px; font-weight: 700;
+      padding: 2px 7px; border-radius: 999px;
+      margin-top: 3px;
+    }
+    .pt-high   { background: #FEE2E2; color: #DC2626; }
+    .pt-med    { background: #FEF3C7; color: #D97706; }
+    .pt-low    { background: #D1FAE5; color: #059669; }
+    .pt-promo  { background: #EDE9FE; color: #7C3AED; }
+
+    .priority-insight {
+      margin: 0 16px 0;
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 12px;
+      padding: 10px 13px;
+      font-size: 11px; color: #92400E; line-height: 1.5;
+    }
+
+    /* ════════════════════════════════
+       LOAN PAYOFF
+    ════════════════════════════════ */
+    .loan-block {
+      padding: 14px 16px;
+      border-bottom: 1px solid #F5EDE3;
+    }
+    .loan-block:last-child { border-bottom: none; }
+
+    .loan-top {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; margin-bottom: 10px;
+    }
+    .loan-name  { font-size: 13px; font-weight: 700; color: #1F2937; }
+    .loan-meta  { font-size: 10px; color: #9B8B7A; margin-top: 2px; }
+    .loan-payoff { font-size: 12px; font-weight: 800; color: #C18B5E; }
+    .loan-payoff-sub { font-size: 9px; color: #9B8B7A; text-align: right; margin-top: 1px; }
+
+    .loan-track {
+      height: 7px; background: #F0E8DF;
+      border-radius: 4px; overflow: hidden; margin-bottom: 5px;
+    }
+    .loan-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #D4A574, #C18B5E);
+      border-radius: 4px;
+    }
+    .loan-fill.high-int {
+      background: linear-gradient(90deg, #F87171, #EF4444);
+    }
+
+    .loan-labels {
+      display: flex; justify-content: space-between;
+      font-size: 9px; color: #9B8B7A; margin-bottom: 8px;
+    }
+
+    .loan-tip {
+      display: flex; align-items: flex-start; gap: 8px;
+      background: #F0FDF4;
+      border: 1px solid #A7F3D0;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 11px; color: #065F46; line-height: 1.4;
+    }
+    .loan-tip.warn {
+      background: #FFF7ED; border-color: #FED7AA; color: #9A3412;
+    }
+    .loan-tip .tip-icon { flex-shrink: 0; font-size: 14px; }
+
+    /* ════════════════════════════════
+       BOTTOM NAV (decorative)
+    ════════════════════════════════ */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 420px; max-width: 100%;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(0,0,0,0.08);
+      padding: 8px 0 20px;
+      display: flex; justify-content: space-around; align-items: center;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      font-size: 9px; font-weight: 600; color: #8E8E93;
+    }
+    .nav-item.active { color: #C18B5E; }
+    .nav-icon {
+      width: 26px; height: 26px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .nav-item.active .nav-icon {
+      background: linear-gradient(135deg, #D4A574, #C18B5E);
+      font-size: 14px;
+    }
+
+    /* Header */
+    .page-header {
+      padding: 16px 16px 8px;
+      background: white;
+    }
+    .ph-top {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .ph-title {
+      font-size: 26px; font-weight: 800; color: #3C2A1A;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ph-date { font-size: 12px; color: #9B8B7A; margin-top: 2px; }
+
+    .ph-balance {
+      text-align: right;
+    }
+    .ph-balance .val {
+      font-size: 20px; font-weight: 900; color: #10B981;
+    }
+    .ph-balance .lbl { font-size: 10px; color: #9B8B7A; }
+
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ── Header ── -->
+  <div class="page-header">
+    <div class="ph-top">
+      <div>
+        <div class="ph-title">📅 Timeline</div>
+        <div class="ph-date">Monday, March 2, 2026</div>
+      </div>
+      <div class="ph-balance">
+        <div class="val">+$560</div>
+        <div class="lbl">Mar surplus</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Segment tabs ── -->
+  <div class="seg-wrap">
+    <div class="seg-ctrl">
+      <button class="seg-btn active">Overview</button>
+      <button class="seg-btn">Statements</button>
+      <button class="seg-btn">Payments</button>
+      <button class="seg-btn">Loans</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       SMART MOVES
+  ════════════════════════════════ -->
+  <div class="section-label">⚡ Smart moves</div>
+
+  <div class="card">
+    <!-- Capital One — urgent -->
+    <div class="move">
+      <div class="move-icon" style="background:#FEE2E2;">💳</div>
+      <div class="move-body">
+        <div class="move-badge b-red">🔴 Due tomorrow</div>
+        <div class="move-title">Capital One $493 due Mar 3</div>
+        <div class="move-detail">Paycheck landed Mar 1 — you're covered. Pay tonight to avoid 22% interest.</div>
+        <div class="move-action">Pay now →</div>
+      </div>
+    </div>
+
+    <!-- Amex closing -->
+    <div class="move">
+      <div class="move-icon" style="background:#FEF3C7;">⏰</div>
+      <div class="move-body">
+        <div class="move-badge b-amber">Statement closes in 3 days</div>
+        <div class="move-title">Avoid Amex purchases until Mar 5</div>
+        <div class="move-detail">$844 already on statement. New charges push Mar 12 payment higher.</div>
+      </div>
+    </div>
+
+    <!-- 0% routing tip -->
+    <div class="move">
+      <div class="move-icon" style="background:#EDE9FE;">✨</div>
+      <div class="move-body">
+        <div class="move-badge b-purple">0% tip</div>
+        <div class="move-title">Use Chase Slate for big purchases</div>
+        <div class="move-detail">0% APR until Aug 2026 — saves ~$50/mo vs Amex on a $500 charge.</div>
+        <div class="move-action">Compare cards →</div>
+      </div>
+    </div>
+
+    <!-- 0% expiry alert -->
+    <div class="move">
+      <div class="move-icon" style="background:#FEE2E2;">🚨</div>
+      <div class="move-body">
+        <div class="move-badge b-red">0% expires in 5 months</div>
+        <div class="move-title">Chase Slate needs $4,140/mo to clear</div>
+        <div class="move-detail">Current balance $28,839. Surplus is only $560/mo. Plan needed before Aug.</div>
+        <div class="move-action">See payoff plan →</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       A3 PILL RAIL — Statements & Dues
+  ════════════════════════════════ -->
+  <div class="section-label">📋 Statements & dues</div>
+
+  <div class="card">
+
+    <!-- ACT NOW -->
+    <div class="pill-section-hdr psh-red">🔴 Act now</div>
+    <div class="pill-row">
+      <div class="pill-cd pc-red">
+        <div class="p-num">1</div>
+        <div class="p-unit">day</div>
+      </div>
+      <div class="pill-sep"></div>
+      <div class="pill-info">
+        <div class="pill-title">Capital One due</div>
+        <div class="pill-sub">Mar 3 · pay tonight · 22% APR</div>
+      </div>
+      <div class="pill-amt pa-red">$493</div>
+    </div>
+
+    <!-- THIS WEEK -->
+    <div class="pill-section-hdr psh-amber">🟡 This week</div>
+    <div class="pill-row">
+      <div class="pill-cd pc-amber">
+        <div class="p-num">3</div>
+        <div class="p-unit">days</div>
+      </div>
+      <div class="pill-sep"></div>
+      <div class="pill-info">
+        <div class="pill-title">Amex statement closes</div>
+        <div class="pill-sub">Mar 5 · hold purchases · 24.99%</div>
+      </div>
+      <div class="pill-amt pa-amber">$844</div>
+    </div>
+
+    <!-- INCOME -->
+    <div class="pill-section-hdr psh-green">🟢 Income</div>
+    <div class="pill-row">
+      <div class="pill-cd pc-green">
+        <div class="p-num">✓</div>
+        <div class="p-unit">done</div>
+      </div>
+      <div class="pill-sep"></div>
+      <div class="pill-info">
+        <div class="pill-title">Kaush paycheck</div>
+        <div class="pill-sub">Mar 1 · received ✓</div>
+      </div>
+      <div class="pill-amt pa-green">+$4,200</div>
+    </div>
+    <div class="pill-row">
+      <div class="pill-cd pc-green">
+        <div class="p-num">11</div>
+        <div class="p-unit">days</div>
+      </div>
+      <div class="pill-sep"></div>
+      <div class="pill-info">
+        <div class="pill-title">Nikki paycheck</div>
+        <div class="pill-sub">Mar 13 · Amex account · biweekly</div>
+      </div>
+      <div class="pill-amt pa-green">+$1,000</div>
+    </div>
+    <div class="pill-row">
+      <div class="pill-cd pc-green">
+        <div class="p-num">25</div>
+        <div class="p-unit">days</div>
+      </div>
+      <div class="pill-sep"></div>
+      <div class="pill-info">
+        <div class="pill-title">Nikki paycheck</div>
+        <div class="pill-sub">Mar 27 · next biweekly</div>
+      </div>
+      <div class="pill-amt pa-green">+$1,000</div>
+    </div>
+
+    <!-- LATER -->
+    <div class="pill-section-hdr psh-gray">⬜ Later this month</div>
+    <div class="pill-row">
+      <div class="pill-cd pc-amber">
+        <div class="p-num">8</div>
+        <div class="p-unit">days</div>
+      </div>
+      <div class="pill-sep"></div>
+      <div class="pill-info">
+        <div class="pill-title">Bilt closes</div>
+        <div class="pill-sub">Mar 10 · rent card</div>
+      </div>
+      <div class="pill-amt pa-amber">$3,664</div>
+    </div>
+    <div class="pill-row">
+      <div class="pill-cd pc-gray">
+        <div class="p-num">10</div>
+        <div class="p-unit">days</div>
+      </div>
+      <div class="pill-sep"></div>
+      <div class="pill-info">
+        <div class="pill-title">Amex due</div>
+        <div class="pill-sub">Mar 12 · pay in full</div>
+      </div>
+      <div class="pill-amt pa-gray">$844</div>
+    </div>
+    <div class="pill-row">
+      <div class="pill-cd pc-gray">
+        <div class="p-num">22</div>
+        <div class="p-unit">days</div>
+      </div>
+      <div class="pill-sep"></div>
+      <div class="pill-info">
+        <div class="pill-title">Bilt due</div>
+        <div class="pill-sub">Mar 24 · rent autopay</div>
+      </div>
+      <div class="pill-amt pa-gray">$3,664</div>
+    </div>
+
+    <!-- 0% CARDS -->
+    <div class="pill-section-hdr psh-purple">✨ 0% cards — low priority</div>
+    <div class="pill-row">
+      <div class="pill-cd pc-purple">
+        <div class="p-num">18</div>
+        <div class="p-unit">days</div>
+      </div>
+      <div class="pill-sep"></div>
+      <div class="pill-info">
+        <div class="pill-title">Chase Slate closes</div>
+        <div class="pill-sub">Mar 20 · 0% until Aug 2026</div>
+      </div>
+      <div class="pill-amt pa-purple">$28,839</div>
+    </div>
+    <div class="pill-row">
+      <div class="pill-cd pc-purple">
+        <div class="p-num">26</div>
+        <div class="p-unit">days</div>
+      </div>
+      <div class="pill-sep"></div>
+      <div class="pill-info">
+        <div class="pill-title">Chase Slate due</div>
+        <div class="pill-sub">Mar 28 · minimum only · 0%</div>
+      </div>
+      <div class="pill-amt pa-purple">min</div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════
+       PAYMENT PRIORITY
+  ════════════════════════════════ -->
+  <div class="section-label">🎯 Payment priority</div>
+
+  <div class="card">
+    <div class="priority-row">
+      <div class="priority-num pn-1">1</div>
+      <div class="priority-info">
+        <div class="priority-name">Amex</div>
+        <div class="priority-sub">Bal $2,910 · Min $25 · Due Mar 12</div>
+      </div>
+      <div class="priority-right">
+        <div class="priority-apr" style="color:#DC2626;">24.99%</div>
+        <div class="priority-tag pt-high">Pay in full</div>
+      </div>
+    </div>
+
+    <div class="priority-row">
+      <div class="priority-num pn-2">2</div>
+      <div class="priority-info">
+        <div class="priority-name">Capital One</div>
+        <div class="priority-sub">Bal $493 · Due Mar 3 ⚠️</div>
+      </div>
+      <div class="priority-right">
+        <div class="priority-apr" style="color:#D97706;">22.0%</div>
+        <div class="priority-tag pt-high">Pay tonight</div>
+      </div>
+    </div>
+
+    <div class="priority-row">
+      <div class="priority-num pn-3">3</div>
+      <div class="priority-info">
+        <div class="priority-name">Bilt</div>
+        <div class="priority-sub">Bal $3,664 · Due Mar 24</div>
+      </div>
+      <div class="priority-right">
+        <div class="priority-apr" style="color:#D97706;">19.9%</div>
+        <div class="priority-tag pt-med">Pay in full</div>
+      </div>
+    </div>
+
+    <div class="priority-row">
+      <div class="priority-num pn-4">4</div>
+      <div class="priority-info">
+        <div class="priority-name">Chase Slate</div>
+        <div class="priority-sub">Bal $28,839 · Due Mar 28 · 0% till Aug</div>
+      </div>
+      <div class="priority-right">
+        <div class="priority-apr" style="color:#7C3AED;">0% ✨</div>
+        <div class="priority-tag pt-promo">Min only</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="priority-insight">
+    ⚠️ <strong>0% expires Aug 2026 — 5 months away.</strong> At current surplus ($560/mo) you'll still owe ~$25,839 when interest kicks in. Cutting $400/mo of discretionary spending closes the gap significantly.
+  </div>
+
+  <!-- ════════════════════════════════
+       LOAN PAYOFF TIMELINE
+  ════════════════════════════════ -->
+  <div class="section-label">🏦 Loan payoff</div>
+
+  <div class="card">
+
+    <!-- Tesla -->
+    <div class="loan-block">
+      <div class="loan-top">
+        <div>
+          <div class="loan-name">Tesla Auto Loan</div>
+          <div class="loan-meta">$28,839 · 5.69% · $991/mo · Chase</div>
+        </div>
+        <div>
+          <div class="loan-payoff">Aug 2028</div>
+          <div class="loan-payoff-sub">47% paid</div>
+        </div>
+      </div>
+      <div class="loan-track">
+        <div class="loan-fill" style="width:47%"></div>
+      </div>
+      <div class="loan-labels">
+        <span>Nov 2022</span>
+        <span style="color:#C18B5E; font-weight:700;">← today</span>
+        <span>Aug 2028</span>
+      </div>
+      <div class="loan-tip">
+        <span class="tip-icon">💡</span>
+        <span>+$200/mo extra → payoff moves to <strong>Jun 2027</strong>, saves ~$1,820 interest</span>
+      </div>
+    </div>
+
+    <!-- Education Loan -->
+    <div class="loan-block">
+      <div class="loan-top">
+        <div>
+          <div class="loan-name">Nikki Education Loan</div>
+          <div class="loan-meta">$12,896 · 9.2% · $500/mo</div>
+        </div>
+        <div>
+          <div class="loan-payoff">Mar 2028</div>
+          <div class="loan-payoff-sub">0% paid</div>
+        </div>
+      </div>
+      <div class="loan-track">
+        <div class="loan-fill high-int" style="width:2%"></div>
+      </div>
+      <div class="loan-labels">
+        <span>Mar 2026</span>
+        <span style="color:#EF4444; font-weight:700;">← today</span>
+        <span>Mar 2028</span>
+      </div>
+      <div class="loan-tip warn">
+        <span class="tip-icon">⚡</span>
+        <span>9.2% costs more per $ than Tesla (5.69%). Consider paying <strong>$700/mo</strong> to save ~$980 interest.</span>
+      </div>
+    </div>
+
+    <!-- Lansum -->
+    <div class="loan-block">
+      <div class="loan-top">
+        <div>
+          <div class="loan-name">Lansum Home Loan</div>
+          <div class="loan-meta">~$1,250/mo · pattern detected</div>
+        </div>
+        <div>
+          <div class="loan-payoff" style="color:#9B8B7A;">Unknown</div>
+          <div class="loan-payoff-sub">add details</div>
+        </div>
+      </div>
+      <div class="loan-track">
+        <div class="loan-fill" style="width:15%; background:#D1D5DB;"></div>
+      </div>
+      <div class="loan-labels">
+        <span>Estimated start</span>
+        <span></span>
+        <span style="color:#C18B5E;">?</span>
+      </div>
+      <div class="loan-tip" style="background:#F9FAFB; border-color:#E5E7EB; color:#6B7280;">
+        <span class="tip-icon">➕</span>
+        <span>Add loan balance & rate to see payoff timeline and interest savings</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item">
+    <div class="nav-icon">🏠</div>
+    <span>Home</span>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">✓</div>
+    <span>Tasks</span>
+  </div>
+  <div class="nav-item active">
+    <div class="nav-icon">💰</div>
+    <span>Finance</span>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">🛒</div>
+    <span>Shopping</span>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">···</div>
+    <span>More</span>
+  </div>
+</div>
+
+</body>
+</html>

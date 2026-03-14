@@ -243,6 +243,8 @@ export interface ShoppingItemData {
   auto_added?: boolean | null;
   recipe_id?: string | null;
   store?: string | null;
+  source_type?: 'manual' | 'batch_cook' | 'recipe' | 'pantry' | null;
+  source_name?: string | null;
   created_at: string;
   updated_at: string;
 }

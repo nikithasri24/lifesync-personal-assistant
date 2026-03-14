@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Multi-Session Fridge Pool — Design Mock</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #FDFBF7; color: #2D1F0E; min-height: 100vh; }
+
+  /* ── Layout ── */
+  .page { max-width: 460px; margin: 0 auto; padding: 24px 16px 80px; }
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #9B8B7A; margin: 32px 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: #E8DCC8; }
+
+  /* ── Pill badges ── */
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 20px; }
+  .badge-red { background: #FEE2E2; color: #DC2626; }
+  .badge-green { background: #D1FAE5; color: #059669; }
+  .badge-amber { background: #FEF3C7; color: #D97706; }
+  .badge-gray { background: #F3F4F6; color: #6B7280; }
+
+  /* ── Card shell ── */
+  .card {
+    background: white; border: 1px solid #EDE0CF;
+    border-radius: 18px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(139,111,71,0.08);
+    margin-bottom: 16px;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid #EDE0CF;
+    background: rgba(212,165,116,0.06);
+  }
+  .card-header-left { display: flex; align-items: center; gap: 8px; }
+  .chef-icon { font-size: 18px; }
+  .session-name { font-size: 13px; font-weight: 700; color: #2D1F0E; }
+  .session-meta { font-size: 11px; color: #9B8B7A; margin-top: 1px; }
+  .btn-new {
+    font-size: 11px; font-weight: 700; padding: 5px 10px;
+    border-radius: 8px; border: none; cursor: pointer;
+    background: rgba(212,165,116,0.18); color: #C18B5E;
+    transition: background 0.15s;
+  }
+  .btn-new:hover { background: rgba(212,165,116,0.32); }
+
+  /* ── Dish row ── */
+  .dish-list { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .dish-row {
+    padding: 10px 12px; border-radius: 12px;
+    border: 1px solid #EDE0CF; background: #FDFBF7;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .dish-row.low { border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.03); }
+  .dish-top { display: flex; align-items: center; justify-content: space-between; }
+  .dish-name { font-size: 13px; font-weight: 600; color: #2D1F0E; display: flex; align-items: center; gap-5px; }
+  .dish-name .warn { color: #EF4444; font-size: 12px; margin-right: 4px; }
+  .btn-log {
+    font-size: 11px; font-weight: 700; padding: 5px 10px;
+    border-radius: 8px; border: none; cursor: pointer;
+    background: rgba(212,165,116,0.15); color: #C18B5E;
+    transition: background 0.15s; white-space: nowrap;
+  }
+  .btn-log:hover { background: rgba(212,165,116,0.3); }
+  .serving-row { display: flex; align-items: center; gap: 8px; }
+  .serving-bar-bg { flex: 1; height: 6px; border-radius: 99px; background: #E5E7EB; overflow: hidden; }
+  .serving-bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s; }
+  .bar-normal { background: linear-gradient(90deg, #D4A574, #C18B5E); }
+  .bar-low    { background: linear-gradient(90deg, #EF4444, #F87171); }
+  .serving-count { font-size: 11px; font-weight: 700; min-width: 32px; text-align: right; }
+  .count-normal { color: #C18B5E; }
+  .count-low    { color: #EF4444; }
+  .btn-allgone { font-size: 10px; color: #9CA3AF; background: none; border: none; cursor: pointer; white-space: nowrap; }
+  .finished-section { padding: 0 14px 12px; }
+  .finished-label { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #9B8B7A; margin-bottom: 6px; }
+  .finished-item { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+  .finished-name { font-size: 12px; text-decoration: line-through; color: #9B8B7A; }
+  .finished-eaten { font-size: 11px; color: #9B8B7A; }
+
+  /* ── OPTION A: Session tabs ── */
+  .session-tabs { display: flex; gap: 6px; padding: 12px 14px 0; flex-wrap: wrap; }
+  .session-tab {
+    font-size: 11px; font-weight: 600; padding: 5px 10px;
+    border-radius: 20px; border: 1.5px solid transparent;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap-5px; gap: 5px;
+  }
+  .session-tab.active {
+    background: rgba(212,165,116,0.18); border-color: #C18B5E; color: #C18B5E;
+  }
+  .session-tab.inactive {
+    background: white; border-color: #E5E7EB; color: #6B7280;
+  }
+  .session-tab.inactive:hover { border-color: #C18B5E; color: #C18B5E; }
+  .tab-dot { width: 6px; height: 6px; border-radius: 99px; flex-shrink: 0; }
+  .tab-dot-active { background: #C18B5E; }
+  .tab-dot-inactive { background: #D1D5DB; }
+
+  /* ── OPTION B: Combined view ── */
+  .session-block { margin-bottom: 2px; }
+  .session-block-header {
+    display: flex; align-items: center; justify-between;
+    padding: 10px 14px 8px;
+    background: rgba(212,165,116,0.08);
+    border-bottom: 1px solid #EDE0CF;
+    justify-content: space-between;
+  }
+  .session-block-name { font-size: 12px; font-weight: 700; color: #5C4A3A; display: flex; align-items: center; gap: 6px; }
+  .session-block-meta { font-size: 11px; color: #9B8B7A; }
+  .session-divider { height: 1px; background: #EDE0CF; margin: 0; }
+
+  /* ── OPTION C: Drawer/Dropdown ── */
+  .fridge-header-with-picker {
+    display: flex; flex-direction: column; gap: 0;
+    padding: 14px 16px 0; border-bottom: 1px solid #EDE0CF;
+    background: rgba(212,165,116,0.06);
+  }
+  .fridge-top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .session-picker {
+    display: flex; gap: 0; border: 1.5px solid #EDE0CF;
+    border-radius: 10px; overflow: hidden; margin-bottom: 14px;
+  }
+  .picker-btn {
+    flex: 1; padding: 6px 10px; font-size: 11px; font-weight: 600;
+    border: none; cursor: pointer; background: white; color: #6B7280; transition: all 0.15s;
+    text-align: center;
+  }
+  .picker-btn + .picker-btn { border-left: 1.5px solid #EDE0CF; }
+  .picker-btn.selected { background: rgba(212,165,116,0.15); color: #C18B5E; }
+  .picker-btn .dot { display: block; width: 5px; height: 5px; border-radius: 99px; background: currentColor; margin: 0 auto 2px; opacity: 0.6; }
+
+  /* ── Annotation bubbles ── */
+  .annotation {
+    font-size: 11px; color: #6B5847; background: #FEF9F3;
+    border: 1px dashed #D4A574; border-radius: 8px; padding: 8px 10px;
+    margin-bottom: 10px; line-height: 1.5;
+  }
+  .annotation strong { color: #C18B5E; }
+
+  /* ── Comparison table ── */
+  .compare { border: 1px solid #EDE0CF; border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+  .compare-row { display: flex; border-bottom: 1px solid #EDE0CF; }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-col { flex: 1; padding: 10px 12px; font-size: 11px; line-height: 1.5; }
+  .compare-col:first-child { border-right: 1px solid #EDE0CF; background: rgba(239,68,68,0.03); }
+  .compare-col:last-child { background: rgba(212,165,116,0.04); }
+  .compare-header { font-weight: 700; font-size: 11px; padding: 8px 12px;
+    display: flex; align-items: center; gap: 6px; }
+  .compare-header:first-child { background: rgba(239,68,68,0.08); color: #DC2626; border-right: 1px solid #EDE0CF; }
+  .compare-header:last-child { background: rgba(16,185,129,0.08); color: #059669; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div style="text-align:center; padding: 8px 0 4px;">
+    <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9B8B7A;">Design Mock</span>
+    <h1 style="font-size:20px;font-weight:800;color:#2D1F0E;margin-top:4px;">Multi-Session Fridge Pool</h1>
+    <p style="font-size:12px;color:#9B8B7A;margin-top:4px;">Scenario: Mar 8 session still has food · Mar 15 session just created</p>
+  </div>
+
+  <!-- ── CURRENT (BROKEN) ── -->
+  <div class="section-label">Current behaviour — broken</div>
+
+  <div class="annotation">
+    <strong>Problem:</strong> Creating "Next Week Prep" replaced the Mar 8 session entirely.
+    Aloo Gobi (4 servings still left) is invisible and can't be logged.
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-left">
+        <span class="chef-icon">🍳</span>
+        <div>
+          <div class="session-name">Next Week Prep - Mar 15</div>
+          <div class="session-meta">1 dish ready · 4 servings left</div>
+        </div>
+      </div>
+      <button class="btn-new">+ New Session</button>
+    </div>
+    <div class="dish-list">
+      <div class="dish-row">
+        <div class="dish-top">
+          <div class="dish-name">Rajma Masala</div>
+          <button class="btn-log">Log →</button>
+        </div>
+        <div class="serving-row">
+          <div class="serving-bar-bg"><div class="serving-bar-fill bar-normal" style="width:100%"></div></div>
+          <span class="serving-count count-normal">4/4</span>
+          <button class="btn-allgone">all gone</button>
+        </div>
+      </div>
+    </div>
+    <!-- Mar 8 session is simply gone — no UI to access Aloo Gobi -->
+    <div style="padding:0 14px 12px;text-align:center;">
+      <span style="font-size:11px;color:#EF4444;font-weight:600;">⚠ Aloo Gobi (4 left from Mar 8) is invisible here</span>
+    </div>
+  </div>
+
+  <!-- comparison -->
+  <div class="compare">
+    <div style="display:flex;">
+      <div class="compare-header" style="flex:1;">✗ What you lose</div>
+      <div class="compare-header" style="flex:1;">✓ What we want</div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-col">Can't log from Mar 8 session's remaining food</div>
+      <div class="compare-col">Both sessions' food accessible from the same screen</div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-col">Servings go stale — no way to decrement Aloo Gobi</div>
+      <div class="compare-col">Each session tracked independently until empty</div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-col">Data is fine in DB but UI hides it completely</div>
+      <div class="compare-col">Sessions auto-retire when all dishes hit 0 servings</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ OPTION A ══════════════════════════════ -->
+  <div class="section-label">Option A — Session tabs (recommended)</div>
+
+  <div class="annotation">
+    <strong>How it works:</strong> A row of pills above the dish list — one per session with remaining food.
+    Tap to switch. The active session's dishes show below.
+    Sessions auto-disappear from the tab list when all their dishes hit 0.
+  </div>
+
+  <div class="card" id="optionA">
+    <div class="card-header">
+      <div class="card-header-left">
+        <span class="chef-icon">🍳</span>
+        <div>
+          <div class="session-name" id="tabSessionName">Mar 8 Prep</div>
+          <div class="session-meta" id="tabSessionMeta">1 dish ready · 4 servings left</div>
+        </div>
+      </div>
+      <button class="btn-new">+ New Session</button>
+    </div>
+
+    <!-- Session tabs -->
+    <div class="session-tabs" id="sessionTabs">
+      <button class="session-tab active" onclick="switchTab(0)" id="tab0">
+        <span class="tab-dot tab-dot-active"></span>
+        Mar 8 Prep
+      </button>
+      <button class="session-tab inactive" onclick="switchTab(1)" id="tab1">
+        <span class="tab-dot tab-dot-inactive"></span>
+        Next Week · Mar 15
+      </button>
+    </div>
+
+    <!-- Dishes for each tab -->
+    <div id="tabContent0" class="dish-list">
+      <div class="dish-row">
+        <div class="dish-top">
+          <div class="dish-name">Aloo Gobi</div>
+          <button class="btn-log">Log →</button>
+        </div>
+        <div class="serving-row">
+          <div class="serving-bar-bg"><div class="serving-bar-fill bar-normal" style="width:100%"></div></div>
+          <span class="serving-count count-normal">4/4</span>
+          <button class="btn-allgone">all gone</button>
+        </div>
+      </div>
+      <div class="finished-section" style="padding:0;">
+        <div class="finished-label" style="margin-top:8px;">Finished</div>
+        <div class="finished-item"><span class="finished-name">Paneer burji</span><span class="finished-eaten">· all eaten 🎉</span></div>
+        <div class="finished-item"><span class="finished-name">Spinach Daal</span><span class="finished-eaten">· all eaten 🎉</span></div>
+        <div class="finished-item"><span class="finished-name">Mint Pulav</span><span class="finished-eaten">· all eaten 🎉</span></div>
+      </div>
+    </div>
+
+    <div id="tabContent1" class="dish-list" style="display:none;">
+      <div class="dish-row">
+        <div class="dish-top">
+          <div class="dish-name">Rajma Masala</div>
+          <button class="btn-log">Log →</button>
+        </div>
+        <div class="serving-row">
+          <div class="serving-bar-bg"><div class="serving-bar-fill bar-normal" style="width:100%"></div></div>
+          <span class="serving-count count-normal">4/4</span>
+          <button class="btn-allgone">all gone</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="annotation" style="margin-top:-6px;">
+    <strong>Tap the tabs above</strong> to switch between sessions — it's interactive.
+    The badge on each tab shows remaining servings at a glance.
+    When Mar 8's Aloo Gobi hits 0, that tab disappears automatically.
+  </div>
+
+  <!-- ══════════════════════════════ OPTION B ══════════════════════════════ -->
+  <div class="section-label">Option B — Combined scroll view</div>
+
+  <div class="annotation">
+    <strong>How it works:</strong> Both sessions shown as stacked blocks in one card.
+    No tapping needed — scroll to see all food. Simpler but longer on screen.
+    Best when sessions have only 1–2 dishes each.
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-left">
+        <span class="chef-icon">🍳</span>
+        <div>
+          <div class="session-name">Fridge Pool</div>
+          <div class="session-meta">2 sessions · 8 servings total</div>
+        </div>
+      </div>
+      <button class="btn-new">+ New Session</button>
+    </div>
+
+    <!-- Session block 1 -->
+    <div class="session-block">
+      <div class="session-block-header">
+        <div class="session-block-name">
+          <span style="width:7px;height:7px;border-radius:99px;background:#C18B5E;display:inline-block;flex-shrink:0;"></span>
+          Mar 8 Prep
+        </div>
+        <div class="session-block-meta">1 dish left</div>
+      </div>
+      <div class="dish-list" style="padding:10px 12px;">
+        <div class="dish-row">
+          <div class="dish-top">
+            <div class="dish-name">Aloo Gobi</div>
+            <button class="btn-log">Log →</button>
+          </div>
+          <div class="serving-row">
+            <div class="serving-bar-bg"><div class="serving-bar-fill bar-normal" style="width:100%"></div></div>
+            <span class="serving-count count-normal">4/4</span>
+            <button class="btn-allgone">all gone</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="session-divider"></div>
+
+    <!-- Session block 2 -->
+    <div class="session-block">
+      <div class="session-block-header">
+        <div class="session-block-name">
+          <span style="width:7px;height:7px;border-radius:99px;background:#C18B5E;display:inline-block;flex-shrink:0;"></span>
+          Next Week Prep · Mar 15
+        </div>
+        <div class="session-block-meta">1 dish left</div>
+      </div>
+      <div class="dish-list" style="padding:10px 12px;">
+        <div class="dish-row">
+          <div class="dish-top">
+            <div class="dish-name">Rajma Masala</div>
+            <button class="btn-log">Log →</button>
+          </div>
+          <div class="serving-row">
+            <div class="serving-bar-bg"><div class="serving-bar-fill bar-normal" style="width:100%"></div></div>
+            <span class="serving-count count-normal">4/4</span>
+            <button class="btn-allgone">all gone</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ OPTION C ══════════════════════════════ -->
+  <div class="section-label">Option C — Segmented picker in header</div>
+
+  <div class="annotation">
+    <strong>How it works:</strong> A compact selector lives inside the card header itself.
+    Each button is one session. Selected session's dishes render below.
+    Cleanest header treatment — works well on narrow screens.
+  </div>
+
+  <div class="card" id="optionC">
+    <div class="fridge-header-with-picker">
+      <div class="fridge-top-row">
+        <div class="card-header-left">
+          <span class="chef-icon">🍳</span>
+          <div>
+            <div class="session-name">Fridge Pool</div>
+          </div>
+        </div>
+        <button class="btn-new">+ New</button>
+      </div>
+      <div class="session-picker" id="pickerTabs">
+        <button class="picker-btn selected" onclick="switchPicker(0)" id="picker0">
+          <span class="dot"></span>
+          Mar 8 · 4 left
+        </button>
+        <button class="picker-btn" onclick="switchPicker(1)" id="picker1">
+          <span class="dot"></span>
+          Mar 15 · 4 left
+        </button>
+      </div>
+    </div>
+
+    <div id="pickerContent0" class="dish-list">
+      <div class="dish-row">
+        <div class="dish-top">
+          <div class="dish-name">Aloo Gobi</div>
+          <button class="btn-log">Log →</button>
+        </div>
+        <div class="serving-row">
+          <div class="serving-bar-bg"><div class="serving-bar-fill bar-normal" style="width:100%"></div></div>
+          <span class="serving-count count-normal">4/4</span>
+          <button class="btn-allgone">all gone</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="pickerContent1" class="dish-list" style="display:none;">
+      <div class="dish-row">
+        <div class="dish-top">
+          <div class="dish-name">Rajma Masala</div>
+          <button class="btn-log">Log →</button>
+        </div>
+        <div class="serving-row">
+          <div class="serving-bar-bg"><div class="serving-bar-fill bar-normal" style="width:100%"></div></div>
+          <span class="serving-count count-normal">4/4</span>
+          <button class="btn-allgone">all gone</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ RECOMMENDATION ══════════════════════════════ -->
+  <div class="section-label">Recommendation</div>
+
+  <div class="compare">
+    <div style="display:flex;">
+      <div class="compare-header" style="flex:1;background:rgba(212,165,116,0.1);color:#5C4A3A;border-right:1px solid #EDE0CF;">Option</div>
+      <div class="compare-header" style="flex:1;background:rgba(212,165,116,0.1);color:#5C4A3A;border-right:1px solid #EDE0CF;">Best for</div>
+      <div class="compare-header" style="flex:1;background:rgba(212,165,116,0.1);color:#5C4A3A;">Verdict</div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-col" style="font-weight:700;">A — Tabs</div>
+      <div class="compare-col">Many dishes per session; frequent switching</div>
+      <div class="compare-col"><span class="badge badge-green">Recommended</span></div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-col" style="font-weight:700;">B — Combined</div>
+      <div class="compare-col">Few dishes; always want to see everything</div>
+      <div class="compare-col"><span class="badge badge-amber">Good fallback</span></div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-col" style="font-weight:700;">C — Picker</div>
+      <div class="compare-col">Minimal chrome; narrow screens</div>
+      <div class="compare-col"><span class="badge badge-gray">OK</span></div>
+    </div>
+  </div>
+
+  <div class="annotation">
+    <strong>Recommended implementation:</strong><br>
+    Use <strong>Option A (tabs)</strong> when 2+ sessions have food remaining.
+    Fall back to the current single-card layout (no tabs) when only 1 session is active.
+    Change one line in <code>getActiveBatchSession</code> to return all sessions with
+    <code>servings_remaining &gt; 0</code> instead of just <code>sessions[0]</code>.
+    Then pass the list to <code>FridgePoolV2</code> and add the tab row — ~60 lines of changes total.
+  </div>
+
+</div>
+
+<script>
+  // Option A tab switcher
+  const tabSessions = [
+    { name: 'Mar 8 Prep', meta: '1 dish ready · 4 servings left' },
+    { name: 'Next Week · Mar 15', meta: '1 dish ready · 4 servings left' },
+  ];
+  function switchTab(idx) {
+    tabSessions.forEach((s, i) => {
+      const tab = document.getElementById('tab' + i);
+      const content = document.getElementById('tabContent' + i);
+      if (i === idx) {
+        tab.className = 'session-tab active';
+        tab.querySelector('.tab-dot').className = 'tab-dot tab-dot-active';
+        content.style.display = '';
+        document.getElementById('tabSessionName').textContent = s.name;
+        document.getElementById('tabSessionMeta').textContent = s.meta;
+      } else {
+        tab.className = 'session-tab inactive';
+        tab.querySelector('.tab-dot').className = 'tab-dot tab-dot-inactive';
+        content.style.display = 'none';
+      }
+    });
+  }
+
+  // Option C picker switcher
+  function switchPicker(idx) {
+    [0,1].forEach(i => {
+      document.getElementById('picker'+i).className = 'picker-btn' + (i === idx ? ' selected' : '');
+      document.getElementById('pickerContent'+i).style.display = i === idx ? '' : 'none';
+    });
+  }
+</script>
+</body>
+</html>

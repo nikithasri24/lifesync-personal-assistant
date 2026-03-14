@@ -67,6 +67,7 @@ function ShoppingSmartContent(): ReactElement {
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
   const [storeFilter, setStoreFilter] = useState<StoreFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'meals' | 'household' | 'manual'>('all');
 
   // Form state management using consolidated hook
   const newItemForm = useItemForm();
@@ -234,6 +235,17 @@ function ShoppingSmartContent(): ReactElement {
       return false;
     }
 
+    // Source filter
+    if (sourceFilter === 'meals' && item.sourceType !== 'batch_cook' && item.sourceType !== 'recipe') {
+      return false;
+    }
+    if (sourceFilter === 'household' && item.category !== 'household' && item.category !== 'personal') {
+      return false;
+    }
+    if (sourceFilter === 'manual' && (item.sourceType === 'batch_cook' || item.sourceType === 'recipe')) {
+      return false;
+    }
+
     return true;
   });
 
@@ -297,6 +309,32 @@ function ShoppingSmartContent(): ReactElement {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
           />
+        )}
+
+
+        {/* Source Filter Pills - Only show in list view */}
+        {activeView === 'list' && (
+          <div className="flex gap-2 px-4 pb-2 overflow-x-auto">
+            {([
+              { key: 'all', label: 'All' },
+              { key: 'meals', label: '🍽 Meals' },
+              { key: 'household', label: '🏠 Household' },
+              { key: 'manual', label: '➕ General' },
+            ] as const).map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSourceFilter(key)}
+                className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+                style={{
+                  backgroundColor: sourceFilter === key ? '#C18B5E' : 'rgba(212, 165, 116, 0.12)',
+                  color: sourceFilter === key ? 'white' : '#C18B5E',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         )}
 
         {/* Content based on active view */}

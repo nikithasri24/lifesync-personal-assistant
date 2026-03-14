@@ -99,8 +99,8 @@ export const ShoppingItemCardV2: React.FC<ShoppingItemCardV2Props> = ({
           )}
         </div>
 
-        {/* Quantity and Store */}
-        <div className="flex items-center gap-3">
+        {/* Quantity, Store and Source */}
+        <div className="flex items-center gap-3 flex-wrap">
           <span
             className="text-[15px]"
             style={{ color: colors.text.tertiary }}
@@ -115,6 +115,23 @@ export const ShoppingItemCardV2: React.FC<ShoppingItemCardV2Props> = ({
               variant="accent"
               size="sm"
             />
+          )}
+
+          {/* Source Badge — shown for batch_cook and recipe items */}
+          {item.sourceType && item.sourceType !== 'manual' && item.sourceName && (
+            <span
+              className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md"
+              style={{
+                backgroundColor: item.sourceType === 'batch_cook' || item.sourceType === 'recipe'
+                  ? 'rgba(212, 165, 116, 0.18)'
+                  : 'rgba(156, 163, 175, 0.15)',
+                color: item.sourceType === 'batch_cook' || item.sourceType === 'recipe'
+                  ? '#C18B5E'
+                  : '#6B7280',
+              }}
+            >
+              🍽 {item.sourceName}
+            </span>
           )}
 
           {/* Price Badge */}

@@ -92,6 +92,21 @@ export function mapRowToShoppingItem(row: ShoppingItemRow): ShoppingItemData {
     auto_added: row.auto_added,
     recipe_id: row.recipe_id,
     store: row.store,
+    // Derive source from auto_added + notes (format: "sourceType:sourceName")
+    // Falls back to source_type/source_name columns if present (future migration)
+    source_type: (() => {
+      const st = (row as Record<string, unknown>).source_type as string | null | undefined;
+      if (st) return st as ShoppingItemData['source_type'];
+      if (row.auto_added && row.notes?.startsWith('batch_cook:')) return 'batch_cook';
+      if (row.auto_added && row.notes?.startsWith('recipe:')) return 'recipe';
+      return null;
+    })(),
+    source_name: (() => {
+      const sn = (row as Record<string, unknown>).source_name as string | null | undefined;
+      if (sn) return sn;
+      if (row.auto_added && row.notes?.includes(':')) return row.notes.split(':').slice(1).join(':');
+      return null;
+    })(),
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -130,6 +145,8 @@ export function mapShoppingItemToInsert(
     auto_added: item.auto_added,
     recipe_id: item.recipe_id,
     store: item.store,
+    source_type: item.source_type ?? null,
+    source_name: item.source_name ?? null,
   };
 }
 

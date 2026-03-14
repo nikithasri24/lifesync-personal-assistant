@@ -85,6 +85,8 @@ export const ShoppingItemDataSchema = z.object({
   auto_added: z.boolean().nullable().optional(),
   recipe_id: z.string().nullable().optional(),
   store: z.string().nullable().optional(),
+  source_type: z.enum(['manual', 'batch_cook', 'recipe', 'pantry']).nullable().optional(),
+  source_name: z.string().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });

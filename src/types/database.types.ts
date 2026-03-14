@@ -6440,6 +6440,8 @@ export type Database = {
           recipe_id: string | null
           recurring: Json | null
           shopping_list_id: string
+          source_name: string | null
+          source_type: string | null
           store: string | null
           subcategory: string | null
           tags: string[] | null
@@ -6473,6 +6475,8 @@ export type Database = {
           recipe_id?: string | null
           recurring?: Json | null
           shopping_list_id: string
+          source_name?: string | null
+          source_type?: string | null
           store?: string | null
           subcategory?: string | null
           tags?: string[] | null
@@ -6506,6 +6510,8 @@ export type Database = {
           recipe_id?: string | null
           recurring?: Json | null
           shopping_list_id?: string
+          source_name?: string | null
+          source_type?: string | null
           store?: string | null
           subcategory?: string | null
           tags?: string[] | null

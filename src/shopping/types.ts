@@ -28,6 +28,9 @@ export interface ShoppingItem {
   assignedStore?: string; // Store ID where this item should be bought
   bestStores?: string[]; // Ordered list of best stores for this item
   ownerId?: string; // User ID of the owner (for merged mode)
+  sourceType?: 'manual' | 'batch_cook' | 'recipe' | 'pantry' | null;
+  sourceName?: string | null;
+  recipeId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

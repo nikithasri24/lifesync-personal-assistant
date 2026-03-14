@@ -342,3 +342,58 @@ export async function deleteShoppingItem(itemId: string): Promise<void> {
     { domain: 'ShoppingAPI', operation: 'deleteShoppingItem', data: { itemId } }
   );
 }
+
+/**
+ * Add a batch of recipe/session ingredients to the shopping list.
+ * Idempotent: if items from the same recipe_id already exist, skips them.
+ * Returns { added, skipped } counts.
+ */
+export async function addIngredientsToShoppingList(
+  listId: string,
+  ingredients: Array<{ name: string; amount?: string; unit?: string }>,
+  sourceType: 'batch_cook' | 'recipe',
+  sourceName: string,
+  recipeId?: string
+): Promise<{ added: number; skipped: number }> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      // If recipeId provided: check if items already added from this recipe → idempotent guard
+      if (recipeId) {
+        const { data: existing } = await supabase
+          .from('shopping_items')
+          .select('id')
+          .eq('shopping_list_id', listId)
+          .eq('recipe_id', recipeId)
+          .limit(1);
+
+        if (existing && existing.length > 0) {
+          return { added: 0, skipped: ingredients.length };
+        }
+      }
+
+      const rows = ingredients
+        .filter(ing => ing.name.trim().length > 0)
+        .map(ing => ({
+          shopping_list_id: listId,
+          user_id: user.id,
+          name: ing.name.trim().charAt(0).toUpperCase() + ing.name.trim().slice(1),
+          quantity: ing.amount ? parseFloat(ing.amount) || null : null,
+          unit: ing.unit?.trim() || null,
+          auto_added: true,
+          notes: `${sourceType}:${sourceName}`,
+          recipe_id: recipeId ?? null,
+          is_purchased: false,
+        }));
+
+      if (rows.length === 0) return { added: 0, skipped: 0 };
+
+      const { error } = await supabase.from('shopping_items').insert(rows);
+      if (error) throw error;
+
+      return { added: rows.length, skipped: 0 };
+    },
+    { domain: 'ShoppingAPI', operation: 'addIngredientsToShoppingList', data: { listId, sourceName, count: ingredients.length } }
+  );
+}

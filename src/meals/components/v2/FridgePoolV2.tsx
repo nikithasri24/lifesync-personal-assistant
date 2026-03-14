@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useState, useEffect } from 'react';
-import { ChefHat, AlertTriangle, Link, Pencil, Plus, Trash2, X, Check, Youtube } from 'lucide-react';
+import { ChefHat, AlertTriangle, Link, Pencil, Plus, Trash2, X, Check, Youtube, ShoppingCart } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { BatchCookSession, BatchCookDish } from '../../types';
 
@@ -26,6 +26,8 @@ interface FridgePoolV2Props {
   onCreateRecipeForDish?: (dishId: string, dishName: string) => void;
   /** Called when the user wants to edit the recipe already linked to a dish */
   onEditRecipe?: (recipeId: string) => void;
+  /** Called when the user wants to add all recipe ingredients from this session to the Shopping List */
+  onShopSession?: (session: BatchCookSession) => Promise<void>;
 }
 
 const ServingBar: React.FC<{ cooked: number; remaining: number }> = ({ cooked, remaining }): React.ReactElement => {
@@ -58,7 +60,7 @@ const ServingBar: React.FC<{ cooked: number; remaining: number }> = ({ cooked, r
   );
 };
 
-export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ sessions, recipes, onLogFromPool, onMarkDone, onLinkRecipe, onRenameDish, onNewSession, onAddDish, onDeleteSession, onCreateRecipeForDish, onEditRecipe }) => {
+export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ sessions, recipes, onLogFromPool, onMarkDone, onLinkRecipe, onRenameDish, onNewSession, onAddDish, onDeleteSession, onCreateRecipeForDish, onEditRecipe, onShopSession }) => {
   const colors = useThemeColors();
   const [activeIdx, setActiveIdx] = useState(0);
   const [linkingDishId, setLinkingDishId] = useState<string | null>(null);
@@ -71,11 +73,15 @@ export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ sessions, recipes, o
   const [newDishServings, setNewDishServings] = useState(4);
   const [addingDish, setAddingDish] = useState(false);
   const addDishInputRef = useRef<HTMLInputElement>(null);
+  const [shoppingDone, setShoppingDone] = useState(false);
 
   // Keep activeIdx in range if sessions array shrinks
   useEffect(() => {
     if (activeIdx >= sessions.length) setActiveIdx(0);
   }, [sessions.length, activeIdx]);
+
+  // Reset "Added ✓" state when switching sessions
+  useEffect(() => { setShoppingDone(false); }, [activeIdx]);
 
   const session = sessions[activeIdx] ?? sessions[0];
   if (!session) return null;
@@ -109,6 +115,37 @@ export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ sessions, recipes, o
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+          {/* Shop for this session — adds all recipe ingredients to Shopping List */}
+          {onShopSession && (
+            shoppingDone ? (
+              <span
+                className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                style={{ color: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)' }}
+              >
+                <ShoppingCart className="w-3.5 h-3.5" />
+                Added ✓
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await onShopSession(session);
+                    setShoppingDone(true);
+                  } catch {
+                    // error toast handled in MealPlanning — don't set done
+                  }
+                }}
+                className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
+                style={{ color: '#C18B5E', backgroundColor: 'rgba(212, 165, 116, 0.15)' }}
+                aria-label="Add session ingredients to Shopping List"
+                title="Add all recipe ingredients to Shopping List"
+              >
+                <ShoppingCart className="w-3.5 h-3.5" />
+                Shop
+              </button>
+            )
+          )}
           {/* Add dish to current session */}
           <button
             type="button"
