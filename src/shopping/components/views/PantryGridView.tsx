@@ -411,18 +411,20 @@ export function PantryGridView({ items, onItemClick, onAddItem, onRestockItem }:
                         ))}
                       </div>
 
-                      {/* Low stock + restock button */}
+                      {/* Low stock + restock — use div to avoid nested <button> */}
                       {isLow && onRestockItem && (
-                        <button
-                          type="button"
+                        <div
+                          role="button"
+                          tabIndex={0}
                           onClick={(e) => { e.stopPropagation(); onRestockItem(item); }}
-                          className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onRestockItem(item); } }}
+                          className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md cursor-pointer"
                           style={{ backgroundColor: 'rgba(212,165,116,0.15)', color: '#C18B5E' }}
                           aria-label={`Add ${item.name} to shopping list`}
                         >
                           <ShoppingCart size={9} />
                           Restock
-                        </button>
+                        </div>
                       )}
                     </button>
                   );
