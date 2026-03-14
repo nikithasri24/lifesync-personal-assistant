@@ -356,6 +356,26 @@ function ShoppingSmartContent(): ReactElement {
             items={pantryItems}
             onItemClick={(item) => setSelectedPantryItem(item)}
             onAddItem={() => setShowAddPantry(true)}
+            onRestockItem={(pantryItem) => {
+              const shoppingItemData = {
+                name: pantryItem.name,
+                quantity: Math.max(1, (pantryItem.lowStockThreshold ?? 1) - (pantryItem.quantity ?? 0)) || 1,
+                unit: pantryItem.unit,
+                category: (pantryItem.category === 'meat' ? 'meat' :
+                           pantryItem.category === 'dairy' ? 'dairy' :
+                           pantryItem.category === 'produce' ? 'produce' :
+                           pantryItem.category === 'bakery' ? 'bakery' :
+                           'pantry') as import('../shopping/types').ShoppingItem['category'],
+                priority: 'medium' as const,
+                purchased: false,
+                tags: ['from:pantry'],
+                bestStores: [] as string[],
+                source_type: 'pantry' as const,
+                source_name: 'Pantry restock',
+              };
+              void addShoppingItem(shoppingItemData);
+              showToast(`${pantryItem.name} added to Shopping List 🛒`, 'success');
+            }}
           />
         )}
 

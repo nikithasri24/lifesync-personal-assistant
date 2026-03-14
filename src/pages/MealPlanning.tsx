@@ -27,6 +27,7 @@ import { getShoppingLists, createShoppingList, createShoppingItem } from '@/api/
 import { useQueryClient } from '@tanstack/react-query';
 import { shoppingKeys, useActiveShoppingList } from '@/hooks/useShoppingQuery';
 import { addIngredientsToShoppingList } from '@/api/shoppingAPI';
+import { usePantryItemsQuery, useUpdatePantryItemMutation } from '@/hooks/mealPlanning/usePantryQueries';
 import type { GroceryItem } from '@/mealPlanning/hooks/useGroceryList';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { useMealsState, type TabView } from '../meals/hooks';
@@ -152,6 +153,8 @@ const MealPlanningContent: React.FC = () => {
   const updateDishServingsMutation = useUpdateDishServings();
   const updateDishNameMutation = useUpdateDishName();
   const updateDishRecipeMutation = useUpdateDishRecipe();
+  const { data: pantryItems = [] } = usePantryItemsQuery();
+  const updatePantryItemMutation = useUpdatePantryItemMutation();
 
   // React Query hooks
   const {
@@ -561,6 +564,39 @@ const MealPlanningContent: React.FC = () => {
                   }
                 }}
                 onEditRecipe={modalState.openRecipeEdit}
+                onDeductFromPantry={async (sess) => {
+                  // Match recipe ingredients to pantry items by name (case-insensitive, partial)
+                  const ingredients = recipes
+                    .filter(r => sess.dishes.some(d => d.recipeId === r.id))
+                    .flatMap(r => (r.ingredients ?? []).map(ing => ({
+                      name: ing.name.toLowerCase().trim(),
+                      amount: parseFloat(ing.amount ?? '1') || 1,
+                    })));
+                  if (ingredients.length === 0) {
+                    showToast('No recipe ingredients found — link recipes to dishes first', 'error');
+                    return;
+                  }
+                  let deducted = 0;
+                  for (const ing of ingredients) {
+                    const match = pantryItems.find(p =>
+                      p.name.toLowerCase().includes(ing.name) || ing.name.includes(p.name.toLowerCase())
+                    );
+                    if (match && (match.quantity ?? 0) > 0) {
+                      const newQty = Math.max(0, (match.quantity ?? 0) - ing.amount);
+                      await updatePantryItemMutation.mutateAsync({
+                        itemId: match.id,
+                        updates: { quantity: newQty },
+                      });
+                      deducted++;
+                    }
+                  }
+                  if (deducted > 0) {
+                    showToast(`Updated ${deducted} pantry item${deducted !== 1 ? 's' : ''} 📦`, 'success');
+                  } else {
+                    showToast('No matching pantry items found', 'error');
+                    throw new Error('no_match');
+                  }
+                }}
                 onShopSession={async (sess) => {
                   try {
                     const list = await ensureActiveList();

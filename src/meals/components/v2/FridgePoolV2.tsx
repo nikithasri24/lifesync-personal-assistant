@@ -28,6 +28,8 @@ interface FridgePoolV2Props {
   onEditRecipe?: (recipeId: string) => void;
   /** Called when the user wants to add all recipe ingredients from this session to the Shopping List */
   onShopSession?: (session: BatchCookSession) => Promise<void>;
+  /** Called when the user wants to deduct recipe ingredients from pantry (they just cooked this) */
+  onDeductFromPantry?: (session: BatchCookSession) => Promise<void>;
 }
 
 const ServingBar: React.FC<{ cooked: number; remaining: number }> = ({ cooked, remaining }): React.ReactElement => {
@@ -60,7 +62,7 @@ const ServingBar: React.FC<{ cooked: number; remaining: number }> = ({ cooked, r
   );
 };
 
-export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ sessions, recipes, onLogFromPool, onMarkDone, onLinkRecipe, onRenameDish, onNewSession, onAddDish, onDeleteSession, onCreateRecipeForDish, onEditRecipe, onShopSession }) => {
+export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ sessions, recipes, onLogFromPool, onMarkDone, onLinkRecipe, onRenameDish, onNewSession, onAddDish, onDeleteSession, onCreateRecipeForDish, onEditRecipe, onShopSession, onDeductFromPantry }) => {
   const colors = useThemeColors();
   const [activeIdx, setActiveIdx] = useState(0);
   const [linkingDishId, setLinkingDishId] = useState<string | null>(null);
@@ -74,14 +76,15 @@ export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ sessions, recipes, o
   const [addingDish, setAddingDish] = useState(false);
   const addDishInputRef = useRef<HTMLInputElement>(null);
   const [shoppingDone, setShoppingDone] = useState(false);
+  const [pantryDone, setPantryDone] = useState(false);
 
   // Keep activeIdx in range if sessions array shrinks
   useEffect(() => {
     if (activeIdx >= sessions.length) setActiveIdx(0);
   }, [sessions.length, activeIdx]);
 
-  // Reset "Added ✓" state when switching sessions
-  useEffect(() => { setShoppingDone(false); }, [activeIdx]);
+  // Reset action states when switching sessions
+  useEffect(() => { setShoppingDone(false); setPantryDone(false); }, [activeIdx]);
 
   const session = sessions[activeIdx] ?? sessions[0];
   if (!session) return null;
@@ -143,6 +146,35 @@ export const FridgePoolV2: React.FC<FridgePoolV2Props> = ({ sessions, recipes, o
               >
                 <ShoppingCart className="w-3.5 h-3.5" />
                 Shop
+              </button>
+            )
+          )}
+          {/* Deduct from pantry — marks ingredients as used */}
+          {onDeductFromPantry && (
+            pantryDone ? (
+              <span
+                className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                style={{ color: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)' }}
+              >
+                ✓ Pantry updated
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await onDeductFromPantry(session);
+                    setPantryDone(true);
+                  } catch {
+                    // error handled upstream
+                  }
+                }}
+                className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
+                style={{ color: '#6B7280', backgroundColor: 'rgba(107,114,128,0.1)' }}
+                aria-label="Deduct recipe ingredients from pantry"
+                title="I cooked this — update pantry"
+              >
+                📦 Used pantry
               </button>
             )
           )}
