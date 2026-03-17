@@ -210,7 +210,12 @@ export const JournalContainer: React.FC = () => {
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
         {/* Header */}
-        <JournalHeaderV2 />
+        <JournalHeaderV2
+          onNewEntry={() => {
+            modals.set('editingEntryId', null);
+            modals.open('showForm');
+          }}
+        />
 
         {/* Tab Navigation */}
         <div className="mb-6 p-1 rounded-xl flex gap-1" style={{ backgroundColor: colors.bg.secondary }}>
@@ -264,16 +269,31 @@ export const JournalContainer: React.FC = () => {
                 Loading entries...
               </div>
             ) : paginatedEntries.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="text-6xl mb-4 opacity-50">📓</div>
-                <h3 className="text-lg font-bold mb-2" style={{ color: colors.text.primary }}>
+              <div
+                className="p-8 rounded-xl border-2 border-dashed text-center"
+                style={{ borderColor: colors.border.medium }}
+              >
+                <div className="text-4xl mb-3">📓</div>
+                <p className="font-medium mb-2" style={{ color: colors.text.primary }}>
                   {hasActiveFilters ? 'No matching entries' : 'Start journaling'}
-                </h3>
-                <p className="text-sm" style={{ color: colors.text.secondary }}>
+                </p>
+                <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
                   {hasActiveFilters
                     ? 'Try adjusting your filters'
                     : 'Capture your thoughts, memories, and daily reflections'}
                 </p>
+                {!hasActiveFilters && (
+                  <button
+                    onClick={() => {
+                      modals.set('editingEntryId', null);
+                      modals.open('showForm');
+                    }}
+                    className="px-4 py-2 rounded-lg font-semibold text-white"
+                    style={{ background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)' }}
+                  >
+                    Write First Entry
+                  </button>
+                )}
               </div>
             ) : (
               <>
@@ -374,8 +394,8 @@ export const JournalContainer: React.FC = () => {
           }}
           className="fixed w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-2xl transition-transform active:scale-95"
           style={{
-            bottom: '96px',
-            right: '32px',
+            bottom: '88px',
+            right: '24px',
             background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
             boxShadow: '0 4px 16px rgba(193, 139, 94, 0.4)',
             zIndex: 50,
