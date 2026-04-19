@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 // Live-reload support: CAPACITOR_DEV=true npx cap sync
-// Override URL with CAPACITOR_DEV_URL (defaults to 192.168.1.240:5173)
-const devServerUrl = process.env.CAPACITOR_DEV_URL ?? 'http://192.168.1.240:5173';
+// Set CAPACITOR_DEV_URL when testing against a LAN-accessible dev server.
+const devServerUrl = process.env.CAPACITOR_DEV_URL?.trim();
 const isDevMode = process.env.CAPACITOR_DEV === 'true';
 
 const config: CapacitorConfig = {
@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
 
   // Injected when CAPACITOR_DEV=true — do not set manually
-  ...(isDevMode
+  ...(isDevMode && devServerUrl
     ? { server: { url: devServerUrl, cleartext: true } }
     : {}),
 

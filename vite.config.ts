@@ -2,6 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+const hmrHost = process.env.VITE_HMR_HOST?.trim()
+const hmrClientPort = Number(process.env.VITE_HMR_CLIENT_PORT ?? '5173')
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -33,11 +36,11 @@ export default defineConfig({
     host: '0.0.0.0', // Listen on all interfaces
     port: 5173,
     strictPort: true,
-    hmr: {
-      // Fix WebSocket connection issues for iPhone
-      clientPort: 5173,
-      host: '192.168.1.240',
-    },
+    hmr: hmrHost ? {
+      // Only pin the HMR endpoint when testing from another device on the LAN.
+      clientPort: Number.isFinite(hmrClientPort) ? hmrClientPort : 5173,
+      host: hmrHost,
+    } : undefined,
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
